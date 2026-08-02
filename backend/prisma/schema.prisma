@@ -1,0 +1,357 @@
+// Prisma Schema for SBNI Money App (FinTech Loan Marketplace Platform)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  VENDOR
+  LENDER
+  SUPER_ADMIN
+}
+
+enum KYCStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum LenderType {
+  BANK
+  NBFC
+  FINANCIAL_INSTITUTION
+  INDIVIDUAL
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum NotificationChannel {
+  PUSH
+  EMAIL
+  SMS
+  IN_APP
+}
+
+model User {
+  id                 String             @id @default(uuid())
+  email              String             @unique
+  phone              String             @unique
+  passwordHash       String
+  role               Role               @default(VENDOR)
+  isVerified         Boolean            @default(false)
+  otpCode            String?
+  otpExpiresAt       DateTime?
+  activeRefreshToken String?
+  isDeleted          Boolean            @default(false)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  vendorProfile      VendorProfile?
+  lenderProfile      LenderProfile?
+  kycDocuments       KYCDocument[]
+  subscriptions      UserSubscription[]
+  payments           Payment[]
+  notifications      Notification[]
+  supportTickets     SupportTicket[]
+
+  @@index([email])
+  @@index([phone])
+  @@index([role])
+}
+
+model VendorProfile {
+  id                 String    @id @default(uuid())
+  userId             String    @unique
+  user               User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  businessName       String
+  ownerName          String
+  gstNumber          String?
+  panNumber          String?
+  registrationType   String    @default("Proprietorship") // Proprietorship, PVT LTD, Partnership, etc.
+  annualTurnover     String    @default("10-50 Lakhs")
+  category           String    @default("Retail")
+  address            String
+  city               String
+  state              String
+  pincode            String
+  latitude           Float     @default(19.0760)
+  longitude          Float     @default(72.8777)
+  kycStatus          KYCStatus @default(PENDING)
+  kycRejectionReason String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@index([city, state])
+  @@index([kycStatus])
+  @@index([category])
+}
+
+model LenderProfile {
+  id                 String     @id @default(uuid())
+  userId             String     @unique
+  user               User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  institutionName    String
+  institutionType    LenderType @default(NBFC)
+  registrationNumber String
+  loanCategories     String     // Stored as JSON string e.g. ["Business Loan", "MSME Loan", "Machinery Loan"]
+  minLoanAmount      Float      @default(100000)
+  maxLoanAmount      Float      @default(50000000)
+  minInterestRate    Float      @default(8.5)
+  address            String
+  city               String
+  state              String
+  pincode            String
+  latitude           Float      @default(19.0760)
+  longitude          Float      @default(72.8777)
+  contactPersonName  String
+  verificationStatus KYCStatus  @default(PENDING)
+  rejectionReason    String?
+  rating             Float      @default(4.8)
+  reviewCount        Int        @default(12)
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+
+  @@index([city, state])
+  @@index([institutionType])
+  @@index([verificationStatus])
+}
+
+model KYCDocument {
+  id              String    @id @default(uuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  docType         String    // AADHAAR, PAN, GST_CERTIFICATE, BUSINESS_PROOF, BANK_STATEMENT
+  documentNumber  String
+  fileUrl         String
+  status          KYCStatus @default(PENDING)
+  rejectionReason String?
+  verifiedAt      DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([status])
+}
+
+model SubscriptionPlan {
+  id            String             @id @default(uuid())
+  name          String             // Weekly, Monthly, Quarterly, Half-Yearly, Yearly
+  code          String             @unique // WEEKLY, MONTHLY, QUARTERLY, HALF_YEARLY, YEARLY
+  description   String
+  price         Float
+  originalPrice Float
+  durationDays  Int
+  features      String             // Stored as JSON string e.g. ["Unlock Phone Numbers", "WhatsApp Connect", "Priority Support"]
+  isActive      Boolean            @default(true)
+  isPopular     Boolean            @default(false)
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  subscriptions UserSubscription[]
+}
+
+model UserSubscription {
+  id            String             @id @default(uuid())
+  userId        String
+  user          User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  planId        String
+  plan          SubscriptionPlan   @relation(fields: [planId], references: [id])
+  startDate     DateTime           @default(now())
+  endDate       DateTime
+  status        SubscriptionStatus @default(ACTIVE)
+  transactionId String             @unique
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  payments      Payment[]
+
+  @@index([userId])
+  @@index([status])
+}
+
+model Payment {
+  id             String           @id @default(uuid())
+  userId         String
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscriptionId String?
+  subscription   UserSubscription? @relation(fields: [subscriptionId], references: [id])
+  amount         Float
+  currency       String           @default("INR")
+  status         PaymentStatus    @default(PENDING)
+  paymentMethod  String           @default("UPI") // UPI, CARD, NETBANKING
+  invoiceNumber  String           @unique
+  gatewayOrderId String?
+  gatewayPaymentId String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  @@index([userId])
+  @@index([status])
+}
+
+model Banner {
+  id             String   @id @default(uuid())
+  title          String
+  subtitle       String?
+  imageUrl       String
+  actionUrl      String?
+  targetAudience String   @default("ALL") // ALL, VENDOR, LENDER
+  displayOrder   Int      @default(1)
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model CMSPage {
+  id              String   @id @default(uuid())
+  pageKey         String   @unique // terms, privacy, about, contact, refund-policy
+  title           String
+  content         String
+  metaTitle       String?
+  metaDescription String?
+  isPublished     Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Blog {
+  id            String    @id @default(uuid())
+  title         String
+  slug          String    @unique
+  summary       String
+  content       String
+  author        String    @default("SBNI Editorial Team")
+  coverImageUrl String
+  isPublished   Boolean   @default(true)
+  publishedAt   DateTime  @default(now())
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model FAQ {
+  id           String   @id @default(uuid())
+  category     String   @default("General") // General, Subscriptions, Verification, Safety
+  question     String
+  answer       String
+  displayOrder Int      @default(1)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([category])
+}
+
+model Coupon {
+  id                 String    @id @default(uuid())
+  code               String    @unique
+  discountPercentage Float
+  maxDiscountAmount  Float
+  minPurchaseAmount  Float     @default(0)
+  validFrom          DateTime  @default(now())
+  validUntil         DateTime
+  usageLimit         Int       @default(100)
+  timesUsed          Int       @default(0)
+  isActive           Boolean   @default(true)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+}
+
+model Testimonial {
+  id           String   @id @default(uuid())
+  authorName   String
+  authorRole   String   // Business Owner, Managing Director, Regional Head
+  companyName  String
+  avatarUrl    String
+  rating       Float    @default(5.0)
+  quote        String
+  displayOrder Int      @default(1)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Notification {
+  id        String              @id @default(uuid())
+  userId    String
+  user      User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  channel   NotificationChannel @default(IN_APP)
+  type      String              @default("SYSTEM") // SYSTEM, VERIFICATION, SUBSCRIPTION, PROMO
+  isRead    Boolean             @default(false)
+  readAt    DateTime?
+  createdAt DateTime            @default(now())
+
+  @@index([userId])
+}
+
+model SupportTicket {
+  id            String       @id @default(uuid())
+  userId        String
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ticketNumber  String       @unique
+  subject       String
+  category      String       @default("General")
+  priority      Priority     @default(MEDIUM)
+  status        TicketStatus @default(OPEN)
+  message       String
+  adminResponse String?
+  resolvedAt    DateTime?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@index([userId])
+  @@index([status])
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  role      String?
+  action    String
+  ipAddress String?
+  userAgent String?
+  details   String   // JSON string of snapshot or changes
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+model PlatformSetting {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  value       String
+  group       String   @default("General") // General, Payment, Contact, Features
+  description String?
+  updatedAt   DateTime @updatedAt
+}
