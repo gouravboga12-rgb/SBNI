@@ -593,38 +593,6 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                 </div>
               </div>
 
-              {/* SECTION 3: Account Security & Password */}
-              <div className="space-y-4 pt-2">
-                <div className="flex items-center gap-2 text-slate-900 font-extrabold text-base font-heading pb-1 border-b border-slate-100">
-                  <Lock className="w-4 h-4 text-amber-600" />
-                  <span>Security & Account Settings</span>
-                </div>
-
-                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-                  <div>
-                    <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Account Password</span>
-                    <div className="font-mono font-extrabold text-slate-900 text-sm flex items-center gap-2">
-                      <span>{showPassword ? 'VendorPass@2024' : '••••••••••••'}</span>
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="text-slate-500 hover:text-slate-800 p-1"
-                        title={showPassword ? 'Hide Password' : 'Show Password'}
-                      >
-                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </button>
-                    </div>
-                  </div>
-
-                  <button
-                    type="button"
-                    className="btn-secondary text-xs px-4 py-2 justify-center font-extrabold rounded-xl border border-slate-300"
-                  >
-                    <span>Change Password</span>
-                  </button>
-                </div>
-              </div>
-
             </div>
 
           </div>
