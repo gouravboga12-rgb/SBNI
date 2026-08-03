@@ -108,7 +108,21 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({ onOpenSubscrip
         {/* VIEW 1: LENDER HOME DASHBOARD */}
         {!selectedVendor && activeTab === 'home' && (
           <div className="space-y-6">
-            
+            {/* Top Crystal-Clear Visual Photo Banner */}
+            <div className="relative overflow-hidden rounded-3xl border border-slate-200/90 shadow-md h-44 sm:h-56 md:h-64 w-full group mb-6">
+              <img
+                src="/lender_giving_money.png"
+                alt="Lender Capital Growth"
+                className="w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent flex items-end p-4 sm:p-6">
+                <div className="bg-slate-900/90 border border-slate-700/80 backdrop-blur-md px-3.5 py-1.5 rounded-xl text-xs font-bold text-slate-100 flex items-center gap-2 shadow-lg">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <span>Instant Capital Disbursement & Vendor Growth</span>
+                </div>
+              </div>
+            </div>
+
             {/* Top Cards Hero Banner: Responsive Grid (1 col Mobile, 3 col Desktop) */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
               
@@ -123,11 +137,11 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({ onOpenSubscrip
 
                   <div className="pt-2 flex items-center gap-6 text-xs">
                     <div>
-                      <div className="text-blue-200 text-xs">Total Loans Disbursed</div>
+                      <div className="text-blue-200 text-xs">Total Capital Disbursed</div>
                       <div className="font-bold text-white text-lg md:text-xl">₹ 24,50,000</div>
                     </div>
                     <div className="border-l border-blue-400/40 pl-6">
-                      <div className="text-blue-200 text-xs">Active Loans</div>
+                      <div className="text-blue-200 text-xs">Active Accounts</div>
                       <div className="font-bold text-white text-lg md:text-xl">12</div>
                     </div>
                   </div>
@@ -638,7 +652,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({ onOpenSubscrip
                   <div>
                     <h4 className="font-extrabold text-slate-900 text-sm font-heading">Account Session & Security</h4>
                     <p className="text-xs text-slate-500 font-medium mt-0.5">
-                      Log out of your active SBNI Money App session on this device
+                      Log out of your active Just Paisa App session on this device
                     </p>
                   </div>
                   {onLogout && (

@@ -28,7 +28,7 @@ export const TermsModal: React.FC<TermsModalProps> = ({ isOpen, onClose }) => {
           </div>
           <div>
             <h2 className="text-xl font-extrabold text-slate-900 font-heading">Terms & Privacy Policy</h2>
-            <p className="text-xs text-slate-500 font-medium">SBNI Money App Platform Terms of Service & Privacy Policy</p>
+            <p className="text-xs text-slate-500 font-medium">Just Paisa App Platform Terms of Service & Privacy Policy</p>
           </div>
         </div>
 
@@ -40,7 +40,7 @@ export const TermsModal: React.FC<TermsModalProps> = ({ isOpen, onClose }) => {
               1. Platform Nature & Direct Marketplace
             </h3>
             <p>
-              SBNI Money App connects verified Vendors directly with Nationalized Banks, NBFCs, and Private Lenders. SBNI Money App operates as a direct listing technology platform and does not charge any hidden middleman commission on loan approvals.
+              Just Paisa App connects verified Vendors directly with Nationalized Banks, NBFCs, and Private Lenders. Just Paisa App operates as a direct listing technology platform and does not charge any hidden middleman commission on credit approvals.
             </p>
           </section>
 

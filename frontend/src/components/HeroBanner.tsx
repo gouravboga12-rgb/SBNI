@@ -41,14 +41,14 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({ onSearch, onOpenSubscrip
           </h1>
 
           <p className="text-base sm:text-lg text-slate-300 max-w-3xl mx-auto leading-relaxed">
-            SBNI Money App connects Business Owners directly with verified Banks, NBFCs, and Lenders. Search location-based lending partners, review verified credentials, and unlock contact access with a single transparent subscription.
+            Just Paisa App connects Business Owners directly with verified Banks, NBFCs, and Lenders. Search location-based lending partners, review verified credentials, and unlock contact access with a single transparent subscription.
           </p>
 
           {/* Compliance Marketplace Disclaimer */}
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs font-medium max-w-2xl mx-auto">
             <ShieldCheck className="w-4 h-4 text-amber-400 flex-shrink-0" />
             <span>
-              Marketplace Model: SBNI Money App does not approve, disburse, or track loans. All financial discussions occur directly between vendor and verified lender.
+              Marketplace Model: Just Paisa App does not approve, disburse, or track credit. All financial discussions occur directly between vendor and verified lender.
             </span>
           </div>
         </div>

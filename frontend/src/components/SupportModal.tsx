@@ -41,7 +41,7 @@ export const SupportModal: React.FC<SupportModalProps> = ({ isOpen, onClose }) =
               </div>
               <div>
                 <div className="text-xs font-bold text-slate-900">Toll-Free Helpline</div>
-                <div className="text-sm font-extrabold text-blue-900">+91 1800-123-7264 (SBNI)</div>
+                <div className="text-sm font-extrabold text-blue-900">+91 1800-123-7264 (Just Paisa)</div>
               </div>
             </div>
             <a
@@ -59,11 +59,11 @@ export const SupportModal: React.FC<SupportModalProps> = ({ isOpen, onClose }) =
               </div>
               <div>
                 <div className="text-xs font-bold text-slate-900">Official Email Desk</div>
-                <div className="text-xs font-bold text-slate-600">support@sbnimoney.com</div>
+                <div className="text-xs font-bold text-slate-600">support@justpaisa.com</div>
               </div>
             </div>
             <a
-              href="mailto:support@sbnimoney.com"
+              href="mailto:support@justpaisa.com"
               className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-colors"
             >
               Send Email

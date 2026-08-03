@@ -96,7 +96,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   </div>
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-slate-400">Invoice Ref:</span>
-                    <span className="text-cyan-400 font-mono">INV-SBNI-994182</span>
+                    <span className="text-cyan-400 font-mono">INV-JP-994182</span>
                   </div>
                   <div className="pt-2 flex items-center justify-between">
                     <span className="text-xs text-emerald-400 font-semibold">✅ Phone & WhatsApp Unlocked</span>
@@ -175,7 +175,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 text-xs">
                   <div className="font-bold text-emerald-400">KYC Status Approved</div>
                   <p className="text-slate-300 mt-1">
-                    Your GST registration certificate was verified by SBNI Compliance.
+                    Your GST registration certificate was verified by Just Paisa Compliance.
                   </p>
                 </div>
               </div>

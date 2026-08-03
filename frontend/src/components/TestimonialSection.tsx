@@ -10,7 +10,7 @@ const defaultTestimonials: TestimonialItem[] = [
     companyName: 'Sharma Textile Exports',
     avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=200',
     rating: 5,
-    quote: 'SBNI Money helped us discover 4 nearby NBFCs in Mumbai. We unlocked contact details and secured our working capital facility within 3 days directly with the lender!',
+    quote: 'Just Paisa helped us discover 4 nearby NBFCs in Mumbai. We unlocked contact details and secured our working capital facility within 3 days directly with the lender!',
   },
   {
     id: 't2',
@@ -46,7 +46,7 @@ export const TestimonialSection: React.FC = () => {
             Trusted by <span className="gradient-emerald-text">50,000+ Business Owners</span>
           </h2>
           <p className="text-sm text-slate-300">
-            See how Indian enterprises use SBNI Money App for direct lender discovery.
+            See how Indian enterprises use Just Paisa App for direct lender discovery.
           </p>
         </div>
 

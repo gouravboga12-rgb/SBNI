@@ -21,6 +21,7 @@ import {
   Phone,
   Mail,
   AlertCircle,
+  Camera,
 } from 'lucide-react';
 import { Role } from '../types';
 
@@ -65,6 +66,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [panFile, setPanFile] = useState<File | null>(null);
   const [aadhaarFile, setAadhaarFile] = useState<File | null>(null);
   const [licenseFile, setLicenseFile] = useState<File | null>(null);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
 
   // Registration Passwords with Eye Toggles
   const [regPassword, setRegPassword] = useState('');
@@ -106,6 +108,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       return;
     }
 
+    if (!photoFile) {
+      setFormError('Please upload your passport size photo / profile photo to proceed.');
+      return;
+    }
+
     if (!panFile) {
       setFormError('Please upload your PAN card document to proceed.');
       return;
@@ -126,6 +133,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       role: 'VENDOR',
       isVerified: true,
       hasActiveSubscription: false,
+      photoUploaded: true,
+      avatarUrl: photoFile ? URL.createObjectURL(photoFile) : undefined,
       panUploaded: true,
       aadhaarUploaded: true,
       licenseUploaded: !!licenseFile,
@@ -490,7 +499,55 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               {/* Section 3: Document Uploads */}
               <div className="space-y-3 pt-1">
                 <div className="text-xs font-extrabold text-[#003893] uppercase tracking-wider flex items-center gap-1.5 border-b pb-1">
-                  <FileText className="w-4 h-4" /> KYC Document Uploads
+                  <FileText className="w-4 h-4" /> Photo & KYC Document Uploads
+                </div>
+
+                {/* Passport / Profile Photo Upload */}
+                <div className="p-3 bg-blue-50/60 rounded-2xl border border-blue-200">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-xs font-extrabold text-slate-800 flex items-center gap-1">
+                      <Camera className="w-4 h-4 text-[#003893]" />
+                      Passport Size Photo / Profile Photo *
+                    </span>
+                    {photoFile ? (
+                      <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3" /> Photo Uploaded
+                      </span>
+                    ) : (
+                      <span className="text-[10px] text-rose-600 font-bold bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200">
+                        Required
+                      </span>
+                    )}
+                  </div>
+                  <label className="border-2 border-dashed border-blue-300 hover:border-[#003893] rounded-xl p-3 text-center cursor-pointer block bg-white transition-colors shadow-inner">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => e.target.files?.[0] && setPhotoFile(e.target.files[0])}
+                      className="hidden"
+                    />
+                    {photoFile ? (
+                      <div className="flex items-center justify-center gap-3">
+                        <img
+                          src={URL.createObjectURL(photoFile)}
+                          alt="Vendor Photo Preview"
+                          className="w-12 h-12 rounded-full object-cover border-2 border-[#003893] shadow-md"
+                        />
+                        <div className="text-left">
+                          <div className="text-xs font-bold text-slate-900 truncate max-w-[200px]">{photoFile.name}</div>
+                          <div className="text-[10px] text-emerald-600 font-semibold">Click to change photo</div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div>
+                        <Camera className="w-6 h-6 text-[#003893] mx-auto mb-1" />
+                        <div className="text-xs font-bold text-slate-800">
+                          Upload Vendor Photo (Passport Size) *
+                        </div>
+                        <div className="text-[9px] text-slate-400">JPG, PNG, WEBP up to 10MB</div>
+                      </div>
+                    )}
+                  </label>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

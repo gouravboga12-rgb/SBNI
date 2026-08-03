@@ -38,8 +38,8 @@ export function App() {
   ]);
 
   const [faqs, setFaqs] = useState([
-    { id: 'f1', question: 'What is SBNI Money App?', category: 'General' },
-    { id: 'f2', question: 'Does SBNI Money process or approve my loan?', category: 'General' },
+    { id: 'f1', question: 'What is Just Paisa App?', category: 'General' },
+    { id: 'f2', question: 'Does Just Paisa process or approve my financial credit?', category: 'General' },
     { id: 'f3', question: 'Why do I need a subscription plan?', category: 'Subscriptions' },
   ]);
 
@@ -79,7 +79,7 @@ export function App() {
               </div>
             </div>
             <div>
-              <div className="font-extrabold text-lg text-white font-heading tracking-tight">SBNI ADMIN</div>
+              <div className="font-extrabold text-lg text-white font-heading tracking-tight">JUST PAISA ADMIN</div>
               <div className="text-[10px] text-cyan-400 font-bold uppercase tracking-wider">Super Control Center</div>
             </div>
           </div>

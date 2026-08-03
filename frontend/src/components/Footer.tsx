@@ -11,11 +11,11 @@ export const Footer: React.FC = () => {
           
           {/* Brand Info */}
           <div className="space-y-4 md:col-span-1">
-            <div className="bg-white p-2.5 rounded-2xl inline-block shadow-md border border-slate-200">
-              <SBNILogo imgClassName="h-12 w-auto object-contain" />
+            <div className="bg-white p-3.5 rounded-2xl inline-block shadow-lg border border-slate-200">
+              <SBNILogo imgClassName="h-20 sm:h-24 w-auto object-contain" style={{ maxHeight: '100px' }} />
             </div>
             <p className="text-slate-400 leading-relaxed text-xs">
-              India's trusted enterprise B2B Loan Marketplace platform connecting Business Owners (Vendors) directly with verified Banks, NBFCs, and Lenders.
+              India's trusted enterprise B2B Financial Marketplace platform connecting Business Owners (Vendors) directly with verified Banks, NBFCs, and Financial Institutions.
             </p>
           </div>
 
@@ -47,7 +47,7 @@ export const Footer: React.FC = () => {
             <ul className="space-y-3">
               <li className="flex items-center gap-2">
                 <Mail className="w-4 h-4 text-cyan-400" />
-                <span>support@sbnimoney.com</span>
+                <span>support@justpaisa.com</span>
               </li>
               <li className="flex items-center gap-2">
                 <Phone className="w-4 h-4 text-emerald-400" />
@@ -64,11 +64,11 @@ export const Footer: React.FC = () => {
 
         {/* Regulatory Disclaimer Banner */}
         <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 text-[11px] text-slate-400 mb-8 leading-relaxed">
-          <strong className="text-slate-200">Regulatory Disclaimer:</strong> SBNI Money App is strictly a technology platform facilitating vendor-lender discovery and communication. SBNI Money App is not a bank, non-banking financial company (NBFC), loan recovery agent, or credit institution. SBNI Money App does not offer loan approvals, process applications, disburse funds, or compute credit scores. All financial arrangements and loan agreements take place directly between independent users.
+          <strong className="text-slate-200">Regulatory Disclaimer:</strong> Just Paisa App is strictly a technology platform facilitating vendor-lender discovery and communication. Just Paisa App is not a bank, non-banking financial company (NBFC), recovery agent, or credit institution. Just Paisa App does not offer credit approvals, process applications, disburse funds, or compute credit scores. All financial arrangements and business agreements take place directly between independent users.
         </div>
 
         <div className="pt-6 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4 text-center">
-          <p>© 2026 SBNI Money App. All Rights Reserved. Production Enterprise FinTech Release.</p>
+          <p>© 2026 Just Paisa App. All Rights Reserved. Production Enterprise FinTech Release.</p>
         </div>
 
       </div>

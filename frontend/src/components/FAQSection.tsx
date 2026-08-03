@@ -7,13 +7,13 @@ const defaultFAQs: FAQItem[] = [
     id: '1',
     category: 'General',
     question: 'What is SBNI Money App?',
-    answer: 'SBNI Money App is India’s premier B2B Loan Marketplace that connects Business Owners (Vendors) with verified Banks, NBFCs, and Lenders. We facilitate direct discovery and communication.',
+    answer: 'SBNI Money App is India’s premier B2B Capital Marketplace that connects Business Owners (Vendors) with verified Banks, NBFCs, and Lenders. We facilitate direct discovery and communication.',
   },
   {
     id: '2',
     category: 'General',
-    question: 'Does SBNI Money process or approve my loan application?',
-    answer: 'No. SBNI Money is strictly a discovery marketplace platform. We do not process, approve, disburse, or track loans. All negotiations, documentation, and loan disbursements take place directly between you and the verified lender.',
+    question: 'Does SBNI Money process or approve my financial application?',
+    answer: 'No. SBNI Money is strictly a discovery marketplace platform. We do not process, approve, disburse, or track financial credit. All negotiations, documentation, and capital disbursements take place directly between you and the verified lender.',
   },
   {
     id: '3',

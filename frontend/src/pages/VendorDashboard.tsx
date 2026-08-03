@@ -108,6 +108,21 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
         {activeTab === 'home' && (
           <div className="space-y-6">
             
+            {/* Top Crystal-Clear Visual Photo Banner */}
+            <div className="relative overflow-hidden rounded-3xl border border-slate-200/90 shadow-md h-44 sm:h-56 md:h-64 w-full group mb-6">
+              <img
+                src="/vendor_money_lender.png"
+                alt="Vendor Capital Growth"
+                className="w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent flex items-end p-4 sm:p-6">
+                <div className="bg-slate-900/90 border border-slate-700/80 backdrop-blur-md px-3.5 py-1.5 rounded-xl text-xs font-bold text-slate-100 flex items-center gap-2 shadow-lg">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <span>Real-time Capital Disbursement & Approval</span>
+                </div>
+              </div>
+            </div>
+
             {/* Top Cards Hero Banner: Responsive Grid (1 col Mobile, 2 col Tab, 3 col Desktop) */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
               
@@ -352,7 +367,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
             {/* Data Protection Footer Banner */}
             <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-center text-xs text-emerald-800 flex items-center justify-center gap-2 font-medium">
               <ShieldCheck className="w-5 h-5 text-emerald-600" />
-              <span>All lenders are verified & trusted by SBNI Money App. Your data is safe with us.</span>
+              <span>All lenders are verified & trusted by Just Paisa App. Your data is safe with us.</span>
             </div>
 
           </div>
@@ -506,7 +521,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                     <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Gmail / Email ID</span>
                     <div className="font-extrabold text-slate-900 text-sm flex items-center gap-1.5">
                       <Mail className="w-3.5 h-3.5 text-blue-600" />
-                      <span>vendor@sbnimoney.com</span>
+                      <span>vendor@justpaisa.com</span>
                     </div>
                   </div>
 
@@ -606,7 +621,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                   <div>
                     <h4 className="font-extrabold text-slate-900 text-sm font-heading">Account Session & Security</h4>
                     <p className="text-xs text-slate-500 font-medium mt-0.5">
-                      Log out of your active SBNI Money App session on this device
+                      Log out of your active Just Paisa App session on this device
                     </p>
                   </div>
                   {onLogout && (
