@@ -1,9 +1,12 @@
-/* Exact SBNI Money App Design System - Matching Reference UI Images */
+/* Exact SBNI Money App Design System - Premium Elevated UI */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800;900&display=swap');
 
 :root {
-  --font-heading: 'Outfit', sans-serif;
-  --font-body: 'Inter', sans-serif;
+  --font-heading: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --color-blue-primary: #003893;
+  --color-blue-dark: #001f54;
   --color-green-primary: #059669;
   --color-green-light: #10b981;
   --color-bg-light: #f8fafc;
@@ -17,80 +20,104 @@
 
 body {
   font-family: var(--font-body);
-  background-color: var(--color-bg-light);
-  color: #1e293b;
+  background-color: #f1f5f9;
+  color: #0f172a;
   line-height: 1.5;
   overflow-x: hidden;
 }
 
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-heading);
+  letter-spacing: -0.02em;
 }
 
-/* Card Styles */
+/* Premium Card Utilities */
 .card-white {
   background: #ffffff;
   border: 1px solid #e2e8f0;
-  border-radius: 16px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+  border-radius: 20px;
+  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.card-white-hover {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  box-shadow: 0 4px 18px -2px rgba(15, 23, 42, 0.04);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.card-white-hover:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 12px 30px -4px rgba(0, 56, 147, 0.08);
+  transform: translateY(-2px);
 }
 
 .card-blue-header {
-  background: linear-gradient(135deg, #003893 0%, #002669 100%);
+  background: linear-gradient(135deg, #003893 0%, #002366 100%);
   color: #ffffff;
-  border-radius: 20px;
+  border-radius: 24px;
+  box-shadow: 0 10px 30px -5px rgba(0, 56, 147, 0.3);
 }
 
 .card-green-header {
-  background: linear-gradient(135deg, #047857 0%, #065f46 100%);
+  background: linear-gradient(135deg, #047857 0%, #064e3b 100%);
   color: #ffffff;
-  border-radius: 20px;
+  border-radius: 24px;
+  box-shadow: 0 10px 30px -5px rgba(4, 120, 87, 0.25);
 }
 
-/* Buttons matching UI images */
+/* Premium Buttons */
 .btn-sbni-blue {
-  background: #003893;
+  background: linear-gradient(135deg, #003893 0%, #002669 100%);
   color: #ffffff;
   font-weight: 700;
-  padding: 0.75rem 1.5rem;
-  border-radius: 12px;
+  padding: 0.7rem 1.4rem;
+  border-radius: 14px;
   border: none;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  transition: all 0.2s ease;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 14px rgba(0, 56, 147, 0.25);
 }
 
 .btn-sbni-blue:hover {
-  background: #002d78;
+  background: linear-gradient(135deg, #002d78 0%, #001c52 100%);
+  box-shadow: 0 6px 20px rgba(0, 56, 147, 0.35);
+  transform: translateY(-1px);
 }
 
 .btn-sbni-green {
-  background: #059669;
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
   color: #ffffff;
   font-weight: 700;
-  padding: 0.75rem 1.5rem;
-  border-radius: 12px;
+  padding: 0.7rem 1.4rem;
+  border-radius: 14px;
   border: none;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  transition: all 0.2s ease;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 14px rgba(5, 150, 105, 0.25);
 }
 
 .btn-sbni-green:hover {
-  background: #047857;
+  background: linear-gradient(135deg, #047857 0%, #065f46 100%);
+  box-shadow: 0 6px 20px rgba(5, 150, 105, 0.35);
+  transform: translateY(-1px);
 }
 
 .btn-call-outline {
   background: #f0fdf4;
-  color: #166534;
+  color: #15803d;
   border: 1px solid #bbf7d0;
-  font-weight: 600;
-  padding: 0.4rem 0.85rem;
-  border-radius: 8px;
+  font-weight: 700;
+  padding: 0.45rem 0.9rem;
+  border-radius: 10px;
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
@@ -100,15 +127,17 @@ h1, h2, h3, h4, h5, h6 {
 
 .btn-call-outline:hover {
   background: #dcfce7;
+  border-color: #86efac;
+  transform: translateY(-1px);
 }
 
 .btn-whatsapp-outline {
   background: #f0fdf4;
   color: #15803d;
   border: 1px solid #bbf7d0;
-  font-weight: 600;
-  padding: 0.4rem 0.85rem;
-  border-radius: 8px;
+  font-weight: 700;
+  padding: 0.45rem 0.9rem;
+  border-radius: 10px;
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
@@ -118,27 +147,33 @@ h1, h2, h3, h4, h5, h6 {
 
 .btn-whatsapp-outline:hover {
   background: #dcfce7;
+  border-color: #86efac;
+  transform: translateY(-1px);
 }
 
+/* Badges */
 .badge-verified-green {
   background: #dcfce7;
   color: #15803d;
   font-size: 0.7rem;
-  font-weight: 700;
-  padding: 0.15rem 0.5rem;
+  font-weight: 800;
+  padding: 0.2rem 0.6rem;
   border-radius: 9999px;
+  border: 1px solid #bbf7d0;
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
+  box-shadow: 0 1px 3px rgba(22, 101, 52, 0.08);
 }
 
 .badge-pending-amber {
   background: #fef3c7;
-  color: #d97706;
+  color: #b45309;
   font-size: 0.7rem;
-  font-weight: 700;
-  padding: 0.15rem 0.5rem;
+  font-weight: 800;
+  padding: 0.2rem 0.6rem;
   border-radius: 9999px;
+  border: 1px solid #fde68a;
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
@@ -147,27 +182,28 @@ h1, h2, h3, h4, h5, h6 {
 /* Custom Input Fields */
 .input-sbni {
   background: #ffffff;
-  border: 1px solid #cbd5e1;
+  border: 1.5px solid #cbd5e1;
   color: #0f172a;
   padding: 0.75rem 1rem;
-  border-radius: 12px;
+  border-radius: 14px;
   width: 100%;
-  font-size: 0.9rem;
+  font-size: 0.875rem;
+  font-weight: 500;
   outline: none;
   transition: all 0.2s ease;
 }
 
 .input-sbni:focus {
   border-color: #003893;
-  box-shadow: 0 0 0 3px rgba(0, 56, 147, 0.1);
+  box-shadow: 0 0 0 4px rgba(0, 56, 147, 0.12);
 }
 
 .input-glass {
-  background: rgba(15, 23, 42, 0.8);
+  background: rgba(15, 23, 42, 0.85);
   border: 1px solid #334155;
   color: #ffffff;
-  padding: 0.65rem 0.85rem;
-  border-radius: 12px;
+  padding: 0.7rem 0.9rem;
+  border-radius: 14px;
   width: 100%;
   outline: none;
   transition: all 0.2s ease;
@@ -175,14 +211,14 @@ h1, h2, h3, h4, h5, h6 {
 
 .input-glass:focus {
   border-color: #38bdf8;
-  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15);
+  box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.15);
 }
 
 .btn-emerald {
   background: linear-gradient(135deg, #059669 0%, #047857 100%);
   color: #ffffff;
   font-weight: 700;
-  border-radius: 12px;
+  border-radius: 14px;
   border: none;
   cursor: pointer;
   display: inline-flex;
@@ -197,27 +233,12 @@ h1, h2, h3, h4, h5, h6 {
   transform: translateY(-1px);
 }
 
-.btn-secondary {
-  background: #1e293b;
-  color: #f8fafc;
-  border: 1px solid #334155;
-  font-weight: 600;
-  border-radius: 12px;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  transition: all 0.2s ease;
+/* Micro animations */
+@keyframes pulse-subtle {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.9; transform: scale(1.02); }
 }
 
-.btn-secondary:hover {
-  background: #334155;
-  color: #ffffff;
+.animate-pulse-subtle {
+  animation: pulse-subtle 3s infinite ease-in-out;
 }
-
-.glass-panel-glow {
-  background: rgba(15, 23, 42, 0.95);
-  backdrop-filter: blur(16px);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
-}
-

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Lender } from '../types';
 import { fetchLenders } from '../services/api';
 import { LenderCard } from '../components/LenderCard';
+import { LoanRequestModal } from '../components/LoanRequestModal';
 import { Search, MapPin, SlidersHorizontal, Building2, Zap, ShieldCheck } from 'lucide-react';
 
 interface LenderDiscoveryProps {
@@ -19,6 +20,23 @@ export const LenderDiscovery: React.FC<LenderDiscoveryProps> = ({
   const [selectedCity, setSelectedCity] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [radiusKm, setRadiusKm] = useState(100);
+
+  const [selectedLenderForLoan, setSelectedLenderForLoan] = useState<Lender | null>(null);
+  const [loanModalOpen, setLoanModalOpen] = useState(false);
+
+  const handleRequestLoan = (lender: Lender) => {
+    const isSubscribed =
+      localStorage.getItem('sbni_vendor_subscribed') === 'true' ||
+      localStorage.getItem('sbni_subscribed') === 'true';
+
+    if (!isSubscribed) {
+      onOpenSubscription();
+      return;
+    }
+
+    setSelectedLenderForLoan(lender);
+    setLoanModalOpen(true);
+  };
 
   const loadLenders = () => {
     setLoading(true);
@@ -156,12 +174,19 @@ export const LenderDiscovery: React.FC<LenderDiscoveryProps> = ({
                 key={lender.id}
                 lender={lender}
                 onOpenSubscription={onOpenSubscription}
+                onRequestLoan={handleRequestLoan}
               />
             ))}
           </div>
         )}
 
       </div>
+
+      <LoanRequestModal
+        isOpen={loanModalOpen}
+        onClose={() => setLoanModalOpen(false)}
+        lender={selectedLenderForLoan}
+      />
     </div>
   );
 };

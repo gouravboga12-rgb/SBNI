@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Lender } from '../types';
 import { LenderCard } from '../components/LenderCard';
+import { LoanRequestModal } from '../components/LoanRequestModal';
 import {
   Store,
   Building2,
@@ -33,6 +34,22 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
 }) => {
   const [internalActiveTab, setInternalActiveTab] = useState<'home' | 'lenders' | 'requests' | 'profile'>('home');
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedLenderForLoan, setSelectedLenderForLoan] = useState<Lender | null>(null);
+  const [loanModalOpen, setLoanModalOpen] = useState(false);
+
+  const handleRequestLoan = (lender: Lender) => {
+    const isSubscribed =
+      localStorage.getItem('sbni_vendor_subscribed') === 'true' ||
+      localStorage.getItem('sbni_subscribed') === 'true';
+
+    if (!isSubscribed) {
+      onOpenSubscription();
+      return;
+    }
+
+    setSelectedLenderForLoan(lender);
+    setLoanModalOpen(true);
+  };
 
   const activeTab = controlledActiveTab !== undefined ? controlledActiveTab : internalActiveTab;
 
@@ -63,50 +80,59 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
               
               {/* Card 1: Welcome Royal Blue Card */}
-              <div className="card-blue-header p-5 md:p-6 shadow-lg relative overflow-hidden flex items-center justify-between min-h-[160px]">
-                <div className="space-y-1 z-10">
-                  <div className="text-xs text-blue-200 font-medium">Welcome,</div>
-                  <h2 className="text-2xl font-extrabold text-white font-heading">Ramesh Kumar</h2>
+              <div className="card-blue-header p-6 shadow-xl relative overflow-hidden flex items-center justify-between min-h-[170px] border border-blue-400/20 group">
+                {/* Glow Overlay */}
+                <div className="absolute top-0 right-0 w-40 h-40 bg-blue-400/20 rounded-full blur-3xl pointer-events-none group-hover:bg-blue-400/30 transition-colors" />
+
+                <div className="space-y-1.5 z-10">
+                  <div className="text-xs text-blue-200 font-semibold tracking-wide uppercase">Welcome back,</div>
+                  <h2 className="text-2xl sm:text-3xl font-extrabold text-white font-heading">Ramesh Kumar</h2>
                   <div className="pt-2">
-                    <span className="badge-verified-green bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
-                      <CheckCircle2 className="w-3.5 h-3.5" /> Verified Vendor
+                    <span className="badge-verified-green bg-emerald-500/25 text-emerald-200 border border-emerald-400/40 shadow-sm backdrop-blur-md">
+                      <CheckCircle2 className="w-3.5 h-3.5" /> Verified Business Vendor
                     </span>
                   </div>
                 </div>
 
-                <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center border border-white/20 shadow-inner z-10">
+                <div className="w-16 h-16 sm:w-18 sm:h-18 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20 shadow-xl z-10 shrink-0 group-hover:scale-105 transition-transform">
                   <Store className="w-8 h-8 text-white" />
                 </div>
               </div>
 
               {/* Card 2: Find & Connect with Lenders Card */}
-              <div className="card-white p-5 md:p-6 flex flex-col justify-between hover:shadow-md transition-shadow">
+              <div className="card-white-hover p-6 flex flex-col justify-between min-h-[170px] relative group overflow-hidden">
                 <div className="flex items-start justify-between">
-                  <div>
-                    <h3 className="font-bold text-slate-900 text-lg font-heading">Find & Connect with Lenders</h3>
-                    <p className="text-xs text-slate-500 mt-1">Get the best funding options from trusted lenders near you.</p>
+                  <div className="space-y-1">
+                    <div className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200/60 w-fit">
+                      100% Verified Partners
+                    </div>
+                    <h3 className="font-extrabold text-slate-900 text-lg font-heading pt-0.5">Find & Connect with Lenders</h3>
+                    <p className="text-xs text-slate-500 font-medium">Get competitive business loans from top banks & NBFCs near you.</p>
                   </div>
-                  <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 flex-shrink-0">
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 flex-shrink-0 shadow-sm group-hover:scale-105 transition-transform">
                     <Building2 className="w-6 h-6" />
                   </div>
                 </div>
 
                 <button
                   onClick={() => handleTabChange('lenders')}
-                  className="btn-sbni-green mt-4 text-xs justify-center py-2.5 shadow-sm"
+                  className="btn-sbni-green mt-4 text-xs justify-center py-2.5 shadow-md font-extrabold"
                 >
-                  <span>Find Lenders Near You</span>
+                  <span>Find Nearby Lenders</span>
                 </button>
               </div>
 
               {/* Card 3: Lenders Around You Card */}
-              <div className="card-white p-5 md:p-6 flex flex-col justify-between hover:shadow-md transition-shadow md:col-span-2 lg:col-span-1">
+              <div className="card-white-hover p-6 flex flex-col justify-between min-h-[170px] md:col-span-2 lg:col-span-1 relative group">
                 <div className="flex items-start justify-between">
-                  <div>
-                    <h3 className="font-bold text-slate-900 text-lg font-heading">Lenders Around You</h3>
-                    <p className="text-xs text-slate-500 mt-1">Find trusted lenders within 10 KM radius and get quick support.</p>
+                  <div className="space-y-1">
+                    <div className="text-[11px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200/60 w-fit">
+                      Proximity Match
+                    </div>
+                    <h3 className="font-extrabold text-slate-900 text-lg font-heading pt-0.5">Lenders Around You</h3>
+                    <p className="text-xs text-slate-500 font-medium">Discover financial partners within 10 KM radius for instant approval.</p>
                   </div>
-                  <div className="w-12 h-12 rounded-full bg-emerald-100/70 border border-emerald-200 flex flex-col items-center justify-center text-emerald-700 flex-shrink-0 font-bold text-[10px]">
+                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-50 to-blue-50 border border-emerald-200 flex flex-col items-center justify-center text-emerald-700 flex-shrink-0 font-extrabold text-[10px] shadow-sm">
                     <MapPin className="w-4 h-4 text-emerald-600 mb-0.5" />
                     <span>10 KM</span>
                   </div>
@@ -114,56 +140,60 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
 
                 <button
                   onClick={() => handleTabChange('lenders')}
-                  className="btn-sbni-green mt-4 text-xs justify-center py-2.5 shadow-sm"
+                  className="btn-sbni-green mt-4 text-xs justify-center py-2.5 shadow-md font-extrabold"
                 >
-                  <span>Search Lenders →</span>
+                  <span>Search Lenders Radius →</span>
                 </button>
               </div>
 
             </div>
 
             {/* Quick Actions Bar */}
-            <div className="space-y-3">
-              <h3 className="font-bold text-slate-900 text-base font-heading">Quick Actions</h3>
+            <div className="space-y-3 pt-2">
+              <div className="flex items-center justify-between">
+                <h3 className="font-extrabold text-slate-900 text-base font-heading">Quick Actions</h3>
+                <span className="text-xs text-slate-400 font-medium">Shortcuts</span>
+              </div>
+
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 md:gap-4">
                 <div 
                   onClick={() => handleTabChange('profile')}
-                  className="card-white p-4 text-center flex flex-col items-center justify-center gap-2.5 cursor-pointer hover:border-blue-600 hover:shadow-md transition-all group"
+                  className="card-white p-4.5 text-center flex flex-col items-center justify-center gap-2.5 cursor-pointer border border-slate-200/80 hover:border-blue-600 hover:shadow-lg transition-all group rounded-2xl bg-white"
                 >
-                  <div className="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-700 group-hover:scale-110 transition-transform">
+                  <div className="w-12 h-12 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center text-[#003893] group-hover:scale-110 group-hover:bg-[#003893] group-hover:text-white transition-all duration-300 shadow-sm">
                     <User className="w-6 h-6" />
                   </div>
-                  <span className="text-xs font-bold text-slate-800">My Profile</span>
+                  <span className="text-xs font-extrabold text-slate-800">My Business Profile</span>
                 </div>
 
                 <div 
                   onClick={() => handleTabChange('requests')}
-                  className="card-white p-4 text-center flex flex-col items-center justify-center gap-2.5 cursor-pointer hover:border-blue-600 hover:shadow-md transition-all group"
+                  className="card-white p-4.5 text-center flex flex-col items-center justify-center gap-2.5 cursor-pointer border border-slate-200/80 hover:border-blue-600 hover:shadow-lg transition-all group rounded-2xl bg-white"
                 >
-                  <div className="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-700 group-hover:scale-110 transition-transform">
+                  <div className="w-12 h-12 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center text-[#003893] group-hover:scale-110 group-hover:bg-[#003893] group-hover:text-white transition-all duration-300 shadow-sm">
                     <FileText className="w-6 h-6" />
                   </div>
-                  <span className="text-xs font-bold text-slate-800">Loan Requests</span>
+                  <span className="text-xs font-extrabold text-slate-800">Loan Applications</span>
                 </div>
 
                 <div 
                   onClick={() => handleTabChange('lenders')}
-                  className="card-white p-4 text-center flex flex-col items-center justify-center gap-2.5 cursor-pointer hover:border-blue-600 hover:shadow-md transition-all group"
+                  className="card-white p-4.5 text-center flex flex-col items-center justify-center gap-2.5 cursor-pointer border border-slate-200/80 hover:border-blue-600 hover:shadow-lg transition-all group rounded-2xl bg-white"
                 >
-                  <div className="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-700 group-hover:scale-110 transition-transform">
+                  <div className="w-12 h-12 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center text-[#003893] group-hover:scale-110 group-hover:bg-[#003893] group-hover:text-white transition-all duration-300 shadow-sm">
                     <Users className="w-6 h-6" />
                   </div>
-                  <span className="text-xs font-bold text-slate-800">My Connections</span>
+                  <span className="text-xs font-extrabold text-slate-800">Partner Network</span>
                 </div>
 
                 <div 
                   onClick={onOpenSubscription}
-                  className="card-white p-4 text-center flex flex-col items-center justify-center gap-2.5 cursor-pointer hover:border-amber-500 hover:shadow-md transition-all group"
+                  className="card-white p-4.5 text-center flex flex-col items-center justify-center gap-2.5 cursor-pointer border border-slate-200/80 hover:border-amber-500 hover:shadow-lg transition-all group rounded-2xl bg-white"
                 >
-                  <div className="w-12 h-12 rounded-2xl bg-amber-50 flex items-center justify-center text-amber-600 group-hover:scale-110 transition-transform">
+                  <div className="w-12 h-12 rounded-2xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600 group-hover:scale-110 group-hover:bg-amber-500 group-hover:text-white transition-all duration-300 shadow-sm">
                     <Headphones className="w-6 h-6" />
                   </div>
-                  <span className="text-xs font-bold text-slate-800">Support & Subscription</span>
+                  <span className="text-xs font-extrabold text-slate-800">Subscription & Support</span>
                 </div>
               </div>
             </div>
@@ -190,6 +220,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                       key={lender.id}
                       lender={lender}
                       onOpenSubscription={onOpenSubscription}
+                      onRequestLoan={handleRequestLoan}
                     />
                   ))}
                 </div>
@@ -273,6 +304,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                   key={lender.id}
                   lender={lender}
                   onOpenSubscription={onOpenSubscription}
+                  onRequestLoan={handleRequestLoan}
                 />
               ))}
             </div>
@@ -421,6 +453,13 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
           <span>Profile</span>
         </button>
       </div>
+
+      {/* Loan Request Application Modal */}
+      <LoanRequestModal
+        isOpen={loanModalOpen}
+        onClose={() => setLoanModalOpen(false)}
+        lender={selectedLenderForLoan}
+      />
 
     </div>
   );

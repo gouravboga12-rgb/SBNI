@@ -46,14 +46,18 @@ export interface VendorVerificationRequest {
   status: 'Pending' | 'Verified' | 'Rejected';
   mobileNumber: string;
   emailId: string;
-  dateOfBirth: string;
+  dateOfBirth?: string;
   panNumber: string;
   aadhaarNumber: string;
-  shopType: string;
-  yearsInBusiness: string;
-  shopImages: string[];
-  shopLicensePdf: string;
-  gstCertificatePdf: string;
+  shopType?: string;
+  yearsInBusiness?: string;
+  shopImages?: string[];
+  shopLicensePdf?: string;
+  gstCertificatePdf?: string;
+  requiredAmount?: string;
+  lenderId?: string;
+  lenderName?: string;
+  bankAccountDetails?: string;
 }
 
 export interface SubscriptionPlan {

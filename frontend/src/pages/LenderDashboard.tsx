@@ -26,8 +26,22 @@ interface LenderDashboardProps {
 
 export const LenderDashboard: React.FC<LenderDashboardProps> = ({ onOpenSubscription }) => {
   const [selectedVendor, setSelectedVendor] = useState<VendorVerificationRequest | null>(null);
-  const [requests, setRequests] = useState(mockVerificationRequests);
+  const [requests, setRequests] = useState<VendorVerificationRequest[]>(mockVerificationRequests);
   const [actionFeedback, setActionFeedback] = useState('');
+
+  React.useEffect(() => {
+    const dynamicStr = localStorage.getItem('sbni_vendor_requests');
+    if (dynamicStr) {
+      try {
+        const dynamicReqs: VendorVerificationRequest[] = JSON.parse(dynamicStr);
+        setRequests((prev) => {
+          const ids = new Set(prev.map(r => r.id));
+          const uniqueNew = dynamicReqs.filter(r => !ids.has(r.id));
+          return [...uniqueNew, ...prev];
+        });
+      } catch (e) {}
+    }
+  }, []);
 
   const checkLenderSubscribed = () => {
     const isSub = localStorage.getItem('sbni_lender_subscribed') === 'true';
@@ -326,6 +340,25 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({ onOpenSubscrip
                   </span>
                 </div>
 
+                {/* Required Amount Card */}
+                <div className="card-white p-5 bg-gradient-to-r from-[#003893] to-[#001f54] text-white rounded-2xl shadow-md space-y-1">
+                  <div className="text-[11px] text-blue-200 uppercase font-extrabold tracking-wider">Required Amount</div>
+                  <div className="text-2xl sm:text-3xl font-extrabold text-white font-heading">
+                    ₹ {selectedVendor.requiredAmount || '5,00,000'}
+                  </div>
+                  {selectedVendor.lenderName && (
+                    <div className="text-xs text-blue-100 font-medium pt-1">
+                      Submitted to: <span className="font-bold text-white">{selectedVendor.lenderName}</span>
+                    </div>
+                  )}
+                  {selectedVendor.bankAccountDetails && (
+                    <div className="mt-2 pt-2 border-t border-white/20 text-xs text-blue-100 flex items-center justify-between">
+                      <span>Bank Account Details:</span>
+                      <span className="font-mono font-bold text-white">{selectedVendor.bankAccountDetails}</span>
+                    </div>
+                  )}
+                </div>
+
                 {/* Personal Information */}
                 <div className="card-white p-5 space-y-4">
                   <h4 className="font-bold text-slate-900 text-base font-heading">Personal Information</h4>
@@ -436,7 +469,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({ onOpenSubscrip
                 <div className="card-white p-5 space-y-4">
                   <h4 className="font-bold text-slate-900 text-base font-heading">Shop Photos & Premises</h4>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    {selectedVendor.shopImages.map((imgUrl, i) => (
+                    {(selectedVendor.shopImages || []).map((imgUrl, i) => (
                       <img
                         key={i}
                         src={imgUrl}
