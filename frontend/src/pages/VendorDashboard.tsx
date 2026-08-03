@@ -374,7 +374,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                 <h3 className="font-extrabold text-slate-900 text-base">Working Capital Application</h3>
                 <div className="text-xs text-slate-600 space-y-1">
                   <div>Requested Amount: <span className="font-bold text-slate-900">₹5,00,000</span></div>
-                  <div>Submitted to: <span className="font-bold text-blue-900">State Bank of India & HDFC Bank</span></div>
+                  <div>Submitted to: <span className="font-bold text-blue-900">Nishanth Finance & Rajesh Finance</span></div>
                   <div>Date: <span className="font-medium">02 May 2024</span></div>
                 </div>
               </div>

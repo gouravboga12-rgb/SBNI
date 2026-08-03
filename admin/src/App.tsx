@@ -32,9 +32,9 @@ export function App() {
   ]);
 
   const [lenders, setLenders] = useState([
-    { id: 'l1', name: 'Capital Growth Finance NBFC Ltd', type: 'NBFC', city: 'Mumbai', status: 'VERIFIED', reg: 'NBFC-RBI-MH-9941' },
-    { id: 'l2', name: 'First National Commercial Bank', type: 'BANK', city: 'New Delhi', status: 'VERIFIED', reg: 'BANK-RBI-IND-1002' },
-    { id: 'l3', name: 'Apex Enterprise Capital Partners', type: 'FINANCIAL_INSTITUTION', city: 'Gurugram', status: 'PENDING', reg: 'FI-DL-2021-883' },
+    { id: 'l1', name: 'Nishanth Finance', type: 'NBFC', city: 'Mumbai', status: 'VERIFIED', reg: 'FIN-IND-2021-1001' },
+    { id: 'l2', name: 'Rajesh Finance', type: 'NBFC', city: 'New Delhi', status: 'VERIFIED', reg: 'FIN-IND-2019-1002' },
+    { id: 'l3', name: 'Suresh Finance', type: 'FINANCIAL_INSTITUTION', city: 'Gurugram', status: 'PENDING', reg: 'FIN-IND-2020-1003' },
   ]);
 
   const [faqs, setFaqs] = useState([
@@ -151,7 +151,7 @@ export function App() {
         </div>
 
         <div className="pt-6 border-t border-slate-800 text-[11px] text-slate-500">
-          Super Admin v1.0.0 • Supabase Sync
+          Super Admin v1.0.0 • System Active
         </div>
       </aside>
 

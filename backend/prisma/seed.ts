@@ -275,9 +275,9 @@ async function main() {
     update: {},
     create: {
       userId: lenderUser1.id,
-      institutionName: 'Capital Growth Finance NBFC Ltd',
+      institutionName: 'Nishanth Finance',
       institutionType: LenderType.NBFC,
-      registrationNumber: 'NBFC-RBI-MH-2018-9941',
+      registrationNumber: 'FIN-IND-2021-1001',
       loanCategories: JSON.stringify(['Business Loan', 'MSME Working Capital', 'Machinery Loan']),
       minLoanAmount: 200000,
       maxLoanAmount: 25000000,
@@ -288,7 +288,7 @@ async function main() {
       pincode: '400051',
       latitude: 19.0674,
       longitude: 72.8687,
-      contactPersonName: 'Vikram Malhotra (Chief Lending Officer)',
+      contactPersonName: 'Nishanth Kumar (Proprietor)',
       verificationStatus: KYCStatus.VERIFIED,
       rating: 4.9,
       reviewCount: 38,
@@ -296,10 +296,10 @@ async function main() {
   });
 
   const lenderUser2 = await prisma.user.upsert({
-    where: { email: 'loans@firstnationalfinance.in' },
+    where: { email: 'loans@rajeshfinance.in' },
     update: {},
     create: {
-      email: 'loans@firstnationalfinance.in',
+      email: 'loans@rajeshfinance.in',
       phone: '9833344556',
       passwordHash,
       role: Role.LENDER,
@@ -312,9 +312,9 @@ async function main() {
     update: {},
     create: {
       userId: lenderUser2.id,
-      institutionName: 'First National Commercial Bank',
-      institutionType: LenderType.BANK,
-      registrationNumber: 'BANK-RBI-IND-1002',
+      institutionName: 'Rajesh Finance',
+      institutionType: LenderType.NBFC,
+      registrationNumber: 'FIN-IND-2019-1002',
       loanCategories: JSON.stringify(['Commercial Loan', 'Letter of Credit', 'Export Finance', 'MSME Loan']),
       minLoanAmount: 500000,
       maxLoanAmount: 100000000,
@@ -325,7 +325,7 @@ async function main() {
       pincode: '110001',
       latitude: 28.6315,
       longitude: 77.2167,
-      contactPersonName: 'Anil Deshmukh (AVP Commercial Loans)',
+      contactPersonName: 'Rajesh Sharma (Managing Director)',
       verificationStatus: KYCStatus.VERIFIED,
       rating: 4.8,
       reviewCount: 54,

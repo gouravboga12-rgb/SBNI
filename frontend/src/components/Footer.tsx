@@ -69,12 +69,6 @@ export const Footer: React.FC = () => {
 
         <div className="pt-6 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4 text-center">
           <p>© 2026 SBNI Money App. All Rights Reserved. Production Enterprise FinTech Release.</p>
-          <div className="flex items-center gap-4">
-            <span className="text-emerald-400 font-semibold flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-              Supabase PostgreSQL Realtime Sync Active
-            </span>
-          </div>
         </div>
 
       </div>
