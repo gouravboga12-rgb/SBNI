@@ -132,15 +132,20 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                 </div>
               </div>
 
-              {/* Card 2: Find & Connect with Lenders Card */}
+              {/* Card 2: Find & Connect with Nearby Lenders (Unified Proximity Card) */}
               <div className="card-white-hover p-6 flex flex-col justify-between min-h-[170px] relative group overflow-hidden">
                 <div className="flex items-start justify-between">
                   <div className="space-y-1">
-                    <div className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200/60 w-fit">
-                      100% Verified Partners
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200/60">
+                        10 KM Radius
+                      </span>
+                      <span className="text-[11px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200/60">
+                        Verified
+                      </span>
                     </div>
-                    <h3 className="font-extrabold text-slate-900 text-lg font-heading pt-0.5">Find & Connect with Lenders</h3>
-                    <p className="text-xs text-slate-500 font-medium">Get competitive finance options from top banks & NBFCs near you.</p>
+                    <h3 className="font-extrabold text-slate-900 text-lg font-heading pt-1">Find Nearby Lenders</h3>
+                    <p className="text-xs text-slate-500 font-medium">Discover financial partners within 10 KM radius for instant approval.</p>
                   </div>
                   <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 flex-shrink-0 shadow-sm group-hover:scale-105 transition-transform">
                     <Building2 className="w-6 h-6" />
@@ -151,31 +156,30 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                   onClick={() => handleTabChange('lenders')}
                   className="btn-sbni-green mt-4 text-xs justify-center py-2.5 shadow-md font-extrabold"
                 >
-                  <span>Find Nearby Lenders</span>
+                  <span>Search Nearby Lenders →</span>
                 </button>
               </div>
 
-              {/* Card 3: Lenders Around You Card */}
-              <div className="card-white-hover p-6 flex flex-col justify-between min-h-[170px] md:col-span-2 lg:col-span-1 relative group">
+              {/* Card 3: Subscription & Plan Status Card */}
+              <div className="card-white-hover p-6 flex flex-col justify-between min-h-[170px] md:col-span-2 lg:col-span-1 relative group bg-gradient-to-br from-amber-50/40 via-white to-amber-50/20 border-amber-200/70">
                 <div className="flex items-start justify-between">
                   <div className="space-y-1">
-                    <div className="text-[11px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200/60 w-fit">
-                      Proximity Match
+                    <div className="text-[11px] font-extrabold text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-md border border-emerald-200 w-fit flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Plan Active
                     </div>
-                    <h3 className="font-extrabold text-slate-900 text-lg font-heading pt-0.5">Lenders Around You</h3>
-                    <p className="text-xs text-slate-500 font-medium">Discover financial partners within 10 KM radius for instant approval.</p>
+                    <h3 className="font-extrabold text-slate-900 text-lg font-heading pt-1">Vendor Membership</h3>
+                    <p className="text-xs text-slate-500 font-medium">Direct lender contacts & priority application routing active.</p>
                   </div>
-                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-50 to-blue-50 border border-emerald-200 flex flex-col items-center justify-center text-emerald-700 flex-shrink-0 font-extrabold text-[10px] shadow-sm">
-                    <MapPin className="w-4 h-4 text-emerald-600 mb-0.5" />
-                    <span>10 KM</span>
+                  <div className="w-12 h-12 rounded-2xl bg-amber-100/80 border border-amber-200 flex items-center justify-center text-amber-700 flex-shrink-0 shadow-sm group-hover:scale-105 transition-transform">
+                    <Headphones className="w-6 h-6" />
                   </div>
                 </div>
 
                 <button
-                  onClick={() => handleTabChange('lenders')}
-                  className="btn-sbni-green mt-4 text-xs justify-center py-2.5 shadow-md font-extrabold"
+                  onClick={onOpenSubscription}
+                  className="btn-sbni-blue mt-4 text-xs justify-center py-2.5 shadow-md font-extrabold bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800"
                 >
-                  <span>Search Lenders Radius →</span>
+                  <span>Manage Subscription</span>
                 </button>
               </div>
 
