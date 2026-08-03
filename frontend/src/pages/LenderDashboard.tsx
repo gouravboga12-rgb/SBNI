@@ -340,19 +340,29 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({ onOpenSubscrip
                   </span>
                 </div>
 
-                {/* Required Amount Card */}
-                <div className="card-white p-5 bg-gradient-to-r from-[#003893] to-[#001f54] text-white rounded-2xl shadow-md space-y-1">
-                  <div className="text-[11px] text-blue-200 uppercase font-extrabold tracking-wider">Required Amount</div>
-                  <div className="text-2xl sm:text-3xl font-extrabold text-white font-heading">
-                    ₹ {selectedVendor.requiredAmount || '5,00,000'}
+                {/* Required Amount & Monthly Income Card */}
+                <div className="card-white p-5 bg-gradient-to-r from-[#003893] to-[#001f54] text-white rounded-2xl shadow-md space-y-2">
+                  <div className="grid grid-cols-2 gap-2 border-b border-white/20 pb-2">
+                    <div>
+                      <div className="text-[10px] text-blue-200 uppercase font-extrabold tracking-wider">Required Amount</div>
+                      <div className="text-xl sm:text-2xl font-extrabold text-white font-heading mt-0.5">
+                        ₹ {selectedVendor.requiredAmount || '5,00,000'}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] text-blue-200 uppercase font-extrabold tracking-wider">Monthly Income</div>
+                      <div className="text-xl sm:text-2xl font-extrabold text-emerald-300 font-heading mt-0.5">
+                        ₹ {selectedVendor.monthlyIncome || '50,000'}
+                      </div>
+                    </div>
                   </div>
                   {selectedVendor.lenderName && (
-                    <div className="text-xs text-blue-100 font-medium pt-1">
+                    <div className="text-xs text-blue-100 font-medium pt-0.5">
                       Submitted to: <span className="font-bold text-white">{selectedVendor.lenderName}</span>
                     </div>
                   )}
                   {selectedVendor.bankAccountDetails && (
-                    <div className="mt-2 pt-2 border-t border-white/20 text-xs text-blue-100 flex items-center justify-between">
+                    <div className="mt-1 pt-1 border-t border-white/20 text-xs text-blue-100 flex items-center justify-between">
                       <span>Bank Account Details:</span>
                       <span className="font-mono font-bold text-white">{selectedVendor.bankAccountDetails}</span>
                     </div>

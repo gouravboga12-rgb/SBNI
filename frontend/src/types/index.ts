@@ -55,6 +55,7 @@ export interface VendorVerificationRequest {
   shopLicensePdf?: string;
   gstCertificatePdf?: string;
   requiredAmount?: string;
+  monthlyIncome?: string;
   lenderId?: string;
   lenderName?: string;
   bankAccountDetails?: string;

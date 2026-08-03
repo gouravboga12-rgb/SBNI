@@ -80,9 +80,6 @@ export const LenderCard: React.FC<LenderCardProps> = ({ lender, onOpenSubscripti
             <span className="text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md text-[11px] font-bold">
               {lender.institutionType}
             </span>
-            <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md text-[11px] font-extrabold border border-emerald-200/60">
-              Max: ₹{(lender.maxLoanAmount / 100000).toFixed(1)} Lakhs
-            </span>
             {lender.minInterestRate && (
               <span className="text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md text-[11px] font-bold border border-blue-100">
                 From {lender.minInterestRate}% p.a.

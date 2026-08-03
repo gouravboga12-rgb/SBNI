@@ -14,6 +14,7 @@ import {
   ShieldCheck,
   Send,
   CreditCard,
+  Wallet,
 } from 'lucide-react';
 
 interface LoanRequestModalProps {
@@ -33,6 +34,7 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [requiredAmount, setRequiredAmount] = useState('');
+  const [monthlyIncome, setMonthlyIncome] = useState('');
   const [bankAccountDetails, setBankAccountDetails] = useState('');
   
   const [panFile, setPanFile] = useState<File | null>(null);
@@ -80,6 +82,10 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
       setFormError('Please enter the Required Amount.');
       return;
     }
+    if (!monthlyIncome.trim()) {
+      setFormError('Please enter your Monthly Income.');
+      return;
+    }
     if (!panFile) {
       setFormError('Please upload your PAN card document.');
       return;
@@ -108,6 +114,7 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
       panNumber: panFile.name.replace(/\.[^/.]+$/, '').toUpperCase() || 'ABCDE1234F',
       aadhaarNumber: aadhaarFile.name ? 'XXXX-XXXX-8921' : '9876-5432-1098',
       requiredAmount: requiredAmount,
+      monthlyIncome: monthlyIncome,
       lenderId: lender.id,
       lenderName: lender.institutionName,
       bankAccountDetails: bankAccountDetails || undefined,
@@ -165,18 +172,18 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
               <div className="text-[11px] font-bold text-[#003893] uppercase tracking-wider">Lender Partner</div>
               <h3 className="font-extrabold text-slate-900 text-base leading-tight">{lender.institutionName}</h3>
               <div className="text-xs text-slate-500 font-medium">
-                {lender.institutionType} • Max Loan: ₹{(lender.maxLoanAmount / 100000).toFixed(1)} Lakhs
+                {lender.institutionType} Partner
               </div>
             </div>
           </div>
 
-          {/* Screen Title */}
+          {/* Screen Title: Enquire Form */}
           <div>
             <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 font-heading">
-              Submit Loan Application Request
+              Enquire Form
             </h2>
             <p className="text-xs text-slate-500 mt-1 font-medium">
-              Fill in your details below. Your loan application will be forwarded to {lender.institutionName} for verification.
+              Fill in your details below. Your enquiry will be forwarded to {lender.institutionName} for verification.
             </p>
           </div>
 
@@ -195,14 +202,15 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
                 <CheckCircle2 className="w-10 h-10" />
               </div>
               <div>
-                <h3 className="text-xl font-extrabold text-slate-900 font-heading">Loan Application Submitted!</h3>
+                <h3 className="text-xl font-extrabold text-slate-900 font-heading">Enquiry Submitted Successfully!</h3>
                 <p className="text-xs text-slate-600 mt-1 max-w-sm mx-auto">
-                  Your request for <strong className="text-emerald-700">₹{requiredAmount}</strong> has been successfully routed to <strong className="text-slate-900">{lender.institutionName}</strong>.
+                  Your enquiry for <strong className="text-emerald-700">₹{requiredAmount}</strong> has been successfully sent to <strong className="text-slate-900">{lender.institutionName}</strong>.
                 </p>
               </div>
 
               <div className="p-3 rounded-2xl bg-white border border-emerald-200 text-xs text-left space-y-1 max-w-sm mx-auto">
                 <div className="text-slate-500 font-medium">Status: <span className="font-bold text-amber-600">Pending Verification</span></div>
+                <div className="text-slate-500 font-medium">Monthly Income: <span className="font-bold text-slate-900">₹{monthlyIncome}</span></div>
                 <div className="text-slate-500 font-medium">Lender Contact: <span className="font-bold text-slate-900">{lender.phone}</span></div>
               </div>
 
@@ -214,7 +222,7 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
               </button>
             </div>
           ) : (
-            /* Loan Application Form */
+            /* Enquire Form */
             <form onSubmit={handleSubmit} className="space-y-4">
               
               {/* Full Name */}
@@ -267,20 +275,39 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
                 </div>
               </div>
 
-              {/* Required Amount Field - EXACT Label: "Required Amount" */}
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Required Amount *</label>
-                <div className="relative">
-                  <IndianRupee className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                  <input
-                    type="number"
-                    placeholder="Enter required loan amount (e.g. 250000)"
-                    value={requiredAmount}
-                    onChange={(e) => setRequiredAmount(e.target.value)}
-                    required
-                    min="1000"
-                    className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 placeholder-slate-400 outline-none focus:border-[#003893] transition-colors"
-                  />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* Required Amount Field */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Required Amount *</label>
+                  <div className="relative">
+                    <IndianRupee className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <input
+                      type="number"
+                      placeholder="e.g. 250000"
+                      value={requiredAmount}
+                      onChange={(e) => setRequiredAmount(e.target.value)}
+                      required
+                      min="1000"
+                      className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 placeholder-slate-400 outline-none focus:border-[#003893] transition-colors"
+                    />
+                  </div>
+                </div>
+
+                {/* Monthly Income Field */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Monthly Income *</label>
+                  <div className="relative">
+                    <Wallet className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <input
+                      type="number"
+                      placeholder="e.g. 50000"
+                      value={monthlyIncome}
+                      onChange={(e) => setMonthlyIncome(e.target.value)}
+                      required
+                      min="1000"
+                      className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 placeholder-slate-400 outline-none focus:border-[#003893] transition-colors"
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -364,7 +391,7 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
                 type="submit"
                 className="w-full py-3.5 rounded-xl text-white font-extrabold text-base shadow-md transition-all bg-[#003893] hover:bg-[#002669] mt-2 flex items-center justify-center gap-2"
               >
-                <Send className="w-4 h-4" /> Submit Loan Application to {lender.institutionName}
+                <Send className="w-4 h-4" /> Submit Enquiry to {lender.institutionName}
               </button>
             </form>
           )}
