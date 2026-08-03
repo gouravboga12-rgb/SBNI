@@ -18,16 +18,22 @@ import {
   Plus,
   Home,
   User,
+  LogOut,
+  Mail,
+  Phone,
+  MapPin,
 } from 'lucide-react';
 
 interface LenderDashboardProps {
   onOpenSubscription?: () => void;
+  onLogout?: () => void;
 }
 
-export const LenderDashboard: React.FC<LenderDashboardProps> = ({ onOpenSubscription }) => {
+export const LenderDashboard: React.FC<LenderDashboardProps> = ({ onOpenSubscription, onLogout }) => {
   const [selectedVendor, setSelectedVendor] = useState<VendorVerificationRequest | null>(null);
   const [requests, setRequests] = useState<VendorVerificationRequest[]>(mockVerificationRequests);
   const [actionFeedback, setActionFeedback] = useState('');
+  const [activeTab, setActiveTab] = useState<'home' | 'profile'>('home');
 
   React.useEffect(() => {
     const dynamicStr = localStorage.getItem('sbni_vendor_requests');
@@ -61,6 +67,13 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({ onOpenSubscrip
 
   const handleHomeClick = () => {
     setSelectedVendor(null);
+    setActiveTab('home');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleProfileClick = () => {
+    setSelectedVendor(null);
+    setActiveTab('profile');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -93,7 +106,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({ onOpenSubscrip
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 md:pt-6">
         
         {/* VIEW 1: LENDER HOME DASHBOARD */}
-        {!selectedVendor ? (
+        {!selectedVendor && activeTab === 'home' && (
           <div className="space-y-6">
             
             {/* Top Cards Hero Banner: Responsive Grid (1 col Mobile, 3 col Desktop) */}
@@ -287,8 +300,10 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({ onOpenSubscrip
             </div>
 
           </div>
-        ) : (
-          /* VIEW 2: VENDOR VERIFICATION REVIEW PAGE - Responsive Master-Detail Grid */
+        )}
+
+        {/* VIEW 2: VENDOR VERIFICATION REVIEW PAGE - Responsive Master-Detail Grid */}
+        {selectedVendor && (
           <div className="space-y-6">
             
             {/* Header with Back Arrow */}
@@ -550,13 +565,108 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({ onOpenSubscrip
           </div>
         )}
 
+        {/* VIEW 3: LENDER PROFILE VIEW */}
+        {!selectedVendor && activeTab === 'profile' && (
+          <div className="space-y-6 max-w-4xl mx-auto">
+            <div>
+              <h2 className="text-2xl font-extrabold text-slate-900 font-heading">Lender Profile & Security</h2>
+              <p className="text-xs text-slate-500 font-medium mt-0.5">
+                Manage institution credentials, credit officer contact details, and session status
+              </p>
+            </div>
+
+            <div className="card-white p-6 sm:p-8 space-y-6 shadow-md border border-slate-200/90 rounded-3xl">
+              
+              {/* Header Box */}
+              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 pb-6 border-b border-slate-100">
+                <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl bg-gradient-to-br from-emerald-600 to-teal-800 text-white flex items-center justify-center font-extrabold text-3xl shadow-lg border-4 border-white ring-2 ring-emerald-100">
+                  NF
+                </div>
+
+                <div className="text-center sm:text-left space-y-1 flex-1">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 justify-center sm:justify-start">
+                    <h3 className="text-2xl font-extrabold text-slate-900 font-heading">Nishanth Finance</h3>
+                    <span className="badge-verified-green w-fit mx-auto sm:mx-0">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Verified Lender
+                    </span>
+                  </div>
+                  <div className="text-sm font-semibold text-slate-700 flex items-center justify-center sm:justify-start gap-1.5">
+                    <Building2 className="w-4 h-4 text-emerald-600" />
+                    <span>Non-Banking Financial Company (NBFC)</span>
+                  </div>
+                  <p className="text-xs text-slate-400 font-medium pt-1">
+                    Registration No: <span className="font-mono text-slate-700 font-bold">FIN-IND-2021-1001</span>
+                  </p>
+                </div>
+              </div>
+
+              {/* Details */}
+              <div className="space-y-4">
+                <h4 className="font-extrabold text-slate-900 text-sm font-heading">Officer Contact Information</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                  <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
+                    <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Chief Credit Officer</span>
+                    <div className="font-extrabold text-slate-900 text-sm">Nishanth Kumar</div>
+                  </div>
+                  <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
+                    <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Mobile / WhatsApp</span>
+                    <div className="font-extrabold text-slate-900 text-sm flex items-center gap-1.5">
+                      <Phone className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>+91 98200 11223</span>
+                    </div>
+                  </div>
+                  <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
+                    <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Email Address</span>
+                    <div className="font-extrabold text-slate-900 text-sm flex items-center gap-1.5">
+                      <Mail className="w-3.5 h-3.5 text-blue-600" />
+                      <span>contact@nishanthfinance.com</span>
+                    </div>
+                  </div>
+                  <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
+                    <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Head Office Location</span>
+                    <div className="font-extrabold text-slate-900 text-sm flex items-center gap-1.5">
+                      <MapPin className="w-3.5 h-3.5 text-rose-500" />
+                      <span>BKC Commercial Hub, Mumbai</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION: Account Session & Logout */}
+              <div className="pt-6 border-t border-slate-200 space-y-4">
+                <div className="flex items-center justify-between flex-wrap gap-3">
+                  <div>
+                    <h4 className="font-extrabold text-slate-900 text-sm font-heading">Account Session & Security</h4>
+                    <p className="text-xs text-slate-500 font-medium mt-0.5">
+                      Log out of your active SBNI Money App session on this device
+                    </p>
+                  </div>
+                  {onLogout && (
+                    <button
+                      type="button"
+                      onClick={onLogout}
+                      className="w-full sm:w-auto px-6 py-2.5 rounded-2xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-extrabold text-xs border border-rose-200 flex items-center justify-center gap-2 transition-all shadow-sm active:scale-95 cursor-pointer"
+                    >
+                      <LogOut className="w-4 h-4 text-rose-600" />
+                      <span>Log Out Account</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+            </div>
+          </div>
+        )}
+
       </div>
 
       {/* Bottom Sticky Mobile Navigation Bar */}
       <div className="fixed bottom-0 inset-x-0 z-50 bg-white border-t border-slate-200 py-2 px-6 flex items-center justify-around w-full max-w-md mx-auto shadow-2xl lg:hidden rounded-t-2xl">
         <button
           onClick={handleHomeClick}
-          className="flex flex-col items-center gap-0.5 text-[11px] font-extrabold text-[#059669] py-1 px-3 bg-emerald-50 rounded-xl"
+          className={`flex flex-col items-center gap-0.5 text-[11px] font-extrabold py-1 px-3 rounded-xl transition-all ${
+            activeTab === 'home' ? 'text-[#059669] bg-emerald-50' : 'text-slate-500 hover:text-slate-800'
+          }`}
         >
           <Home className="w-5 h-5 text-[#059669]" />
           <span>Home</span>
@@ -587,8 +697,10 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({ onOpenSubscrip
         </button>
 
         <button
-          onClick={handleHomeClick}
-          className="flex flex-col items-center gap-0.5 text-[11px] font-extrabold text-slate-500 hover:text-slate-800 py-1 px-3"
+          onClick={handleProfileClick}
+          className={`flex flex-col items-center gap-0.5 text-[11px] font-extrabold py-1 px-3 rounded-xl transition-all ${
+            activeTab === 'profile' ? 'text-[#059669] bg-emerald-50' : 'text-slate-500 hover:text-slate-800'
+          }`}
         >
           <User className="w-5 h-5" />
           <span>Profile</span>

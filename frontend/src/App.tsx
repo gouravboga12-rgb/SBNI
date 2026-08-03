@@ -85,6 +85,19 @@ export function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem('sbni_user');
+    localStorage.removeItem('sbni_token');
+    localStorage.removeItem('sbni_subscribed');
+    localStorage.removeItem('sbni_vendor_subscribed');
+    localStorage.removeItem('sbni_lender_subscribed');
+    setCurrentUser(null);
+    setCurrentRole('VENDOR');
+    setVendorActiveTab('home');
+    setHasActiveSubscription(false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col justify-between font-sans">
       
@@ -111,9 +124,13 @@ export function App() {
             onOpenSubscription={() => setSubModalOpen(true)}
             activeTab={vendorActiveTab}
             onTabChange={setVendorActiveTab}
+            onLogout={handleLogout}
           />
         ) : (
-          <LenderDashboard onOpenSubscription={() => setSubModalOpen(true)} />
+          <LenderDashboard
+            onOpenSubscription={() => setSubModalOpen(true)}
+            onLogout={handleLogout}
+          />
         )}
       </main>
 

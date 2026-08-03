@@ -25,6 +25,7 @@ import {
   ExternalLink,
   Mail,
   ShieldAlert,
+  LogOut,
 } from 'lucide-react';
 
 interface VendorDashboardProps {
@@ -32,6 +33,7 @@ interface VendorDashboardProps {
   onOpenSubscription: () => void;
   activeTab?: 'home' | 'lenders' | 'requests' | 'profile';
   onTabChange?: (tab: 'home' | 'lenders' | 'requests' | 'profile') => void;
+  onLogout?: () => void;
 }
 
 export const VendorDashboard: React.FC<VendorDashboardProps> = ({
@@ -39,6 +41,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
   onOpenSubscription,
   activeTab: controlledActiveTab,
   onTabChange,
+  onLogout,
 }) => {
   const [internalActiveTab, setInternalActiveTab] = useState<'home' | 'lenders' | 'requests' | 'profile'>('home');
   const [searchQuery, setSearchQuery] = useState('');
@@ -594,6 +597,28 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                     </button>
                   </div>
 
+                </div>
+              </div>
+
+              {/* SECTION 3: Account Session & Logout */}
+              <div className="pt-6 border-t border-slate-200 space-y-4">
+                <div className="flex items-center justify-between flex-wrap gap-3">
+                  <div>
+                    <h4 className="font-extrabold text-slate-900 text-sm font-heading">Account Session & Security</h4>
+                    <p className="text-xs text-slate-500 font-medium mt-0.5">
+                      Log out of your active SBNI Money App session on this device
+                    </p>
+                  </div>
+                  {onLogout && (
+                    <button
+                      type="button"
+                      onClick={onLogout}
+                      className="w-full sm:w-auto px-6 py-2.5 rounded-2xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-extrabold text-xs border border-rose-200 flex items-center justify-center gap-2 transition-all shadow-sm active:scale-95 cursor-pointer"
+                    >
+                      <LogOut className="w-4 h-4 text-rose-600" />
+                      <span>Log Out Account</span>
+                    </button>
+                  )}
                 </div>
               </div>
 
