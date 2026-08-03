@@ -33,7 +33,7 @@ interface VendorDashboardProps {
   onOpenSubscription: () => void;
   activeTab?: 'home' | 'lenders' | 'requests' | 'profile';
   onTabChange?: (tab: 'home' | 'lenders' | 'requests' | 'profile') => void;
-  onLogout?: () => void;
+  onLogout?: (roleTarget?: 'VENDOR' | 'LENDER') => void;
 }
 
 export const VendorDashboard: React.FC<VendorDashboardProps> = ({
@@ -612,7 +612,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                   {onLogout && (
                     <button
                       type="button"
-                      onClick={onLogout}
+                      onClick={() => onLogout('VENDOR')}
                       className="w-full sm:w-auto px-6 py-2.5 rounded-2xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-extrabold text-xs border border-rose-200 flex items-center justify-center gap-2 transition-all shadow-sm active:scale-95 cursor-pointer"
                     >
                       <LogOut className="w-4 h-4 text-rose-600" />

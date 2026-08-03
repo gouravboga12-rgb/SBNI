@@ -22,6 +22,7 @@ export function App() {
   const [lenders, setLenders] = useState<Lender[]>([]);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [hasActiveSubscription, setHasActiveSubscription] = useState<boolean>(false);
+  const [authRole, setAuthRole] = useState<'VENDOR' | 'LENDER'>('VENDOR');
 
   const checkSubscription = (role: 'VENDOR' | 'LENDER') => {
     if (role === 'LENDER') {
@@ -85,16 +86,19 @@ export function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleLogout = () => {
+  const handleLogout = (roleTarget?: 'VENDOR' | 'LENDER') => {
+    const targetRole = roleTarget || currentRole;
     localStorage.removeItem('sbni_user');
     localStorage.removeItem('sbni_token');
     localStorage.removeItem('sbni_subscribed');
     localStorage.removeItem('sbni_vendor_subscribed');
     localStorage.removeItem('sbni_lender_subscribed');
     setCurrentUser(null);
-    setCurrentRole('VENDOR');
+    setCurrentRole(targetRole);
+    setAuthRole(targetRole);
     setVendorActiveTab('home');
     setHasActiveSubscription(false);
+    setAuthModalOpen(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -105,7 +109,10 @@ export function App() {
       <Navbar
         currentRole={currentRole}
         onRoleSwitch={handleRoleSwitch}
-        onOpenAuth={() => setAuthModalOpen(true)}
+        onOpenAuth={() => {
+          setAuthRole(currentRole);
+          setAuthModalOpen(true);
+        }}
         onOpenSubscription={() => setSubModalOpen(true)}
         onOpenKYC={() => setKycModalOpen(true)}
         onOpenSupport={() => setSupportModalOpen(true)}
@@ -142,6 +149,7 @@ export function App() {
         isOpen={authModalOpen}
         onClose={() => setAuthModalOpen(false)}
         onAuthSuccess={handleAuthSuccess}
+        initialRole={authRole}
       />
 
       <SubscriptionModal

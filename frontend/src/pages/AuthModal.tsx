@@ -28,11 +28,25 @@ interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
   onAuthSuccess: (user: any) => void;
+  initialRole?: Role;
 }
 
-export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onAuthSuccess }) => {
-  const [role, setRole] = useState<Role>('VENDOR');
+export const AuthModal: React.FC<AuthModalProps> = ({
+  isOpen,
+  onClose,
+  onAuthSuccess,
+  initialRole = 'VENDOR',
+}) => {
+  const [role, setRole] = useState<Role>(initialRole);
   const [isRegister, setIsRegister] = useState(false);
+
+  React.useEffect(() => {
+    if (isOpen && initialRole) {
+      setRole(initialRole);
+      setIsRegister(false);
+      setFormError(null);
+    }
+  }, [isOpen, initialRole]);
 
   // Login Form States
   const [emailOrPhone, setEmailOrPhone] = useState('');

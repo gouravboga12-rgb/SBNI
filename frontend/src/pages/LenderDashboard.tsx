@@ -26,7 +26,7 @@ import {
 
 interface LenderDashboardProps {
   onOpenSubscription?: () => void;
-  onLogout?: () => void;
+  onLogout?: (roleTarget?: 'VENDOR' | 'LENDER') => void;
 }
 
 export const LenderDashboard: React.FC<LenderDashboardProps> = ({ onOpenSubscription, onLogout }) => {
@@ -644,7 +644,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({ onOpenSubscrip
                   {onLogout && (
                     <button
                       type="button"
-                      onClick={onLogout}
+                      onClick={() => onLogout('LENDER')}
                       className="w-full sm:w-auto px-6 py-2.5 rounded-2xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-extrabold text-xs border border-rose-200 flex items-center justify-center gap-2 transition-all shadow-sm active:scale-95 cursor-pointer"
                     >
                       <LogOut className="w-4 h-4 text-rose-600" />
