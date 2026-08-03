@@ -17,6 +17,14 @@ import {
   ShieldCheck,
   Home,
   Phone,
+  Camera,
+  Eye,
+  EyeOff,
+  Lock,
+  FileCheck,
+  ExternalLink,
+  Mail,
+  ShieldAlert,
 } from 'lucide-react';
 
 interface VendorDashboardProps {
@@ -36,6 +44,27 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedLenderForLoan, setSelectedLenderForLoan] = useState<Lender | null>(null);
   const [loanModalOpen, setLoanModalOpen] = useState(false);
+
+  // Profile Avatar & Password Visibility State
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(() => {
+    return localStorage.getItem('sbni_vendor_avatar') || null;
+  });
+  const [showPassword, setShowPassword] = useState(false);
+
+  const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (event.target?.result) {
+          const dataUrl = event.target.result as string;
+          setAvatarUrl(dataUrl);
+          localStorage.setItem('sbni_vendor_avatar', dataUrl);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const handleRequestLoan = (lender: Lender) => {
     const isSubscribed =
@@ -94,8 +123,12 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                   </div>
                 </div>
 
-                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20 shadow-xl z-10 shrink-0 group-hover:scale-105 transition-transform">
-                  <Store className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
+                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20 shadow-xl z-10 shrink-0 group-hover:scale-105 transition-transform overflow-hidden">
+                  {avatarUrl ? (
+                    <img src={avatarUrl} alt="Vendor Profile" className="w-full h-full object-cover" />
+                  ) : (
+                    <Store className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
+                  )}
                 </div>
               </div>
 
@@ -358,45 +391,242 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
           </div>
         )}
 
-        {/* TAB 4: VENDOR PROFILE VIEW */}
+        {/* TAB 4: COMPREHENSIVE VENDOR PROFILE VIEW */}
         {activeTab === 'profile' && (
-          <div className="space-y-6">
+          <div className="space-y-6 max-w-4xl mx-auto">
+            
+            {/* Header Title */}
             <div>
               <h2 className="text-2xl font-extrabold text-slate-900 font-heading">Vendor Business Profile</h2>
-              <p className="text-xs text-slate-500 font-medium">Manage business details and contact preferences</p>
+              <p className="text-xs text-slate-500 font-medium mt-0.5">
+                Manage your registration details, verification documents, and profile photo
+              </p>
             </div>
 
-            <div className="card-white p-6 space-y-4 max-w-2xl">
-              <div className="flex items-center gap-4 pb-4 border-b border-slate-100">
-                <div className="w-16 h-16 rounded-2xl bg-blue-900 text-white flex items-center justify-center font-extrabold text-xl">
-                  RK
+            {/* Profile Main Card */}
+            <div className="card-white p-6 sm:p-8 space-y-6 shadow-md border border-slate-200/90 rounded-3xl">
+              
+              {/* Header Box with Profile Avatar Upload */}
+              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 pb-6 border-b border-slate-100 relative">
+                
+                {/* User Profile Avatar with Interactive Camera Overlay */}
+                <div className="relative group">
+                  <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl bg-gradient-to-br from-[#003893] to-[#001f54] text-white flex items-center justify-center font-extrabold text-3xl shadow-lg overflow-hidden border-4 border-white ring-2 ring-blue-100">
+                    {avatarUrl ? (
+                      <img src={avatarUrl} alt="Vendor Profile" className="w-full h-full object-cover" />
+                    ) : (
+                      <span>RK</span>
+                    )}
+                  </div>
+
+                  {/* Camera Upload Button */}
+                  <label 
+                    title="Upload Profile Picture"
+                    className="absolute -bottom-2 -right-2 bg-[#003893] hover:bg-[#002366] text-white p-2.5 rounded-full shadow-xl border-2 border-white cursor-pointer transition-all hover:scale-110 active:scale-95 flex items-center justify-center"
+                  >
+                    <Camera className="w-4 h-4 text-white" />
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleAvatarUpload}
+                      className="hidden"
+                    />
+                  </label>
                 </div>
-                <div>
-                  <h3 className="font-bold text-slate-900 text-lg">Ramesh Kumar</h3>
-                  <p className="text-xs text-slate-500 font-medium">Kumar General Store • Retail Vendor</p>
-                  <span className="badge-verified-green mt-1">✓ Verified Vendor</span>
+
+                {/* Vendor Identity Details */}
+                <div className="text-center sm:text-left space-y-1 flex-1">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 justify-center sm:justify-start">
+                    <h3 className="text-2xl font-extrabold text-slate-900 font-heading">Ramesh Kumar</h3>
+                    <span className="badge-verified-green w-fit mx-auto sm:mx-0">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Verified Vendor
+                    </span>
+                  </div>
+
+                  <div className="text-sm font-semibold text-slate-700 flex items-center justify-center sm:justify-start gap-1.5">
+                    <Store className="w-4 h-4 text-[#003893]" />
+                    <span>Kumar General Store</span>
+                    <span className="text-slate-300">•</span>
+                    <span className="text-xs text-slate-500 font-medium">Retail Vendor</span>
+                  </div>
+
+                  <p className="text-xs text-slate-400 font-medium pt-1">
+                    Member since April 2024 • ID: <span className="font-mono text-slate-700">VEND-99482</span>
+                  </p>
+
+                  <div className="pt-2 flex items-center justify-center sm:justify-start gap-2">
+                    <label className="text-xs font-bold text-[#003893] hover:text-blue-900 cursor-pointer flex items-center gap-1 bg-blue-50 px-3 py-1.5 rounded-xl border border-blue-100 transition-colors">
+                      <Camera className="w-3.5 h-3.5" />
+                      <span>{avatarUrl ? 'Change Profile Photo' : 'Upload Profile Photo'}</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleAvatarUpload}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+                </div>
+
+              </div>
+
+              {/* SECTION 1: Personal & Business Registration Information */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 text-slate-900 font-extrabold text-base font-heading pb-1 border-b border-slate-100">
+                  <User className="w-4 h-4 text-[#003893]" />
+                  <span>Personal & Business Information</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                  
+                  {/* Full Name */}
+                  <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
+                    <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Full Name</span>
+                    <div className="font-extrabold text-slate-900 text-sm">Ramesh Kumar</div>
+                  </div>
+
+                  {/* Phone Number / Mobile */}
+                  <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
+                    <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Phone Number / Mobile</span>
+                    <div className="font-extrabold text-slate-900 text-sm flex items-center gap-1.5">
+                      <Phone className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>+91 98765 43210</span>
+                    </div>
+                  </div>
+
+                  {/* Gmail / Email ID */}
+                  <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
+                    <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Gmail / Email ID</span>
+                    <div className="font-extrabold text-slate-900 text-sm flex items-center gap-1.5">
+                      <Mail className="w-3.5 h-3.5 text-blue-600" />
+                      <span>vendor@sbnimoney.com</span>
+                    </div>
+                  </div>
+
+                  {/* Shop / Business Name */}
+                  <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
+                    <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Shop / Business Name</span>
+                    <div className="font-extrabold text-slate-900 text-sm flex items-center gap-1.5">
+                      <Store className="w-3.5 h-3.5 text-amber-600" />
+                      <span>Kumar General Store</span>
+                    </div>
+                  </div>
+
+                  {/* Manual Address Text Box */}
+                  <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 sm:col-span-2">
+                    <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Full Shop / Business Address</span>
+                    <div className="font-bold text-slate-800 text-xs flex items-start gap-1.5">
+                      <MapPin className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
+                      <span>Shop No. 12, Commercial Main Market, Bandra Kurla Complex (BKC), Mumbai, Maharashtra - 400051</span>
+                    </div>
+                  </div>
+
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                <div>
-                  <label className="text-slate-400 font-semibold">Mobile Number</label>
-                  <div className="font-bold text-slate-800 mt-0.5">+91 98765 43210</div>
+              {/* SECTION 2: Registration Verification Documents */}
+              <div className="space-y-4 pt-2">
+                <div className="flex items-center gap-2 text-slate-900 font-extrabold text-base font-heading pb-1 border-b border-slate-100">
+                  <FileCheck className="w-4 h-4 text-emerald-600" />
+                  <span>KYC & Registration Documents</span>
                 </div>
-                <div>
-                  <label className="text-slate-400 font-semibold">Email ID</label>
-                  <div className="font-bold text-slate-800 mt-0.5">vendor@sbnimoney.com</div>
-                </div>
-                <div>
-                  <label className="text-slate-400 font-semibold">Shop Address</label>
-                  <div className="font-bold text-slate-800 mt-0.5">Shop 12, Main Market, BKC, Mumbai</div>
-                </div>
-                <div>
-                  <label className="text-slate-400 font-semibold">GSTIN / Udyam Registration</label>
-                  <div className="font-bold text-slate-800 mt-0.5">27AAPFU0939L1ZV</div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                  
+                  {/* PAN Card Document */}
+                  <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="font-extrabold text-slate-800 text-xs">PAN Card</span>
+                      <span className="text-[10px] font-extrabold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3" /> Verified
+                      </span>
+                    </div>
+                    <div className="font-mono font-bold text-slate-900 text-xs bg-white p-2 rounded-xl border border-slate-200">
+                      ABCDE1234F
+                    </div>
+                    <button 
+                      type="button"
+                      className="w-full text-[11px] font-bold text-[#003893] hover:text-blue-900 flex items-center justify-center gap-1 py-1"
+                    >
+                      <ExternalLink className="w-3 h-3" /> View Uploaded PAN
+                    </button>
+                  </div>
+
+                  {/* Aadhaar Card Document */}
+                  <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="font-extrabold text-slate-800 text-xs">Aadhaar Card</span>
+                      <span className="text-[10px] font-extrabold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3" /> Verified
+                      </span>
+                    </div>
+                    <div className="font-mono font-bold text-slate-900 text-xs bg-white p-2 rounded-xl border border-slate-200">
+                      XXXX-XXXX-8921
+                    </div>
+                    <button 
+                      type="button"
+                      className="w-full text-[11px] font-bold text-[#003893] hover:text-blue-900 flex items-center justify-center gap-1 py-1"
+                    >
+                      <ExternalLink className="w-3 h-3" /> View Uploaded Aadhaar
+                    </button>
+                  </div>
+
+                  {/* Business License (Optional) */}
+                  <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="font-extrabold text-slate-800 text-xs">Business License</span>
+                      <span className="text-[10px] font-extrabold text-blue-700 bg-blue-100 px-2 py-0.5 rounded-md">
+                        Optional
+                      </span>
+                    </div>
+                    <div className="font-mono font-bold text-slate-900 text-xs bg-white p-2 rounded-xl border border-slate-200">
+                      27AAPFU0939L1ZV
+                    </div>
+                    <button 
+                      type="button"
+                      className="w-full text-[11px] font-bold text-[#003893] hover:text-blue-900 flex items-center justify-center gap-1 py-1"
+                    >
+                      <ExternalLink className="w-3 h-3" /> View License Doc
+                    </button>
+                  </div>
+
                 </div>
               </div>
+
+              {/* SECTION 3: Account Security & Password */}
+              <div className="space-y-4 pt-2">
+                <div className="flex items-center gap-2 text-slate-900 font-extrabold text-base font-heading pb-1 border-b border-slate-100">
+                  <Lock className="w-4 h-4 text-amber-600" />
+                  <span>Security & Account Settings</span>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                  <div>
+                    <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Account Password</span>
+                    <div className="font-mono font-extrabold text-slate-900 text-sm flex items-center gap-2">
+                      <span>{showPassword ? 'VendorPass@2024' : '••••••••••••'}</span>
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="text-slate-500 hover:text-slate-800 p-1"
+                        title={showPassword ? 'Hide Password' : 'Show Password'}
+                      >
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    className="btn-secondary text-xs px-4 py-2 justify-center font-extrabold rounded-xl border border-slate-300"
+                  >
+                    <span>Change Password</span>
+                  </button>
+                </div>
+              </div>
+
             </div>
+
           </div>
         )}
 
