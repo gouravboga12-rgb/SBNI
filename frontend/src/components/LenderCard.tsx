@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Lender } from '../types';
-import { Phone, MessageCircle, CheckCircle2, Star, SendHorizontal, Lock, Building2, ChevronRight, Zap } from 'lucide-react';
+import { Phone, MessageCircle, CheckCircle2, Star, SendHorizontal, Lock, Building2, Zap } from 'lucide-react';
 
 interface LenderCardProps {
   lender: Lender;
@@ -45,16 +45,16 @@ export const LenderCard: React.FC<LenderCardProps> = ({ lender, onOpenSubscripti
       {/* Left Column: Bank Logo & Details */}
       <div 
         onClick={handleApplyClick}
-        className="flex items-start gap-4 flex-1 min-w-0 w-full cursor-pointer z-10"
+        className="flex items-start gap-3.5 sm:gap-4 flex-1 min-w-0 w-full cursor-pointer z-10"
       >
         
-        {/* Institution Brand Avatar / Logo */}
-        <div className="w-13 h-13 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-slate-50 to-blue-50 border border-slate-200/80 p-2 flex items-center justify-center flex-shrink-0 shadow-sm group-hover:scale-105 group-hover:shadow-md transition-all duration-300">
+        {/* Institution Brand Avatar / Logo - Fixed width/height so it never stretches on mobile */}
+        <div className="w-14 h-14 min-w-[3.5rem] min-h-[3.5rem] max-w-[3.5rem] max-h-[3.5rem] rounded-2xl bg-gradient-to-br from-slate-50 to-blue-50 border border-slate-200/80 p-2 flex items-center justify-center shrink-0 shadow-sm group-hover:scale-105 group-hover:shadow-md transition-all duration-300 overflow-hidden">
           {lender.logoUrl && !imgError ? (
             <img
               src={lender.logoUrl}
               alt={lender.institutionName}
-              className="w-full h-full object-contain"
+              className="w-full h-full object-contain pointer-events-none"
               onError={() => setImgError(true)}
             />
           ) : (
@@ -71,7 +71,7 @@ export const LenderCard: React.FC<LenderCardProps> = ({ lender, onOpenSubscripti
               {lender.institutionName}
             </h3>
             <span className="badge-verified-green">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 fill-emerald-100" />
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 fill-emerald-100 shrink-0" />
               Verified Partner
             </span>
           </div>
@@ -89,7 +89,7 @@ export const LenderCard: React.FC<LenderCardProps> = ({ lender, onOpenSubscripti
 
           <div className="flex items-center gap-2 text-xs text-slate-600 font-medium mt-2 flex-wrap">
             <div className="flex items-center gap-1 text-amber-700 font-bold bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200/60">
-              <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+              <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400 shrink-0" />
               <span>{lender.rating}</span>
               <span className="text-slate-400 font-normal text-[10px]">({lender.reviewCount})</span>
             </div>
@@ -99,7 +99,7 @@ export const LenderCard: React.FC<LenderCardProps> = ({ lender, onOpenSubscripti
             </span>
           </div>
 
-          {/* Loan Category Tags */}
+          {/* Category Tags */}
           <div className="flex items-center gap-1.5 mt-2 flex-wrap text-[11px] text-slate-600 font-semibold">
             {lender.loanCategories.map((cat, idx) => (
               <span key={idx} className="bg-slate-50 text-slate-700 px-2 py-0.5 rounded border border-slate-200/70 text-[10px]">
@@ -112,7 +112,7 @@ export const LenderCard: React.FC<LenderCardProps> = ({ lender, onOpenSubscripti
       </div>
 
       {/* Right Column: Apply Now & Call/WhatsApp Action Buttons */}
-      <div className="flex flex-row sm:flex-col gap-2 flex-shrink-0 w-full sm:w-auto justify-end border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-100 z-10">
+      <div className="flex flex-row sm:flex-col gap-2 flex-shrink-0 w-full sm:w-auto justify-end border-t sm:border-t-0 pt-3 sm:pt-0 border-slate-100 z-10">
         
         {/* Apply Now Button with Subscription Badge */}
         <button
@@ -122,12 +122,12 @@ export const LenderCard: React.FC<LenderCardProps> = ({ lender, onOpenSubscripti
         >
           {isSubscribed ? (
             <>
-              <SendHorizontal className="w-4 h-4 text-blue-200" />
+              <SendHorizontal className="w-4 h-4 text-blue-200 shrink-0" />
               <span>Apply Now</span>
             </>
           ) : (
             <>
-              <Lock className="w-4 h-4 text-amber-300" />
+              <Lock className="w-4 h-4 text-amber-300 shrink-0" />
               <span>Apply Now</span>
             </>
           )}
@@ -139,7 +139,7 @@ export const LenderCard: React.FC<LenderCardProps> = ({ lender, onOpenSubscripti
               href={`tel:${lender.phone}`}
               className="btn-call-outline text-xs justify-center flex-1 font-bold"
             >
-              <Phone className="w-3.5 h-3.5 text-emerald-600 fill-emerald-600" />
+              <Phone className="w-3.5 h-3.5 text-emerald-600 fill-emerald-600 shrink-0" />
               <span>Call</span>
             </a>
 
@@ -150,7 +150,7 @@ export const LenderCard: React.FC<LenderCardProps> = ({ lender, onOpenSubscripti
                 rel="noreferrer"
                 className="btn-whatsapp-outline text-xs justify-center flex-1 font-bold"
               >
-                <MessageCircle className="w-3.5 h-3.5 text-emerald-600 fill-emerald-600" />
+                <MessageCircle className="w-3.5 h-3.5 text-emerald-600 fill-emerald-600 shrink-0" />
               </a>
             )}
           </div>
@@ -159,7 +159,7 @@ export const LenderCard: React.FC<LenderCardProps> = ({ lender, onOpenSubscripti
             onClick={onOpenSubscription}
             className="text-[11px] font-extrabold text-blue-900 hover:text-blue-700 py-1 text-center flex items-center justify-center gap-1 transition-colors"
           >
-            <Zap className="w-3 h-3 text-amber-500 fill-amber-400" />
+            <Zap className="w-3 h-3 text-amber-500 fill-amber-400 shrink-0" />
             <span>Unlock Direct Contact</span>
           </button>
         )}

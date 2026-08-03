@@ -94,8 +94,8 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                   </div>
                 </div>
 
-                <div className="w-16 h-16 sm:w-18 sm:h-18 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20 shadow-xl z-10 shrink-0 group-hover:scale-105 transition-transform">
-                  <Store className="w-8 h-8 text-white" />
+                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20 shadow-xl z-10 shrink-0 group-hover:scale-105 transition-transform">
+                  <Store className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
                 </div>
               </div>
 
