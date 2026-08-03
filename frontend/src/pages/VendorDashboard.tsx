@@ -107,7 +107,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                       100% Verified Partners
                     </div>
                     <h3 className="font-extrabold text-slate-900 text-lg font-heading pt-0.5">Find & Connect with Lenders</h3>
-                    <p className="text-xs text-slate-500 font-medium">Get competitive business loans from top banks & NBFCs near you.</p>
+                    <p className="text-xs text-slate-500 font-medium">Get competitive finance options from top banks & NBFCs near you.</p>
                   </div>
                   <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 flex-shrink-0 shadow-sm group-hover:scale-105 transition-transform">
                     <Building2 className="w-6 h-6" />
@@ -173,7 +173,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                   <div className="w-12 h-12 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center text-[#003893] group-hover:scale-110 group-hover:bg-[#003893] group-hover:text-white transition-all duration-300 shadow-sm">
                     <FileText className="w-6 h-6" />
                   </div>
-                  <span className="text-xs font-extrabold text-slate-800">Loan Applications</span>
+                  <span className="text-xs font-extrabold text-slate-800">Applications</span>
                 </div>
 
                 <div 
@@ -233,8 +233,8 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                 <div className="card-white p-4 space-y-3 shadow-sm">
                   <div className="flex items-center justify-between text-xs pb-3 border-b border-slate-100">
                     <div>
-                      <div className="font-bold text-slate-900 text-sm">Loan request submitted</div>
-                      <div className="text-slate-500 text-xs mt-0.5">Business Loan • 02 May 2024</div>
+                      <div className="font-bold text-slate-900 text-sm">Enquiry request submitted</div>
+                      <div className="text-slate-500 text-xs mt-0.5">Working Capital • 02 May 2024</div>
                     </div>
                     <span className="badge-pending-amber">Pending</span>
                   </div>
@@ -318,13 +318,13 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
           </div>
         )}
 
-        {/* TAB 3: LOAN REQUESTS VIEW */}
+        {/* TAB 3: APPLICATIONS VIEW */}
         {activeTab === 'requests' && (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-2xl font-extrabold text-slate-900 font-heading">My Loan Applications & Requests</h2>
-                <p className="text-xs text-slate-500 font-medium">Track your active loan applications and lender connections</p>
+                <h2 className="text-2xl font-extrabold text-slate-900 font-heading">My Applications & Requests</h2>
+                <p className="text-xs text-slate-500 font-medium">Track your active applications and lender connections</p>
               </div>
             </div>
 
@@ -334,7 +334,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                   <span className="badge-pending-amber">Under Review</span>
                   <span className="text-xs text-slate-400">Application #REQ-9842</span>
                 </div>
-                <h3 className="font-extrabold text-slate-900 text-base">Business Working Capital Loan</h3>
+                <h3 className="font-extrabold text-slate-900 text-base">Working Capital Application</h3>
                 <div className="text-xs text-slate-600 space-y-1">
                   <div>Requested Amount: <span className="font-bold text-slate-900">₹5,00,000</span></div>
                   <div>Submitted to: <span className="font-bold text-blue-900">State Bank of India & HDFC Bank</span></div>
