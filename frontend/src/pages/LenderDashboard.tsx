@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { mockVerificationRequests } from '../services/api';
 import { VendorVerificationRequest } from '../types';
+import { BannerCarousel, BannerSlide } from '../components/BannerCarousel';
 import {
   Building2,
   Users,
@@ -23,6 +24,29 @@ import {
   Phone,
   MapPin,
 } from 'lucide-react';
+
+const LENDER_BANNER_SLIDES: BannerSlide[] = [
+  {
+    id: 'l-banner-1',
+    image: '/banners/lender_banner_1.png',
+    title: 'Finance Verified Small Businesses with High Portfolio Returns',
+  },
+  {
+    id: 'l-banner-2',
+    image: '/banners/lender_banner_2.png',
+    title: 'Instant Capital Disbursement & Vendor Growth Tracking',
+  },
+  {
+    id: 'l-banner-3',
+    image: '/banners/lender_banner_3.png',
+    title: 'Risk-Managed Credit Allocation & Automated Lead Routing',
+  },
+  {
+    id: 'l-banner-4',
+    image: '/banners/lender_banner_4.png',
+    title: 'Expand Your Lending Footprint Across Local Markets',
+  },
+];
 
 interface LenderDashboardProps {
   onOpenSubscription?: () => void;
@@ -108,20 +132,8 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({ onOpenSubscrip
         {/* VIEW 1: LENDER HOME DASHBOARD */}
         {!selectedVendor && activeTab === 'home' && (
           <div className="space-y-6">
-            {/* Top Crystal-Clear Visual Photo Banner */}
-            <div className="relative overflow-hidden rounded-3xl border border-slate-200/90 shadow-md h-44 sm:h-56 md:h-64 w-full group mb-6">
-              <img
-                src="/lender_giving_money.png"
-                alt="Lender Capital Growth"
-                className="w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-105"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent flex items-end p-4 sm:p-6">
-                <div className="bg-slate-900/90 border border-slate-700/80 backdrop-blur-md px-3.5 py-1.5 rounded-xl text-xs font-bold text-slate-100 flex items-center gap-2 shadow-lg">
-                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-                  <span>Instant Capital Disbursement & Vendor Growth</span>
-                </div>
-              </div>
-            </div>
+            {/* Top Auto-Scrolling Visual Banner Carousel with Manual Controls */}
+            <BannerCarousel slides={LENDER_BANNER_SLIDES} autoScrollIntervalMs={4000} />
 
             {/* Top Cards Hero Banner: Responsive Grid (1 col Mobile, 3 col Desktop) */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">

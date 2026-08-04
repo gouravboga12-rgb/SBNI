@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Lender } from '../types';
 import { LenderCard } from '../components/LenderCard';
 import { LoanRequestModal } from '../components/LoanRequestModal';
+import { BannerCarousel, BannerSlide } from '../components/BannerCarousel';
 import {
   Store,
   Building2,
@@ -28,6 +29,29 @@ import {
   LogOut,
 } from 'lucide-react';
 
+const VENDOR_BANNER_SLIDES: BannerSlide[] = [
+  {
+    id: 'v-banner-1',
+    image: '/banners/vendor_banner_1.png',
+    title: 'Grow Your Small Business with Direct Capital Access',
+  },
+  {
+    id: 'v-banner-2',
+    image: '/banners/vendor_banner_2.png',
+    title: 'Connect Directly with Nearby Financers & NBFCs',
+  },
+  {
+    id: 'v-banner-3',
+    image: '/banners/vendor_banner_3.png',
+    title: 'Fast Approval & Working Capital Loan Disbursement',
+  },
+  {
+    id: 'v-banner-4',
+    image: '/banners/vendor_banner_4.png',
+    title: 'Expand Shop Inventory & Business Credit',
+  },
+];
+
 interface VendorDashboardProps {
   lenders: Lender[];
   onOpenSubscription: () => void;
@@ -47,6 +71,8 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedLenderForLoan, setSelectedLenderForLoan] = useState<Lender | null>(null);
   const [loanModalOpen, setLoanModalOpen] = useState(false);
+
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   // Profile Avatar & Password Visibility State
   const [avatarUrl, setAvatarUrl] = useState<string | null>(() => {
@@ -108,20 +134,8 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
         {activeTab === 'home' && (
           <div className="space-y-6">
             
-            {/* Top Crystal-Clear Visual Photo Banner */}
-            <div className="relative overflow-hidden rounded-3xl border border-slate-200/90 shadow-md h-44 sm:h-56 md:h-64 w-full group mb-6">
-              <img
-                src="/vendor_money_lender.png"
-                alt="Vendor Capital Growth"
-                className="w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-105"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent flex items-end p-4 sm:p-6">
-                <div className="bg-slate-900/90 border border-slate-700/80 backdrop-blur-md px-3.5 py-1.5 rounded-xl text-xs font-bold text-slate-100 flex items-center gap-2 shadow-lg">
-                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-                  <span>Real-time Capital Disbursement & Approval</span>
-                </div>
-              </div>
-            </div>
+            {/* Top Auto-Scrolling Visual Banner Carousel with Manual Controls */}
+            <BannerCarousel slides={VENDOR_BANNER_SLIDES} autoScrollIntervalMs={4000} />
 
             {/* Top Cards Hero Banner: Responsive Grid (1 col Mobile, 2 col Tab, 3 col Desktop) */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
@@ -141,12 +155,24 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                   </div>
                 </div>
 
-                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20 shadow-xl z-10 shrink-0 group-hover:scale-105 transition-transform overflow-hidden">
-                  {avatarUrl ? (
-                    <img src={avatarUrl} alt="Vendor Profile" className="w-full h-full object-cover" />
-                  ) : (
-                    <Store className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
-                  )}
+                {/* Clean Vendor Profile Picture */}
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-white/80 shadow-2xl z-10 shrink-0 cursor-pointer transition-transform hover:scale-105 overflow-hidden"
+                  title="Click to change or upload profile picture"
+                >
+                  <img
+                    src={avatarUrl || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=200'}
+                    alt="Vendor Profile Picture"
+                    className="w-full h-full object-cover rounded-full"
+                  />
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleAvatarUpload}
+                    className="hidden"
+                  />
                 </div>
               </div>
 
