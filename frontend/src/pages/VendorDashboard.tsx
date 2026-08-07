@@ -150,7 +150,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                   <h2 className="text-2xl sm:text-3xl font-extrabold text-white font-heading">Ramesh Kumar</h2>
                   <div className="pt-2">
                     <span className="badge-verified-green bg-emerald-500/25 text-emerald-200 border border-emerald-400/40 shadow-sm backdrop-blur-md">
-                      <CheckCircle2 className="w-3.5 h-3.5" /> Verified Business Vendor
+                      <CheckCircle2 className="w-3.5 h-3.5" /> Verified Shop Owner
                     </span>
                   </div>
                 </div>
@@ -163,7 +163,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                 >
                   <img
                     src={avatarUrl || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=200'}
-                    alt="Vendor Profile Picture"
+                    alt="Shop Owner Profile Picture"
                     className="w-full h-full object-cover rounded-full"
                   />
                   <input
@@ -188,7 +188,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                         Verified
                       </span>
                     </div>
-                    <h3 className="font-extrabold text-slate-900 text-lg font-heading pt-1">Find Business Financers (Lenders)</h3>
+                    <h3 className="font-extrabold text-slate-900 text-lg font-heading pt-1">Find Business Money Financers</h3>
                     <p className="text-xs text-slate-500 font-medium">Discover financial partners within 10 KM radius for instant approval.</p>
                   </div>
                   <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 flex-shrink-0 shadow-sm group-hover:scale-105 transition-transform">
@@ -200,7 +200,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                   onClick={() => handleTabChange('lenders')}
                   className="btn-sbni-green mt-4 text-xs justify-center py-2.5 shadow-md font-extrabold"
                 >
-                  <span>Search Business Financers (Lenders) →</span>
+                  <span>Search Business Money Financers →</span>
                 </button>
               </div>
 
@@ -211,7 +211,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                     <div className="text-[11px] font-extrabold text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-md border border-emerald-200 w-fit flex items-center gap-1">
                       <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Plan Active
                     </div>
-                    <h3 className="font-extrabold text-slate-900 text-lg font-heading pt-1">Vendor Membership</h3>
+                    <h3 className="font-extrabold text-slate-900 text-lg font-heading pt-1">Small Shop Business Membership</h3>
                     <p className="text-xs text-slate-500 font-medium font-medium">Direct financer contacts & priority application routing active.</p>
                   </div>
                   <div className="w-12 h-12 rounded-2xl bg-amber-100/80 border border-amber-200 flex items-center justify-center text-amber-700 flex-shrink-0 shadow-sm group-hover:scale-105 transition-transform">

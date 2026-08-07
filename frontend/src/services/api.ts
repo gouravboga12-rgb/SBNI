@@ -387,7 +387,7 @@ export async function fetchSubscriptionPlans(role: 'VENDOR' | 'LENDER' = 'VENDOR
         'Unlimited Lender Phone & WhatsApp Unlocks',
         'Direct Email & Branch Contact Details',
         'Pan-India Lender Discovery',
-        'Verified Vendor Trust Badge',
+        'Verified Shop Trust Badge',
         'Dedicated Customer Support',
       ],
     },
