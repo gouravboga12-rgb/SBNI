@@ -694,11 +694,11 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({ onOpenSubscrip
 
       </div>
 
-      {/* Bottom Sticky Navigation Bar - Wide Desktop & Mobile Compatible Floating Dock */}
-      <div className="fixed bottom-0 sm:bottom-5 inset-x-0 z-50 bg-white/95 backdrop-blur-md border border-slate-200/90 py-2.5 sm:py-3.5 px-4 sm:px-10 flex items-center justify-between sm:justify-around w-full max-w-md sm:max-w-3xl lg:max-w-4xl mx-auto shadow-2xl rounded-t-2xl sm:rounded-3xl transition-all">
+      {/* Bottom Sticky Navigation Bar - Mobile & Desktop Responsive Floating Dock */}
+      <div className="fixed bottom-0 sm:bottom-5 inset-x-0 z-50 bg-white/95 backdrop-blur-md border-t sm:border border-slate-200/90 py-1.5 sm:py-3.5 px-2 sm:px-10 flex items-center justify-between sm:justify-around w-full max-w-md sm:max-w-3xl lg:max-w-4xl mx-auto shadow-2xl rounded-t-2xl sm:rounded-3xl transition-all">
         <button
           onClick={handleHomeClick}
-          className={`flex flex-col items-center justify-center gap-1 text-[11px] sm:text-xs font-extrabold py-1.5 px-3 sm:px-6 rounded-2xl transition-all whitespace-nowrap ${
+          className={`flex-1 sm:flex-initial flex flex-col items-center justify-center gap-0.5 sm:gap-1 text-[10px] sm:text-xs font-extrabold py-1 px-1 sm:px-6 rounded-xl sm:rounded-2xl transition-all whitespace-nowrap ${
             activeTab === 'home' ? 'text-[#059669] bg-emerald-50/90 shadow-2xs' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
           }`}
         >
@@ -708,23 +708,23 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({ onOpenSubscrip
 
         <button
           onClick={handleHomeClick}
-          className="flex flex-col items-center justify-center gap-1 text-[11px] sm:text-xs font-extrabold text-slate-500 hover:text-slate-800 hover:bg-slate-50 py-1.5 px-3 sm:px-6 rounded-2xl transition-all whitespace-nowrap"
+          className="flex-1 sm:flex-initial flex flex-col items-center justify-center gap-0.5 sm:gap-1 text-[10px] sm:text-xs font-extrabold text-slate-500 hover:text-slate-800 hover:bg-slate-50 py-1 px-1 sm:px-6 rounded-xl sm:rounded-2xl transition-all whitespace-nowrap"
         >
           <Users className="w-5 h-5 sm:w-6 sm:h-6 text-slate-600" />
-          <span>Shop Businesses</span>
+          <span>Businesses</span>
         </button>
 
         {/* Floating Green Action Button */}
         <button
           onClick={handleHomeClick}
-          className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white flex items-center justify-center shadow-xl hover:scale-105 transition-all -mt-7 sm:-mt-9 border-4 border-white shrink-0"
+          className="w-11 h-11 sm:w-14 sm:h-14 rounded-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white flex items-center justify-center shadow-xl hover:scale-105 transition-all -mt-5 sm:-mt-9 border-3 sm:border-4 border-white shrink-0 mx-1"
         >
-          <Plus className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
+          <Plus className="w-5 h-5 sm:w-7 sm:h-7 text-white" />
         </button>
 
         <button
           onClick={handleHomeClick}
-          className="flex flex-col items-center justify-center gap-1 text-[11px] sm:text-xs font-extrabold text-slate-500 hover:text-slate-800 hover:bg-slate-50 py-1.5 px-3 sm:px-6 rounded-2xl transition-all whitespace-nowrap"
+          className="flex-1 sm:flex-initial flex flex-col items-center justify-center gap-0.5 sm:gap-1 text-[10px] sm:text-xs font-extrabold text-slate-500 hover:text-slate-800 hover:bg-slate-50 py-1 px-1 sm:px-6 rounded-xl sm:rounded-2xl transition-all whitespace-nowrap"
         >
           <FileText className="w-5 h-5 sm:w-6 sm:h-6 text-slate-600" />
           <span>Reports</span>
@@ -732,7 +732,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({ onOpenSubscrip
 
         <button
           onClick={handleProfileClick}
-          className={`flex flex-col items-center justify-center gap-1 text-[11px] sm:text-xs font-extrabold py-1.5 px-3 sm:px-6 rounded-2xl transition-all whitespace-nowrap ${
+          className={`flex-1 sm:flex-initial flex flex-col items-center justify-center gap-0.5 sm:gap-1 text-[10px] sm:text-xs font-extrabold py-1 px-1 sm:px-6 rounded-xl sm:rounded-2xl transition-all whitespace-nowrap ${
             activeTab === 'profile' ? 'text-[#059669] bg-emerald-50/90 shadow-2xs' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
           }`}
         >
