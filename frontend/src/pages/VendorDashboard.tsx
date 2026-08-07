@@ -264,7 +264,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                   <div className="w-12 h-12 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center text-[#003893] group-hover:scale-110 group-hover:bg-[#003893] group-hover:text-white transition-all duration-300 shadow-sm">
                     <Users className="w-6 h-6" />
                   </div>
-                  <span className="text-xs font-extrabold text-slate-800">Business Financers</span>
+                  <span className="text-xs font-extrabold text-slate-800">Business Money Financers</span>
                 </div>
 
                 <div 
@@ -282,10 +282,10 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
             {/* Main Content Area: Left (Featured Lenders Grid) & Right (Recent Activity Sidebar) */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               
-              {/* Left Column (2 Cols on Desktop): Business Financers (Lenders) Grid */}
+              {/* Left Column (2 Cols on Desktop): Business Money Financers (Lenders) Grid */}
               <div className="lg:col-span-2 space-y-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="font-bold text-slate-900 text-lg font-heading">Recommended Business Financers (Lenders)</h3>
+                  <h3 className="font-bold text-slate-900 text-lg font-heading">Recommended Business Money Financers (Lenders)</h3>
                   <button
                     onClick={() => handleTabChange('lenders')}
                     className="text-xs text-blue-700 font-bold hover:underline flex items-center gap-1"
@@ -333,9 +333,9 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                 <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-900 flex items-start gap-3 font-medium shadow-sm">
                   <ShieldCheck className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
                   <div>
-                    <div className="font-bold text-slate-900 mb-0.5">100% Verified Business Financers</div>
+                    <div className="font-bold text-slate-900 mb-0.5">100% Verified Business Money Financers</div>
                     <p className="text-slate-600 leading-relaxed text-[11px]">
-                      All registered business financers & credit partners undergo strict compliance verification. Your data is encrypted & safe.
+                      All registered business money financers & credit partners undergo strict compliance verification. Your data is encrypted & safe.
                     </p>
                   </div>
                 </div>
