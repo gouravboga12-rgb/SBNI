@@ -72,6 +72,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [aadhaarFile, setAadhaarFile] = useState<File | null>(null);
   const [licenseFile, setLicenseFile] = useState<File | null>(null);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [shopPhotoFile, setShopPhotoFile] = useState<File | null>(null);
+  const [liveSelfieFile, setLiveSelfieFile] = useState<File | null>(null);
 
   // Registration Passwords with Eye Toggles
   const [regPassword, setRegPassword] = useState('');
@@ -125,6 +127,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
     if (!aadhaarFile) {
       setFormError('Please upload your Aadhaar card document to proceed.');
+      return;
+    }
+
+    if (!shopPhotoFile) {
+      setFormError('Please upload your Shop / Home Business photo to proceed.');
+      return;
+    }
+
+    if (!liveSelfieFile) {
+      setFormError('Please upload a Live photo with person standing in front of shop or home business.');
       return;
     }
 
@@ -232,7 +244,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               </div>
             </div>
 
-            {/* TOP HALF CARD: Small Business Owner (Vendor) */}
+            {/* TOP HALF CARD: Small Shop Business */}
             <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-br from-blue-50/90 via-slate-50 to-blue-50/40 border-2 border-blue-200/80 shadow-md space-y-4 hover:border-[#003893] transition-all">
               <div className="flex items-center gap-3.5">
                 <div className="w-12 h-12 rounded-2xl bg-[#003893] text-white flex items-center justify-center shrink-0 shadow-md">
@@ -240,15 +252,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 </div>
                 <div>
                   <h3 className="text-lg font-extrabold text-[#003893] font-heading leading-snug">
-                    Small Business (Vendor)
+                    Small Shop Business
                   </h3>
-                  <p className="text-xs text-slate-600 font-medium mt-0.5">
-                    For shops, retailers, traders & small business owners seeking fast, verified financing
+                  <p className="text-xs text-slate-600 font-medium mt-0.5 leading-relaxed">
+                    Any shop or home business can login to check nearby business financers for money
                   </p>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 pt-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                 <button
                   type="button"
                   onClick={() => {
@@ -257,9 +269,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     setViewStep('FORM');
                     setFormError(null);
                   }}
-                  className="py-3 px-3 rounded-xl bg-[#003893] hover:bg-[#002669] text-white font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md transition-all active:scale-[0.98]"
+                  className="py-3 px-3 rounded-xl bg-[#003893] hover:bg-[#002669] text-white font-extrabold text-xs sm:text-xs flex items-center justify-center gap-1.5 shadow-md transition-all active:scale-[0.98]"
                 >
-                  <User className="w-4 h-4" /> Login as Vendor
+                  <User className="w-4 h-4 shrink-0" /> Login as Shop or Home Business Owner
                 </button>
 
                 <button
@@ -270,14 +282,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     setViewStep('FORM');
                     setFormError(null);
                   }}
-                  className="py-3 px-3 rounded-xl bg-white hover:bg-blue-50 text-[#003893] border-2 border-[#003893] font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm transition-all active:scale-[0.98]"
+                  className="py-3 px-3 rounded-xl bg-white hover:bg-blue-50 text-[#003893] border-2 border-[#003893] font-extrabold text-xs sm:text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all active:scale-[0.98]"
                 >
-                  <UserPlus className="w-4 h-4" /> Sign Up as Vendor
+                  <UserPlus className="w-4 h-4 shrink-0" /> Sign Up as Shop or Home Business Owner
                 </button>
               </div>
             </div>
 
-            {/* BOTTOM HALF CARD: Business Financer (Lender) */}
+            {/* BOTTOM HALF CARD: Business Money Financer */}
             <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-br from-emerald-50/90 via-slate-50 to-emerald-50/40 border-2 border-emerald-200/80 shadow-md space-y-4 hover:border-[#007a33] transition-all">
               <div className="flex items-center gap-3.5">
                 <div className="w-12 h-12 rounded-2xl bg-[#007a33] text-white flex items-center justify-center shrink-0 shadow-md">
@@ -285,15 +297,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 </div>
                 <div>
                   <h3 className="text-lg font-extrabold text-[#007a33] font-heading leading-snug">
-                    Business Financer (Lender)
+                    Business Money Financer
                   </h3>
-                  <p className="text-xs text-slate-600 font-medium mt-0.5">
-                    For capital financers, financial institutions, NBFCs & credit managers
+                  <p className="text-xs text-slate-600 font-medium mt-0.5 leading-relaxed">
+                    Sign up as a business money financer to provide money & capital directly to verified local shops and home businesses nearby
                   </p>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 pt-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                 <button
                   type="button"
                   onClick={() => {
@@ -304,7 +316,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   }}
                   className="py-3 px-3 rounded-xl bg-[#007a33] hover:bg-[#005e27] text-white font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md transition-all active:scale-[0.98]"
                 >
-                  <User className="w-4 h-4" /> Login Financer
+                  <User className="w-4 h-4 shrink-0" /> Login as Money Financer
                 </button>
 
                 <button
@@ -317,7 +329,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   }}
                   className="py-3 px-3 rounded-xl bg-white hover:bg-emerald-50 text-[#007a33] border-2 border-[#007a33] font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm transition-all active:scale-[0.98]"
                 >
-                  <UserPlus className="w-4 h-4" /> Sign Up Financer
+                  <UserPlus className="w-4 h-4 shrink-0" /> Sign Up as Money Financer
                 </button>
               </div>
             </div>
@@ -349,7 +361,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   color: isVendor ? '#003893' : '#007a33',
                 }}
               >
-                {isVendor ? 'Small Business' : 'Business Financer'}
+                {isVendor ? 'Small Shop Business' : 'Business Financer'}
               </div>
             </div>
 
@@ -368,20 +380,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 >
                   {isRegister
                     ? isVendor
-                      ? 'Small Business (Vendor) Sign Up'
-                      : 'Business Financer (Lender) Registration'
+                      ? 'Shop / Home Business Owner Sign Up'
+                      : 'Business Money Financer Registration'
                     : isVendor
-                    ? 'Small Business (Vendor) Login'
-                    : 'Business Financer (Lender) Login'}
+                    ? 'Shop / Home Business Owner Login'
+                    : 'Business Money Financer Login'}
                 </h2>
                 <p className="text-xs text-slate-500 font-medium mt-0.5">
                   {isRegister
                     ? isVendor
-                      ? 'Enter your small business details & KYC documents to create your profile'
-                      : 'Register your business financing institution & credentials'
+                      ? 'Enter your shop or home business details & verification documents to create your account'
+                      : 'Sign up as a business money financer to provide money & capital to verified shop or home business owners'
                     : isVendor
-                    ? 'Login to manage small business loan applications & connect with financers'
-                    : 'Lend & finance small businesses safely'}
+                    ? 'Login as shop or home business owner to check nearby business financers for money'
+                    : 'Login as business money financer to provide money & capital to verified small businesses'}
                 </p>
               </div>
             </div>
@@ -415,7 +427,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       className="w-full py-2.5 px-3 rounded-xl bg-[#003893] hover:bg-[#002d78] text-white text-xs font-bold flex items-center justify-between transition-all shadow-sm"
                     >
                       <div className="text-left">
-                        <div className="font-extrabold">Small Business Demo (Ramesh Kumar - Shop Owner)</div>
+                        <div className="font-extrabold">Small Shop Business Demo (Ramesh Kumar - Shop Owner)</div>
                         <div className="text-[10px] text-blue-100 font-normal">vendor@sbnimoney.com • Pass: vendor123</div>
                       </div>
                       <span className="bg-white/20 px-2.5 py-1 rounded text-[10px] font-bold">Login →</span>
@@ -744,6 +756,61 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                         {licenseFile ? licenseFile.name : 'Upload Shop License / Trade License (Optional)'}
                       </div>
                       <div className="text-[9px] text-slate-400">PDF, JPG, PNG up to 10MB</div>
+                    </label>
+                  </div>
+
+                  {/* Shop / Home Business Photo Upload */}
+                  <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs font-extrabold text-slate-800">Shop / Home Business Photo *</span>
+                      {shopPhotoFile ? (
+                        <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3" /> Uploaded
+                        </span>
+                      ) : (
+                        <span className="text-[10px] text-rose-600 font-bold">Required</span>
+                      )}
+                    </div>
+                    <label className="border-2 border-dashed border-slate-300 hover:border-[#003893] rounded-xl p-2.5 text-center cursor-pointer block bg-white transition-colors">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => e.target.files?.[0] && setShopPhotoFile(e.target.files[0])}
+                        className="hidden"
+                      />
+                      <Camera className="w-5 h-5 text-[#003893] mx-auto mb-1" />
+                      <div className="text-[11px] font-bold text-slate-700 truncate">
+                        {shopPhotoFile ? shopPhotoFile.name : 'Upload Shop / Business Photo'}
+                      </div>
+                      <div className="text-[9px] text-slate-400">Shop Exterior / Interior Photo</div>
+                    </label>
+                  </div>
+
+                  {/* Live Photo with Person in Front of Shop / Home Business */}
+                  <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs font-extrabold text-slate-800">Live Photo in Front of Shop *</span>
+                      {liveSelfieFile ? (
+                        <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3" /> Uploaded
+                        </span>
+                      ) : (
+                        <span className="text-[10px] text-rose-600 font-bold">Required</span>
+                      )}
+                    </div>
+                    <label className="border-2 border-dashed border-slate-300 hover:border-[#003893] rounded-xl p-2.5 text-center cursor-pointer block bg-white transition-colors">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        capture="user"
+                        onChange={(e) => e.target.files?.[0] && setLiveSelfieFile(e.target.files[0])}
+                        className="hidden"
+                      />
+                      <Camera className="w-5 h-5 text-[#003893] mx-auto mb-1" />
+                      <div className="text-[11px] font-bold text-slate-700 truncate">
+                        {liveSelfieFile ? liveSelfieFile.name : 'Live Photo with Person in Front'}
+                      </div>
+                      <div className="text-[9px] text-slate-400">Person Standing in Front of Shop</div>
                     </label>
                   </div>
                 </div>

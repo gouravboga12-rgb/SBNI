@@ -47,8 +47,14 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
     }
   };
 
-  const handleSubscribe = () => {
-    if (!selectedPlan) return;
+  const handleSubscribe = (targetPlan?: SubscriptionPlan, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    const planToSubscribe = targetPlan || selectedPlan;
+    if (!planToSubscribe) return;
+    if (targetPlan && targetPlan.id !== selectedPlan?.id) {
+      setSelectedPlan(targetPlan);
+    }
+
     setLoading(true);
 
     setTimeout(() => {
@@ -59,7 +65,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
       }
       localStorage.setItem('sbni_subscribed', 'true');
       setLoading(false);
-      setSuccessMessage(`🎉 Subscription Activated! ${selectedPlan.name} is now active.`);
+      setSuccessMessage(`🎉 Subscription Activated! ${planToSubscribe.name} is now active.`);
       setTimeout(() => {
         onSubscriptionSuccess();
         onClose();
@@ -108,6 +114,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mb-4">
           {plans.map((plan) => {
             const isSelected = selectedPlan?.id === plan.id;
+            const planPrice = Math.max(0, plan.price - (plan.price * discountPercent) / 100);
             return (
               <div
                 key={plan.id}
@@ -140,8 +147,12 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                   <h3 className="text-xs sm:text-sm font-bold text-slate-900 font-heading mb-1 leading-snug">{plan.name}</h3>
                   
                   <div className="flex items-baseline gap-1 mb-1.5">
-                    <span className="text-xl sm:text-2xl font-extrabold text-slate-900 font-heading">₹{plan.price}</span>
-                    <span className="text-[10px] text-slate-400 line-through">₹{plan.originalPrice}</span>
+                    <span className="text-xl sm:text-2xl font-extrabold text-slate-900 font-heading">₹{planPrice}</span>
+                    {discountPercent > 0 ? (
+                      <span className="text-[10px] text-slate-400 line-through">₹{plan.price}</span>
+                    ) : (
+                      <span className="text-[10px] text-slate-400 line-through">₹{plan.originalPrice}</span>
+                    )}
                   </div>
 
                   <p className="text-[10px] text-slate-500 mb-2.5 leading-tight min-h-[24px]">{plan.description}</p>
@@ -157,17 +168,21 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                 </div>
 
                 <div className="pt-2 border-t border-slate-200/80 text-center mt-auto">
-                  <span
-                    className={`text-[10px] font-extrabold px-2.5 py-1 rounded-full inline-block w-full transition-colors ${
+                  <button
+                    type="button"
+                    onClick={(e) => handleSubscribe(plan, e)}
+                    disabled={loading}
+                    className={`w-full text-xs font-extrabold py-2 px-2 rounded-xl transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 ${
                       isSelected
                         ? isLender
-                          ? 'bg-[#059669] text-white shadow-sm'
-                          : 'bg-[#003893] text-white shadow-sm'
-                        : 'bg-slate-200/80 text-slate-700 hover:bg-slate-300'
+                          ? 'bg-[#059669] hover:bg-[#047857] text-white ring-2 ring-emerald-300'
+                          : 'bg-[#003893] hover:bg-[#002d78] text-white ring-2 ring-blue-300'
+                        : 'bg-emerald-600 hover:bg-emerald-700 text-white'
                     }`}
                   >
-                    {isSelected ? 'Selected' : 'Select Plan'}
-                  </span>
+                    <Sparkles className="w-3.5 h-3.5 text-amber-300 shrink-0" />
+                    <span>{loading && selectedPlan?.id === plan.id ? 'Processing...' : `Pay ₹${planPrice} Now`}</span>
+                  </button>
                 </div>
               </div>
             );
@@ -231,7 +246,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
           </div>
 
           <button
-            onClick={handleSubscribe}
+            onClick={() => handleSubscribe()}
             disabled={loading}
             className={`w-full sm:w-auto py-3 px-8 text-xs sm:text-sm font-extrabold rounded-xl shadow-md flex items-center justify-center gap-2 transition-all ${
               isLender

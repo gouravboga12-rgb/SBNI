@@ -15,6 +15,9 @@ import {
   Send,
   CreditCard,
   Wallet,
+  Camera,
+  Store,
+  UserCheck,
 } from 'lucide-react';
 
 interface LoanRequestModalProps {
@@ -33,12 +36,13 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
-  const [requiredAmount, setRequiredAmount] = useState('');
   const [monthlyIncome, setMonthlyIncome] = useState('');
   const [bankAccountDetails, setBankAccountDetails] = useState('');
   
   const [panFile, setPanFile] = useState<File | null>(null);
   const [aadhaarFile, setAadhaarFile] = useState<File | null>(null);
+  const [shopPhotoFile, setShopPhotoFile] = useState<File | null>(null);
+  const [liveSelfieFile, setLiveSelfieFile] = useState<File | null>(null);
 
   const [formError, setFormError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
@@ -78,10 +82,6 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
       setFormError('Please enter your Email ID.');
       return;
     }
-    if (!requiredAmount.trim()) {
-      setFormError('Please enter the Required Amount.');
-      return;
-    }
     if (!monthlyIncome.trim()) {
       setFormError('Please enter your Monthly Income.');
       return;
@@ -92,6 +92,14 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
     }
     if (!aadhaarFile) {
       setFormError('Please upload your Aadhaar card document.');
+      return;
+    }
+    if (!shopPhotoFile) {
+      setFormError('Please upload your Shop / Home Business photo.');
+      return;
+    }
+    if (!liveSelfieFile) {
+      setFormError('Please upload a Live photo with person standing in front of shop or home business.');
       return;
     }
 
@@ -113,7 +121,6 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
       emailId: email,
       panNumber: panFile.name.replace(/\.[^/.]+$/, '').toUpperCase() || 'ABCDE1234F',
       aadhaarNumber: aadhaarFile.name ? 'XXXX-XXXX-8921' : '9876-5432-1098',
-      requiredAmount: requiredAmount,
       monthlyIncome: monthlyIncome,
       lenderId: lender.id,
       lenderName: lender.institutionName,
@@ -130,8 +137,12 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
         existingList = JSON.parse(existingStr);
       } catch (e) {}
     }
-    const updatedList = [newRequest, ...existingList];
-    localStorage.setItem('sbni_vendor_requests', JSON.stringify(updatedList));
+    existingList.unshift(newRequest);
+    localStorage.setItem('sbni_vendor_requests', JSON.stringify(existingList));
+
+    // Also mark applied status for this specific lender card
+    localStorage.setItem(`sbni_applied_${lender.id}`, 'true');
+    window.dispatchEvent(new Event('sbni_request_submitted'));
 
     setSubmitted(true);
     if (onSuccess) {
@@ -204,7 +215,7 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
               <div>
                 <h3 className="text-xl font-extrabold text-slate-900 font-heading">Enquiry Submitted Successfully!</h3>
                 <p className="text-xs text-slate-600 mt-1 max-w-sm mx-auto">
-                  Your enquiry for <strong className="text-emerald-700">₹{requiredAmount}</strong> has been successfully sent to <strong className="text-slate-900">{lender.institutionName}</strong>.
+                  Your enquiry has been successfully sent to <strong className="text-slate-900">{lender.institutionName}</strong>.
                 </p>
               </div>
 
@@ -275,39 +286,20 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {/* Required Amount Field */}
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Required Amount *</label>
-                  <div className="relative">
-                    <IndianRupee className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                    <input
-                      type="number"
-                      placeholder="e.g. 250000"
-                      value={requiredAmount}
-                      onChange={(e) => setRequiredAmount(e.target.value)}
-                      required
-                      min="1000"
-                      className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 placeholder-slate-400 outline-none focus:border-[#003893] transition-colors"
-                    />
-                  </div>
-                </div>
-
-                {/* Monthly Income Field */}
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Monthly Income *</label>
-                  <div className="relative">
-                    <Wallet className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                    <input
-                      type="number"
-                      placeholder="e.g. 50000"
-                      value={monthlyIncome}
-                      onChange={(e) => setMonthlyIncome(e.target.value)}
-                      required
-                      min="1000"
-                      className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 placeholder-slate-400 outline-none focus:border-[#003893] transition-colors"
-                    />
-                  </div>
+              {/* Monthly Income Field */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Monthly Income *</label>
+                <div className="relative">
+                  <Wallet className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <input
+                    type="number"
+                    placeholder="e.g. 50000"
+                    value={monthlyIncome}
+                    onChange={(e) => setMonthlyIncome(e.target.value)}
+                    required
+                    min="1000"
+                    className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 placeholder-slate-400 outline-none focus:border-[#003893] transition-colors"
+                  />
                 </div>
               </div>
 
@@ -364,6 +356,70 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
                       {aadhaarFile ? aadhaarFile.name : 'Upload Aadhaar Card'}
                     </div>
                     <div className="text-[9px] text-slate-400">PDF, JPG, PNG</div>
+                  </label>
+                </div>
+              </div>
+
+              {/* Shop Photo & Live Selfie Verification Uploads */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                {/* Shop / Home Business Photo Upload */}
+                <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs font-extrabold text-slate-800 flex items-center gap-1">
+                      <Store className="w-3.5 h-3.5 text-[#003893]" />
+                      Shop / Business Photo *
+                    </span>
+                    {shopPhotoFile ? (
+                      <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3" /> Uploaded
+                      </span>
+                    ) : (
+                      <span className="text-[10px] text-rose-600 font-bold">Required</span>
+                    )}
+                  </div>
+                  <label className="border-2 border-dashed border-slate-300 hover:border-[#003893] rounded-xl p-2.5 text-center cursor-pointer block bg-white transition-colors">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => e.target.files?.[0] && setShopPhotoFile(e.target.files[0])}
+                      className="hidden"
+                    />
+                    <Camera className="w-5 h-5 text-[#003893] mx-auto mb-1" />
+                    <div className="text-[11px] font-bold text-slate-700 truncate">
+                      {shopPhotoFile ? shopPhotoFile.name : 'Upload Shop Photo'}
+                    </div>
+                    <div className="text-[9px] text-slate-400">Shop / Home Business Exterior</div>
+                  </label>
+                </div>
+
+                {/* Live Photo with Person in front of Shop */}
+                <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs font-extrabold text-slate-800 flex items-center gap-1">
+                      <UserCheck className="w-3.5 h-3.5 text-[#003893]" />
+                      Live Photo in Front *
+                    </span>
+                    {liveSelfieFile ? (
+                      <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3" /> Uploaded
+                      </span>
+                    ) : (
+                      <span className="text-[10px] text-rose-600 font-bold">Required</span>
+                    )}
+                  </div>
+                  <label className="border-2 border-dashed border-slate-300 hover:border-[#003893] rounded-xl p-2.5 text-center cursor-pointer block bg-white transition-colors">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      capture="user"
+                      onChange={(e) => e.target.files?.[0] && setLiveSelfieFile(e.target.files[0])}
+                      className="hidden"
+                    />
+                    <Camera className="w-5 h-5 text-[#003893] mx-auto mb-1" />
+                    <div className="text-[11px] font-bold text-slate-700 truncate">
+                      {liveSelfieFile ? liveSelfieFile.name : 'Photo in Front of Shop'}
+                    </div>
+                    <div className="text-[9px] text-slate-400">Live Photo / Selfie in Front</div>
                   </label>
                 </div>
               </div>

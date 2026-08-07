@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Lender } from '../types';
-import { Phone, MessageCircle, CheckCircle2, Star, SendHorizontal, Lock, Building2, Zap } from 'lucide-react';
+import { Phone, MessageCircle, CheckCircle2, SendHorizontal, Lock, Zap, TrendingUp, Coins, MapPin } from 'lucide-react';
 
 interface LenderCardProps {
   lender: Lender;
@@ -10,6 +10,34 @@ interface LenderCardProps {
 
 export const LenderCard: React.FC<LenderCardProps> = ({ lender, onOpenSubscription, onRequestLoan }) => {
   const [imgError, setImgError] = useState(false);
+
+  const checkHasApplied = (id: string) => {
+    try {
+      if (localStorage.getItem(`sbni_applied_${id}`) === 'true') return true;
+      const reqsStr = localStorage.getItem('sbni_vendor_requests');
+      if (reqsStr) {
+        const reqs = JSON.parse(reqsStr);
+        if (Array.isArray(reqs) && reqs.some((r: any) => r.lenderId === id)) {
+          return true;
+        }
+      }
+    } catch (e) {}
+    return false;
+  };
+
+  const [hasApplied, setHasApplied] = useState(() => checkHasApplied(lender.id));
+
+  useEffect(() => {
+    const handleUpdate = () => {
+      setHasApplied(checkHasApplied(lender.id));
+    };
+    window.addEventListener('sbni_request_submitted', handleUpdate);
+    window.addEventListener('storage', handleUpdate);
+    return () => {
+      window.removeEventListener('sbni_request_submitted', handleUpdate);
+      window.removeEventListener('storage', handleUpdate);
+    };
+  }, [lender.id]);
 
   const checkSubscription = () => {
     return (
@@ -36,19 +64,22 @@ export const LenderCard: React.FC<LenderCardProps> = ({ lender, onOpenSubscripti
 
   const isSubscribed = checkSubscription();
 
+  const minAmt = lender.minLoanAmount ? lender.minLoanAmount.toLocaleString('en-IN') : '10,000';
+  const maxAmt = lender.maxLoanAmount ? lender.maxLoanAmount.toLocaleString('en-IN') : '1,00,000';
+
   return (
     <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-sm hover:shadow-xl hover:border-blue-300/80 transition-all duration-300 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 group relative overflow-hidden border-l-4 border-l-[#003893]">
       
       {/* Background Subtle Gradient Glow */}
       <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50/50 rounded-full blur-2xl pointer-events-none group-hover:bg-blue-100/60 transition-colors" />
 
-      {/* Left Column: Bank Logo & Details */}
+      {/* Left Column: Financer Logo & Details */}
       <div 
         onClick={handleApplyClick}
         className="flex items-start gap-3.5 sm:gap-4 flex-1 min-w-0 w-full cursor-pointer z-10"
       >
         
-        {/* Institution Brand Avatar / Logo - Fixed width/height so it never stretches on mobile */}
+        {/* Institution Brand Avatar / Logo */}
         <div className="w-14 h-14 min-w-[3.5rem] min-h-[3.5rem] max-w-[3.5rem] max-h-[3.5rem] rounded-2xl bg-gradient-to-br from-slate-50 to-blue-50 border border-slate-200/80 p-2 flex items-center justify-center shrink-0 shadow-sm group-hover:scale-105 group-hover:shadow-md transition-all duration-300 overflow-hidden">
           {lender.logoUrl && !imgError ? (
             <img
@@ -65,7 +96,7 @@ export const LenderCard: React.FC<LenderCardProps> = ({ lender, onOpenSubscripti
         </div>
 
         {/* Institution Information */}
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 space-y-1.5">
           <div className="flex items-center gap-2 flex-wrap">
             <h3 className="font-extrabold text-slate-900 text-base sm:text-lg font-heading leading-tight truncate group-hover:text-[#003893] transition-colors">
               {lender.institutionName}
@@ -76,68 +107,69 @@ export const LenderCard: React.FC<LenderCardProps> = ({ lender, onOpenSubscripti
             </span>
           </div>
 
-          <div className="text-xs text-slate-500 font-semibold mt-1 flex items-center gap-2 flex-wrap">
-            <span className="text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md text-[11px] font-bold">
-              {lender.institutionType}
-            </span>
-            {lender.minInterestRate && (
-              <span className="text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md text-[11px] font-bold border border-blue-100">
-                From {lender.minInterestRate}% p.a.
-              </span>
-            )}
-          </div>
-
-          <div className="flex items-center gap-2 text-xs text-slate-600 font-medium mt-2 flex-wrap">
-            <div className="flex items-center gap-1 text-amber-700 font-bold bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200/60">
-              <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400 shrink-0" />
-              <span>{lender.rating}</span>
-              <span className="text-slate-400 font-normal text-[10px]">({lender.reviewCount})</span>
-            </div>
-            <span className="text-slate-300">•</span>
-            <span className="font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md text-[11px]">
-              {lender.distanceKm} KM away
+          {/* Success Rate Badge */}
+          <div className="flex items-center gap-2 text-xs flex-wrap pt-0.5">
+            <span className="text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-lg text-[11px] font-extrabold border border-emerald-200/80 flex items-center gap-1.5 shadow-2xs">
+              <TrendingUp className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+              <span>80% - 90% Success Rate on Borrowing Money</span>
             </span>
           </div>
 
-          {/* Category Tags */}
-          <div className="flex items-center gap-1.5 mt-2 flex-wrap text-[11px] text-slate-600 font-semibold">
-            {lender.loanCategories.map((cat, idx) => (
-              <span key={idx} className="bg-slate-50 text-slate-700 px-2 py-0.5 rounded border border-slate-200/70 text-[10px]">
-                {cat}
-              </span>
-            ))}
+          {/* Money Range Tag & Distance */}
+          <div className="flex items-center gap-2 text-xs flex-wrap pt-0.5">
+            <span className="text-blue-900 bg-blue-50 px-2.5 py-1 rounded-lg text-[11px] font-extrabold border border-blue-200/80 flex items-center gap-1.5 shadow-2xs">
+              <Coins className="w-3.5 h-3.5 text-[#003893] shrink-0" />
+              <span>Limit: ₹{minAmt} to ₹{maxAmt}</span>
+            </span>
+
+            <span className="text-slate-700 bg-slate-100 px-2.5 py-1 rounded-lg text-[11px] font-bold border border-slate-200/70 flex items-center gap-1">
+              <MapPin className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+              <span>{lender.distanceKm} KM away</span>
+            </span>
           </div>
         </div>
 
       </div>
 
-      {/* Right Column: Apply Now & Call/WhatsApp Action Buttons */}
-      <div className="flex flex-row sm:flex-col gap-2 flex-shrink-0 w-full sm:w-auto justify-end border-t sm:border-t-0 pt-3 sm:pt-0 border-slate-100 z-10">
+      {/* Right Column: Apply Now, Phone Call & WhatsApp Message Buttons */}
+      <div className="flex flex-col gap-2 flex-shrink-0 w-full sm:w-auto justify-end border-t sm:border-t-0 pt-3 sm:pt-0 border-slate-100 z-10 min-w-[130px]">
         
-        {/* Apply Now Button with Subscription Badge */}
-        <button
-          type="button"
-          onClick={handleApplyClick}
-          className="btn-sbni-blue text-xs py-2.5 px-4 font-extrabold justify-center flex-1 sm:flex-initial flex items-center gap-2 shadow-md hover:shadow-lg transition-all rounded-xl"
-        >
-          {isSubscribed ? (
-            <>
-              <SendHorizontal className="w-4 h-4 text-blue-200 shrink-0" />
-              <span>Apply Now</span>
-            </>
-          ) : (
-            <>
-              <Lock className="w-4 h-4 text-amber-300 shrink-0" />
-              <span>Apply Now</span>
-            </>
-          )}
-        </button>
+        {/* Apply Now Button */}
+        {hasApplied ? (
+          <button
+            type="button"
+            onClick={handleApplyClick}
+            className="py-2.5 px-4 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-300 font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-xs hover:bg-emerald-100 transition-all cursor-pointer"
+          >
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span>Applied ✓</span>
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={handleApplyClick}
+            className="btn-sbni-blue text-xs py-2.5 px-4 font-extrabold justify-center flex items-center gap-2 shadow-md hover:shadow-lg transition-all rounded-xl cursor-pointer"
+          >
+            {isSubscribed ? (
+              <>
+                <SendHorizontal className="w-4 h-4 text-blue-200 shrink-0" />
+                <span>Apply Now</span>
+              </>
+            ) : (
+              <>
+                <Lock className="w-4 h-4 text-amber-300 shrink-0" />
+                <span>Apply Now</span>
+              </>
+            )}
+          </button>
+        )}
 
+        {/* Phone Call & WhatsApp Message Options - Always Visible */}
         {lender.contactUnlocked || isSubscribed ? (
           <div className="flex items-center gap-1.5">
             <a
               href={`tel:${lender.phone}`}
-              className="btn-call-outline text-xs justify-center flex-1 font-bold"
+              className="btn-call-outline text-xs justify-center flex-1 font-bold py-2 px-3 flex items-center gap-1"
             >
               <Phone className="w-3.5 h-3.5 text-emerald-600 fill-emerald-600 shrink-0" />
               <span>Call</span>
@@ -148,7 +180,7 @@ export const LenderCard: React.FC<LenderCardProps> = ({ lender, onOpenSubscripti
                 href={lender.whatsAppUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="btn-whatsapp-outline text-xs justify-center flex-1 font-bold"
+                className="btn-whatsapp-outline text-xs justify-center flex-1 font-bold py-2 px-3 flex items-center gap-1"
               >
                 <MessageCircle className="w-3.5 h-3.5 text-emerald-600 fill-emerald-600 shrink-0" />
               </a>

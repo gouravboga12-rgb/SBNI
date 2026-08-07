@@ -188,7 +188,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                         Verified
                       </span>
                     </div>
-                    <h3 className="font-extrabold text-slate-900 text-lg font-heading pt-1">Find Nearby Lenders</h3>
+                    <h3 className="font-extrabold text-slate-900 text-lg font-heading pt-1">Find Business Financers (Lenders)</h3>
                     <p className="text-xs text-slate-500 font-medium">Discover financial partners within 10 KM radius for instant approval.</p>
                   </div>
                   <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 flex-shrink-0 shadow-sm group-hover:scale-105 transition-transform">
@@ -200,7 +200,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                   onClick={() => handleTabChange('lenders')}
                   className="btn-sbni-green mt-4 text-xs justify-center py-2.5 shadow-md font-extrabold"
                 >
-                  <span>Search Nearby Lenders →</span>
+                  <span>Search Business Financers (Lenders) →</span>
                 </button>
               </div>
 
@@ -212,7 +212,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                       <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Plan Active
                     </div>
                     <h3 className="font-extrabold text-slate-900 text-lg font-heading pt-1">Vendor Membership</h3>
-                    <p className="text-xs text-slate-500 font-medium">Direct lender contacts & priority application routing active.</p>
+                    <p className="text-xs text-slate-500 font-medium font-medium">Direct financer contacts & priority application routing active.</p>
                   </div>
                   <div className="w-12 h-12 rounded-2xl bg-amber-100/80 border border-amber-200 flex items-center justify-center text-amber-700 flex-shrink-0 shadow-sm group-hover:scale-105 transition-transform">
                     <Headphones className="w-6 h-6" />
@@ -264,7 +264,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                   <div className="w-12 h-12 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center text-[#003893] group-hover:scale-110 group-hover:bg-[#003893] group-hover:text-white transition-all duration-300 shadow-sm">
                     <Users className="w-6 h-6" />
                   </div>
-                  <span className="text-xs font-extrabold text-slate-800">Partner Network</span>
+                  <span className="text-xs font-extrabold text-slate-800">Business Financers</span>
                 </div>
 
                 <div 
@@ -282,10 +282,10 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
             {/* Main Content Area: Left (Featured Lenders Grid) & Right (Recent Activity Sidebar) */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               
-              {/* Left Column (2 Cols on Desktop): Nearby Lenders Grid */}
+              {/* Left Column (2 Cols on Desktop): Business Financers (Lenders) Grid */}
               <div className="lg:col-span-2 space-y-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="font-bold text-slate-900 text-lg font-heading">Recommended Lenders Nearby</h3>
+                  <h3 className="font-bold text-slate-900 text-lg font-heading">Recommended Business Financers (Lenders)</h3>
                   <button
                     onClick={() => handleTabChange('lenders')}
                     className="text-xs text-blue-700 font-bold hover:underline flex items-center gap-1"
@@ -333,9 +333,9 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                 <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-900 flex items-start gap-3 font-medium shadow-sm">
                   <ShieldCheck className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
                   <div>
-                    <div className="font-bold text-slate-900 mb-0.5">100% Verified Lenders</div>
+                    <div className="font-bold text-slate-900 mb-0.5">100% Verified Business Financers</div>
                     <p className="text-slate-600 leading-relaxed text-[11px]">
-                      All registered banks, NBFCs, and financial partners undergo strict compliance verification. Your data is encrypted & safe.
+                      All registered business financers & credit partners undergo strict compliance verification. Your data is encrypted & safe.
                     </p>
                   </div>
                 </div>
@@ -353,9 +353,9 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
             {/* Header & Filter Controls */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <h2 className="text-2xl font-extrabold text-slate-900 font-heading">Lenders Near You</h2>
+                <h2 className="text-2xl font-extrabold text-slate-900 font-heading">Business Financers (Lenders) Near You</h2>
                 <div className="text-xs text-slate-500 font-medium mt-0.5">
-                  Showing verified lenders within <span className="text-emerald-600 font-bold">10 KM Radius</span>
+                  Showing verified business financers (lenders) within <span className="text-emerald-600 font-bold">10 KM Radius</span>
                 </div>
               </div>
 
@@ -364,7 +364,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                   <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                   <input
                     type="text"
-                    placeholder="Search lenders by name or type..."
+                    placeholder="Search business financers by name..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="input-sbni pl-10 text-xs py-2.5"
@@ -393,7 +393,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
             {/* Data Protection Footer Banner */}
             <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-center text-xs text-emerald-800 flex items-center justify-center gap-2 font-medium">
               <ShieldCheck className="w-5 h-5 text-emerald-600" />
-              <span>All lenders are verified & trusted by Just Paisa App. Your data is safe with us.</span>
+              <span>All business financers are verified & trusted by Just Paisa App. Your data is safe with us.</span>
             </div>
 
           </div>
@@ -405,7 +405,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-2xl font-extrabold text-slate-900 font-heading">My Applications & Requests</h2>
-                <p className="text-xs text-slate-500 font-medium">Track your active applications and lender connections</p>
+                <p className="text-xs text-slate-500 font-medium">Track your active applications and business financer connections</p>
               </div>
             </div>
 
@@ -418,7 +418,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                 <h3 className="font-extrabold text-slate-900 text-base">Working Capital Application</h3>
                 <div className="text-xs text-slate-600 space-y-1">
                   <div>Requested Amount: <span className="font-bold text-slate-900">₹5,00,000</span></div>
-                  <div>Submitted to: <span className="font-bold text-blue-900">Nishanth Finance & Rajesh Finance</span></div>
+                  <div>Submitted to: <span className="font-bold text-blue-900">Nishanth Money Finance & Rajesh Money Finance</span></div>
                   <div>Date: <span className="font-medium">02 May 2024</span></div>
                 </div>
               </div>
@@ -689,7 +689,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
           }`}
         >
           <Building2 className="w-5 h-5" />
-          <span>Lenders</span>
+          <span>Financers</span>
         </button>
 
         {/* Floating Action Button */}

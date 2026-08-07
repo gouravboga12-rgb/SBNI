@@ -68,10 +68,10 @@ export const LenderDiscovery: React.FC<LenderDiscoveryProps> = ({
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
           <div>
             <h1 className="text-3xl sm:text-4xl font-extrabold text-white font-heading">
-              Find <span className="gradient-text">Verified Lenders</span> Nearby
+              Find <span className="gradient-text">Verified Business Financers (Lenders)</span> Nearby
             </h1>
             <p className="text-sm text-slate-300 mt-1">
-              Search nearby Banks, NBFCs, and Lenders using distance radius and loan category filters.
+              Search nearby business financers and lenders using distance radius and loan category filters.
             </p>
           </div>
 
@@ -94,7 +94,7 @@ export const LenderDiscovery: React.FC<LenderDiscoveryProps> = ({
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-cyan-400" />
             <input
               type="text"
-              placeholder="Search Lender Name..."
+              placeholder="Search Financer Name..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="input-glass pl-10 py-2.5 text-xs"
