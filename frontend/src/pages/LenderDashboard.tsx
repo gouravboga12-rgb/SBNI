@@ -127,7 +127,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({ onOpenSubscrip
     setRequests(
       requests.map((r) => (r.id === id ? { ...r, status: 'Verified' as const } : r))
     );
-    setActionFeedback('✅ Vendor Verification Approved Successfully!');
+    setActionFeedback('✅ Business Verification Approved Successfully!');
     setTimeout(() => {
       setActionFeedback('');
       setSelectedVendor(null);
@@ -139,7 +139,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({ onOpenSubscrip
     setRequests(
       requests.map((r) => (r.id === id ? { ...r, status: 'Rejected' as const } : r))
     );
-    setActionFeedback('❌ Vendor Verification Rejected.');
+    setActionFeedback('❌ Business Verification Rejected.');
     setTimeout(() => {
       setActionFeedback('');
       setSelectedVendor(null);
@@ -314,7 +314,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({ onOpenSubscrip
                     <div className="w-11 h-11 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
                       <Search className="w-5 h-5" />
                     </div>
-                    <span className="text-xs font-semibold text-slate-700">Search Vendor</span>
+                    <span className="text-xs font-semibold text-slate-700">Search Business</span>
                   </div>
 
                   <div className="card-white p-4 text-center flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-emerald-500 hover:shadow-md transition-all">
@@ -351,8 +351,8 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({ onOpenSubscrip
                 <ArrowLeft className="w-5 h-5" />
               </button>
               <div>
-                <h2 className="text-2xl font-extrabold text-slate-900 font-heading">Vendor Verification</h2>
-                <div className="text-xs text-slate-500">Review vendor details and documents for approval</div>
+                <h2 className="text-2xl font-extrabold text-slate-900 font-heading">Shop Business Verification</h2>
+                <div className="text-xs text-slate-500">Review shop business details and documents for approval</div>
               </div>
             </div>
 
@@ -585,7 +585,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({ onOpenSubscrip
                     className="btn-sbni-green py-3 px-4 text-xs md:text-sm justify-center font-bold flex items-center gap-2"
                   >
                     <CheckCircle2 className="w-4 h-4" />
-                    <span>Approve Vendor Verification</span>
+                    <span>Approve Business Verification</span>
                   </button>
                 </div>
 
@@ -599,7 +599,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({ onOpenSubscrip
         {!selectedVendor && activeTab === 'profile' && (
           <div className="space-y-6 max-w-4xl mx-auto">
             <div>
-              <h2 className="text-2xl font-extrabold text-slate-900 font-heading">Lender Profile & Security</h2>
+              <h2 className="text-2xl font-extrabold text-slate-900 font-heading">Business Money Financer Profile & Security</h2>
               <p className="text-xs text-slate-500 font-medium mt-0.5">
                 Manage institution credentials, credit officer contact details, and session status
               </p>
