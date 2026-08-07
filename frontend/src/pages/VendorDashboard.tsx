@@ -353,9 +353,9 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
             {/* Header & Filter Controls */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <h2 className="text-2xl font-extrabold text-slate-900 font-heading">Business Financers (Lenders) Near You</h2>
+                <h2 className="text-2xl font-extrabold text-slate-900 font-heading">Business Money Financers (Lenders) Near You</h2>
                 <div className="text-xs text-slate-500 font-medium mt-0.5">
-                  Showing verified business financers (lenders) within <span className="text-emerald-600 font-bold">10 KM Radius</span>
+                  Showing verified business money financers (lenders) within <span className="text-emerald-600 font-bold">10 KM Radius</span>
                 </div>
               </div>
 
@@ -364,7 +364,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                   <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                   <input
                     type="text"
-                    placeholder="Search business financers by name..."
+                    placeholder="Search business money financers by name..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="input-sbni pl-10 text-xs py-2.5"
