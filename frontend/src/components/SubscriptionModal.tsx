@@ -96,11 +96,11 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
         <div className="text-center max-w-2xl mx-auto mb-4 space-y-1.5 flex-shrink-0">
           <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-xs font-extrabold">
             <Zap className="w-3.5 h-3.5 text-amber-600" />
-            <span>{isLender ? 'Lender Access Subscription' : 'Small Shop Business Unlock Subscription'}</span>
+            <span>{isLender ? 'Business Money Financer Subscription' : 'Small Shop Business Unlock Subscription'}</span>
           </div>
 
           <h2 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-slate-900 font-heading">
-            Choose Your <span className={isLender ? 'text-[#059669]' : 'text-[#003893]'}>{isLender ? 'Lender Verification' : 'Small Shop Business Discovery'} Plan</span>
+            Choose Your <span className={isLender ? 'text-[#059669]' : 'text-[#003893]'}>{isLender ? 'Business Money Financer Verification' : 'Small Shop Business Discovery'} Plan</span>
           </h2>
 
           <p className="text-xs text-slate-600 font-medium">
