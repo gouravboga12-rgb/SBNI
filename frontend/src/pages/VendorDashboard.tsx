@@ -428,7 +428,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                   <span className="badge-verified-green">KYC Verified</span>
                   <span className="text-xs text-slate-400">Doc #KYC-4410</span>
                 </div>
-                <h3 className="font-extrabold text-slate-900 text-base">Vendor Entity KYC Verification</h3>
+                <h3 className="font-extrabold text-slate-900 text-base">Shop Business KYC Verification</h3>
                 <div className="text-xs text-slate-600 space-y-1">
                   <div>Status: <span className="font-bold text-emerald-700">Verified & Active</span></div>
                   <div>GST / License: <span className="font-bold text-slate-900">27AAPFU0939L1ZV</span></div>
@@ -439,13 +439,13 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
           </div>
         )}
 
-        {/* TAB 4: COMPREHENSIVE VENDOR PROFILE VIEW */}
+        {/* TAB 4: COMPREHENSIVE SMALL SHOP BUSINESS PROFILE VIEW */}
         {activeTab === 'profile' && (
           <div className="space-y-6 max-w-4xl mx-auto">
             
             {/* Header Title */}
             <div>
-              <h2 className="text-2xl font-extrabold text-slate-900 font-heading">Vendor Business Profile</h2>
+              <h2 className="text-2xl font-extrabold text-slate-900 font-heading">Small Shop Business Profile</h2>
               <p className="text-xs text-slate-500 font-medium mt-0.5">
                 Manage your registration details, verification documents, and profile photo
               </p>
@@ -461,7 +461,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                 <div className="relative group">
                   <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl bg-gradient-to-br from-[#003893] to-[#001f54] text-white flex items-center justify-center font-extrabold text-3xl shadow-lg overflow-hidden border-4 border-white ring-2 ring-blue-100">
                     {avatarUrl ? (
-                      <img src={avatarUrl} alt="Vendor Profile" className="w-full h-full object-cover" />
+                      <img src={avatarUrl} alt="Shop Business Profile" className="w-full h-full object-cover" />
                     ) : (
                       <span>RK</span>
                     )}
@@ -487,7 +487,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                   <div className="flex flex-col sm:flex-row sm:items-center gap-2 justify-center sm:justify-start">
                     <h3 className="text-2xl font-extrabold text-slate-900 font-heading">Ramesh Kumar</h3>
                     <span className="badge-verified-green w-fit mx-auto sm:mx-0">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Verified Vendor
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Verified Shop Owner
                     </span>
                   </div>
 
@@ -495,11 +495,11 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                     <Store className="w-4 h-4 text-[#003893]" />
                     <span>Kumar General Store</span>
                     <span className="text-slate-300">•</span>
-                    <span className="text-xs text-slate-500 font-medium">Retail Vendor</span>
+                    <span className="text-xs text-slate-500 font-medium">Retail Shop Business</span>
                   </div>
 
                   <p className="text-xs text-slate-400 font-medium pt-1">
-                    Member since April 2024 • ID: <span className="font-mono text-slate-700">VEND-99482</span>
+                    Member since April 2024 • ID: <span className="font-mono text-slate-700">SHOP-99482</span>
                   </p>
 
                   <div className="pt-2 flex items-center justify-center sm:justify-start gap-2">
