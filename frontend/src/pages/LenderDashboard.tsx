@@ -147,7 +147,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({ onOpenSubscrip
   };
 
   return (
-    <div className="bg-slate-50 min-h-screen pb-24 md:pb-12">
+    <div className="bg-slate-50 min-h-screen pb-28 md:pb-28">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 md:pt-6">
         
         {/* VIEW 1: LENDER HOME DASHBOARD */}
@@ -694,8 +694,8 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({ onOpenSubscrip
 
       </div>
 
-      {/* Bottom Sticky Mobile Navigation Bar */}
-      <div className="fixed bottom-0 inset-x-0 z-50 bg-white border-t border-slate-200 py-2 px-6 flex items-center justify-around w-full max-w-md mx-auto shadow-2xl lg:hidden rounded-t-2xl">
+      {/* Bottom Sticky Navigation Bar - Visible on Mobile, Tablet & Desktop Website View */}
+      <div className="fixed bottom-0 sm:bottom-4 inset-x-0 z-50 bg-white border border-slate-200 py-2 px-6 flex items-center justify-around w-full max-w-md mx-auto shadow-2xl rounded-t-2xl sm:rounded-2xl">
         <button
           onClick={handleHomeClick}
           className={`flex flex-col items-center gap-0.5 text-[11px] font-extrabold py-1 px-3 rounded-xl transition-all ${
