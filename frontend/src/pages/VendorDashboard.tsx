@@ -670,25 +670,25 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
 
       </div>
 
-      {/* Bottom Sticky Navigation Bar - Desktop & Mobile Compatible Floating Dock */}
-      <div className="fixed bottom-0 sm:bottom-4 inset-x-0 z-50 bg-white/95 backdrop-blur-md border border-slate-200 py-2.5 px-3 sm:px-6 flex items-center justify-around w-full max-w-md sm:max-w-xl mx-auto shadow-2xl rounded-t-2xl sm:rounded-2xl transition-all">
+      {/* Bottom Sticky Navigation Bar - Wide Desktop & Mobile Compatible Floating Dock */}
+      <div className="fixed bottom-0 sm:bottom-5 inset-x-0 z-50 bg-white/95 backdrop-blur-md border border-slate-200/90 py-2.5 sm:py-3.5 px-4 sm:px-10 flex items-center justify-between sm:justify-around w-full max-w-md sm:max-w-3xl lg:max-w-4xl mx-auto shadow-2xl rounded-t-2xl sm:rounded-3xl transition-all">
         <button
           onClick={() => handleTabChange('home')}
-          className={`flex flex-col items-center justify-center gap-1 text-[11px] sm:text-xs font-extrabold py-1.5 px-2.5 sm:px-4 rounded-xl transition-all whitespace-nowrap ${
-            activeTab === 'home' ? 'text-[#003893] bg-blue-50' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
+          className={`flex flex-col items-center justify-center gap-1 text-[11px] sm:text-xs font-extrabold py-1.5 px-3 sm:px-6 rounded-2xl transition-all whitespace-nowrap ${
+            activeTab === 'home' ? 'text-[#003893] bg-blue-50/90 shadow-2xs' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
           }`}
         >
-          <Home className="w-5 h-5 text-[#003893]" />
+          <Home className="w-5 h-5 sm:w-6 sm:h-6 text-[#003893]" />
           <span>Home</span>
         </button>
 
         <button
           onClick={() => handleTabChange('lenders')}
-          className={`flex flex-col items-center justify-center gap-1 text-[11px] sm:text-xs font-extrabold py-1.5 px-2.5 sm:px-4 rounded-xl transition-all whitespace-nowrap ${
-            activeTab === 'lenders' ? 'text-[#003893] bg-blue-50' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
+          className={`flex flex-col items-center justify-center gap-1 text-[11px] sm:text-xs font-extrabold py-1.5 px-3 sm:px-6 rounded-2xl transition-all whitespace-nowrap ${
+            activeTab === 'lenders' ? 'text-[#003893] bg-blue-50/90 shadow-2xs' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
           }`}
         >
-          <Building2 className="w-5 h-5 text-slate-600" />
+          <Building2 className="w-5 h-5 sm:w-6 sm:h-6 text-slate-600" />
           <span>Financers</span>
         </button>
 
@@ -696,28 +696,28 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
         <button
           onClick={onOpenSubscription}
           title="Pay Subscription"
-          className="w-12 h-12 sm:w-13 sm:h-13 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center shadow-xl hover:scale-105 transition-all -mt-7 sm:-mt-8 border-4 border-white shrink-0"
+          className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white flex items-center justify-center shadow-xl hover:scale-105 transition-all -mt-7 sm:-mt-9 border-4 border-white shrink-0"
         >
           <Phone className="w-6 h-6 sm:w-7 sm:h-7 fill-white" />
         </button>
 
         <button
           onClick={() => handleTabChange('requests')}
-          className={`flex flex-col items-center justify-center gap-1 text-[11px] sm:text-xs font-extrabold py-1.5 px-2.5 sm:px-4 rounded-xl transition-all whitespace-nowrap ${
-            activeTab === 'requests' ? 'text-[#003893] bg-blue-50' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
+          className={`flex flex-col items-center justify-center gap-1 text-[11px] sm:text-xs font-extrabold py-1.5 px-3 sm:px-6 rounded-2xl transition-all whitespace-nowrap ${
+            activeTab === 'requests' ? 'text-[#003893] bg-blue-50/90 shadow-2xs' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
           }`}
         >
-          <FileText className="w-5 h-5 text-slate-600" />
+          <FileText className="w-5 h-5 sm:w-6 sm:h-6 text-slate-600" />
           <span>Requests</span>
         </button>
 
         <button
           onClick={() => handleTabChange('profile')}
-          className={`flex flex-col items-center justify-center gap-1 text-[11px] sm:text-xs font-extrabold py-1.5 px-2.5 sm:px-4 rounded-xl transition-all whitespace-nowrap ${
-            activeTab === 'profile' ? 'text-[#003893] bg-blue-50' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
+          className={`flex flex-col items-center justify-center gap-1 text-[11px] sm:text-xs font-extrabold py-1.5 px-3 sm:px-6 rounded-2xl transition-all whitespace-nowrap ${
+            activeTab === 'profile' ? 'text-[#003893] bg-blue-50/90 shadow-2xs' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
           }`}
         >
-          <User className="w-5 h-5 text-slate-600" />
+          <User className="w-5 h-5 sm:w-6 sm:h-6 text-slate-600" />
           <span>Profile</span>
         </button>
       </div>
