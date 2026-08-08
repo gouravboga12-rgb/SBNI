@@ -193,29 +193,29 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({ onOpenSubscrip
                 </div>
               </div>
 
-              {/* Verify Shop Businesses & Grow Safely Banner */}
-              <div className="card-white p-5 md:p-6 space-y-4 relative overflow-hidden flex flex-col justify-between min-h-[160px]">
+              {/* Verify Shop Businesses & Grow Safely Banner - HIGHLIGHTED WITH SPLASH ANIMATION */}
+              <div className="card-white splash-highlight-card p-5 md:p-6 space-y-4 relative overflow-hidden flex flex-col justify-between min-h-[160px] bg-gradient-to-br from-emerald-50/70 via-white to-emerald-50/40">
                 <div className="flex items-start justify-between">
                   <div className="space-y-1 max-w-[220px]">
                     <h3 className="font-extrabold text-slate-900 text-base md:text-lg font-heading">
                       Verify Business & Grow Safely
                     </h3>
-                    <p className="text-xs text-slate-500">
+                    <p className="text-xs text-slate-600 font-medium leading-relaxed">
                       Verify shop or home businesses properly before providing money. Reduce risk, increase trust.
                     </p>
                   </div>
 
-                  {/* Shield + Security Graphic */}
-                  <div className="w-14 h-14 rounded-2xl bg-emerald-50 flex items-center justify-center border border-emerald-100 flex-shrink-0">
-                    <ShieldCheck className="w-8 h-8 text-emerald-600" />
+                  {/* Shield + Security Graphic with Pulse Glow */}
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-600 to-emerald-800 text-white flex items-center justify-center flex-shrink-0 shadow-lg animate-pulse-subtle">
+                    <ShieldCheck className="w-8 h-8 text-white" />
                   </div>
                 </div>
 
                 <button
                   onClick={() => setSelectedVendor(requests[0])}
-                  className="btn-sbni-green text-xs md:text-sm py-2.5 px-4 font-bold flex items-center gap-1.5 w-fit"
+                  className="btn-sbni-green splash-btn-effect text-xs md:text-sm py-2.5 px-4 font-extrabold flex items-center gap-1.5 w-fit shadow-lg"
                 >
-                  <span>Verify Business Now</span>
+                  <span className="font-extrabold tracking-wide">Verify Business Now</span>
                   <ChevronRight className="w-4 h-4" />
                 </button>
               </div>
@@ -266,22 +266,24 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({ onOpenSubscrip
             {/* Main Section Grid: Left (Verification Requests) & Right (Quick Actions) */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               
-              {/* Left Column (2 Cols on Desktop): Recent Verification Requests */}
+              {/* Left Column (2 Cols on Desktop): Recent Verification Requests - HIGHLIGHTED WITH SPLASH ANIMATION */}
               <div className="lg:col-span-2 space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-bold text-slate-900 text-base font-heading">Recent Verification Requests</h3>
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <h3 className="font-extrabold text-slate-900 text-base md:text-lg font-heading splash-text-effect">
+                    Recent Verification Requests
+                  </h3>
                   <span className="text-xs text-blue-600 font-bold cursor-pointer hover:underline">View All</span>
                 </div>
 
-                <div className="card-white divide-y divide-slate-100 overflow-hidden shadow-sm">
+                <div className="card-white splash-highlight-card divide-y divide-slate-100 overflow-hidden shadow-lg bg-white">
                   {requests.map((req) => (
                     <div
                       key={req.id}
                       onClick={() => handleVendorSelect(req)}
-                      className="p-4 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors"
+                      className="p-4 flex items-center justify-between cursor-pointer hover:bg-emerald-50/40 transition-all group"
                     >
                       <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-full bg-slate-200 border border-slate-300 overflow-hidden flex-shrink-0">
+                        <div className="w-12 h-12 rounded-full bg-slate-200 border-2 border-emerald-300 overflow-hidden flex-shrink-0 group-hover:scale-105 transition-transform shadow-xs">
                           <img
                             src={`https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=100`}
                             alt={req.vendorName}
@@ -289,8 +291,10 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({ onOpenSubscrip
                           />
                         </div>
                         <div>
-                          <div className="font-bold text-slate-900 text-sm md:text-base">{req.vendorName}</div>
-                          <div className="text-xs text-slate-500">Shop: {req.shopName}</div>
+                          <div className="font-bold text-slate-900 text-sm md:text-base group-hover:text-emerald-800 transition-colors">
+                            {req.vendorName}
+                          </div>
+                          <div className="text-xs text-slate-600 font-medium">Shop: {req.shopName}</div>
                           <div className="text-xs text-slate-400 mt-0.5">Requested on {req.requestedDate}</div>
                         </div>
                       </div>
@@ -299,7 +303,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({ onOpenSubscrip
                         <span className={req.status === 'Verified' ? 'badge-verified-green' : 'badge-pending-amber'}>
                           {req.status}
                         </span>
-                        <ChevronRight className="w-5 h-5 text-slate-400" />
+                        <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-emerald-600 group-hover:translate-x-1 transition-all" />
                       </div>
                     </div>
                   ))}

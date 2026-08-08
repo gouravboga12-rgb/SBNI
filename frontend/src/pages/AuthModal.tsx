@@ -300,8 +300,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     Business Money Financer
                   </h3>
                   <p className="text-xs text-slate-600 font-medium mt-0.5 leading-relaxed">
-                    Sign up as a business money financer to provide money & capital directly to verified local shops and home businesses nearby
+                    Sign up or login as a Business Money Financer to provide Business Money directly to verified local shops and home businesses nearby.
                   </p>
+                  <div className="mt-2 text-[11px] font-bold text-emerald-800 bg-emerald-100/90 px-2.5 py-1 rounded-lg border border-emerald-200/80 inline-flex items-center gap-1.5 shadow-2xs">
+                    <Building2 className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
+                    <span>Examples: Santhosh Money Finance, Rohit Money Finance</span>
+                  </div>
                 </div>
               </div>
 
@@ -316,7 +320,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   }}
                   className="py-3 px-3 rounded-xl bg-[#007a33] hover:bg-[#005e27] text-white font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md transition-all active:scale-[0.98]"
                 >
-                  <User className="w-4 h-4 shrink-0" /> Login as Money Financer
+                  <User className="w-4 h-4 shrink-0" /> Login as Business Money Financer
                 </button>
 
                 <button
@@ -329,7 +333,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   }}
                   className="py-3 px-3 rounded-xl bg-white hover:bg-emerald-50 text-[#007a33] border-2 border-[#007a33] font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm transition-all active:scale-[0.98]"
                 >
-                  <UserPlus className="w-4 h-4 shrink-0" /> Sign Up as Money Financer
+                  <UserPlus className="w-4 h-4 shrink-0" /> Sign Up as Business Money Financer
                 </button>
               </div>
             </div>
@@ -361,7 +365,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   color: isVendor ? '#003893' : '#007a33',
                 }}
               >
-                {isVendor ? 'Small Shop Business' : 'Business Financer'}
+                {isVendor ? 'Small Shop Business' : 'Business Money Financer'}
               </div>
             </div>
 
@@ -390,11 +394,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   {isRegister
                     ? isVendor
                       ? 'Enter your shop or home business details & verification documents to create your account'
-                      : 'Sign up as a business money financer to provide money & capital to verified shop or home business owners'
+                      : 'Sign up as a Business Money Financer to provide Business Money directly to verified shop or home business owners'
                     : isVendor
                     ? 'Login as shop or home business owner to check nearby business financers for money'
-                    : 'Login as business money financer to provide money & capital to verified small businesses'}
+                    : 'Login as Business Money Financer to provide Business Money directly to verified small businesses'}
                 </p>
+                {!isVendor && (
+                  <div className="mt-2.5 text-xs font-bold text-emerald-800 bg-emerald-100/90 px-3 py-1.5 rounded-xl border border-emerald-200 inline-flex items-center gap-1.5 shadow-2xs">
+                    <Building2 className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
+                    <span>Examples: Santhosh Money Finance, Rohit Money Finance</span>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -439,7 +449,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       className="w-full py-2.5 px-3 rounded-xl bg-[#007a33] hover:bg-[#006329] text-white text-xs font-bold flex items-center justify-between transition-all shadow-sm"
                     >
                       <div className="text-left">
-                        <div className="font-extrabold">Business Financer Demo (Rohit Sharma - Capital Financer)</div>
+                        <div className="font-extrabold">Business Money Financer Demo (Santhosh Money Finance / Rohit Money Finance)</div>
                         <div className="text-[10px] text-emerald-100 font-normal">lender@sbnimoney.com • Pass: lender123</div>
                       </div>
                       <span className="bg-white/20 px-2.5 py-1 rounded text-[10px] font-bold">Login →</span>

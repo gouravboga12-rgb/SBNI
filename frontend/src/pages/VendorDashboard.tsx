@@ -176,31 +176,35 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                 </div>
               </div>
 
-              {/* Card 2: Find & Connect with Nearby Lenders (Unified Proximity Card) */}
-              <div className="card-white-hover p-6 flex flex-col justify-between min-h-[170px] relative group overflow-hidden">
+              {/* Card 2: Find & Connect with Nearby Lenders (Unified Proximity Card - HIGHLIGHTED) */}
+              <div className="card-white-hover splash-highlight-card p-6 flex flex-col justify-between min-h-[170px] relative group overflow-hidden bg-gradient-to-br from-emerald-50/60 via-white to-blue-50/30">
                 <div className="flex items-start justify-between">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200/60">
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="text-[11px] font-extrabold text-white px-2.5 py-0.5 rounded-full splash-badge-pulse shadow-sm flex items-center gap-1">
+                        ⚡ Nearby Financers Highlighted
+                      </span>
+                      <span className="text-[11px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-md border border-emerald-300">
                         10 KM Radius
                       </span>
-                      <span className="text-[11px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200/60">
-                        Verified
-                      </span>
                     </div>
-                    <h3 className="font-extrabold text-slate-900 text-lg font-heading pt-1">Find Business Money Financers</h3>
-                    <p className="text-xs text-slate-500 font-medium">Discover financial partners within 10 KM radius for instant approval.</p>
+                    <h3 className="font-extrabold text-slate-900 text-xl font-heading pt-1">
+                      Find Nearby Business Money Financers
+                    </h3>
+                    <p className="text-xs text-slate-600 font-medium leading-relaxed">
+                      Discover verified business money financers (e.g., Santhosh Money Finance, Rohit Money Finance) within 10 KM radius for instant approval.
+                    </p>
                   </div>
-                  <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 flex-shrink-0 shadow-sm group-hover:scale-105 transition-transform">
-                    <Building2 className="w-6 h-6" />
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#007a33] to-[#005724] text-white flex items-center justify-center flex-shrink-0 shadow-lg group-hover:scale-110 transition-transform">
+                    <Building2 className="w-7 h-7" />
                   </div>
                 </div>
 
                 <button
                   onClick={() => handleTabChange('lenders')}
-                  className="btn-sbni-green mt-4 text-xs justify-center py-2.5 shadow-md font-extrabold"
+                  className="btn-sbni-green mt-4 text-xs justify-center py-2.5 shadow-lg font-extrabold flex items-center gap-2"
                 >
-                  <span>Search Business Money Financers →</span>
+                  <span>Search Nearby Business Money Financers →</span>
                 </button>
               </div>
 
@@ -259,12 +263,12 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
 
                 <div 
                   onClick={() => handleTabChange('lenders')}
-                  className="card-white p-4.5 text-center flex flex-col items-center justify-center gap-2.5 cursor-pointer border border-slate-200/80 hover:border-blue-600 hover:shadow-lg transition-all group rounded-2xl bg-white"
+                  className="card-white p-4 text-center flex flex-col items-center justify-center gap-2.5 cursor-pointer border-2 border-emerald-300 hover:border-emerald-600 hover:shadow-xl transition-all group rounded-2xl bg-gradient-to-br from-emerald-50/70 to-white shadow-md animate-pulse-subtle"
                 >
-                  <div className="w-12 h-12 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center text-[#003893] group-hover:scale-110 group-hover:bg-[#003893] group-hover:text-white transition-all duration-300 shadow-sm">
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-600 text-white flex items-center justify-center group-hover:scale-110 transition-all duration-300 shadow-md">
                     <Users className="w-6 h-6" />
                   </div>
-                  <span className="text-xs font-extrabold text-slate-800">Business Money Financers</span>
+                  <span className="text-xs font-extrabold text-emerald-900">Nearby Financers ⚡</span>
                 </div>
 
                 <div 
@@ -284,8 +288,11 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
               
               {/* Left Column (2 Cols on Desktop): Business Money Financers (Lenders) Grid */}
               <div className="lg:col-span-2 space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-bold text-slate-900 text-lg font-heading">Recommended Business Money Financers (Lenders)</h3>
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-extrabold text-slate-900 text-lg font-heading">Recommended Business Money Financers (Lenders)</h3>
+                    <span className="text-[10px] font-extrabold text-white bg-emerald-600 px-2 py-0.5 rounded-full shadow-xs animate-pulse">⚡ Nearby</span>
+                  </div>
                   <button
                     onClick={() => handleTabChange('lenders')}
                     className="text-xs text-blue-700 font-bold hover:underline flex items-center gap-1"

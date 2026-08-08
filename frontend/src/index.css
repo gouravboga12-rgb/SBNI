@@ -242,3 +242,88 @@ h1, h2, h3, h4, h5, h6 {
 .animate-pulse-subtle {
   animation: pulse-subtle 3s infinite ease-in-out;
 }
+
+/* Splash Animation Effect Utilities */
+@keyframes splash-pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(16, 185, 129, 0.4), 0 0 30px rgba(5, 150, 105, 0.2), inset 0 0 15px rgba(16, 185, 129, 0.1);
+    border-color: #10b981;
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(59, 130, 246, 0.6), 0 0 45px rgba(16, 185, 129, 0.4), inset 0 0 25px rgba(59, 130, 246, 0.15);
+    border-color: #3b82f6;
+  }
+}
+
+@keyframes splash-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes splash-badge-bounce {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-3px) scale(1.04); }
+}
+
+.splash-highlight-card {
+  position: relative;
+  border: 2.5px solid #10b981 !important;
+  animation: splash-pulse-glow 3s infinite ease-in-out !important;
+  box-shadow: 0 10px 30px -5px rgba(16, 185, 129, 0.3) !important;
+}
+
+.splash-shimmer-bg {
+  background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(16, 185, 129, 0.15) 50%, rgba(255,255,255,0) 100%);
+  background-size: 200% 100%;
+  animation: splash-shimmer 3s infinite linear;
+}
+
+.splash-badge-pulse {
+  animation: splash-badge-bounce 2s infinite ease-in-out;
+  background: linear-gradient(135deg, #10b981 0%, #059669 50%, #003893 100%);
+  background-size: 200% 200%;
+  animation: splash-shimmer 3s infinite linear, splash-badge-bounce 2s infinite ease-in-out;
+}
+
+/* Splash Text & Button Animation Effects */
+@keyframes splash-text-glow-pulse {
+  0%, 100% {
+    color: #003893;
+    text-shadow: 0 0 10px rgba(5, 150, 105, 0.4), 0 0 20px rgba(16, 185, 129, 0.3);
+  }
+  50% {
+    color: #059669;
+    text-shadow: 0 0 18px rgba(0, 56, 147, 0.6), 0 0 30px rgba(16, 185, 129, 0.5);
+  }
+}
+
+.splash-text-effect {
+  animation: splash-text-glow-pulse 2.5s infinite ease-in-out !important;
+  background: linear-gradient(135deg, #003893 0%, #059669 50%, #002669 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+@keyframes splash-button-pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(5, 150, 105, 0.6), 0 4px 14px rgba(5, 150, 105, 0.4);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(0, 56, 147, 0.7), 0 6px 22px rgba(16, 185, 129, 0.6);
+    transform: scale(1.03);
+  }
+}
+
+.splash-btn-effect {
+  position: relative;
+  background: linear-gradient(135deg, #059669 0%, #047857 60%, #003893 100%) !important;
+  background-size: 200% 200% !important;
+  animation: splash-shimmer 3s infinite linear, splash-button-pulse-glow 2.5s infinite ease-in-out !important;
+}
+

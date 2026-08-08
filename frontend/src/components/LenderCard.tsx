@@ -122,9 +122,13 @@ export const LenderCard: React.FC<LenderCardProps> = ({ lender, onOpenSubscripti
               <span>Limit: ₹{minAmt} to ₹{maxAmt}</span>
             </span>
 
-            <span className="text-slate-700 bg-slate-100 px-2.5 py-1 rounded-lg text-[11px] font-bold border border-slate-200/70 flex items-center gap-1">
-              <MapPin className="w-3.5 h-3.5 text-rose-500 shrink-0" />
-              <span>{lender.distanceKm} KM away</span>
+            <span className="text-emerald-900 bg-emerald-100/90 px-2.5 py-1 rounded-lg text-[11px] font-extrabold border border-emerald-300 flex items-center gap-1.5 shadow-xs animate-pulse-subtle">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-600"></span>
+              </span>
+              <MapPin className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
+              <span>{lender.distanceKm} KM away • Nearby Financer</span>
             </span>
           </div>
         </div>
