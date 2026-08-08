@@ -182,7 +182,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                   <div className="space-y-1.5">
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <span className="text-[11px] font-extrabold text-white px-2.5 py-0.5 rounded-full splash-badge-pulse shadow-sm flex items-center gap-1">
-                        ⚡ Nearby Financers Highlighted
+                        ⚡ Nearby Money Financers
                       </span>
                       <span className="text-[11px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-md border border-emerald-300">
                         10 KM Radius
