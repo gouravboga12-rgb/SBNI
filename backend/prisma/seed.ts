@@ -7,16 +7,21 @@ async function main() {
   console.log('🌱 Starting SBNI Money App Database Seed...');
 
   // 1. Password hash for default accounts
-  const passwordHash = await bcrypt.hash('SBNIMoney@2026', 10);
+  const defaultPasswordHash = await bcrypt.hash('SBNIMoney@2026', 10);
+  const adminPasswordHash = await bcrypt.hash('Srinivas@10', 10);
 
   // 2. Super Admin Account
   const adminUser = await prisma.user.upsert({
-    where: { email: 'admin@sbnimoney.com' },
-    update: {},
+    where: { email: 'srinivaspolepalli10@gmail.com' },
+    update: {
+      passwordHash: adminPasswordHash,
+      role: Role.SUPER_ADMIN,
+      isVerified: true,
+    },
     create: {
-      email: 'admin@sbnimoney.com',
+      email: 'srinivaspolepalli10@gmail.com',
       phone: '9876543210',
-      passwordHash,
+      passwordHash: adminPasswordHash,
       role: Role.SUPER_ADMIN,
       isVerified: true,
     },
@@ -264,7 +269,7 @@ async function main() {
     create: {
       email: 'contact@capitalgrowthnbfc.com',
       phone: '9820011223',
-      passwordHash,
+      passwordHash: defaultPasswordHash,
       role: Role.LENDER,
       isVerified: true,
     },
@@ -301,7 +306,7 @@ async function main() {
     create: {
       email: 'loans@rajeshfinance.in',
       phone: '9833344556',
-      passwordHash,
+      passwordHash: defaultPasswordHash,
       role: Role.LENDER,
       isVerified: true,
     },
@@ -333,6 +338,38 @@ async function main() {
   });
 
   console.log('✅ Sample Verified Lenders created.');
+
+  // 11. Sample Vendor Demo Account
+  const vendorUser1 = await prisma.user.upsert({
+    where: { email: 'rajesh@sharmatextiles.com' },
+    update: {},
+    create: {
+      email: 'rajesh@sharmatextiles.com',
+      phone: '9820099887',
+      passwordHash: defaultPasswordHash,
+      role: Role.VENDOR,
+      isVerified: true,
+    },
+  });
+
+  await prisma.vendorProfile.upsert({
+    where: { userId: vendorUser1.id },
+    update: {},
+    create: {
+      userId: vendorUser1.id,
+      businessName: 'Sharma Textile Exports',
+      ownerName: 'Rajesh Sharma',
+      annualTurnover: '50L - 1Cr',
+      category: 'Retail & Garments',
+      address: 'Shop No 42, Textile Market, Lower Parel',
+      city: 'Mumbai',
+      state: 'Maharashtra',
+      pincode: '400013',
+      kycStatus: KYCStatus.VERIFIED,
+    },
+  });
+
+  console.log('✅ Sample Vendor created:', vendorUser1.email);
   console.log('🎉 SBNI Money Database Seeding Completed Successfully!');
 }
 

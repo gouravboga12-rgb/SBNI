@@ -44,6 +44,7 @@ export interface VendorVerificationRequest {
   requestedDate: string;
   requestedTime: string;
   status: 'Pending' | 'Verified' | 'Rejected';
+  isFraud?: boolean;
   mobileNumber: string;
   emailId: string;
   dateOfBirth?: string;
@@ -59,6 +60,11 @@ export interface VendorVerificationRequest {
   lenderId?: string;
   lenderName?: string;
   bankAccountDetails?: string;
+  avatarUrl?: string;
+  panFileUrl?: string;
+  aadhaarFileUrl?: string;
+  shopPhotoUrl?: string;
+  liveSelfieUrl?: string;
 }
 
 export interface SubscriptionPlan {

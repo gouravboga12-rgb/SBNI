@@ -18,6 +18,16 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+# Keys and Secrets
+*.pem
+*.key
+.env*
+!.env.example
+
+# Screenshot / Scratch artifacts
+image copy*.png
+*.png
+
 # System files
 .DS_Store
 Thumbs.db

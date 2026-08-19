@@ -48,7 +48,7 @@ export const KYCModal: React.FC<KYCModalProps> = ({ isOpen, onClose }) => {
           <div className="p-6 rounded-2xl bg-emerald-950/40 border border-emerald-500/30 text-center space-y-2">
             <CheckCircle2 className="w-12 h-12 text-emerald-400 mx-auto" />
             <h3 className="text-lg font-bold text-white">KYC Document Uploaded!</h3>
-            <p className="text-xs text-slate-300">Verification in progress by SBNI Compliance Team.</p>
+            <p className="text-xs text-slate-300">Verification in progress by JustPaisa Compliance Team.</p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -83,7 +83,7 @@ export const KYCModal: React.FC<KYCModalProps> = ({ isOpen, onClose }) => {
               <div className="border-2 border-dashed border-slate-700 hover:border-cyan-500 rounded-2xl p-6 text-center cursor-pointer bg-slate-900/50 transition-colors">
                 <UploadCloud className="w-8 h-8 text-cyan-400 mx-auto mb-2" />
                 <div className="text-xs text-slate-300 font-medium">Click to select or drag PDF file here</div>
-                <div className="text-[10px] text-slate-500 mt-1">Maximum file size: 10 MB</div>
+                <div className="text-[10px] text-slate-500 mt-1">Maximum file size: 5 MB</div>
               </div>
             </div>
 

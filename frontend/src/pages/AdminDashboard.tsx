@@ -1,0 +1,3288 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import {
+  ShieldCheck,
+  Users,
+  Building2,
+  Zap,
+  DollarSign,
+  LayoutDashboard,
+  CheckCircle2,
+  Search,
+  Trash2,
+  Activity,
+  Lock,
+  LogOut,
+  AlertCircle,
+  Eye,
+  Gift,
+  RefreshCw,
+  ArrowLeft,
+  Plus,
+  Edit3,
+  X,
+  Check,
+  Sparkles,
+  Clock,
+  Tag,
+  CreditCard,
+  AlertTriangle,
+  TrendingUp,
+  Calendar,
+  Filter,
+  Download,
+  Share2,
+  ArrowUpRight,
+  Award,
+  ChevronDown,
+  Copy,
+  ExternalLink,
+  Wallet,
+  Receipt,
+  FileCheck2,
+  Sliders,
+  FolderX,
+} from 'lucide-react';
+import {
+  adminLoginApi,
+  adminCreateSubscriptionPlan,
+  adminUpdateSubscriptionPlan,
+  adminDeleteSubscriptionPlan,
+  adminToggleVendorFraud,
+  adminFetchVendors,
+  adminFetchLenders,
+  adminUpdateVendorKYC,
+  adminDeleteUser,
+  adminFetchPayments,
+} from '../services/api';
+import { SBNILogo } from '../components/SBNILogo';
+
+interface VendorData {
+  id: string;
+  businessName: string;
+  ownerName: string;
+  city: string;
+  state: string;
+  annualTurnover: string;
+  category: string;
+  kycStatus: 'PENDING' | 'VERIFIED' | 'REJECTED';
+  isFraud?: boolean;
+  userEmail: string;
+  userPhone: string;
+  createdAt: string;
+}
+
+interface LenderData {
+  id: string;
+  institutionName: string;
+  institutionType: 'BANK' | 'NBFC' | 'FINANCIAL_INSTITUTION' | 'INDIVIDUAL';
+  registrationNumber: string;
+  city: string;
+  state: string;
+  minLoanAmount: number;
+  maxLoanAmount: number;
+  minInterestRate: number;
+  verificationStatus: 'PENDING' | 'VERIFIED' | 'REJECTED';
+  userEmail: string;
+  userPhone: string;
+  contactPersonName?: string;
+  createdAt: string;
+}
+
+export interface AdminSubscriptionPlan {
+  id: string;
+  name: string;
+  code: string;
+  description: string;
+  price: number;
+  originalPrice: number;
+  durationDays: number;
+  durationNumber?: number;
+  durationUnit?: 'Days' | 'Weeks' | 'Months' | 'Years';
+  features: string[];
+  isActive: boolean;
+  isPopular?: boolean;
+  isBestValue?: boolean;
+  roleTarget: 'VENDOR' | 'LENDER';
+}
+
+// Payment / Revenue Transaction Interface
+export interface RevenueTransaction {
+  id: string;
+  entityName: string;
+  personName: string;
+  email: string;
+  phone: string;
+  role: 'VENDOR' | 'LENDER';
+  planName: string;
+  planCode: string;
+  amount: number;
+  paymentDate: string; // ISO string e.g. 2026-08-16T14:30:00
+  paymentMethod: string;
+  invoiceNumber: string;
+  transactionId: string;
+  status: 'SUCCESS' | 'PENDING' | 'REFUNDED';
+}
+
+// Referral Record Interface
+export interface ReferralRecord {
+  id: string;
+  referrerName: string;
+  referrerEmail: string;
+  referrerPhone: string;
+  referrerRole: 'VENDOR' | 'LENDER';
+  referralCode: string;
+  refereeName: string;
+  refereeEmail: string;
+  refereePhone: string;
+  refereeRole: 'VENDOR' | 'LENDER';
+  refereeBusiness: string;
+  rewardAmount: number;
+  createdAt: string;
+  status: 'PAID' | 'REWARD_READY' | 'PENDING_VERIFICATION';
+  paidAt?: string;
+  payoutTxnId?: string;
+}
+
+export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void }) {
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
+  const [adminEmail, setAdminEmail] = useState('srinivaspolepalli10@gmail.com');
+  const [adminPassword, setAdminPassword] = useState('Srinivas@10');
+  const [loginError, setLoginError] = useState('');
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+
+  const [activeTab, setActiveTab] = useState<
+    | 'overview'
+    | 'vendors'
+    | 'lenders'
+    | 'vendor_revenue'
+    | 'lender_revenue'
+    | 'vendor_subs'
+    | 'lender_subs'
+    | 'referrals'
+    | 'audits'
+  >('overview');
+
+  // Search & Filters
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('ALL');
+
+  // Revenue Filters
+  const [vendorRevenuePeriod, setVendorRevenuePeriod] = useState<'ALL' | 'DAY' | 'WEEK' | 'MONTH' | 'YEAR'>('ALL');
+  const [vendorRevenueSearch, setVendorRevenueSearch] = useState('');
+  const [vendorRevenuePlanFilter, setVendorRevenuePlanFilter] = useState('ALL');
+  const [vendorRevenueMethodFilter, setVendorRevenueMethodFilter] = useState('ALL');
+
+  const [lenderRevenuePeriod, setLenderRevenuePeriod] = useState<'ALL' | 'DAY' | 'WEEK' | 'MONTH' | 'YEAR'>('ALL');
+  const [lenderRevenueSearch, setLenderRevenueSearch] = useState('');
+  const [lenderRevenuePlanFilter, setLenderRevenuePlanFilter] = useState('ALL');
+  const [lenderRevenueMethodFilter, setLenderRevenueMethodFilter] = useState('ALL');
+
+  // Referral Filters
+  const [referralSearch, setReferralSearch] = useState('');
+  const [referralStatusFilter, setReferralStatusFilter] = useState<'ALL' | 'REWARD_READY' | 'PAID' | 'PENDING_VERIFICATION'>('ALL');
+  const [referralRoleFilter, setReferralRoleFilter] = useState<'ALL' | 'VENDOR' | 'LENDER'>('ALL');
+  const [referralSettingsModalOpen, setReferralSettingsModalOpen] = useState(false);
+
+  // Referral Settings
+  const [referralVendorReward, setReferralVendorReward] = useState('200');
+  const [referralLenderReward, setReferralLenderReward] = useState('500');
+  const [referralDiscountPct, setReferralDiscountPct] = useState('15');
+  const [referralProgramActive, setReferralProgramActive] = useState(true);
+
+  // Live Vendors & Lenders State with localStorage Persistence
+  const [vendors, setVendors] = useState<VendorData[]>(() => {
+    try {
+      const saved = localStorage.getItem('sbni_admin_vendors');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return [];
+  });
+
+  const [lenders, setLenders] = useState<LenderData[]>(() => {
+    try {
+      const saved = localStorage.getItem('sbni_admin_lenders');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return [];
+  });
+
+  // Real Database Revenue Transactions (Zero Dummy Data)
+  const [transactions, setTransactions] = useState<RevenueTransaction[]>(() => {
+    try {
+      const saved = localStorage.getItem('justpaisa_admin_live_transactions');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return [];
+  });
+
+  // Real Database Referrals (Zero Dummy Data)
+  const [referrals, setReferrals] = useState<ReferralRecord[]>(() => {
+    try {
+      const saved = localStorage.getItem('justpaisa_admin_live_referrals');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return [];
+  });
+
+  const loadAdminPayments = async () => {
+    try {
+      const res = await adminFetchPayments();
+      if (res.payments && Array.isArray(res.payments)) {
+        setTransactions(res.payments);
+        localStorage.setItem('justpaisa_admin_live_transactions', JSON.stringify(res.payments));
+      }
+    } catch (e) {
+      console.error('loadAdminPayments error:', e);
+    }
+  };
+
+  const loadAdminVendorsAndLenders = async () => {
+    try {
+      const [vRes, lRes] = await Promise.all([
+        adminFetchVendors(),
+        adminFetchLenders(),
+      ]);
+
+      const storedFraud = JSON.parse(localStorage.getItem('sbni_fraud_vendors') || '{}');
+      const deletedVendorIds = JSON.parse(localStorage.getItem('sbni_deleted_vendors') || '[]');
+      const deletedLenderIds = JSON.parse(localStorage.getItem('sbni_deleted_lenders') || '[]');
+
+      if (vRes.vendors && Array.isArray(vRes.vendors)) {
+        const mappedVendors: VendorData[] = vRes.vendors
+          .filter((v: any) => !deletedVendorIds.includes(v.id))
+          .map((v: any) => ({
+            id: v.id,
+            businessName: v.businessName || 'Business Enterprise',
+            ownerName: v.ownerName || v.user?.name || 'Owner Name',
+            city: v.city || 'Mumbai',
+            state: v.state || 'Maharashtra',
+            annualTurnover: v.annualTurnover || '50L - 1Cr',
+            category: v.category || 'Retail',
+            kycStatus: v.kycStatus === 'REJECTED' ? 'REJECTED' : 'VERIFIED',
+            isFraud: storedFraud[v.id] !== undefined ? storedFraud[v.id] : !!v.isFraud,
+            userEmail: v.user?.email || v.email || 'N/A',
+            userPhone: v.user?.phone || v.phone || 'N/A',
+            createdAt: v.createdAt ? String(v.createdAt).substring(0, 10) : '2026-08-13',
+          }));
+        setVendors(mappedVendors);
+        localStorage.setItem('sbni_admin_vendors', JSON.stringify(mappedVendors));
+      }
+
+      if (lRes.lenders && Array.isArray(lRes.lenders)) {
+        const mappedLenders: LenderData[] = lRes.lenders
+          .filter((l: any) => !deletedLenderIds.includes(l.id))
+          .map((l: any) => ({
+            id: l.id,
+            institutionName: l.institutionName || 'Financial Institution',
+            institutionType: l.institutionType === 'BANK' ? 'BANK' : l.institutionType === 'NBFC' ? 'NBFC' : 'FINANCIAL_INSTITUTION',
+            registrationNumber: l.registrationNumber || 'REG-1001',
+            city: l.city || 'Mumbai',
+            state: l.state || 'Maharashtra',
+            verificationStatus: l.verificationStatus === 'REJECTED' ? 'REJECTED' : 'VERIFIED',
+            minLoanAmount: l.minLoanAmount || 100000,
+            maxLoanAmount: l.maxLoanAmount || 10000000,
+            minInterestRate: l.minInterestRate || 10.5,
+            contactPersonName: l.contactPersonName || 'Branch Officer',
+            userEmail: l.user?.email || l.email || 'N/A',
+            userPhone: l.user?.phone || l.phone || 'N/A',
+            createdAt: l.createdAt ? String(l.createdAt).substring(0, 10) : '2026-08-13',
+          }));
+        setLenders(mappedLenders);
+        localStorage.setItem('sbni_admin_lenders', JSON.stringify(mappedLenders));
+      }
+    } catch (e) {
+      console.error('loadAdminVendorsAndLenders error:', e);
+    }
+  };
+
+  // Vendor Subscription Plans with localStorage persistence
+  const [vendorPlans, setVendorPlans] = useState<AdminSubscriptionPlan[]>(() => {
+    try {
+      const saved = localStorage.getItem('sbni_admin_vendor_plans');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return [
+      {
+        id: 'vp-1',
+        name: 'Weekly Starter Plan',
+        code: 'VENDOR_WEEKLY',
+        description: 'Start exploring nearby business financers',
+        price: 199,
+        originalPrice: 349,
+        durationDays: 7,
+        durationNumber: 7,
+        durationUnit: 'Days',
+        roleTarget: 'VENDOR',
+        isActive: true,
+        features: [
+          'Unlock up to 5 Financer Contacts',
+          'Direct Phone & WhatsApp Access',
+          'Verified Financer Trust Badge',
+          'Dedicated Help Desk Support',
+        ],
+      },
+      {
+        id: 'vp-2',
+        name: 'Monthly Growth Plan',
+        code: 'VENDOR_MONTHLY',
+        description: 'Most popular plan for small shop businesses seeking capital',
+        price: 599,
+        originalPrice: 999,
+        durationDays: 30,
+        durationNumber: 30,
+        durationUnit: 'Days',
+        roleTarget: 'VENDOR',
+        isActive: true,
+        isPopular: true,
+        features: [
+          'Unlimited Financer Phone & WhatsApp Unlocks',
+          'Direct Email & Branch Contact Access',
+          'Pan-India Financer Discovery',
+          'Priority Application Routing',
+          'Dedicated Account Manager',
+        ],
+      },
+      {
+        id: 'vp-3',
+        name: 'Quarterly Business Plan',
+        code: 'VENDOR_QUARTERLY',
+        description: '3 Months uninterrupted financer discovery suite',
+        price: 1399,
+        originalPrice: 2499,
+        durationDays: 90,
+        durationNumber: 3,
+        durationUnit: 'Months',
+        roleTarget: 'VENDOR',
+        isActive: true,
+        features: [
+          'Everything in Monthly Growth Plan',
+          'Priority KYC Document Storage',
+          'Multi-Financer Rate Comparison Tool',
+          'New Financer Instant Alerts',
+        ],
+      },
+      {
+        id: 'vp-4',
+        name: 'Yearly VIP Enterprise Plan',
+        code: 'VENDOR_YEARLY',
+        description: '1 Year complete access with maximum savings',
+        price: 4499,
+        originalPrice: 7999,
+        durationDays: 365,
+        durationNumber: 1,
+        durationUnit: 'Years',
+        roleTarget: 'VENDOR',
+        isActive: true,
+        isBestValue: true,
+        features: [
+          '365 Days Unlimited Contact Access',
+          'Zero Middleman Fees Guarantee',
+          'VIP Priority Verification Status',
+          '24/7 Dedicated Account Manager',
+        ],
+      },
+    ];
+  });
+
+  // Lender Subscription Plans with localStorage persistence
+  const [lenderPlans, setLenderPlans] = useState<AdminSubscriptionPlan[]>(() => {
+    try {
+      const saved = localStorage.getItem('sbni_admin_lender_plans');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return [
+      {
+        id: 'lp-1',
+        name: 'Financer Weekly Starter',
+        code: 'LENDER_WEEKLY',
+        description: '7 Days trial access for business financers',
+        price: 499,
+        originalPrice: 899,
+        durationDays: 7,
+        durationNumber: 7,
+        durationUnit: 'Days',
+        roleTarget: 'LENDER',
+        isActive: true,
+        features: [
+          'Connect with Verified Shop Businesses',
+          'View Up to 10 Vendor KYC Files',
+          'Direct Owner WhatsApp Link',
+        ],
+      },
+      {
+        id: 'lp-2',
+        name: 'Financer Monthly Plan',
+        code: 'LENDER_MONTHLY',
+        description: 'Most popular plan for NBFCs & financial institutions',
+        price: 999,
+        originalPrice: 1499,
+        durationDays: 30,
+        durationNumber: 30,
+        durationUnit: 'Days',
+        roleTarget: 'LENDER',
+        isActive: true,
+        isPopular: true,
+        features: [
+          'Unlimited Verified Shop Business Leads',
+          'Complete KYC & GST Report Access',
+          'Direct Application Routing',
+          'Lead Management Dashboard',
+        ],
+      },
+      {
+        id: 'lp-3',
+        name: 'Financer Quarterly Growth',
+        code: 'LENDER_QUARTERLY',
+        description: '3 Months uninterrupted business financing suite',
+        price: 2499,
+        originalPrice: 3999,
+        durationDays: 90,
+        durationNumber: 3,
+        durationUnit: 'Months',
+        roleTarget: 'LENDER',
+        isActive: true,
+        features: [
+          'Everything in Monthly Plan',
+          'Priority Lead Allocation',
+          'Risk & Analytics Dashboard',
+          'Dedicated Relationship Support',
+        ],
+      },
+      {
+        id: 'lp-4',
+        name: 'Financer Annual VIP Plan',
+        code: 'LENDER_ANNUAL',
+        description: '1 Year maximum visibility & premium leads',
+        price: 7999,
+        originalPrice: 14999,
+        durationDays: 365,
+        durationNumber: 1,
+        durationUnit: 'Years',
+        roleTarget: 'LENDER',
+        isActive: true,
+        isBestValue: true,
+        features: [
+          '365 Days Full Platform Access',
+          'Unlimited Premium Lead Discovery',
+          'Custom Product Promotion Listing',
+          'Featured Top Badge on Financer Directory',
+        ],
+      },
+    ];
+  });
+
+  const [auditLogs, setAuditLogs] = useState([
+    { id: 'a1', time: '2026-08-16 14:35:10', action: 'ADMIN_LOGIN', detail: 'Super Admin srinivaspolepalli10@gmail.com authenticated' },
+  ]);
+
+  const [selectedDocVendor, setSelectedDocVendor] = useState<VendorData | null>(null);
+  const [grantSubModalVendor, setGrantSubModalVendor] = useState<VendorData | null>(null);
+  const [fraudConfirmVendor, setFraudConfirmVendor] = useState<VendorData | null>(null);
+  const [selectedPlanCode, setSelectedPlanCode] = useState('MONTHLY');
+  const [toastMessage, setToastMessage] = useState('');
+
+  // Subscription Plan CRUD Modal State
+  const [planModalOpen, setPlanModalOpen] = useState(false);
+  const [editingPlan, setEditingPlan] = useState<AdminSubscriptionPlan | null>(null);
+  const [planTargetRole, setPlanTargetRole] = useState<'VENDOR' | 'LENDER'>('VENDOR');
+
+  // Form State for Adding / Editing Subscription Plan
+  const [formPlanName, setFormPlanName] = useState('');
+  const [formPlanCode, setFormPlanCode] = useState('');
+  const [formDescription, setFormDescription] = useState('');
+  const [formPrice, setFormPrice] = useState('');
+  const [formOriginalPrice, setFormOriginalPrice] = useState('');
+  const [formDurationNumber, setFormDurationNumber] = useState('1');
+  const [formDurationUnit, setFormDurationUnit] = useState<'Days' | 'Weeks' | 'Months' | 'Years'>('Months');
+  const [formFeaturesText, setFormFeaturesText] = useState('');
+  const [formIsPopular, setFormIsPopular] = useState(false);
+  const [formIsBestValue, setFormIsBestValue] = useState(false);
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(''), 4000);
+  };
+
+  useEffect(() => {
+    // Clear any previous dummy cache
+    localStorage.removeItem('justpaisa_admin_transactions');
+    localStorage.removeItem('justpaisa_admin_referrals');
+
+    const adminToken = localStorage.getItem('sbni_admin_token');
+    const adminUser = localStorage.getItem('sbni_admin_user');
+    if (adminToken && adminUser) {
+      setIsAdminAuthenticated(true);
+      loadAdminVendorsAndLenders();
+      loadAdminPayments();
+    }
+  }, []);
+
+  const handleAdminLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoginError('');
+    setIsLoggingIn(true);
+
+    const res = await adminLoginApi(adminEmail, adminPassword);
+    setIsLoggingIn(false);
+
+    if (res.success) {
+      setIsAdminAuthenticated(true);
+      loadAdminVendorsAndLenders();
+      loadAdminPayments();
+      showToast('Welcome Super Admin! Access granted.');
+    } else {
+      setLoginError(res.message || 'Invalid credentials');
+    }
+  };
+
+  const handleAdminLogout = () => {
+    localStorage.removeItem('sbni_admin_token');
+    localStorage.removeItem('sbni_admin_user');
+    setIsAdminAuthenticated(false);
+  };
+
+  // ─── DATE / TIMEFRAME HELPER FUNCTIONS ─────────────────────────────────────
+  const isDateInPeriod = (dateStr: string, period: 'ALL' | 'DAY' | 'WEEK' | 'MONTH' | 'YEAR'): boolean => {
+    if (period === 'ALL') return true;
+    const itemDate = new Date(dateStr);
+    const now = new Date();
+
+    if (period === 'DAY') {
+      return (
+        itemDate.getFullYear() === now.getFullYear() &&
+        itemDate.getMonth() === now.getMonth() &&
+        itemDate.getDate() === now.getDate()
+      );
+    }
+
+    if (period === 'WEEK') {
+      const diffTime = Math.abs(now.getTime() - itemDate.getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      return diffDays <= 7;
+    }
+
+    if (period === 'MONTH') {
+      return (
+        itemDate.getFullYear() === now.getFullYear() &&
+        itemDate.getMonth() === now.getMonth()
+      );
+    }
+
+    if (period === 'YEAR') {
+      return itemDate.getFullYear() === now.getFullYear();
+    }
+
+    return true;
+  };
+
+  const formatExactDateTime = (dateStr: string): string => {
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return dateStr;
+      const day = d.getDate().toString().padStart(2, '0');
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const month = months[d.getMonth()];
+      const year = d.getFullYear();
+      let hours = d.getHours();
+      const minutes = d.getMinutes().toString().padStart(2, '0');
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      hours = hours % 12;
+      hours = hours ? hours : 12;
+      return `${day} ${month} ${year}, ${hours}:${minutes} ${ampm}`;
+    } catch {
+      return dateStr;
+    }
+  };
+
+  // ─── VENDOR REVENUE CALCULATIONS & FILTERING ────────────────────────────────
+  const vendorTransactions = useMemo(() => {
+    return transactions.filter((t) => t.role === 'VENDOR');
+  }, [transactions]);
+
+  const filteredVendorTransactions = useMemo(() => {
+    return vendorTransactions.filter((t) => {
+      // Period filter
+      if (!isDateInPeriod(t.paymentDate, vendorRevenuePeriod)) return false;
+
+      // Plan filter
+      if (vendorRevenuePlanFilter !== 'ALL' && t.planCode !== vendorRevenuePlanFilter) return false;
+
+      // Payment method filter
+      if (vendorRevenueMethodFilter !== 'ALL' && t.paymentMethod !== vendorRevenueMethodFilter) return false;
+
+      // Search filter
+      if (vendorRevenueSearch.trim()) {
+        const q = vendorRevenueSearch.toLowerCase().trim();
+        const matches =
+          t.entityName.toLowerCase().includes(q) ||
+          t.personName.toLowerCase().includes(q) ||
+          t.email.toLowerCase().includes(q) ||
+          t.phone.includes(q) ||
+          t.invoiceNumber.toLowerCase().includes(q) ||
+          t.transactionId.toLowerCase().includes(q) ||
+          t.planName.toLowerCase().includes(q);
+        if (!matches) return false;
+      }
+
+      return true;
+    });
+  }, [vendorTransactions, vendorRevenuePeriod, vendorRevenuePlanFilter, vendorRevenueMethodFilter, vendorRevenueSearch]);
+
+  const vendorStats = useMemo(() => {
+    const totalAll = vendorTransactions.reduce((acc, t) => acc + (t.status === 'SUCCESS' ? t.amount : 0), 0);
+    const today = vendorTransactions.filter((t) => isDateInPeriod(t.paymentDate, 'DAY') && t.status === 'SUCCESS').reduce((acc, t) => acc + t.amount, 0);
+    const week = vendorTransactions.filter((t) => isDateInPeriod(t.paymentDate, 'WEEK') && t.status === 'SUCCESS').reduce((acc, t) => acc + t.amount, 0);
+    const month = vendorTransactions.filter((t) => isDateInPeriod(t.paymentDate, 'MONTH') && t.status === 'SUCCESS').reduce((acc, t) => acc + t.amount, 0);
+    const year = vendorTransactions.filter((t) => isDateInPeriod(t.paymentDate, 'YEAR') && t.status === 'SUCCESS').reduce((acc, t) => acc + t.amount, 0);
+    const filteredTotal = filteredVendorTransactions.reduce((acc, t) => acc + (t.status === 'SUCCESS' ? t.amount : 0), 0);
+    const aov = filteredVendorTransactions.length > 0 ? Math.round(filteredTotal / filteredVendorTransactions.length) : 0;
+
+    return { totalAll, today, week, month, year, filteredTotal, aov, count: filteredVendorTransactions.length };
+  }, [vendorTransactions, filteredVendorTransactions]);
+
+  // ─── LENDER REVENUE CALCULATIONS & FILTERING ────────────────────────────────
+  const lenderTransactions = useMemo(() => {
+    return transactions.filter((t) => t.role === 'LENDER');
+  }, [transactions]);
+
+  const filteredLenderTransactions = useMemo(() => {
+    return lenderTransactions.filter((t) => {
+      // Period filter
+      if (!isDateInPeriod(t.paymentDate, lenderRevenuePeriod)) return false;
+
+      // Plan filter
+      if (lenderRevenuePlanFilter !== 'ALL' && t.planCode !== lenderRevenuePlanFilter) return false;
+
+      // Method filter
+      if (lenderRevenueMethodFilter !== 'ALL' && t.paymentMethod !== lenderRevenueMethodFilter) return false;
+
+      // Search filter
+      if (lenderRevenueSearch.trim()) {
+        const q = lenderRevenueSearch.toLowerCase().trim();
+        const matches =
+          t.entityName.toLowerCase().includes(q) ||
+          t.personName.toLowerCase().includes(q) ||
+          t.email.toLowerCase().includes(q) ||
+          t.phone.includes(q) ||
+          t.invoiceNumber.toLowerCase().includes(q) ||
+          t.transactionId.toLowerCase().includes(q) ||
+          t.planName.toLowerCase().includes(q);
+        if (!matches) return false;
+      }
+
+      return true;
+    });
+  }, [lenderTransactions, lenderRevenuePeriod, lenderRevenuePlanFilter, lenderRevenueMethodFilter, lenderRevenueSearch]);
+
+  const lenderStats = useMemo(() => {
+    const totalAll = lenderTransactions.reduce((acc, t) => acc + (t.status === 'SUCCESS' ? t.amount : 0), 0);
+    const today = lenderTransactions.filter((t) => isDateInPeriod(t.paymentDate, 'DAY') && t.status === 'SUCCESS').reduce((acc, t) => acc + t.amount, 0);
+    const week = lenderTransactions.filter((t) => isDateInPeriod(t.paymentDate, 'WEEK') && t.status === 'SUCCESS').reduce((acc, t) => acc + t.amount, 0);
+    const month = lenderTransactions.filter((t) => isDateInPeriod(t.paymentDate, 'MONTH') && t.status === 'SUCCESS').reduce((acc, t) => acc + t.amount, 0);
+    const year = lenderTransactions.filter((t) => isDateInPeriod(t.paymentDate, 'YEAR') && t.status === 'SUCCESS').reduce((acc, t) => acc + t.amount, 0);
+    const filteredTotal = filteredLenderTransactions.reduce((acc, t) => acc + (t.status === 'SUCCESS' ? t.amount : 0), 0);
+    const aov = filteredLenderTransactions.length > 0 ? Math.round(filteredTotal / filteredLenderTransactions.length) : 0;
+
+    return { totalAll, today, week, month, year, filteredTotal, aov, count: filteredLenderTransactions.length };
+  }, [lenderTransactions, filteredLenderTransactions]);
+
+  // ─── REFERRALS FILTERING & ACTIONS ─────────────────────────────────────────
+  const filteredReferrals = useMemo(() => {
+    return referrals.filter((r) => {
+      if (referralStatusFilter !== 'ALL' && r.status !== referralStatusFilter) return false;
+      if (referralRoleFilter !== 'ALL' && r.referrerRole !== referralRoleFilter) return false;
+      if (referralSearch.trim()) {
+        const q = referralSearch.toLowerCase().trim();
+        const matches =
+          r.referrerName.toLowerCase().includes(q) ||
+          r.referrerEmail.toLowerCase().includes(q) ||
+          r.referralCode.toLowerCase().includes(q) ||
+          r.refereeName.toLowerCase().includes(q) ||
+          r.refereeEmail.toLowerCase().includes(q) ||
+          r.refereeBusiness.toLowerCase().includes(q);
+        if (!matches) return false;
+      }
+      return true;
+    });
+  }, [referrals, referralStatusFilter, referralRoleFilter, referralSearch]);
+
+  const referralStats = useMemo(() => {
+    const totalInvites = referrals.length;
+    const paidCount = referrals.filter((r) => r.status === 'PAID').length;
+    const readyCount = referrals.filter((r) => r.status === 'REWARD_READY').length;
+    const pendingCount = referrals.filter((r) => r.status === 'PENDING_VERIFICATION').length;
+    const totalPaidAmount = referrals.filter((r) => r.status === 'PAID').reduce((acc, r) => acc + r.rewardAmount, 0);
+    const pendingPayoutAmount = referrals.filter((r) => r.status === 'REWARD_READY').reduce((acc, r) => acc + r.rewardAmount, 0);
+    const conversionRate = totalInvites > 0 ? Math.round(((paidCount + readyCount) / totalInvites) * 100) : 0;
+
+    return {
+      totalInvites,
+      paidCount,
+      readyCount,
+      pendingCount,
+      totalPaidAmount,
+      pendingPayoutAmount,
+      conversionRate,
+    };
+  }, [referrals]);
+
+  // Mark Referral Reward as Paid
+  const handlePayReferralReward = (refId: string) => {
+    const updated = referrals.map((r) => {
+      if (r.id === refId) {
+        return {
+          ...r,
+          status: 'PAID' as const,
+          paidAt: new Date().toISOString(),
+          payoutTxnId: `PAYOUT_UPI_${Math.floor(1000000 + Math.random() * 9000000)}`,
+        };
+      }
+      return r;
+    });
+
+    setReferrals(updated);
+    localStorage.setItem('justpaisa_admin_live_referrals', JSON.stringify(updated));
+
+    const item = referrals.find((r) => r.id === refId);
+    showToast(`✅ Paid ₹${item?.rewardAmount || 200} reward to ${item?.referrerName || 'Partner'}!`);
+  };
+
+  // CSV Export Utility
+  const exportToCsv = (data: any[], filename: string) => {
+    if (!data.length) {
+      showToast('No records to export.');
+      return;
+    }
+
+    const headers = Object.keys(data[0]);
+    const csvRows = [];
+    csvRows.push(headers.join(','));
+
+    for (const row of data) {
+      const values = headers.map((header) => {
+        const val = row[header];
+        const escaped = ('' + (val !== undefined ? val : '')).replace(/"/g, '""');
+        return `"${escaped}"`;
+      });
+      csvRows.push(values.join(','));
+    }
+
+    const csvData = csvRows.join('\n');
+    const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `${filename}_${new Date().toISOString().substring(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast(`📄 Exported ${data.length} records to ${filename}.csv`);
+  };
+
+  // Vendor Status Actions
+  const handleToggleVendorKYC = async (vendorId: string, currentStatus: string) => {
+    const newStatus = currentStatus === 'VERIFIED' ? 'PENDING' : 'VERIFIED';
+    setVendors(
+      vendors.map((v) => (v.id === vendorId ? { ...v, kycStatus: newStatus as any } : v))
+    );
+    try {
+      await adminUpdateVendorKYC(vendorId, newStatus === 'VERIFIED' ? 'APPROVED' : 'PENDING');
+    } catch {}
+    const vendorName = vendors.find((v) => v.id === vendorId)?.businessName;
+    setAuditLogs([
+      {
+        id: 'a-' + Date.now(),
+        time: new Date().toISOString().replace('T', ' ').substring(0, 19),
+        action: 'VENDOR_KYC_UPDATE',
+        detail: `Vendor ${vendorName} KYC status set to ${newStatus}`,
+      },
+      ...auditLogs,
+    ]);
+    showToast(`Vendor KYC status updated to ${newStatus}`);
+  };
+
+  const handleToggleVendorFraud = (v: VendorData) => {
+    if (!v.isFraud) {
+      setFraudConfirmVendor(v);
+    } else {
+      executeToggleVendorFraud(v.id, true);
+    }
+  };
+
+  const executeToggleVendorFraud = async (vendorId: string, currentIsFraud: boolean) => {
+    const newIsFraud = !currentIsFraud;
+    const vendorObj = vendors.find((v) => v.id === vendorId);
+    const vendorName = vendorObj?.businessName || 'Vendor';
+
+    setVendors(
+      vendors.map((v) => (v.id === vendorId ? { ...v, isFraud: newIsFraud } : v))
+    );
+
+    try {
+      const storedFraud = JSON.parse(localStorage.getItem('sbni_fraud_vendors') || '{}');
+      storedFraud[vendorId] = newIsFraud;
+      if (vendorObj?.userEmail) storedFraud[vendorObj.userEmail] = newIsFraud;
+      localStorage.setItem('sbni_fraud_vendors', JSON.stringify(storedFraud));
+      await adminToggleVendorFraud(vendorId, newIsFraud);
+    } catch {}
+
+    setAuditLogs([
+      {
+        id: 'a-' + Date.now(),
+        time: new Date().toISOString().replace('T', ' ').substring(0, 19),
+        action: newIsFraud ? 'VENDOR_MARKED_FRAUD' : 'VENDOR_FRAUD_CLEARED',
+        detail: `Vendor "${vendorName}" was ${newIsFraud ? 'MARKED AS FRAUD ACCOUNT' : 'cleared from fraud status'}`,
+      },
+      ...auditLogs,
+    ]);
+
+    if (newIsFraud) {
+      showToast(`🚨 Vendor "${vendorName}" marked as FRAUD ACCOUNT! Alert live for all lenders.`);
+    } else {
+      showToast(`✅ Fraud status cleared for "${vendorName}".`);
+    }
+  };
+
+  const handleDeleteVendor = async (vendorId: string) => {
+    const vendorObj = vendors.find((v) => v.id === vendorId);
+    const vendorName = vendorObj?.businessName || vendorObj?.ownerName || 'Vendor';
+    if (confirm(`Are you sure you want to permanently remove vendor account "${vendorName}"?`)) {
+      const updated = vendors.filter((v) => v.id !== vendorId);
+      setVendors(updated);
+      localStorage.setItem('sbni_admin_vendors', JSON.stringify(updated));
+
+      const deletedIds = JSON.parse(localStorage.getItem('sbni_deleted_vendors') || '[]');
+      if (!deletedIds.includes(vendorId)) deletedIds.push(vendorId);
+      localStorage.setItem('sbni_deleted_vendors', JSON.stringify(deletedIds));
+
+      try {
+        await adminDeleteUser(vendorId);
+      } catch {}
+      showToast(`Vendor "${vendorName}" permanently removed from system.`);
+    }
+  };
+
+  // Lender Status Actions
+  const handleToggleLenderVerification = (lenderId: string, currentStatus: string) => {
+    const newStatus = currentStatus === 'VERIFIED' ? 'PENDING' : 'VERIFIED';
+    setLenders(
+      lenders.map((l) => (l.id === lenderId ? { ...l, verificationStatus: newStatus as any } : l))
+    );
+    const lenderName = lenders.find((l) => l.id === lenderId)?.institutionName;
+    setAuditLogs([
+      {
+        id: 'a-' + Date.now(),
+        time: new Date().toISOString().replace('T', ' ').substring(0, 19),
+        action: 'LENDER_VERIFICATION_UPDATE',
+        detail: `Lender ${lenderName} verification set to ${newStatus}`,
+      },
+      ...auditLogs,
+    ]);
+    showToast(`Lender verification status updated to ${newStatus}`);
+  };
+
+  const handleDeleteLender = async (lenderId: string) => {
+    const lenderName = lenders.find((l) => l.id === lenderId)?.institutionName;
+    if (confirm(`Are you sure you want to permanently remove financer "${lenderName}"?`)) {
+      const updated = lenders.filter((l) => l.id !== lenderId);
+      setLenders(updated);
+      localStorage.setItem('sbni_admin_lenders', JSON.stringify(updated));
+
+      const deletedIds = JSON.parse(localStorage.getItem('sbni_deleted_lenders') || '[]');
+      if (!deletedIds.includes(lenderId)) deletedIds.push(deletedIds);
+      localStorage.setItem('sbni_deleted_lenders', JSON.stringify(deletedIds));
+
+      try {
+        await adminDeleteUser(lenderId);
+      } catch {}
+      showToast(`Lender "${lenderName}" permanently removed from system.`);
+    }
+  };
+
+  // Grant Subscription
+  const handleConfirmGrantSubscription = () => {
+    if (!grantSubModalVendor) return;
+    showToast(`Successfully granted ${selectedPlanCode} plan to ${grantSubModalVendor.businessName}`);
+    setGrantSubModalVendor(null);
+  };
+
+  // Open Create Modal
+  const handleOpenCreatePlanModal = (targetRole: 'VENDOR' | 'LENDER') => {
+    setEditingPlan(null);
+    setPlanTargetRole(targetRole);
+    setFormPlanName('');
+    setFormPlanCode(targetRole === 'VENDOR' ? 'VENDOR_CUSTOM' : 'LENDER_CUSTOM');
+    setFormDescription('');
+    setFormPrice('499');
+    setFormOriginalPrice('999');
+    setFormDurationNumber('1');
+    setFormDurationUnit('Months');
+    setFormFeaturesText('Unlock Verified Contact Access\nWhatsApp & Direct Phone\nDedicated Customer Support');
+    setFormIsPopular(false);
+    setFormIsBestValue(false);
+    setPlanModalOpen(true);
+  };
+
+  // Open Edit Modal
+  const handleOpenEditPlanModal = (plan: AdminSubscriptionPlan) => {
+    setEditingPlan(plan);
+    setPlanTargetRole(plan.roleTarget);
+    setFormPlanName(plan.name);
+    setFormPlanCode(plan.code);
+    setFormDescription(plan.description);
+    setFormPrice(String(plan.price));
+    setFormOriginalPrice(String(plan.originalPrice));
+
+    let num = plan.durationDays;
+    let unit: 'Days' | 'Weeks' | 'Months' | 'Years' = 'Days';
+    if (plan.durationDays % 365 === 0) {
+      num = plan.durationDays / 365;
+      unit = 'Years';
+    } else if (plan.durationDays % 30 === 0) {
+      num = plan.durationDays / 30;
+      unit = 'Months';
+    } else if (plan.durationDays % 7 === 0) {
+      num = plan.durationDays / 7;
+      unit = 'Weeks';
+    }
+    setFormDurationNumber(String(num));
+    setFormDurationUnit(unit);
+    setFormFeaturesText(plan.features.join('\n'));
+    setFormIsPopular(!!plan.isPopular);
+    setFormIsBestValue(!!plan.isBestValue);
+    setPlanModalOpen(true);
+  };
+
+  const handleSavePlanSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const num = parseInt(formDurationNumber) || 1;
+    let days = num;
+    if (formDurationUnit === 'Weeks') days = num * 7;
+    if (formDurationUnit === 'Months') days = num * 30;
+    if (formDurationUnit === 'Years') days = num * 365;
+
+    const parsedFeatures = formFeaturesText
+      .split('\n')
+      .map((f) => f.trim())
+      .filter((f) => f.length > 0);
+
+    const priceNum = parseFloat(formPrice) || 0;
+    const origPriceNum = parseFloat(formOriginalPrice) || priceNum;
+
+    if (editingPlan) {
+      const updatedPlan: AdminSubscriptionPlan = {
+        ...editingPlan,
+        name: formPlanName,
+        code: formPlanCode.toUpperCase().replace(/\s+/g, '_'),
+        description: formDescription,
+        price: priceNum,
+        originalPrice: origPriceNum,
+        durationDays: days,
+        durationNumber: num,
+        durationUnit: formDurationUnit,
+        features: parsedFeatures.length > 0 ? parsedFeatures : ['Direct Contact Unlocks'],
+        isPopular: formIsPopular,
+        isBestValue: formIsBestValue,
+        roleTarget: planTargetRole,
+      };
+
+      if (planTargetRole === 'VENDOR') {
+        const updated = vendorPlans.map((p) => (p.id === editingPlan.id ? updatedPlan : p));
+        setVendorPlans(updated);
+        localStorage.setItem('sbni_admin_vendor_plans', JSON.stringify(updated));
+      } else {
+        const updated = lenderPlans.map((p) => (p.id === editingPlan.id ? updatedPlan : p));
+        setLenderPlans(updated);
+        localStorage.setItem('sbni_admin_lender_plans', JSON.stringify(updated));
+      }
+
+      try {
+        await adminUpdateSubscriptionPlan(editingPlan.id, updatedPlan);
+      } catch {}
+      showToast(`Subscription Plan "${formPlanName}" updated successfully!`);
+    } else {
+      const newPlan: AdminSubscriptionPlan = {
+        id: (planTargetRole === 'VENDOR' ? 'vp-' : 'lp-') + Date.now(),
+        name: formPlanName,
+        code: formPlanCode.toUpperCase().replace(/\s+/g, '_'),
+        description: formDescription,
+        price: priceNum,
+        originalPrice: origPriceNum,
+        durationDays: days,
+        durationNumber: num,
+        durationUnit: formDurationUnit,
+        features: parsedFeatures.length > 0 ? parsedFeatures : ['Direct Contact Access'],
+        isActive: true,
+        isPopular: formIsPopular,
+        isBestValue: formIsBestValue,
+        roleTarget: planTargetRole,
+      };
+
+      if (planTargetRole === 'VENDOR') {
+        const updated = [...vendorPlans, newPlan];
+        setVendorPlans(updated);
+        localStorage.setItem('sbni_admin_vendor_plans', JSON.stringify(updated));
+      } else {
+        const updated = [...lenderPlans, newPlan];
+        setLenderPlans(updated);
+        localStorage.setItem('sbni_admin_lender_plans', JSON.stringify(updated));
+      }
+
+      try {
+        await adminCreateSubscriptionPlan(newPlan);
+      } catch {}
+      showToast(`New ${planTargetRole === 'VENDOR' ? 'Vendor' : 'Financer'} Plan "${formPlanName}" published!`);
+    }
+    setPlanModalOpen(false);
+  };
+
+  const handleDeletePlan = async (planId: string, targetRole: 'VENDOR' | 'LENDER') => {
+    const planName = [...vendorPlans, ...lenderPlans].find((p) => p.id === planId)?.name || 'Plan';
+    if (confirm(`Are you sure you want to permanently delete subscription plan "${planName}"?`)) {
+      if (targetRole === 'VENDOR') {
+        const updated = vendorPlans.filter((p) => p.id !== planId);
+        setVendorPlans(updated);
+        localStorage.setItem('sbni_admin_vendor_plans', JSON.stringify(updated));
+      } else {
+        const updated = lenderPlans.filter((p) => p.id !== planId);
+        setLenderPlans(updated);
+        localStorage.setItem('sbni_admin_lender_plans', JSON.stringify(updated));
+      }
+
+      try {
+        await adminDeleteSubscriptionPlan(planId);
+      } catch {}
+      showToast(`Subscription Plan "${planName}" deleted.`);
+    }
+  };
+
+  // ─── LOGIN SCREEN IF NOT AUTHENTICATED ─────────────────────────────────────
+  if (!isAdminAuthenticated) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
+        <div className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl p-8 border border-slate-200 overflow-hidden">
+          <div className="absolute top-0 left-0 w-32 h-32 bg-gradient-to-br from-[#003893] to-[#002669] rounded-br-full opacity-90 pointer-events-none" />
+
+          <div className="relative z-10 text-center space-y-2 mb-8 pt-2">
+            <div className="flex justify-center mb-3">
+              <SBNILogo imgClassName="h-16 w-auto object-contain drop-shadow-sm" />
+            </div>
+            <h2 className="text-2xl font-extrabold text-slate-900 font-heading">
+              JustPaisa Admin Login
+            </h2>
+            <p className="text-xs text-slate-500 font-medium">
+              Enter Super Admin credentials to access the management portal
+            </p>
+          </div>
+
+          {loginError && (
+            <div className="relative z-10 mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+              <span>{loginError}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleAdminLogin} className="relative z-10 space-y-4">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                Admin Email ID *
+              </label>
+              <input
+                type="email"
+                value={adminEmail}
+                onChange={(e) => setAdminEmail(e.target.value)}
+                className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-xs sm:text-sm font-medium text-slate-900 focus:outline-none focus:border-[#003893] transition-colors"
+                placeholder="admin@sbnimoney.com"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                Password *
+              </label>
+              <input
+                type="password"
+                value={adminPassword}
+                onChange={(e) => setAdminPassword(e.target.value)}
+                className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-xs sm:text-sm font-medium text-slate-900 focus:outline-none focus:border-[#003893] transition-colors"
+                placeholder="••••••••••••"
+                required
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={isLoggingIn}
+              className="w-full py-3.5 px-4 bg-[#003893] hover:bg-[#002669] text-white font-extrabold text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2 mt-6 active:scale-98"
+            >
+              {isLoggingIn ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" /> Authenticating...
+                </>
+              ) : (
+                <>
+                  <Lock className="w-4 h-4" /> Log In as Super Admin
+                </>
+              )}
+            </button>
+          </form>
+
+          <div className="relative z-10 mt-6 pt-5 border-t border-slate-100 text-center">
+            <button
+              onClick={onNavigateHome}
+              className="text-xs font-bold text-[#003893] hover:underline inline-flex items-center gap-1"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" /> Back to Main Marketplace Website
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ─── SUPER ADMIN AUTHENTICATED VIEW ────────────────────────────────────────
+  return (
+    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col md:flex-row font-sans">
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div className="fixed top-5 right-5 z-50 bg-[#007a33] text-white font-extrabold px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-2 animate-bounce border border-emerald-400 text-xs">
+          <CheckCircle2 className="w-5 h-5 text-white" />
+          <span>{toastMessage}</span>
+        </div>
+      )}
+
+      {/* Sidebar Navigation */}
+      <aside className="w-full md:w-64 bg-white border-r border-slate-200 p-5 flex flex-col justify-between flex-shrink-0 shadow-sm">
+        <div>
+          {/* Logo Header */}
+          <div className="pb-6 border-b border-slate-100 space-y-2">
+            <div className="flex justify-start">
+              <SBNILogo imgClassName="h-12 w-auto object-contain" />
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="text-[11px] font-extrabold text-[#003893] uppercase tracking-wider bg-blue-50 px-2.5 py-0.5 rounded-md border border-blue-200">
+                JustPaisa Admin Center
+              </div>
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" title="AWS Live Connected" />
+            </div>
+          </div>
+
+          {/* Admin User Info Box */}
+          <div className="my-4 p-3 rounded-2xl bg-slate-50 border border-slate-200 text-xs">
+            <div className="text-slate-500 text-[10px] font-bold uppercase tracking-wider">Logged In Admin</div>
+            <div className="text-[#003893] font-extrabold truncate mt-0.5">{adminEmail}</div>
+          </div>
+
+          {/* Navigation Links */}
+          <nav className="space-y-1.5 text-xs font-bold">
+            {/* Overview Dashboard */}
+            <button
+              onClick={() => setActiveTab('overview')}
+              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all ${
+                activeTab === 'overview'
+                  ? 'bg-[#003893] text-white shadow-md'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+              }`}
+            >
+              <LayoutDashboard className="w-4 h-4" /> Overview Dashboard
+            </button>
+
+            {/* User Vendors */}
+            <button
+              onClick={() => setActiveTab('vendors')}
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl transition-all ${
+                activeTab === 'vendors'
+                  ? 'bg-[#003893] text-white shadow-md'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <Users className="w-4 h-4" /> User Vendors
+              </div>
+              <span
+                className={`px-2 py-0.5 rounded-md text-[10px] font-extrabold ${
+                  activeTab === 'vendors' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'
+                }`}
+              >
+                {vendors.length}
+              </span>
+            </button>
+
+            {/* Business Financers */}
+            <button
+              onClick={() => setActiveTab('lenders')}
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl transition-all ${
+                activeTab === 'lenders'
+                  ? 'bg-[#007a33] text-white shadow-md'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <Building2 className="w-4 h-4" /> Business Financers
+              </div>
+              <span
+                className={`px-2 py-0.5 rounded-md text-[10px] font-extrabold ${
+                  activeTab === 'lenders' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'
+                }`}
+              >
+                {lenders.length}
+              </span>
+            </button>
+
+            {/* 💰 REVENUE PAGE 1: VENDORS / SHOP BUSINESS REVENUE */}
+            <button
+              onClick={() => setActiveTab('vendor_revenue')}
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl transition-all ${
+                activeTab === 'vendor_revenue'
+                  ? 'bg-[#003893] text-white shadow-md'
+                  : 'text-slate-700 hover:text-[#003893] hover:bg-blue-50/80'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <DollarSign className="w-4 h-4 text-emerald-500 shrink-0" />
+                <span>Shop Business Revenue</span>
+              </div>
+              <span
+                className={`px-2 py-0.5 rounded-md text-[10px] font-extrabold ${
+                  activeTab === 'vendor_revenue' ? 'bg-white/20 text-white' : 'bg-blue-100 text-[#003893]'
+                }`}
+              >
+                ₹{vendorStats.totalAll.toLocaleString('en-IN')}
+              </span>
+            </button>
+
+            {/* 💳 REVENUE PAGE 2: BUSINESS MONEY REVENUE (LENDERS) */}
+            <button
+              onClick={() => setActiveTab('lender_revenue')}
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl transition-all ${
+                activeTab === 'lender_revenue'
+                  ? 'bg-[#007a33] text-white shadow-md'
+                  : 'text-slate-700 hover:text-[#007a33] hover:bg-emerald-50/80'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <Wallet className="w-4 h-4 text-emerald-500 shrink-0" />
+                <span>Business Money Revenue</span>
+              </div>
+              <span
+                className={`px-2 py-0.5 rounded-md text-[10px] font-extrabold ${
+                  activeTab === 'lender_revenue' ? 'bg-white/20 text-white' : 'bg-emerald-100 text-[#007a33]'
+                }`}
+              >
+                ₹{lenderStats.totalAll.toLocaleString('en-IN')}
+              </span>
+            </button>
+
+            {/* 🎁 PAGE 3: MANAGE REFERRALS */}
+            <button
+              onClick={() => setActiveTab('referrals')}
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl transition-all ${
+                activeTab === 'referrals'
+                  ? 'bg-gradient-to-r from-purple-700 to-indigo-700 text-white shadow-md'
+                  : 'text-slate-700 hover:text-purple-700 hover:bg-purple-50/80'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <Gift className="w-4 h-4 text-purple-500 shrink-0" />
+                <span>Manage Referrals</span>
+              </div>
+              <span
+                className={`px-2 py-0.5 rounded-md text-[10px] font-extrabold ${
+                  activeTab === 'referrals' ? 'bg-white/20 text-white' : 'bg-purple-100 text-purple-700'
+                }`}
+              >
+                {referralStats.totalInvites}
+              </span>
+            </button>
+
+            {/* Vendor Subscription Plans */}
+            <button
+              onClick={() => setActiveTab('vendor_subs')}
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl transition-all ${
+                activeTab === 'vendor_subs'
+                  ? 'bg-[#003893] text-white shadow-md'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-blue-50/60'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <Zap className="w-4 h-4 text-amber-500 shrink-0" />
+                <span>Vendor Plans</span>
+              </div>
+              <span
+                className={`px-2 py-0.5 rounded-md text-[10px] font-extrabold ${
+                  activeTab === 'vendor_subs' ? 'bg-white/20 text-white' : 'bg-blue-100 text-[#003893]'
+                }`}
+              >
+                {vendorPlans.length}
+              </span>
+            </button>
+
+            {/* Financer Subscription Plans */}
+            <button
+              onClick={() => setActiveTab('lender_subs')}
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl transition-all ${
+                activeTab === 'lender_subs'
+                  ? 'bg-[#007a33] text-white shadow-md'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-emerald-50/60'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <CreditCard className="w-4 h-4 text-emerald-500 shrink-0" />
+                <span>Financer Plans</span>
+              </div>
+              <span
+                className={`px-2 py-0.5 rounded-md text-[10px] font-extrabold ${
+                  activeTab === 'lender_subs' ? 'bg-white/20 text-white' : 'bg-emerald-100 text-[#007a33]'
+                }`}
+              >
+                {lenderPlans.length}
+              </span>
+            </button>
+
+            {/* Audit Logs */}
+            <button
+              onClick={() => setActiveTab('audits')}
+              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all ${
+                activeTab === 'audits'
+                  ? 'bg-[#003893] text-white shadow-md'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+              }`}
+            >
+              <Activity className="w-4 h-4" /> Audit Logs
+            </button>
+          </nav>
+        </div>
+
+        {/* Footer Actions */}
+        <div className="pt-6 border-t border-slate-200 space-y-2">
+          {onNavigateHome && (
+            <button
+              onClick={onNavigateHome}
+              className="w-full flex items-center justify-center gap-2 px-3 py-2.5 text-xs text-[#003893] font-extrabold bg-blue-50 hover:bg-blue-100 rounded-xl border border-blue-200 transition-colors shadow-2xs"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" /> Return to Website
+            </button>
+          )}
+          <button
+            onClick={handleAdminLogout}
+            className="w-full flex items-center justify-center gap-2 px-3 py-2.5 text-xs text-rose-700 hover:text-rose-900 bg-rose-50 hover:bg-rose-100 rounded-xl border border-rose-200 transition-colors font-extrabold shadow-2xs"
+          >
+            <LogOut className="w-3.5 h-3.5" /> Log Out Admin
+          </button>
+        </div>
+      </aside>
+
+      {/* Main Content Area */}
+      <main className="flex-1 p-5 sm:p-8 overflow-y-auto">
+        {/* ========================================================================= */}
+        {/* TAB 1: OVERVIEW DASHBOARD                                                */}
+        {/* ========================================================================= */}
+        {activeTab === 'overview' && (
+          <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200">
+              <div>
+                <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-heading tracking-tight">
+                  JustPaisa Super Admin Command Center
+                </h1>
+                <p className="text-xs text-slate-500 font-medium mt-0.5">
+                  Live revenue analytics, user moderation, and marketplace controls
+                </p>
+              </div>
+              <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-800 px-3.5 py-1.5 rounded-xl text-xs font-bold w-fit shadow-2xs">
+                <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse"></span>
+                <span>AWS Live Database Connected</span>
+              </div>
+            </div>
+
+            {/* Stat Cards Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div
+                onClick={() => setActiveTab('vendor_revenue')}
+                className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm space-y-2 hover:border-[#003893] transition-all cursor-pointer group"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="text-xs text-slate-500 font-extrabold uppercase tracking-wider">
+                    Vendors Revenue
+                  </div>
+                  <div className="w-9 h-9 rounded-xl bg-blue-100 text-[#003893] flex items-center justify-center font-bold group-hover:scale-110 transition-transform">
+                    <DollarSign className="w-5 h-5" />
+                  </div>
+                </div>
+                <div className="text-2xl sm:text-3xl font-extrabold text-[#003893] font-heading">
+                  ₹{vendorStats.totalAll.toLocaleString('en-IN')}
+                </div>
+                <div className="text-[11px] text-slate-500 font-medium flex items-center justify-between">
+                  <span>{vendorStats.count} Live Subscriptions</span>
+                  <span className="text-blue-600 font-bold underline">View ➔</span>
+                </div>
+              </div>
+
+              <div
+                onClick={() => setActiveTab('lender_revenue')}
+                className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm space-y-2 hover:border-[#007a33] transition-all cursor-pointer group"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="text-xs text-slate-500 font-extrabold uppercase tracking-wider">
+                    Financers Revenue
+                  </div>
+                  <div className="w-9 h-9 rounded-xl bg-emerald-100 text-[#007a33] flex items-center justify-center font-bold group-hover:scale-110 transition-transform">
+                    <Wallet className="w-5 h-5" />
+                  </div>
+                </div>
+                <div className="text-2xl sm:text-3xl font-extrabold text-[#007a33] font-heading">
+                  ₹{lenderStats.totalAll.toLocaleString('en-IN')}
+                </div>
+                <div className="text-[11px] text-slate-500 font-medium flex items-center justify-between">
+                  <span>{lenderStats.count} Live Subscriptions</span>
+                  <span className="text-emerald-700 font-bold underline">View ➔</span>
+                </div>
+              </div>
+
+              <div
+                onClick={() => setActiveTab('referrals')}
+                className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm space-y-2 hover:border-purple-500 transition-all cursor-pointer group"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="text-xs text-slate-500 font-extrabold uppercase tracking-wider">
+                    Referral Payouts
+                  </div>
+                  <div className="w-9 h-9 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-bold group-hover:scale-110 transition-transform">
+                    <Gift className="w-5 h-5" />
+                  </div>
+                </div>
+                <div className="text-2xl sm:text-3xl font-extrabold text-purple-700 font-heading">
+                  ₹{referralStats.totalPaidAmount.toLocaleString('en-IN')}
+                </div>
+                <div className="text-[11px] text-slate-500 font-medium flex items-center justify-between">
+                  <span>{referralStats.totalInvites} Live Invites Tracked</span>
+                  <span className="text-purple-600 font-bold underline">Manage ➔</span>
+                </div>
+              </div>
+
+              <div
+                onClick={() => setActiveTab('vendors')}
+                className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm space-y-2 hover:border-amber-400 transition-all cursor-pointer group"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="text-xs text-slate-500 font-extrabold uppercase tracking-wider">
+                    Registered Users
+                  </div>
+                  <div className="w-9 h-9 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center font-bold group-hover:scale-110 transition-transform">
+                    <Users className="w-5 h-5" />
+                  </div>
+                </div>
+                <div className="text-2xl sm:text-3xl font-extrabold text-amber-800 font-heading">
+                  {vendors.length + lenders.length}
+                </div>
+                <div className="text-[11px] text-slate-500 font-medium flex items-center justify-between">
+                  <span>{vendors.length} Vendors • {lenders.length} Financers</span>
+                  <span className="text-amber-700 font-bold underline">Manage ➔</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Navigation Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+              <div className="bg-gradient-to-br from-blue-900 via-blue-950 to-slate-900 text-white p-6 rounded-3xl shadow-lg space-y-3">
+                <div className="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center text-blue-300">
+                  <DollarSign className="w-5 h-5" />
+                </div>
+                <h3 className="text-lg font-extrabold font-heading text-white">
+                  Shop Business Revenue
+                </h3>
+                <p className="text-xs text-blue-200 font-medium">
+                  Track day-wise, weekly, monthly, and yearly subscription revenue collected from small shops.
+                </p>
+                <button
+                  onClick={() => setActiveTab('vendor_revenue')}
+                  className="py-2.5 px-4 bg-white text-[#003893] hover:bg-blue-50 font-extrabold text-xs rounded-xl transition-all shadow-md active:scale-95"
+                >
+                  Open Vendor Revenue Center ➔
+                </button>
+              </div>
+
+              <div className="bg-gradient-to-br from-emerald-900 via-emerald-950 to-slate-900 text-white p-6 rounded-3xl shadow-lg space-y-3">
+                <div className="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center text-emerald-300">
+                  <Wallet className="w-5 h-5" />
+                </div>
+                <h3 className="text-lg font-extrabold font-heading text-white">
+                  Business Money Revenue
+                </h3>
+                <p className="text-xs text-emerald-200 font-medium">
+                  Monitor subscription fees collected from verified NBFCs, banks, and business financers.
+                </p>
+                <button
+                  onClick={() => setActiveTab('lender_revenue')}
+                  className="py-2.5 px-4 bg-[#007a33] text-white hover:bg-[#005e27] font-extrabold text-xs rounded-xl transition-all shadow-md active:scale-95 border border-emerald-400"
+                >
+                  Open Financer Revenue Center ➔
+                </button>
+              </div>
+
+              <div className="bg-gradient-to-br from-purple-900 via-indigo-950 to-slate-900 text-white p-6 rounded-3xl shadow-lg space-y-3">
+                <div className="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center text-purple-300">
+                  <Gift className="w-5 h-5" />
+                </div>
+                <h3 className="text-lg font-extrabold font-heading text-white">
+                  Manage Referrals & Payouts
+                </h3>
+                <p className="text-xs text-purple-200 font-medium">
+                  Audit user referral links, track signups, reward amounts, and approve commission payouts.
+                </p>
+                <button
+                  onClick={() => setActiveTab('referrals')}
+                  className="py-2.5 px-4 bg-purple-600 text-white hover:bg-purple-700 font-extrabold text-xs rounded-xl transition-all shadow-md active:scale-95 border border-purple-400"
+                >
+                  Open Referrals Manager ➔
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ========================================================================= */}
+        {/* TAB 2: VENDORS REVENUE PAGE (Small Shop Business Revenue)                */}
+        {/* ========================================================================= */}
+        {activeTab === 'vendor_revenue' && (
+          <div className="space-y-6">
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200">
+              <div>
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-blue-100 text-[#003893] flex items-center justify-center font-bold">
+                    <DollarSign className="w-5 h-5" />
+                  </div>
+                  <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-heading tracking-tight">
+                    Small Shop & Local Startup Business Revenue
+                  </h1>
+                </div>
+                <p className="text-xs text-slate-500 font-medium mt-0.5">
+                  Calculate and audit all subscription earnings from small shop and local startup business owners
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2.5">
+                <button
+                  onClick={loadAdminPayments}
+                  className="px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5"
+                  title="Refresh Live Data"
+                >
+                  <RefreshCw className="w-3.5 h-3.5 text-slate-600" /> Refresh
+                </button>
+                <button
+                  onClick={() => exportToCsv(filteredVendorTransactions, 'JustPaisa_Vendor_Revenue')}
+                  className="px-4 py-2.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 active:scale-95"
+                >
+                  <Download className="w-4 h-4 text-[#003893]" /> Export CSV
+                </button>
+              </div>
+            </div>
+
+            {/* Calculated KPI Cards */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+              <div className="bg-gradient-to-br from-[#003893] to-[#002669] text-white p-4 rounded-2xl shadow-md space-y-1">
+                <div className="text-[10px] text-blue-200 font-extrabold uppercase tracking-wider">
+                  Total Vendor Revenue
+                </div>
+                <div className="text-xl sm:text-2xl font-extrabold font-heading">
+                  ₹{vendorStats.totalAll.toLocaleString('en-IN')}
+                </div>
+                <div className="text-[10px] text-blue-200 font-medium">All Time Total</div>
+              </div>
+
+              <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-1">
+                <div className="text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">
+                  Today's Revenue
+                </div>
+                <div className="text-xl sm:text-2xl font-extrabold text-emerald-600 font-heading">
+                  ₹{vendorStats.today.toLocaleString('en-IN')}
+                </div>
+                <div className="text-[10px] text-slate-400 font-medium">Day-Wise Today</div>
+              </div>
+
+              <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-1">
+                <div className="text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">
+                  Weekly Revenue
+                </div>
+                <div className="text-xl sm:text-2xl font-extrabold text-blue-600 font-heading">
+                  ₹{vendorStats.week.toLocaleString('en-IN')}
+                </div>
+                <div className="text-[10px] text-slate-400 font-medium">Last 7 Days</div>
+              </div>
+
+              <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-1">
+                <div className="text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">
+                  Monthly Revenue
+                </div>
+                <div className="text-xl sm:text-2xl font-extrabold text-indigo-600 font-heading">
+                  ₹{vendorStats.month.toLocaleString('en-IN')}
+                </div>
+                <div className="text-[10px] text-slate-400 font-medium">This Month</div>
+              </div>
+
+              <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-1">
+                <div className="text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">
+                  Yearly Revenue
+                </div>
+                <div className="text-xl sm:text-2xl font-extrabold text-slate-900 font-heading">
+                  ₹{vendorStats.year.toLocaleString('en-IN')}
+                </div>
+                <div className="text-[10px] text-slate-400 font-medium">Year 2026</div>
+              </div>
+
+              <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-1">
+                <div className="text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">
+                  Avg. Order Value
+                </div>
+                <div className="text-xl sm:text-2xl font-extrabold text-amber-600 font-heading">
+                  ₹{vendorStats.aov.toLocaleString('en-IN')}
+                </div>
+                <div className="text-[10px] text-slate-400 font-medium">Per Subscription</div>
+              </div>
+            </div>
+
+            {/* Filter & Period Toolbar */}
+            <div className="bg-white p-4 rounded-3xl border border-slate-200 shadow-sm space-y-3">
+              {/* Period Tabs */}
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl">
+                  <span className="text-xs font-extrabold text-slate-600 px-2 flex items-center gap-1">
+                    <Calendar className="w-3.5 h-3.5 text-[#003893]" /> Period:
+                  </span>
+                  {(
+                    [
+                      { key: 'ALL', label: 'All Time' },
+                      { key: 'DAY', label: 'Today (Day Wise)' },
+                      { key: 'WEEK', label: 'This Week' },
+                      { key: 'MONTH', label: 'This Month' },
+                      { key: 'YEAR', label: 'This Year' },
+                    ] as const
+                  ).map((p) => (
+                    <button
+                      key={p.key}
+                      onClick={() => setVendorRevenuePeriod(p.key)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-extrabold transition-all ${
+                        vendorRevenuePeriod === p.key
+                          ? 'bg-[#003893] text-white shadow-xs'
+                          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200'
+                      }`}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="text-xs font-bold text-slate-600">
+                  Showing <span className="text-[#003893] font-extrabold">{filteredVendorTransactions.length}</span>{' '}
+                  payments (Total: <span className="text-emerald-700 font-extrabold">₹{vendorStats.filteredTotal.toLocaleString('en-IN')}</span>)
+                </div>
+              </div>
+
+              {/* Search and Secondary Dropdowns */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="relative">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                  <input
+                    type="text"
+                    placeholder="Search shop name, owner, invoice, phone..."
+                    value={vendorRevenueSearch}
+                    onChange={(e) => setVendorRevenueSearch(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl pl-10 pr-3 py-2 text-xs font-medium text-slate-900 outline-none focus:border-[#003893]"
+                  />
+                </div>
+
+                <div>
+                  <select
+                    value={vendorRevenuePlanFilter}
+                    onChange={(e) => setVendorRevenuePlanFilter(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-300 text-xs font-bold text-slate-700 rounded-xl px-3 py-2 outline-none focus:border-[#003893]"
+                  >
+                    <option value="ALL">All Vendor Plans</option>
+                    <option value="VENDOR_WEEKLY">Weekly Starter Plan (₹199)</option>
+                    <option value="VENDOR_MONTHLY">Monthly Growth Plan (₹599)</option>
+                    <option value="VENDOR_QUARTERLY">Quarterly Business Plan (₹1,399)</option>
+                    <option value="VENDOR_YEARLY">Yearly VIP Enterprise Plan (₹4,499)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <select
+                    value={vendorRevenueMethodFilter}
+                    onChange={(e) => setVendorRevenueMethodFilter(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-300 text-xs font-bold text-slate-700 rounded-xl px-3 py-2 outline-none focus:border-[#003893]"
+                  >
+                    <option value="ALL">All Payment Methods</option>
+                    <option value="UPI">UPI / QR Code</option>
+                    <option value="DEBIT_CARD">Debit Card</option>
+                    <option value="CREDIT_CARD">Credit Card</option>
+                    <option value="NET_BANKING">Net Banking</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Transactions Table */}
+            <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs text-slate-800">
+                  <thead className="bg-slate-100 text-slate-700 uppercase text-[10px] font-extrabold tracking-wider border-b border-slate-200">
+                    <tr>
+                      <th className="p-4">Shop Business & Owner</th>
+                      <th className="p-4">Plan Subscribed</th>
+                      <th className="p-4">Amount Paid</th>
+                      <th className="p-4">Payment Day & Exact Time</th>
+                      <th className="p-4">Payment Method</th>
+                      <th className="p-4">Invoice / Transaction ID</th>
+                      <th className="p-4">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {filteredVendorTransactions.length === 0 ? (
+                      <tr>
+                        <td colSpan={7} className="p-12 text-center text-slate-400 font-medium">
+                          <div className="flex flex-col items-center justify-center space-y-2">
+                            <div className="w-12 h-12 rounded-2xl bg-blue-50 text-[#003893] flex items-center justify-center font-bold">
+                              <Receipt className="w-6 h-6" />
+                            </div>
+                            <div className="text-sm font-extrabold text-slate-700">No Vendor Payments Recorded Yet</div>
+                            <p className="text-xs text-slate-400 max-w-sm">
+                              When small shop owners purchase subscription plans on the platform, live transactions and calculations will appear here.
+                            </p>
+                          </div>
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredVendorTransactions.map((tx) => (
+                        <tr key={tx.id} className="hover:bg-blue-50/40 transition-colors">
+                          <td className="p-4">
+                            <div className="font-extrabold text-slate-900 text-sm">{tx.entityName}</div>
+                            <div className="text-[11px] text-slate-500 font-medium">
+                              {tx.personName} • {tx.phone}
+                            </div>
+                            <div className="text-[10px] text-slate-400 font-mono">{tx.email}</div>
+                          </td>
+
+                          <td className="p-4">
+                            <span className="px-2.5 py-1 rounded-lg text-xs font-extrabold bg-blue-50 text-[#003893] border border-blue-200 inline-flex items-center gap-1">
+                              <Zap className="w-3 h-3 text-amber-500" />
+                              {tx.planName}
+                            </span>
+                          </td>
+
+                          <td className="p-4">
+                            <div className="text-base font-black text-slate-900 font-heading">
+                              ₹{tx.amount.toLocaleString('en-IN')}
+                            </div>
+                          </td>
+
+                          <td className="p-4">
+                            <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800">
+                              <Clock className="w-3.5 h-3.5 text-[#003893] shrink-0" />
+                              <span>{formatExactDateTime(tx.paymentDate)}</span>
+                            </div>
+                          </td>
+
+                          <td className="p-4">
+                            <span className="px-2.5 py-1 rounded-md text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-200 flex items-center gap-1 w-fit">
+                              <CreditCard className="w-3 h-3 text-slate-500" />
+                              {tx.paymentMethod.replace('_', ' ')}
+                            </span>
+                          </td>
+
+                          <td className="p-4">
+                            <div className="font-mono text-xs font-bold text-[#003893]">
+                              {tx.invoiceNumber}
+                            </div>
+                            <div className="font-mono text-[10px] text-slate-400">
+                              {tx.transactionId}
+                            </div>
+                          </td>
+
+                          <td className="p-4">
+                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-200 inline-flex items-center gap-1">
+                              <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                              PAID
+                            </span>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ========================================================================= */}
+        {/* TAB 3: BUSINESS MONEY REVENUE PAGE (Lenders Revenue)                     */}
+        {/* ========================================================================= */}
+        {activeTab === 'lender_revenue' && (
+          <div className="space-y-6">
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200">
+              <div>
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-100 text-[#007a33] flex items-center justify-center font-bold">
+                    <Wallet className="w-5 h-5" />
+                  </div>
+                  <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-heading tracking-tight">
+                    Business Money Revenue
+                  </h1>
+                </div>
+                <p className="text-xs text-slate-500 font-medium mt-0.5">
+                  Calculate and track subscription revenue from Business Money Financers & NBFCs
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2.5">
+                <button
+                  onClick={loadAdminPayments}
+                  className="px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5"
+                  title="Refresh Live Data"
+                >
+                  <RefreshCw className="w-3.5 h-3.5 text-slate-600" /> Refresh
+                </button>
+                <button
+                  onClick={() => exportToCsv(filteredLenderTransactions, 'JustPaisa_Financer_Revenue')}
+                  className="px-4 py-2.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 active:scale-95"
+                >
+                  <Download className="w-4 h-4 text-[#007a33]" /> Export CSV
+                </button>
+              </div>
+            </div>
+
+            {/* Calculated KPI Cards */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+              <div className="bg-gradient-to-br from-[#007a33] to-[#00471d] text-white p-4 rounded-2xl shadow-md space-y-1">
+                <div className="text-[10px] text-emerald-200 font-extrabold uppercase tracking-wider">
+                  Total Financer Revenue
+                </div>
+                <div className="text-xl sm:text-2xl font-extrabold font-heading">
+                  ₹{lenderStats.totalAll.toLocaleString('en-IN')}
+                </div>
+                <div className="text-[10px] text-emerald-200 font-medium">All Time Inflow</div>
+              </div>
+
+              <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-1">
+                <div className="text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">
+                  Today's Revenue
+                </div>
+                <div className="text-xl sm:text-2xl font-extrabold text-emerald-700 font-heading">
+                  ₹{lenderStats.today.toLocaleString('en-IN')}
+                </div>
+                <div className="text-[10px] text-slate-400 font-medium">Day-Wise Today</div>
+              </div>
+
+              <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-1">
+                <div className="text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">
+                  Weekly Revenue
+                </div>
+                <div className="text-xl sm:text-2xl font-extrabold text-emerald-600 font-heading">
+                  ₹{lenderStats.week.toLocaleString('en-IN')}
+                </div>
+                <div className="text-[10px] text-slate-400 font-medium">Last 7 Days</div>
+              </div>
+
+              <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-1">
+                <div className="text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">
+                  Monthly Revenue
+                </div>
+                <div className="text-xl sm:text-2xl font-extrabold text-teal-600 font-heading">
+                  ₹{lenderStats.month.toLocaleString('en-IN')}
+                </div>
+                <div className="text-[10px] text-slate-400 font-medium">This Month</div>
+              </div>
+
+              <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-1">
+                <div className="text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">
+                  Yearly Revenue
+                </div>
+                <div className="text-xl sm:text-2xl font-extrabold text-slate-900 font-heading">
+                  ₹{lenderStats.year.toLocaleString('en-IN')}
+                </div>
+                <div className="text-[10px] text-slate-400 font-medium">Year 2026</div>
+              </div>
+
+              <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-1">
+                <div className="text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">
+                  Avg. Plan Ticket
+                </div>
+                <div className="text-xl sm:text-2xl font-extrabold text-emerald-800 font-heading">
+                  ₹{lenderStats.aov.toLocaleString('en-IN')}
+                </div>
+                <div className="text-[10px] text-slate-400 font-medium">Per Financer</div>
+              </div>
+            </div>
+
+            {/* Filter & Period Toolbar */}
+            <div className="bg-white p-4 rounded-3xl border border-slate-200 shadow-sm space-y-3">
+              {/* Period Tabs */}
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl">
+                  <span className="text-xs font-extrabold text-slate-600 px-2 flex items-center gap-1">
+                    <Calendar className="w-3.5 h-3.5 text-[#007a33]" /> Period:
+                  </span>
+                  {(
+                    [
+                      { key: 'ALL', label: 'All Time' },
+                      { key: 'DAY', label: 'Today (Day Wise)' },
+                      { key: 'WEEK', label: 'This Week' },
+                      { key: 'MONTH', label: 'This Month' },
+                      { key: 'YEAR', label: 'This Year' },
+                    ] as const
+                  ).map((p) => (
+                    <button
+                      key={p.key}
+                      onClick={() => setLenderRevenuePeriod(p.key)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-extrabold transition-all ${
+                        lenderRevenuePeriod === p.key
+                          ? 'bg-[#007a33] text-white shadow-xs'
+                          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200'
+                      }`}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="text-xs font-bold text-slate-600">
+                  Showing <span className="text-[#007a33] font-extrabold">{filteredLenderTransactions.length}</span>{' '}
+                  financer subscriptions (Total:{' '}
+                  <span className="text-emerald-700 font-extrabold">₹{lenderStats.filteredTotal.toLocaleString('en-IN')}</span>)
+                </div>
+              </div>
+
+              {/* Search and Secondary Dropdowns */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="relative">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                  <input
+                    type="text"
+                    placeholder="Search financer institution, officer, invoice..."
+                    value={lenderRevenueSearch}
+                    onChange={(e) => setLenderRevenueSearch(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl pl-10 pr-3 py-2 text-xs font-medium text-slate-900 outline-none focus:border-[#007a33]"
+                  />
+                </div>
+
+                <div>
+                  <select
+                    value={lenderRevenuePlanFilter}
+                    onChange={(e) => setLenderRevenuePlanFilter(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-300 text-xs font-bold text-slate-700 rounded-xl px-3 py-2 outline-none focus:border-[#007a33]"
+                  >
+                    <option value="ALL">All Financer Plans</option>
+                    <option value="LENDER_WEEKLY">Financer Weekly Starter (₹499)</option>
+                    <option value="LENDER_MONTHLY">Financer Monthly Plan (₹999)</option>
+                    <option value="LENDER_QUARTERLY">Financer Quarterly Growth (₹2,499)</option>
+                    <option value="LENDER_ANNUAL">Financer Annual VIP Plan (₹7,999)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <select
+                    value={lenderRevenueMethodFilter}
+                    onChange={(e) => setLenderRevenueMethodFilter(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-300 text-xs font-bold text-slate-700 rounded-xl px-3 py-2 outline-none focus:border-[#007a33]"
+                  >
+                    <option value="ALL">All Payment Methods</option>
+                    <option value="CORPORATE_UPI">Corporate UPI</option>
+                    <option value="NET_BANKING">IMPS / Net Banking</option>
+                    <option value="CREDIT_CARD">Corporate Card</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Transactions Table */}
+            <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs text-slate-800">
+                  <thead className="bg-slate-100 text-slate-700 uppercase text-[10px] font-extrabold tracking-wider border-b border-slate-200">
+                    <tr>
+                      <th className="p-4">Financing Institution & Officer</th>
+                      <th className="p-4">Plan Subscribed</th>
+                      <th className="p-4">Amount Paid</th>
+                      <th className="p-4">Payment Day & Exact Time</th>
+                      <th className="p-4">Payment Method</th>
+                      <th className="p-4">Invoice / Transaction ID</th>
+                      <th className="p-4">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {filteredLenderTransactions.length === 0 ? (
+                      <tr>
+                        <td colSpan={7} className="p-12 text-center text-slate-400 font-medium">
+                          <div className="flex flex-col items-center justify-center space-y-2">
+                            <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-[#007a33] flex items-center justify-center font-bold">
+                              <Wallet className="w-6 h-6" />
+                            </div>
+                            <div className="text-sm font-extrabold text-slate-700">No Financer Payments Recorded Yet</div>
+                            <p className="text-xs text-slate-400 max-w-sm">
+                              When business financers, NBFCs, or banks subscribe to lead access tiers, live payment transactions will be recorded here.
+                            </p>
+                          </div>
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredLenderTransactions.map((tx) => (
+                        <tr key={tx.id} className="hover:bg-emerald-50/40 transition-colors">
+                          <td className="p-4">
+                            <div className="font-extrabold text-slate-900 text-sm">{tx.entityName}</div>
+                            <div className="text-[11px] text-slate-500 font-medium">
+                              {tx.personName} • {tx.phone}
+                            </div>
+                            <div className="text-[10px] text-slate-400 font-mono">{tx.email}</div>
+                          </td>
+
+                          <td className="p-4">
+                            <span className="px-2.5 py-1 rounded-lg text-xs font-extrabold bg-emerald-50 text-[#007a33] border border-emerald-200 inline-flex items-center gap-1">
+                              <CreditCard className="w-3 h-3 text-emerald-600" />
+                              {tx.planName}
+                            </span>
+                          </td>
+
+                          <td className="p-4">
+                            <div className="text-base font-black text-[#007a33] font-heading">
+                              ₹{tx.amount.toLocaleString('en-IN')}
+                            </div>
+                          </td>
+
+                          <td className="p-4">
+                            <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800">
+                              <Clock className="w-3.5 h-3.5 text-[#007a33] shrink-0" />
+                              <span>{formatExactDateTime(tx.paymentDate)}</span>
+                            </div>
+                          </td>
+
+                          <td className="p-4">
+                            <span className="px-2.5 py-1 rounded-md text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-200 flex items-center gap-1 w-fit">
+                              <Wallet className="w-3 h-3 text-slate-500" />
+                              {tx.paymentMethod.replace('_', ' ')}
+                            </span>
+                          </td>
+
+                          <td className="p-4">
+                            <div className="font-mono text-xs font-bold text-[#007a33]">
+                              {tx.invoiceNumber}
+                            </div>
+                            <div className="font-mono text-[10px] text-slate-400">
+                              {tx.transactionId}
+                            </div>
+                          </td>
+
+                          <td className="p-4">
+                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-200 inline-flex items-center gap-1">
+                              <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                              PAID
+                            </span>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ========================================================================= */}
+        {/* TAB 4: MANAGE REFERRALS PAGE                                             */}
+        {/* ========================================================================= */}
+        {activeTab === 'referrals' && (
+          <div className="space-y-6">
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200">
+              <div>
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-bold">
+                    <Gift className="w-5 h-5" />
+                  </div>
+                  <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-heading tracking-tight">
+                    Manage Referrals & Partner Commissions
+                  </h1>
+                </div>
+                <p className="text-xs text-slate-500 font-medium mt-0.5">
+                  Track user referral codes, monitor invited signups, and process commission payouts
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2.5">
+                <button
+                  onClick={() => setReferralSettingsModalOpen(true)}
+                  className="px-4 py-2.5 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-300 font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 active:scale-95"
+                >
+                  <Sliders className="w-4 h-4 text-purple-600" /> Referral Settings
+                </button>
+                <button
+                  onClick={() => exportToCsv(filteredReferrals, 'JustPaisa_Referrals_Report')}
+                  className="px-4 py-2.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 active:scale-95"
+                >
+                  <Download className="w-4 h-4 text-purple-600" /> Export CSV
+                </button>
+              </div>
+            </div>
+
+            {/* Calculated KPI Cards */}
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+              <div className="bg-gradient-to-br from-purple-700 to-indigo-800 text-white p-4 rounded-2xl shadow-md space-y-1">
+                <div className="text-[10px] text-purple-200 font-extrabold uppercase tracking-wider">
+                  Total Invites
+                </div>
+                <div className="text-xl sm:text-2xl font-extrabold font-heading">
+                  {referralStats.totalInvites}
+                </div>
+                <div className="text-[10px] text-purple-200 font-medium">Generated Links</div>
+              </div>
+
+              <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-1">
+                <div className="text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">
+                  Rewards Paid Out
+                </div>
+                <div className="text-xl sm:text-2xl font-extrabold text-emerald-600 font-heading">
+                  ₹{referralStats.totalPaidAmount.toLocaleString('en-IN')}
+                </div>
+                <div className="text-[10px] text-slate-400 font-medium">
+                  {referralStats.paidCount} Successful Payouts
+                </div>
+              </div>
+
+              <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-1">
+                <div className="text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">
+                  Pending Payouts
+                </div>
+                <div className="text-xl sm:text-2xl font-extrabold text-amber-600 font-heading">
+                  ₹{referralStats.pendingPayoutAmount.toLocaleString('en-IN')}
+                </div>
+                <div className="text-[10px] text-slate-400 font-medium">
+                  {referralStats.readyCount} Awaiting Payout
+                </div>
+              </div>
+
+              <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-1">
+                <div className="text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">
+                  Conversion Rate
+                </div>
+                <div className="text-xl sm:text-2xl font-extrabold text-purple-700 font-heading">
+                  {referralStats.conversionRate}%
+                </div>
+                <div className="text-[10px] text-slate-400 font-medium">Verified Signups</div>
+              </div>
+
+              <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-1">
+                <div className="text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">
+                  Active Commission Rate
+                </div>
+                <div className="text-sm font-extrabold text-slate-800">
+                  ₹{referralVendorReward} <span className="text-xs text-slate-500 font-normal">(Shop)</span> / ₹
+                  {referralLenderReward} <span className="text-xs text-slate-500 font-normal">(Financer)</span>
+                </div>
+                <div className="text-[10px] text-emerald-600 font-semibold">{referralDiscountPct}% Referee Discount</div>
+              </div>
+            </div>
+
+            {/* Filter Toolbar */}
+            <div className="bg-white p-4 rounded-3xl border border-slate-200 shadow-sm space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="relative">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                  <input
+                    type="text"
+                    placeholder="Search referrer, referee, code, business..."
+                    value={referralSearch}
+                    onChange={(e) => setReferralSearch(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl pl-10 pr-3 py-2 text-xs font-medium text-slate-900 outline-none focus:border-purple-600"
+                  />
+                </div>
+
+                <div>
+                  <select
+                    value={referralStatusFilter}
+                    onChange={(e) => setReferralStatusFilter(e.target.value as any)}
+                    className="w-full bg-slate-50 border border-slate-300 text-xs font-bold text-slate-700 rounded-xl px-3 py-2 outline-none focus:border-purple-600"
+                  >
+                    <option value="ALL">All Payout Statuses</option>
+                    <option value="REWARD_READY">Ready for Payout (Pending Admin Action)</option>
+                    <option value="PAID">Paid Out Successfully</option>
+                    <option value="PENDING_VERIFICATION">Awaiting KYC Verification</option>
+                  </select>
+                </div>
+
+                <div>
+                  <select
+                    value={referralRoleFilter}
+                    onChange={(e) => setReferralRoleFilter(e.target.value as any)}
+                    className="w-full bg-slate-50 border border-slate-300 text-xs font-bold text-slate-700 rounded-xl px-3 py-2 outline-none focus:border-purple-600"
+                  >
+                    <option value="ALL">All Referrer Types</option>
+                    <option value="VENDOR">Vendors (Small Shop Owners)</option>
+                    <option value="LENDER">Financers (Lenders)</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Referrals Table */}
+            <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs text-slate-800">
+                  <thead className="bg-slate-100 text-slate-700 uppercase text-[10px] font-extrabold tracking-wider border-b border-slate-200">
+                    <tr>
+                      <th className="p-4">Referrer (Partner)</th>
+                      <th className="p-4">Referral Code</th>
+                      <th className="p-4">Referee (Invited Business)</th>
+                      <th className="p-4">Reward Amount</th>
+                      <th className="p-4">Date & Time</th>
+                      <th className="p-4">Payout Status</th>
+                      <th className="p-4 text-center">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {filteredReferrals.length === 0 ? (
+                      <tr>
+                        <td colSpan={7} className="p-12 text-center text-slate-400 font-medium">
+                          <div className="flex flex-col items-center justify-center space-y-2">
+                            <div className="w-12 h-12 rounded-2xl bg-purple-50 text-purple-700 flex items-center justify-center font-bold">
+                              <Gift className="w-6 h-6" />
+                            </div>
+                            <div className="text-sm font-extrabold text-slate-700">No Referrals Recorded Yet</div>
+                            <p className="text-xs text-slate-400 max-w-sm">
+                              When registered vendors and financers share their referral links and invite peers to JustPaisa, records will be tracked here.
+                            </p>
+                          </div>
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredReferrals.map((r) => (
+                        <tr key={r.id} className="hover:bg-purple-50/30 transition-colors">
+                          <td className="p-4">
+                            <div className="font-extrabold text-slate-900 text-sm">{r.referrerName}</div>
+                            <div className="text-[11px] text-slate-500 font-medium">{r.referrerPhone}</div>
+                            <div className="text-[10px] text-slate-400 font-mono">{r.referrerEmail}</div>
+                            <span
+                              className={`mt-1 inline-block text-[9px] font-extrabold px-2 py-0.5 rounded-md ${
+                                r.referrerRole === 'VENDOR'
+                                  ? 'bg-blue-50 text-[#003893] border border-blue-200'
+                                  : 'bg-emerald-50 text-[#007a33] border border-emerald-200'
+                              }`}
+                            >
+                              {r.referrerRole === 'VENDOR' ? 'Shop Business' : 'Financer'}
+                            </span>
+                          </td>
+
+                          <td className="p-4">
+                            <div className="inline-flex items-center gap-1 px-2.5 py-1 bg-purple-50 border border-purple-200 rounded-lg text-purple-700 font-mono font-extrabold text-xs">
+                              <span>{r.referralCode}</span>
+                              <button
+                                onClick={() => {
+                                  navigator.clipboard?.writeText(r.referralCode);
+                                  showToast(`Copied ${r.referralCode}`);
+                                }}
+                                title="Copy code"
+                                className="text-purple-400 hover:text-purple-700 ml-1"
+                              >
+                                <Copy className="w-3 h-3" />
+                              </button>
+                            </div>
+                          </td>
+
+                          <td className="p-4">
+                            <div className="font-bold text-slate-900">{r.refereeName}</div>
+                            <div className="text-[11px] text-slate-600 font-medium">{r.refereeBusiness}</div>
+                            <div className="text-[10px] text-slate-400 font-mono">{r.refereeEmail}</div>
+                          </td>
+
+                          <td className="p-4">
+                            <div className="text-base font-black text-purple-700 font-heading">
+                              ₹{r.rewardAmount}
+                            </div>
+                          </td>
+
+                          <td className="p-4">
+                            <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800">
+                              <Clock className="w-3.5 h-3.5 text-purple-600 shrink-0" />
+                              <span>{formatExactDateTime(r.createdAt)}</span>
+                            </div>
+                            {r.paidAt && (
+                              <div className="text-[10px] text-emerald-600 font-medium mt-0.5">
+                                Paid: {formatExactDateTime(r.paidAt)}
+                              </div>
+                            )}
+                          </td>
+
+                          <td className="p-4">
+                            {r.status === 'PAID' && (
+                              <div>
+                                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-200 inline-flex items-center gap-1">
+                                  <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                                  PAID
+                                </span>
+                                {r.payoutTxnId && (
+                                  <div className="text-[9px] font-mono text-slate-400 mt-0.5">
+                                    {r.payoutTxnId}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            {r.status === 'REWARD_READY' && (
+                              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-blue-100 text-blue-800 border border-blue-200 inline-flex items-center gap-1 animate-pulse">
+                                <Award className="w-3 h-3 text-blue-600" />
+                                REWARD READY
+                              </span>
+                            )}
+
+                            {r.status === 'PENDING_VERIFICATION' && (
+                              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-100 text-amber-800 border border-amber-200 inline-flex items-center gap-1">
+                                <Clock className="w-3 h-3 text-amber-600" />
+                                PENDING KYC
+                              </span>
+                            )}
+                          </td>
+
+                          <td className="p-4 text-center">
+                            {r.status === 'REWARD_READY' ? (
+                              <button
+                                onClick={() => handlePayReferralReward(r.id)}
+                                className="px-3.5 py-1.5 bg-[#007a33] hover:bg-[#005e27] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all active:scale-95 flex items-center gap-1 mx-auto"
+                              >
+                                <Check className="w-3.5 h-3.5" /> Pay ₹{r.rewardAmount}
+                              </button>
+                            ) : r.status === 'PAID' ? (
+                              <span className="text-[11px] font-bold text-slate-400">Completed</span>
+                            ) : (
+                              <span className="text-[11px] font-bold text-amber-600">Pending Verification</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ========================================================================= */}
+        {/* TAB 5: VENDORS MANAGEMENT TAB                                            */}
+        {/* ========================================================================= */}
+        {activeTab === 'vendors' && (
+          <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200">
+              <div>
+                <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-heading tracking-tight">
+                  User Vendor Account Control
+                </h1>
+                <p className="text-xs text-slate-500 font-medium mt-0.5">
+                  Manage shop owner accounts, verify KYC documents, and moderate fraud accounts
+                </p>
+              </div>
+            </div>
+
+            {/* Search & Filter Toolbar */}
+            <div className="flex flex-col sm:flex-row gap-3 bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm">
+              <div className="relative flex-1">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                <input
+                  type="text"
+                  placeholder="Search vendor name, owner, email, city..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl pl-10 pr-3 py-2 text-xs font-medium text-slate-900 focus:outline-none focus:border-[#003893]"
+                />
+              </div>
+
+              <div className="flex gap-2">
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="bg-slate-50 border border-slate-300 text-xs font-bold text-slate-700 rounded-xl px-3 py-2 focus:outline-none focus:border-[#003893]"
+                >
+                  <option value="ALL">All KYC Statuses</option>
+                  <option value="VERIFIED">Verified Only</option>
+                  <option value="PENDING">Pending Only</option>
+                  <option value="FRAUD">Fraud Accounts Only 🚨</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Vendors Table */}
+            <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs text-slate-800">
+                  <thead className="bg-slate-100 text-slate-700 uppercase text-[10px] font-extrabold tracking-wider border-b border-slate-200">
+                    <tr>
+                      <th className="p-4">Business & Owner</th>
+                      <th className="p-4">Category</th>
+                      <th className="p-4">City / State</th>
+                      <th className="p-4">Annual Turnover</th>
+                      <th className="p-4">KYC Status</th>
+                      <th className="p-4 text-center">Actions & Controls</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {vendors.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="p-8 text-center text-slate-400 font-bold">
+                          No vendor accounts found.
+                        </td>
+                      </tr>
+                    ) : (
+                      vendors.map((v) => (
+                        <tr
+                          key={v.id}
+                          className={`hover:bg-slate-50 transition-colors ${
+                            v.isFraud ? 'bg-rose-50/70 border-l-4 border-rose-600' : ''
+                          }`}
+                        >
+                          <td className="p-4">
+                            <div className="font-extrabold text-slate-900 text-sm flex items-center gap-1.5">
+                              <span>{v.businessName}</span>
+                              {v.isFraud && (
+                                <span className="bg-rose-600 text-white text-[9px] font-black px-2 py-0.5 rounded-full tracking-wider animate-pulse">
+                                  🚨 FRAUD ACCOUNT
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-[11px] text-slate-500 font-medium">
+                              {v.ownerName} • {v.userPhone}
+                            </div>
+                            <div className="text-[10px] text-slate-400 font-mono">{v.userEmail}</div>
+                          </td>
+
+                          <td className="p-4">
+                            <span className="bg-blue-50 text-[#003893] px-2.5 py-1 rounded-md text-[11px] font-bold border border-blue-200">
+                              {v.category}
+                            </span>
+                          </td>
+
+                          <td className="p-4 font-medium text-slate-700">
+                            {v.city}, {v.state}
+                          </td>
+
+                          <td className="p-4 font-bold text-slate-900">{v.annualTurnover}</td>
+
+                          <td className="p-4">
+                            <button
+                              onClick={() => handleToggleVendorKYC(v.id, v.kycStatus)}
+                              className={`px-3 py-1 rounded-full text-[10px] font-extrabold inline-flex items-center gap-1 transition-all ${
+                                v.kycStatus === 'VERIFIED'
+                                  ? 'bg-emerald-100 text-emerald-800 border border-emerald-200 hover:bg-emerald-200'
+                                  : 'bg-amber-100 text-amber-800 border border-amber-200 hover:bg-amber-200'
+                              }`}
+                            >
+                              {v.kycStatus === 'VERIFIED' ? (
+                                <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                              ) : (
+                                <Clock className="w-3 h-3 text-amber-600" />
+                              )}
+                              <span>{v.kycStatus} (Click to toggle)</span>
+                            </button>
+                          </td>
+
+                          <td className="p-4 text-center">
+                            <div className="flex items-center justify-center gap-1.5 flex-wrap">
+                              <button
+                                onClick={() => setSelectedDocVendor(v)}
+                                className="p-1.5 text-blue-700 hover:bg-blue-100 rounded-lg transition-colors border border-blue-200"
+                                title="View KYC Documents"
+                              >
+                                <Eye className="w-4 h-4" />
+                              </button>
+
+                              <button
+                                onClick={() => setGrantSubModalVendor(v)}
+                                className="p-1.5 text-emerald-700 hover:bg-emerald-100 rounded-lg transition-colors border border-emerald-200"
+                                title="Grant Subscription Plan"
+                              >
+                                <Gift className="w-4 h-4" />
+                              </button>
+
+                              <button
+                                onClick={() => handleToggleVendorFraud(v)}
+                                className={`px-2.5 py-1 text-[10px] font-black rounded-lg transition-all border shadow-xs ${
+                                  v.isFraud
+                                    ? 'bg-emerald-600 text-white border-emerald-700 hover:bg-emerald-700'
+                                    : 'bg-rose-600 text-white border-rose-700 hover:bg-rose-700'
+                                }`}
+                              >
+                                {v.isFraud ? 'Clear Fraud' : '🚨 Mark Fraud'}
+                              </button>
+
+                              <button
+                                onClick={() => handleDeleteVendor(v.id)}
+                                className="p-1.5 text-rose-700 hover:bg-rose-100 rounded-lg transition-colors border border-rose-200"
+                                title="Permanently Delete Vendor Account"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ========================================================================= */}
+        {/* TAB 6: LENDERS MANAGEMENT TAB                                            */}
+        {/* ========================================================================= */}
+        {activeTab === 'lenders' && (
+          <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200">
+              <div>
+                <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-heading tracking-tight">
+                  Business Money Financers Control
+                </h1>
+                <p className="text-xs text-slate-500 font-medium mt-0.5">
+                  Verify NBFC credentials, monitor registered financers, and manage lender statuses
+                </p>
+              </div>
+            </div>
+
+            {/* Lenders Table */}
+            <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs text-slate-800">
+                  <thead className="bg-slate-100 text-slate-700 uppercase text-[10px] font-extrabold tracking-wider border-b border-slate-200">
+                    <tr>
+                      <th className="p-4">Institution & Contact Officer</th>
+                      <th className="p-4">Type</th>
+                      <th className="p-4">Registration #</th>
+                      <th className="p-4">City / State</th>
+                      <th className="p-4">Loan Range</th>
+                      <th className="p-4">Verification</th>
+                      <th className="p-4 text-center">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {lenders.length === 0 ? (
+                      <tr>
+                        <td colSpan={7} className="p-8 text-center text-slate-400 font-bold">
+                          No business financers found.
+                        </td>
+                      </tr>
+                    ) : (
+                      lenders.map((l) => (
+                        <tr key={l.id} className="hover:bg-slate-50 transition-colors">
+                          <td className="p-4">
+                            <div className="font-extrabold text-slate-900 text-sm">{l.institutionName}</div>
+                            <div className="text-[11px] text-slate-500 font-medium">
+                              {l.contactPersonName || 'Branch Officer'} • {l.userPhone}
+                            </div>
+                            <div className="text-[10px] text-slate-400 font-mono">{l.userEmail}</div>
+                          </td>
+
+                          <td className="p-4">
+                            <span className="bg-emerald-50 text-[#007a33] px-2.5 py-1 rounded-md text-[11px] font-bold border border-emerald-200">
+                              {l.institutionType}
+                            </span>
+                          </td>
+
+                          <td className="p-4 font-mono font-bold text-slate-700">{l.registrationNumber}</td>
+
+                          <td className="p-4 font-medium text-slate-700">
+                            {l.city}, {l.state}
+                          </td>
+
+                          <td className="p-4 font-bold text-slate-900">
+                            ₹{(l.minLoanAmount / 100000).toFixed(1)}L - ₹{(l.maxLoanAmount / 10000000).toFixed(1)}Cr
+                          </td>
+
+                          <td className="p-4">
+                            <button
+                              onClick={() => handleToggleLenderVerification(l.id, l.verificationStatus)}
+                              className={`px-3 py-1 rounded-full text-[10px] font-extrabold inline-flex items-center gap-1 transition-all ${
+                                l.verificationStatus === 'VERIFIED'
+                                  ? 'bg-emerald-100 text-emerald-800 border border-emerald-200 hover:bg-emerald-200'
+                                  : 'bg-amber-100 text-amber-800 border border-amber-200 hover:bg-amber-200'
+                              }`}
+                            >
+                              {l.verificationStatus === 'VERIFIED' ? (
+                                <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                              ) : (
+                                <Clock className="w-3 h-3 text-amber-600" />
+                              )}
+                              <span>{l.verificationStatus}</span>
+                            </button>
+                          </td>
+
+                          <td className="p-4 text-center">
+                            <button
+                              onClick={() => handleDeleteLender(l.id)}
+                              className="p-1.5 text-rose-700 hover:bg-rose-100 rounded-lg transition-colors border border-rose-200"
+                              title="Delete Financer Account"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ========================================================================= */}
+        {/* TAB 7: VENDOR SUBSCRIPTION PLANS                                         */}
+        {/* ========================================================================= */}
+        {activeTab === 'vendor_subs' && (
+          <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200">
+              <div>
+                <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-heading tracking-tight">
+                  Small Shop & Local Startup Business Plans
+                </h1>
+                <p className="text-xs text-slate-500 font-medium mt-0.5">
+                  Configure subscription pricing, duration, and unlock limits for shop & startup owners
+                </p>
+              </div>
+              <button
+                onClick={() => handleOpenCreatePlanModal('VENDOR')}
+                className="px-4 py-2.5 bg-[#003893] hover:bg-[#002669] text-white font-extrabold text-xs rounded-xl shadow-md transition-all flex items-center gap-1.5 active:scale-95 w-fit"
+              >
+                <Plus className="w-4 h-4" /> Create Vendor Plan
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {vendorPlans.map((plan) => (
+                <div
+                  key={plan.id}
+                  className="bg-white rounded-3xl border-2 border-slate-200 p-5 shadow-sm space-y-4 hover:border-[#003893] transition-all flex flex-col justify-between"
+                >
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h3 className="font-extrabold text-slate-900 text-base font-heading">{plan.name}</h3>
+                        <span className="font-mono text-[10px] text-slate-400 font-bold">{plan.code}</span>
+                      </div>
+                      {plan.isPopular && (
+                        <span className="bg-amber-100 text-amber-800 text-[10px] font-extrabold px-2 py-0.5 rounded-full border border-amber-200">
+                          Popular
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex items-baseline gap-2 pt-1">
+                      <span className="text-2xl font-black text-[#003893] font-heading">₹{plan.price}</span>
+                      {plan.originalPrice > plan.price && (
+                        <span className="text-xs text-slate-400 line-through">₹{plan.originalPrice}</span>
+                      )}
+                      <span className="text-xs font-bold text-slate-500">/ {plan.durationDays} Days</span>
+                    </div>
+
+                    <p className="text-xs text-slate-600 font-medium">{plan.description}</p>
+
+                    <div className="space-y-1.5 pt-2 border-t border-slate-100">
+                      {plan.features.map((f, i) => (
+                        <div key={i} className="text-xs text-slate-700 flex items-start gap-1.5">
+                          <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
+                          <span>{f}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2 pt-3 border-t border-slate-100">
+                    <button
+                      onClick={() => handleOpenEditPlanModal(plan)}
+                      className="flex-1 py-2 bg-blue-50 hover:bg-blue-100 text-[#003893] text-xs font-extrabold rounded-xl transition-colors flex items-center justify-center gap-1 border border-blue-200"
+                    >
+                      <Edit3 className="w-3.5 h-3.5" /> Edit
+                    </button>
+                    <button
+                      onClick={() => handleDeletePlan(plan.id, 'VENDOR')}
+                      className="p-2 text-rose-600 hover:bg-rose-50 rounded-xl transition-colors border border-rose-200"
+                      title="Delete Plan"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ========================================================================= */}
+        {/* TAB 8: LENDER SUBSCRIPTION PLANS                                         */}
+        {/* ========================================================================= */}
+        {activeTab === 'lender_subs' && (
+          <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200">
+              <div>
+                <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-heading tracking-tight">
+                  Business Money Financer Plans
+                </h1>
+                <p className="text-xs text-slate-500 font-medium mt-0.5">
+                  Configure subscription tiers and verified lead access packages for business financers
+                </p>
+              </div>
+              <button
+                onClick={() => handleOpenCreatePlanModal('LENDER')}
+                className="px-4 py-2.5 bg-[#007a33] hover:bg-[#005e27] text-white font-extrabold text-xs rounded-xl shadow-md transition-all flex items-center gap-1.5 active:scale-95 w-fit"
+              >
+                <Plus className="w-4 h-4" /> Create Financer Plan
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {lenderPlans.map((plan) => (
+                <div
+                  key={plan.id}
+                  className="bg-white rounded-3xl border-2 border-slate-200 p-5 shadow-sm space-y-4 hover:border-[#007a33] transition-all flex flex-col justify-between"
+                >
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h3 className="font-extrabold text-slate-900 text-base font-heading">{plan.name}</h3>
+                        <span className="font-mono text-[10px] text-slate-400 font-bold">{plan.code}</span>
+                      </div>
+                      {plan.isPopular && (
+                        <span className="bg-emerald-100 text-emerald-800 text-[10px] font-extrabold px-2 py-0.5 rounded-full border border-emerald-200">
+                          Popular
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex items-baseline gap-2 pt-1">
+                      <span className="text-2xl font-black text-[#007a33] font-heading">₹{plan.price}</span>
+                      {plan.originalPrice > plan.price && (
+                        <span className="text-xs text-slate-400 line-through">₹{plan.originalPrice}</span>
+                      )}
+                      <span className="text-xs font-bold text-slate-500">/ {plan.durationDays} Days</span>
+                    </div>
+
+                    <p className="text-xs text-slate-600 font-medium">{plan.description}</p>
+
+                    <div className="space-y-1.5 pt-2 border-t border-slate-100">
+                      {plan.features.map((f, i) => (
+                        <div key={i} className="text-xs text-slate-700 flex items-start gap-1.5">
+                          <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
+                          <span>{f}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2 pt-3 border-t border-slate-100">
+                    <button
+                      onClick={() => handleOpenEditPlanModal(plan)}
+                      className="flex-1 py-2 bg-emerald-50 hover:bg-emerald-100 text-[#007a33] text-xs font-extrabold rounded-xl transition-colors flex items-center justify-center gap-1 border border-emerald-200"
+                    >
+                      <Edit3 className="w-3.5 h-3.5" /> Edit
+                    </button>
+                    <button
+                      onClick={() => handleDeletePlan(plan.id, 'LENDER')}
+                      className="p-2 text-rose-600 hover:bg-rose-50 rounded-xl transition-colors border border-rose-200"
+                      title="Delete Plan"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ========================================================================= */}
+        {/* TAB 9: AUDIT LOGS                                                        */}
+        {/* ========================================================================= */}
+        {activeTab === 'audits' && (
+          <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200">
+              <div>
+                <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-heading tracking-tight">
+                  System Audit Trail & Security Logs
+                </h1>
+                <p className="text-xs text-slate-500 font-medium mt-0.5">
+                  Chronological trail of administrative actions, KYC updates, and subscription grants
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm">
+              <div className="p-4 divide-y divide-slate-100">
+                {auditLogs.map((log) => (
+                  <div key={log.id} className="py-3 flex items-start justify-between gap-4">
+                    <div className="space-y-1">
+                      <span className="font-mono text-[10px] text-blue-600 font-bold bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                        {log.action}
+                      </span>
+                      <p className="text-xs text-slate-800 font-medium">{log.detail}</p>
+                    </div>
+                    <span className="text-[10px] font-mono text-slate-400 shrink-0">{log.time}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </main>
+
+      {/* ========================================================================= */}
+      {/* MODAL: REFERRAL CAMPAIGN SETTINGS                                        */}
+      {/* ========================================================================= */}
+      {referralSettingsModalOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-md bg-white border border-slate-200 rounded-3xl p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <Gift className="w-5 h-5 text-purple-600" />
+                <h3 className="text-base font-extrabold text-slate-900 font-heading">
+                  Referral Campaign Rules
+                </h3>
+              </div>
+              <button
+                onClick={() => setReferralSettingsModalOpen(false)}
+                className="text-slate-400 hover:text-slate-700 p-1"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Vendor Signup Reward (₹) *
+                </label>
+                <input
+                  type="number"
+                  value={referralVendorReward}
+                  onChange={(e) => setReferralVendorReward(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 outline-none focus:border-purple-600"
+                  placeholder="200"
+                />
+                <p className="text-[10px] text-slate-500 mt-0.5">
+                  Amount credited to partner when invited shop owner joins
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Financer Signup Reward (₹) *
+                </label>
+                <input
+                  type="number"
+                  value={referralLenderReward}
+                  onChange={(e) => setReferralLenderReward(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 outline-none focus:border-purple-600"
+                  placeholder="500"
+                />
+                <p className="text-[10px] text-slate-500 mt-0.5">
+                  Amount credited when invited financer registers & verifies
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Referee Welcome Discount (% OFF) *
+                </label>
+                <input
+                  type="number"
+                  value={referralDiscountPct}
+                  onChange={(e) => setReferralDiscountPct(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 outline-none focus:border-purple-600"
+                  placeholder="15"
+                />
+                <p className="text-[10px] text-slate-500 mt-0.5">
+                  Discount applied on their first subscription purchase
+                </p>
+              </div>
+
+              <div className="flex items-center justify-between p-3 bg-purple-50 rounded-2xl border border-purple-200">
+                <span className="font-bold text-purple-900">Program Status</span>
+                <button
+                  type="button"
+                  onClick={() => setReferralProgramActive(!referralProgramActive)}
+                  className={`px-3 py-1 rounded-full text-[10px] font-extrabold ${
+                    referralProgramActive
+                      ? 'bg-emerald-600 text-white'
+                      : 'bg-slate-400 text-white'
+                  }`}
+                >
+                  {referralProgramActive ? 'ACTIVE' : 'PAUSED'}
+                </button>
+              </div>
+
+              <div className="flex gap-2 pt-3">
+                <button
+                  type="button"
+                  onClick={() => setReferralSettingsModalOpen(false)}
+                  className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold rounded-xl transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setReferralSettingsModalOpen(false);
+                    showToast('✅ Referral campaign settings updated successfully!');
+                  }}
+                  className="flex-1 py-2.5 bg-purple-700 hover:bg-purple-800 text-white font-extrabold rounded-xl shadow-md transition-all active:scale-95"
+                >
+                  Save Settings
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL: CREATE / EDIT SUBSCRIPTION PLAN                                    */}
+      {/* ========================================================================= */}
+      {planModalOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="relative w-full max-w-lg bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-5 my-auto">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div>
+                <h3 className="text-lg font-extrabold text-slate-900 font-heading">
+                  {editingPlan ? 'Edit Subscription Plan' : 'Create New Subscription Plan'}
+                </h3>
+                <span
+                  className={`text-[10px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider ${
+                    planTargetRole === 'VENDOR'
+                      ? 'bg-blue-100 text-[#003893]'
+                      : 'bg-emerald-100 text-[#007a33]'
+                  }`}
+                >
+                  {planTargetRole === 'VENDOR'
+                    ? 'Target: Small Shop & Local Startup Businesses'
+                    : 'Target: Business Financers'}
+                </span>
+              </div>
+              <button
+                onClick={() => setPlanModalOpen(false)}
+                className="p-2 rounded-full bg-slate-100 text-slate-500 hover:text-slate-900"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSavePlanSubmit} className="space-y-4 text-xs">
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Plan Name *</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Semi-Annual VIP Growth Plan"
+                  value={formPlanName}
+                  onChange={(e) => setFormPlanName(e.target.value)}
+                  required
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 font-medium text-slate-900 outline-none focus:border-[#003893]"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Plan Code *</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. VENDOR_HALF_YEARLY"
+                    value={formPlanCode}
+                    onChange={(e) => setFormPlanCode(e.target.value)}
+                    required
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 font-mono font-bold text-slate-900 outline-none focus:border-[#003893]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Price (₹) *</label>
+                  <input
+                    type="number"
+                    placeholder="e.g. 2499"
+                    value={formPrice}
+                    onChange={(e) => setFormPrice(e.target.value)}
+                    required
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 font-bold text-slate-900 outline-none focus:border-[#003893]"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Duration *</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="number"
+                      min="1"
+                      value={formDurationNumber}
+                      onChange={(e) => setFormDurationNumber(e.target.value)}
+                      required
+                      className="w-20 bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 font-bold text-slate-900 outline-none focus:border-[#003893]"
+                    />
+                    <select
+                      value={formDurationUnit}
+                      onChange={(e) => setFormDurationUnit(e.target.value as any)}
+                      className="flex-1 bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 font-bold text-slate-700 outline-none focus:border-[#003893]"
+                    >
+                      <option value="Days">Days</option>
+                      <option value="Weeks">Weeks</option>
+                      <option value="Months">Months</option>
+                      <option value="Years">Years</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Original Cut Price (₹)</label>
+                  <input
+                    type="number"
+                    placeholder="e.g. 4999"
+                    value={formOriginalPrice}
+                    onChange={(e) => setFormOriginalPrice(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 font-bold text-slate-900 outline-none focus:border-[#003893]"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Description *</label>
+                <input
+                  type="text"
+                  placeholder="Short tagline explaining this plan"
+                  value={formDescription}
+                  onChange={(e) => setFormDescription(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 font-medium text-slate-900 outline-none focus:border-[#003893]"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Features (One per line) *</label>
+                <textarea
+                  rows={4}
+                  placeholder="Unlock Financer Contacts&#10;WhatsApp Access&#10;Priority Support"
+                  value={formFeaturesText}
+                  onChange={(e) => setFormFeaturesText(e.target.value)}
+                  required
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 font-medium text-slate-900 outline-none focus:border-[#003893] resize-none"
+                />
+              </div>
+
+              <div className="flex items-center gap-6 pt-1">
+                <label className="flex items-center gap-2 cursor-pointer font-bold text-slate-700">
+                  <input
+                    type="checkbox"
+                    checked={formIsPopular}
+                    onChange={(e) => setFormIsPopular(e.target.checked)}
+                    className="rounded border-slate-300 text-[#003893]"
+                  />
+                  <span>Mark as "Most Popular"</span>
+                </label>
+
+                <label className="flex items-center gap-2 cursor-pointer font-bold text-slate-700">
+                  <input
+                    type="checkbox"
+                    checked={formIsBestValue}
+                    onChange={(e) => setFormIsBestValue(e.target.checked)}
+                    className="rounded border-slate-300 text-[#003893]"
+                  />
+                  <span>Mark as "Best Value"</span>
+                </label>
+              </div>
+
+              <div className="flex gap-3 pt-3">
+                <button
+                  type="button"
+                  onClick={() => setPlanModalOpen(false)}
+                  className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold rounded-xl transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className={`flex-1 py-3 text-white font-extrabold rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5 active:scale-95 ${
+                    planTargetRole === 'VENDOR'
+                      ? 'bg-[#003893] hover:bg-[#002669]'
+                      : 'bg-[#007a33] hover:bg-[#005e27]'
+                  }`}
+                >
+                  <Sparkles className="w-4 h-4 text-amber-300" />
+                  <span>{editingPlan ? 'Save Plan Changes' : 'Publish Plan'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Grant Subscription Modal */}
+      {grantSubModalVendor && (
+        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-md bg-white border border-slate-200 rounded-3xl p-6 shadow-2xl space-y-4">
+            <div>
+              <h3 className="text-lg font-extrabold text-slate-900 font-heading">
+                Grant Subscription Access
+              </h3>
+              <p className="text-xs text-slate-500 font-medium mt-0.5">
+                Assign subscription plan to {grantSubModalVendor.businessName}
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <label className="block text-xs font-bold text-slate-700">Select Plan Tier:</label>
+              <select
+                value={selectedPlanCode}
+                onChange={(e) => setSelectedPlanCode(e.target.value)}
+                className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-900 outline-none focus:border-[#003893]"
+              >
+                <option value="VENDOR_WEEKLY">Weekly Trial Plan (7 Days)</option>
+                <option value="VENDOR_MONTHLY">Monthly Growth Plan (30 Days)</option>
+                <option value="VENDOR_QUARTERLY">Quarterly Business Plan (90 Days)</option>
+                <option value="VENDOR_YEARLY">Yearly VIP Enterprise Plan (365 Days)</option>
+              </select>
+
+              <div className="flex gap-2 pt-4">
+                <button
+                  onClick={() => setGrantSubModalVendor(null)}
+                  className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-extrabold rounded-xl transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleConfirmGrantSubscription}
+                  className="flex-1 py-2.5 bg-[#003893] hover:bg-[#002669] text-white text-xs font-extrabold rounded-xl shadow-md transition-all active:scale-95"
+                >
+                  Confirm Grant
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* View Documents Modal */}
+      {selectedDocVendor && (
+        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-lg bg-white border border-slate-200 rounded-3xl p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div>
+                <h3 className="text-base font-extrabold text-slate-900 font-heading">
+                  {selectedDocVendor.businessName}
+                </h3>
+                <p className="text-xs text-slate-500 font-medium">Owner: {selectedDocVendor.ownerName}</p>
+              </div>
+              <button
+                onClick={() => setSelectedDocVendor(null)}
+                className="text-slate-400 hover:text-slate-700 p-1 font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-2 text-xs">
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex justify-between items-center font-medium">
+                <span className="font-bold text-slate-800">Shop Registration Proof</span>
+                <span className="text-[#003893] font-mono font-bold">Reg_License_2026.pdf</span>
+              </div>
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex justify-between items-center font-medium">
+                <span className="font-bold text-slate-800">GST Certificate</span>
+                <span className="text-[#003893] font-mono font-bold">GSTIN_09ABCDE1234.pdf</span>
+              </div>
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex justify-between items-center font-medium">
+                <span className="font-bold text-slate-800">PAN Card Document</span>
+                <span className="text-[#003893] font-mono font-bold">PAN_DOCUMENT.pdf</span>
+              </div>
+            </div>
+
+            <div className="pt-2">
+              <button
+                onClick={() => setSelectedDocVendor(null)}
+                className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold rounded-xl text-xs transition-colors"
+              >
+                Close Document Preview
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* STICKY FRAUD CONFIRMATION MODAL */}
+      {fraudConfirmVendor && (
+        <div className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="relative w-full max-w-md bg-white border-2 border-rose-600 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-5">
+            <button
+              onClick={() => setFraudConfirmVendor(null)}
+              className="absolute top-4 right-4 p-2 rounded-full bg-slate-100 text-slate-500 hover:text-slate-900 hover:bg-slate-200 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-3.5 pt-1">
+              <div className="w-12 h-12 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center font-bold shrink-0 shadow-sm border border-rose-200">
+                <AlertTriangle className="w-7 h-7 text-rose-600 animate-bounce" />
+              </div>
+              <div>
+                <h3 className="text-lg font-extrabold text-slate-900 font-heading leading-snug">
+                  Confirm Mark as Fraud Account
+                </h3>
+                <div className="text-[11px] font-extrabold text-rose-600 uppercase tracking-wider">
+                  High Priority Security Moderation
+                </div>
+              </div>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-rose-50/80 border border-rose-200 space-y-1.5 text-xs">
+              <div className="flex justify-between items-center">
+                <span className="text-slate-500 font-medium">Business Name:</span>
+                <span className="font-extrabold text-slate-900 text-sm">{fraudConfirmVendor.businessName}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-500 font-medium">Owner Name:</span>
+                <span className="font-bold text-slate-800">{fraudConfirmVendor.ownerName}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-500 font-medium">Email Address:</span>
+                <span className="font-mono text-slate-700 font-bold">{fraudConfirmVendor.userEmail}</span>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-600 font-medium leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-200">
+              ⚠️ <span className="font-bold text-rose-700">Security Notice:</span> Flagging this vendor account will
+              immediately publish a <span className="font-bold text-rose-700 font-mono">🚨 FRAUD ACCOUNT ALERT</span>{' '}
+              across all Business Financers (Lenders) dashboards and disable loan approvals for this business.
+            </p>
+
+            <div className="flex gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setFraudConfirmVendor(null)}
+                className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold text-xs rounded-xl transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  const v = fraudConfirmVendor;
+                  setFraudConfirmVendor(null);
+                  if (v) executeToggleVendorFraud(v.id, false);
+                }}
+                className="flex-1 py-3 bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs rounded-xl shadow-md transition-all active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <AlertTriangle className="w-4 h-4 text-amber-300" />
+                <span>Yes, Mark as Fraud</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default AdminDashboard;

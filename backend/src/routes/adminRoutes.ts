@@ -3,8 +3,16 @@ import {
   getAdminDashboardStats,
   getAllVendors,
   updateVendorKYCStatus,
+  updateVendorFraudStatus,
+  updateVendorDetails,
   getAllLenders,
   updateLenderVerificationStatus,
+  updateLenderDetails,
+  deleteUser,
+  grantManualSubscription,
+  createSubscriptionPlanAdmin,
+  updateSubscriptionPlanAdmin,
+  deleteSubscriptionPlanAdmin,
   createBanner,
   deleteBanner,
   createFAQ,
@@ -13,6 +21,7 @@ import {
   resolveSupportTicket,
   getAuditLogs,
   updatePlatformSetting,
+  getAllPayments,
 } from '../controllers/adminController';
 import { authenticateUser, authorizeRoles } from '../middlewares/auth';
 import { asyncHandler } from '../middlewares/errorHandler';
@@ -23,12 +32,27 @@ const router = Router();
 router.use(authenticateUser, authorizeRoles('SUPER_ADMIN'));
 
 router.get('/dashboard-stats', asyncHandler(getAdminDashboardStats));
+router.get('/payments', asyncHandler(getAllPayments));
+
+// Account Management
+router.delete('/users/:userId', asyncHandler(deleteUser));
+router.post('/grant-subscription', asyncHandler(grantManualSubscription));
+
+// Subscription Plans CRUD
+router.post('/subscription-plans', asyncHandler(createSubscriptionPlanAdmin));
+router.put('/subscription-plans/:planId', asyncHandler(updateSubscriptionPlanAdmin));
+router.delete('/subscription-plans/:planId', asyncHandler(deleteSubscriptionPlanAdmin));
+
 
 // Vendors & Lenders
 router.get('/vendors', asyncHandler(getAllVendors));
 router.put('/vendors/:vendorId/kyc', asyncHandler(updateVendorKYCStatus));
+router.put('/vendors/:vendorId/fraud', asyncHandler(updateVendorFraudStatus));
+router.put('/vendors/:vendorId', asyncHandler(updateVendorDetails));
+
 router.get('/lenders', asyncHandler(getAllLenders));
 router.put('/lenders/:lenderId/verification', asyncHandler(updateLenderVerificationStatus));
+router.put('/lenders/:lenderId', asyncHandler(updateLenderDetails));
 
 // Banners & FAQs
 router.post('/banners', asyncHandler(createBanner));
@@ -43,3 +67,4 @@ router.get('/audit-logs', asyncHandler(getAuditLogs));
 router.post('/settings', asyncHandler(updatePlatformSetting));
 
 export default router;
+

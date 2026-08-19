@@ -79,6 +79,27 @@ export const updateVendorKYCStatus = async (req: AuthenticatedRequest, res: Resp
   res.json({ success: true, message: `Vendor KYC Status updated to ${kycStatus}.`, data: vendor });
 };
 
+export const updateVendorFraudStatus = async (req: AuthenticatedRequest, res: Response) => {
+  const { vendorId } = req.params;
+  const { isFraud } = req.body;
+
+  const vendor = await prisma.vendorProfile.update({
+    where: { id: vendorId },
+    data: {
+      isFraud: !!isFraud,
+    },
+  });
+
+  res.json({
+    success: true,
+    message: isFraud
+      ? 'Vendor account marked as FRAUD. Alert is now active across all business financer accounts!'
+      : 'Fraud status cleared for vendor account.',
+    data: vendor,
+  });
+};
+
+
 // Lender Management
 export const getAllLenders = async (req: AuthenticatedRequest, res: Response) => {
   const lenders = await prisma.lenderProfile.findMany({
@@ -209,3 +230,240 @@ export const updatePlatformSetting = async (req: AuthenticatedRequest, res: Resp
 
   res.json({ success: true, message: `Setting ${key} updated.`, data: setting });
 };
+
+// Additional Account Management
+export const deleteUser = async (req: AuthenticatedRequest, res: Response) => {
+  const { userId } = req.params;
+
+  try {
+    // 1. Try deleting user directly if userId is User ID
+    await prisma.user.delete({
+      where: { id: userId },
+    });
+    return res.json({ success: true, message: 'User account permanently deleted successfully.' });
+  } catch (e1) {
+    try {
+      // 2. Try finding VendorProfile by ID or userId
+      const v = await prisma.vendorProfile.findFirst({
+        where: { OR: [{ id: userId }, { userId }] },
+      });
+      if (v) {
+        await prisma.user.delete({ where: { id: v.userId } });
+        return res.json({ success: true, message: 'Vendor user account permanently deleted.' });
+      }
+
+      // 3. Try finding LenderProfile by ID or userId
+      const l = await prisma.lenderProfile.findFirst({
+        where: { OR: [{ id: userId }, { userId }] },
+      });
+      if (l) {
+        await prisma.user.delete({ where: { id: l.userId } });
+        return res.json({ success: true, message: 'Lender user account permanently deleted.' });
+      }
+
+      return res.status(404).json({ success: false, message: 'User not found or already deleted.' });
+    } catch (e2: any) {
+      return res.status(500).json({ success: false, message: e2?.message || 'Deletion error' });
+    }
+  }
+};
+
+export const updateVendorDetails = async (req: AuthenticatedRequest, res: Response) => {
+  const { vendorId } = req.params;
+  const { businessName, ownerName, annualTurnover, category, city, state, pincode } = req.body;
+
+  const updated = await prisma.vendorProfile.update({
+    where: { id: vendorId },
+    data: { businessName, ownerName, annualTurnover, category, city, state, pincode },
+  });
+  res.json({ success: true, message: 'Vendor details updated successfully.', data: updated });
+};
+
+export const updateLenderDetails = async (req: AuthenticatedRequest, res: Response) => {
+  const { lenderId } = req.params;
+  const { institutionName, institutionType, minLoanAmount, maxLoanAmount, minInterestRate, city, state } = req.body;
+
+  const updated = await prisma.lenderProfile.update({
+    where: { id: lenderId },
+    data: {
+      institutionName,
+      institutionType,
+      minLoanAmount: minLoanAmount ? parseFloat(minLoanAmount) : undefined,
+      maxLoanAmount: maxLoanAmount ? parseFloat(maxLoanAmount) : undefined,
+      minInterestRate: minInterestRate ? parseFloat(minInterestRate) : undefined,
+      city,
+      state,
+    },
+  });
+  res.json({ success: true, message: 'Lender details updated successfully.', data: updated });
+};
+
+export const grantManualSubscription = async (req: AuthenticatedRequest, res: Response) => {
+  const { userId, planCode, durationDays } = req.body;
+  if (!userId || !planCode) {
+    return res.status(400).json({ success: false, message: 'userId and planCode are required.' });
+  }
+
+  const plan = await prisma.subscriptionPlan.findUnique({ where: { code: planCode } });
+  if (!plan) {
+    return res.status(404).json({ success: false, message: 'Plan not found.' });
+  }
+
+  const days = durationDays || plan.durationDays;
+  const startDate = new Date();
+  const endDate = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
+  const transactionId = 'ADMIN_GRANT_' + Date.now();
+
+  const sub = await prisma.userSubscription.create({
+    data: {
+      userId,
+      planId: plan.id,
+      startDate,
+      endDate,
+      status: 'ACTIVE',
+      transactionId,
+    },
+  });
+
+  await prisma.payment.create({
+    data: {
+      userId,
+      subscriptionId: sub.id,
+      amount: plan.price,
+      status: 'SUCCESS',
+      paymentMethod: 'ADMIN_MANUAL_GRANT',
+      invoiceNumber: 'INV-GRANT-' + Date.now(),
+    },
+  });
+
+  res.json({ success: true, message: `Subscription (${plan.name}) granted to user until ${endDate.toISOString().split('T')[0]}.`, data: sub });
+};
+
+// Subscription Plans CRUD
+export const createSubscriptionPlanAdmin = async (req: AuthenticatedRequest, res: Response) => {
+  const { name, code, description, price, originalPrice, durationDays, features, isPopular, roleTarget } = req.body;
+
+  if (!name || !code || !price || !durationDays) {
+    return res.status(400).json({ success: false, message: 'Name, code, price, and durationDays are required.' });
+  }
+
+  const newPlan = await prisma.subscriptionPlan.create({
+    data: {
+      name,
+      code: code.toUpperCase(),
+      description: description || '',
+      price: parseFloat(price),
+      originalPrice: originalPrice ? parseFloat(originalPrice) : parseFloat(price),
+      durationDays: parseInt(durationDays),
+      features: Array.isArray(features) ? JSON.stringify(features) : (typeof features === 'string' ? features : '[]'),
+      isPopular: !!isPopular,
+      roleTarget: roleTarget || 'VENDOR',
+    },
+  });
+
+  res.status(201).json({ success: true, message: 'Subscription plan created successfully.', data: { ...newPlan, features: JSON.parse(newPlan.features) } });
+};
+
+export const updateSubscriptionPlanAdmin = async (req: AuthenticatedRequest, res: Response) => {
+  const { planId } = req.params;
+  const { name, description, price, originalPrice, durationDays, features, isPopular, isActive, roleTarget } = req.body;
+
+  const updatedPlan = await prisma.subscriptionPlan.update({
+    where: { id: planId },
+    data: {
+      name,
+      description,
+      price: price !== undefined ? parseFloat(price) : undefined,
+      originalPrice: originalPrice !== undefined ? parseFloat(originalPrice) : undefined,
+      durationDays: durationDays !== undefined ? parseInt(durationDays) : undefined,
+      features: features !== undefined ? (Array.isArray(features) ? JSON.stringify(features) : String(features)) : undefined,
+      isPopular: isPopular !== undefined ? !!isPopular : undefined,
+      isActive: isActive !== undefined ? !!isActive : undefined,
+      roleTarget: roleTarget !== undefined ? String(roleTarget) : undefined,
+    },
+  });
+
+  res.json({ success: true, message: 'Subscription plan updated successfully.', data: { ...updatedPlan, features: JSON.parse(updatedPlan.features) } });
+};
+
+export const deleteSubscriptionPlanAdmin = async (req: AuthenticatedRequest, res: Response) => {
+  const { planId } = req.params;
+  await prisma.subscriptionPlan.delete({ where: { id: planId } });
+  res.json({ success: true, message: 'Subscription plan deleted successfully.' });
+};
+
+// Revenue & Payments Management
+export const getAllPayments = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const payments = await prisma.payment.findMany({
+      orderBy: { createdAt: 'desc' },
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            phone: true,
+            role: true,
+            vendorProfile: {
+              select: {
+                businessName: true,
+                ownerName: true,
+                category: true,
+                city: true,
+                state: true,
+              },
+            },
+            lenderProfile: {
+              select: {
+                institutionName: true,
+                contactPersonName: true,
+                institutionType: true,
+                city: true,
+                state: true,
+              },
+            },
+          },
+        },
+        subscription: {
+          include: {
+            plan: true,
+          },
+        },
+      },
+    });
+
+    const formattedPayments = payments.map((p: any) => {
+      const isVendor = p.user?.role === 'VENDOR';
+      const entityName = isVendor
+        ? p.user?.vendorProfile?.businessName || 'Small Shop Business'
+        : p.user?.lenderProfile?.institutionName || 'Business Financer';
+      const personName = isVendor
+        ? p.user?.vendorProfile?.ownerName || 'Owner'
+        : p.user?.lenderProfile?.contactPersonName || 'Contact Officer';
+
+      return {
+        id: p.id,
+        entityName,
+        personName,
+        email: p.user?.email || 'N/A',
+        phone: p.user?.phone || 'N/A',
+        role: p.user?.role || (isVendor ? 'VENDOR' : 'LENDER'),
+        planName: p.subscription?.plan?.name || 'Standard Subscription Plan',
+        planCode: p.subscription?.plan?.code || (isVendor ? 'VENDOR_PLAN' : 'LENDER_PLAN'),
+        amount: p.amount,
+        paymentDate: p.createdAt ? new Date(p.createdAt).toISOString() : new Date().toISOString(),
+        paymentMethod: p.paymentMethod || 'UPI',
+        invoiceNumber: p.invoiceNumber || `INV-${p.id.substring(0, 8).toUpperCase()}`,
+        transactionId: p.subscription?.transactionId || p.id,
+        status: p.status || 'SUCCESS',
+      };
+    });
+
+    res.json({ success: true, count: formattedPayments.length, data: formattedPayments });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message || 'Failed to fetch payments' });
+  }
+};
+
+
+

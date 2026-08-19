@@ -3,15 +3,25 @@ import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 import { VendorDashboard } from './pages/VendorDashboard';
 import { LenderDashboard } from './pages/LenderDashboard';
+import { AdminDashboard } from './pages/AdminDashboard';
 import { AuthModal } from './pages/AuthModal';
 import { SubscriptionModal } from './components/SubscriptionModal';
 import { KYCModal } from './components/KYCModal';
 import { SupportModal } from './components/SupportModal';
 import { TermsModal } from './components/TermsModal';
-import { fetchLenders } from './services/api';
+import {
+  fetchLenders,
+  fetchCurrentUser,
+  checkSubscriptionStatus,
+  logoutUser,
+  getToken,
+} from './services/api';
 import { Lender } from './types';
 
 export function App() {
+  const [isAdminRoute, setIsAdminRoute] = useState<boolean>(
+    typeof window !== 'undefined' && window.location.pathname.startsWith('/admin')
+  );
   const [currentRole, setCurrentRole] = useState<'VENDOR' | 'LENDER'>('VENDOR');
   const [vendorActiveTab, setVendorActiveTab] = useState<'home' | 'lenders' | 'requests' | 'profile'>('home');
   const [authModalOpen, setAuthModalOpen] = useState(false);
@@ -23,57 +33,125 @@ export function App() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [hasActiveSubscription, setHasActiveSubscription] = useState<boolean>(false);
   const [authRole, setAuthRole] = useState<'VENDOR' | 'LENDER'>('VENDOR');
+  const [authSubscribeIntent, setAuthSubscribeIntent] = useState<boolean>(false);
+  const [isLoadingUser, setIsLoadingUser] = useState(true);
 
-  const checkSubscription = (role: 'VENDOR' | 'LENDER') => {
-    if (role === 'LENDER') {
-      return localStorage.getItem('sbni_lender_subscribed') === 'true';
-    }
-    return (
-      localStorage.getItem('sbni_vendor_subscribed') === 'true' ||
-      localStorage.getItem('sbni_subscribed') === 'true'
-    );
-  };
+  // Listen for admin route changes
+  useEffect(() => {
+    const handleLocationCheck = () => {
+      setIsAdminRoute(window.location.pathname.startsWith('/admin'));
+    };
+    window.addEventListener('popstate', handleLocationCheck);
+    return () => window.removeEventListener('popstate', handleLocationCheck);
+  }, []);
 
-  const loadData = () => {
-    fetchLenders().then((res) => {
-      setLenders(res.lenders);
-    });
+  // On mount: restore session from JWT token (AWS-verified)
+  useEffect(() => {
+    const initSession = async () => {
+      setIsLoadingUser(true);
+      const token = getToken();
+
+      if (token) {
+        // Verify token with AWS backend
+        const user = await fetchCurrentUser();
+        if (user) {
+          setCurrentUser(user);
+          const role = user.role === 'LENDER' ? 'LENDER' : 'VENDOR';
+          setCurrentRole(role);
+
+          // Check real subscription status from AWS & local state
+          const isSubscribedLocally = localStorage.getItem('sbni_vendor_subscribed') === 'true' ||
+                                      localStorage.getItem('sbni_subscribed') === 'true';
+          const subStatus = await checkSubscriptionStatus();
+          const isSub = subStatus.isActive || isSubscribedLocally;
+
+          setHasActiveSubscription(isSub);
+          if (isSub) {
+            localStorage.setItem('sbni_subscribed', 'true');
+            localStorage.setItem('sbni_vendor_subscribed', 'true');
+            localStorage.setItem('sbni_lender_subscribed', 'true');
+            window.dispatchEvent(new Event('sbni_subscription_updated'));
+          }
+        } else {
+          // Token invalid/expired — clear it
+          logoutUser();
+          setCurrentUser(null);
+          setHasActiveSubscription(false);
+        }
+      } else {
+        // Check local mock subscription fallback if any
+        const isSubscribedLocally = localStorage.getItem('sbni_vendor_subscribed') === 'true' ||
+                                    localStorage.getItem('sbni_subscribed') === 'true';
+        setHasActiveSubscription(isSubscribedLocally);
+      }
+
+      setIsLoadingUser(false);
+    };
+
+    initSession();
+  }, []);
+
+  // Load lenders from AWS whenever role changes
+  const loadLenders = async () => {
+    const res = await fetchLenders();
+    setLenders(res.lenders);
   };
 
   useEffect(() => {
-    const isSub = checkSubscription(currentRole);
-    setHasActiveSubscription(isSub);
-    loadData();
-
-    const storedUser = localStorage.getItem('sbni_user');
-    if (storedUser) {
-      try {
-        const u = JSON.parse(storedUser);
-        setCurrentUser(u);
-        if (u.role === 'LENDER') {
-          setCurrentRole('LENDER');
-        }
-      } catch (e) {}
-    }
+    loadLenders();
   }, [currentRole]);
 
   const handleRoleSwitch = (role: 'VENDOR' | 'LENDER') => {
     setCurrentRole(role);
   };
 
-  const handleAuthSuccess = (user: any) => {
+  const handleOpenSubscription = () => {
+    if (!currentUser) {
+      // If logged out: ask whether to login as Small Shop Business or Business Money Financer
+      setAuthSubscribeIntent(true);
+      setAuthRole(currentRole);
+      setAuthModalOpen(true);
+    } else {
+      setSubModalOpen(true);
+    }
+  };
+
+  const handleAuthSuccess = async (user: any) => {
     setCurrentUser(user);
     const role = user.role === 'LENDER' ? 'LENDER' : 'VENDOR';
     setCurrentRole(role);
-    setHasActiveSubscription(checkSubscription(role));
     setAuthModalOpen(false);
-    loadData();
+
+    // Check real subscription status from AWS after login
+    const isSubscribedLocally = localStorage.getItem('sbni_vendor_subscribed') === 'true' ||
+                                localStorage.getItem('sbni_subscribed') === 'true';
+    const subStatus = await checkSubscriptionStatus();
+    const isSub = subStatus.isActive || isSubscribedLocally;
+
+    setHasActiveSubscription(isSub);
+    if (isSub) {
+      localStorage.setItem('sbni_subscribed', 'true');
+      localStorage.setItem('sbni_vendor_subscribed', 'true');
+      localStorage.setItem('sbni_lender_subscribed', 'true');
+      window.dispatchEvent(new Event('sbni_subscription_updated'));
+    }
+    loadLenders();
+
+    // If user clicked subscribe while logged out, proceed to subscription modal after successful login
+    if (authSubscribeIntent) {
+      setAuthSubscribeIntent(false);
+      setSubModalOpen(true);
+    }
   };
 
-  const handleSubscriptionSuccess = () => {
+  const handleSubscriptionSuccess = async () => {
     setSubModalOpen(false);
     setHasActiveSubscription(true);
-    loadData();
+    localStorage.setItem('sbni_subscribed', 'true');
+    localStorage.setItem('sbni_vendor_subscribed', 'true');
+    localStorage.setItem('sbni_lender_subscribed', 'true');
+    window.dispatchEvent(new Event('sbni_subscription_updated'));
+    loadLenders();
   };
 
   const handleNavigateHome = () => {
@@ -88,32 +166,58 @@ export function App() {
 
   const handleLogout = (roleTarget?: 'VENDOR' | 'LENDER') => {
     const targetRole = roleTarget || currentRole;
-    localStorage.removeItem('sbni_user');
-    localStorage.removeItem('sbni_token');
+    // Clear all auth data from localStorage
+    logoutUser();
     localStorage.removeItem('sbni_subscribed');
     localStorage.removeItem('sbni_vendor_subscribed');
     localStorage.removeItem('sbni_lender_subscribed');
+
     setCurrentUser(null);
+    setHasActiveSubscription(false);
     setCurrentRole(targetRole);
     setAuthRole(targetRole);
+    setAuthSubscribeIntent(false);
     setVendorActiveTab('home');
-    setHasActiveSubscription(false);
     setAuthModalOpen(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  if (isAdminRoute) {
+    return (
+      <AdminDashboard
+        onNavigateHome={() => {
+          window.history.pushState({}, '', '/');
+          setIsAdminRoute(false);
+        }}
+      />
+    );
+  }
+
+  // Loading state
+  if (isLoadingUser) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 border-4 border-[#003893] border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm font-semibold text-slate-500">Connecting to JustPaisa...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col justify-between font-sans">
-      
+
       {/* Top Header Navbar */}
       <Navbar
         currentRole={currentRole}
         onRoleSwitch={handleRoleSwitch}
         onOpenAuth={() => {
+          setAuthSubscribeIntent(false);
           setAuthRole(currentRole);
           setAuthModalOpen(true);
         }}
-        onOpenSubscription={() => setSubModalOpen(true)}
+        onOpenSubscription={handleOpenSubscription}
         onOpenKYC={() => setKycModalOpen(true)}
         onOpenSupport={() => setSupportModalOpen(true)}
         onOpenTerms={() => setTermsModalOpen(true)}
@@ -128,14 +232,14 @@ export function App() {
         {currentRole === 'VENDOR' ? (
           <VendorDashboard
             lenders={lenders}
-            onOpenSubscription={() => setSubModalOpen(true)}
+            onOpenSubscription={handleOpenSubscription}
             activeTab={vendorActiveTab}
             onTabChange={setVendorActiveTab}
             onLogout={handleLogout}
           />
         ) : (
           <LenderDashboard
-            onOpenSubscription={() => setSubModalOpen(true)}
+            onOpenSubscription={handleOpenSubscription}
             onLogout={handleLogout}
           />
         )}
@@ -144,14 +248,19 @@ export function App() {
       {/* Footer */}
       <Footer />
 
-      {/* Modals */}
+      {/* Auth Modal */}
       <AuthModal
         isOpen={authModalOpen}
-        onClose={() => setAuthModalOpen(false)}
+        onClose={() => {
+          setAuthModalOpen(false);
+          setAuthSubscribeIntent(false);
+        }}
         onAuthSuccess={handleAuthSuccess}
         initialRole={authRole}
+        subscribeIntent={authSubscribeIntent}
       />
 
+      {/* Subscription Modal */}
       <SubscriptionModal
         isOpen={subModalOpen}
         onClose={() => setSubModalOpen(false)}
@@ -159,16 +268,19 @@ export function App() {
         userRole={currentRole}
       />
 
+      {/* KYC Modal */}
       <KYCModal
         isOpen={kycModalOpen}
         onClose={() => setKycModalOpen(false)}
       />
 
+      {/* Support Modal */}
       <SupportModal
         isOpen={supportModalOpen}
         onClose={() => setSupportModalOpen(false)}
       />
 
+      {/* Terms Modal */}
       <TermsModal
         isOpen={termsModalOpen}
         onClose={() => setTermsModalOpen(false)}

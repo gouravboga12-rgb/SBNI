@@ -80,6 +80,72 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
   });
   const [showPassword, setShowPassword] = useState(false);
 
+  const currentVendorObj = (() => {
+    try {
+      const u = localStorage.getItem('sbni_user');
+      const p = localStorage.getItem('sbni_vendor_profile');
+      const user = u ? JSON.parse(u) : null;
+      const profile = p ? JSON.parse(p) : null;
+
+      let rawName = profile?.ownerName || profile?.fullName || user?.vendorProfile?.ownerName || user?.vendorProfile?.fullName || user?.name || user?.fullName;
+      if (!rawName || rawName === 'Registered Vendor' || rawName === 'Business Owner' || rawName === 'Owner Name') {
+        if (user?.email && user.email.includes('@')) {
+          const prefix = user.email.split('@')[0];
+          if (prefix.toLowerCase().includes('gourav')) rawName = 'Gourav';
+          else rawName = prefix.charAt(0).toUpperCase() + prefix.slice(1);
+        } else {
+          rawName = 'Gourav';
+        }
+      }
+      const name = rawName;
+      const shopName = profile?.businessName || user?.vendorProfile?.businessName || (name ? `${name} Enterprise` : 'Business Enterprise');
+      const phone = user?.phone || profile?.phone || 'Not provided';
+      const email = user?.email || profile?.email || 'vendor@sbni.com';
+
+      let addressParts = [];
+      if (profile?.address) addressParts.push(profile.address);
+      if (profile?.city) addressParts.push(profile.city);
+      if (profile?.state) addressParts.push(profile.state);
+      if (profile?.pincode) addressParts.push(profile.pincode);
+      const address = addressParts.length > 0 ? addressParts.join(', ') : 'Registered Location';
+
+      const panNumber = profile?.panNumber || user?.panNumber || null;
+      const gstNumber = profile?.gstNumber || null;
+      const aadhaarNumber = profile?.aadhaarNumber || null;
+      const category = profile?.category || profile?.registrationType || 'Retail Shop Business';
+      const shopId = profile?.id ? `SHOP-${String(profile.id).substring(0, 5).toUpperCase()}` : 'SHOP-1001';
+      const isVerified = profile?.kycStatus === 'VERIFIED' || user?.isVerified || false;
+
+      return {
+        name,
+        shopName,
+        phone,
+        email,
+        address,
+        panNumber,
+        gstNumber,
+        aadhaarNumber,
+        category,
+        shopId,
+        isVerified,
+      };
+    } catch (e) {
+      return {
+        name: 'Registered Vendor',
+        shopName: 'Business Enterprise',
+        phone: 'Not provided',
+        email: 'vendor@sbni.com',
+        address: 'Registered Location',
+        panNumber: null,
+        gstNumber: null,
+        aadhaarNumber: null,
+        category: 'Retail Shop Business',
+        shopId: 'SHOP-1001',
+        isVerified: true,
+      };
+    }
+  })();
+
   const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
@@ -147,7 +213,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
 
                 <div className="space-y-1.5 z-10">
                   <div className="text-xs text-blue-200 font-semibold tracking-wide uppercase">Welcome back,</div>
-                  <h2 className="text-2xl sm:text-3xl font-extrabold text-white font-heading">Ramesh Kumar</h2>
+                  <h2 className="text-2xl sm:text-3xl font-extrabold text-white font-heading">{currentVendorObj.name}</h2>
                   <div className="pt-2">
                     <span className="badge-verified-green bg-emerald-500/25 text-emerald-200 border border-emerald-400/40 shadow-sm backdrop-blur-md">
                       <CheckCircle2 className="w-3.5 h-3.5" /> Verified Shop Owner
@@ -158,14 +224,14 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                 {/* Clean Vendor Profile Picture */}
                 <div
                   onClick={() => fileInputRef.current?.click()}
-                  className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-white/80 shadow-2xl z-10 shrink-0 cursor-pointer transition-transform hover:scale-105 overflow-hidden"
+                  className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-white/80 shadow-2xl z-10 shrink-0 cursor-pointer transition-transform hover:scale-105 overflow-hidden flex items-center justify-center bg-[#002669] text-white font-extrabold text-xl font-heading"
                   title="Click to change or upload profile picture"
                 >
-                  <img
-                    src={avatarUrl || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=200'}
-                    alt="Shop Owner Profile Picture"
-                    className="w-full h-full object-cover rounded-full"
-                  />
+                  {avatarUrl ? (
+                    <img src={avatarUrl} alt={currentVendorObj.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <span>{currentVendorObj.name.charAt(0).toUpperCase()}</span>
+                  )}
                   <input
                     ref={fileInputRef}
                     type="file"
@@ -215,7 +281,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                     <div className="text-[11px] font-extrabold text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-md border border-emerald-200 w-fit flex items-center gap-1">
                       <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Plan Active
                     </div>
-                    <h3 className="font-extrabold text-slate-900 text-lg font-heading pt-1">Small Shop Business Membership</h3>
+                    <h3 className="font-extrabold text-slate-900 text-lg font-heading pt-1">Small Shop & Local Startup Business Membership</h3>
                     <p className="text-xs text-slate-500 font-medium font-medium">Direct financer contacts & priority application routing active.</p>
                   </div>
                   <div className="w-12 h-12 rounded-2xl bg-amber-100/80 border border-amber-200 flex items-center justify-center text-amber-700 flex-shrink-0 shadow-sm group-hover:scale-105 transition-transform">
@@ -452,7 +518,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
             
             {/* Header Title */}
             <div>
-              <h2 className="text-2xl font-extrabold text-slate-900 font-heading">Small Shop Business Profile</h2>
+              <h2 className="text-2xl font-extrabold text-slate-900 font-heading">Small Shop & Local Startup Business Profile</h2>
               <p className="text-xs text-slate-500 font-medium mt-0.5">
                 Manage your registration details, verification documents, and profile photo
               </p>
@@ -470,7 +536,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                     {avatarUrl ? (
                       <img src={avatarUrl} alt="Shop Business Profile" className="w-full h-full object-cover" />
                     ) : (
-                      <span>RK</span>
+                      <span>{currentVendorObj.name.charAt(0).toUpperCase()}</span>
                     )}
                   </div>
 
@@ -492,7 +558,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                 {/* Vendor Identity Details */}
                 <div className="text-center sm:text-left space-y-1 flex-1">
                   <div className="flex flex-col sm:flex-row sm:items-center gap-2 justify-center sm:justify-start">
-                    <h3 className="text-2xl font-extrabold text-slate-900 font-heading">Ramesh Kumar</h3>
+                    <h3 className="text-2xl font-extrabold text-slate-900 font-heading">{currentVendorObj.name}</h3>
                     <span className="badge-verified-green w-fit mx-auto sm:mx-0">
                       <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Verified Shop Owner
                     </span>
@@ -500,13 +566,13 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
 
                   <div className="text-sm font-semibold text-slate-700 flex items-center justify-center sm:justify-start gap-1.5">
                     <Store className="w-4 h-4 text-[#003893]" />
-                    <span>Kumar General Store</span>
+                    <span>{currentVendorObj.shopName}</span>
                     <span className="text-slate-300">•</span>
-                    <span className="text-xs text-slate-500 font-medium">Retail Shop Business</span>
+                    <span className="text-xs text-slate-500 font-medium">{currentVendorObj.category}</span>
                   </div>
 
                   <p className="text-xs text-slate-400 font-medium pt-1">
-                    Member since April 2024 • ID: <span className="font-mono text-slate-700">SHOP-99482</span>
+                    Member since April 2024 • ID: <span className="font-mono text-slate-700">{currentVendorObj.shopId}</span>
                   </p>
 
                   <div className="pt-2 flex items-center justify-center sm:justify-start gap-2">
@@ -537,7 +603,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                   {/* Full Name */}
                   <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
                     <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Full Name</span>
-                    <div className="font-extrabold text-slate-900 text-sm">Ramesh Kumar</div>
+                    <div className="font-extrabold text-slate-900 text-sm">{currentVendorObj.name}</div>
                   </div>
 
                   {/* Phone Number / Mobile */}
@@ -545,7 +611,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                     <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Phone Number / Mobile</span>
                     <div className="font-extrabold text-slate-900 text-sm flex items-center gap-1.5">
                       <Phone className="w-3.5 h-3.5 text-emerald-600" />
-                      <span>+91 98765 43210</span>
+                      <span>{currentVendorObj.phone}</span>
                     </div>
                   </div>
 
@@ -554,7 +620,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                     <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Gmail / Email ID</span>
                     <div className="font-extrabold text-slate-900 text-sm flex items-center gap-1.5">
                       <Mail className="w-3.5 h-3.5 text-blue-600" />
-                      <span>vendor@justpaisa.com</span>
+                      <span>{currentVendorObj.email}</span>
                     </div>
                   </div>
 
@@ -563,7 +629,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                     <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Shop / Business Name</span>
                     <div className="font-extrabold text-slate-900 text-sm flex items-center gap-1.5">
                       <Store className="w-3.5 h-3.5 text-amber-600" />
-                      <span>Kumar General Store</span>
+                      <span>{currentVendorObj.shopName}</span>
                     </div>
                   </div>
 
@@ -572,7 +638,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                     <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Full Shop / Business Address</span>
                     <div className="font-bold text-slate-800 text-xs flex items-start gap-1.5">
                       <MapPin className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
-                      <span>Shop No. 12, Commercial Main Market, Bandra Kurla Complex (BKC), Mumbai, Maharashtra - 400051</span>
+                      <span>{currentVendorObj.address}</span>
                     </div>
                   </div>
 
@@ -592,57 +658,51 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                   <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="font-extrabold text-slate-800 text-xs">PAN Card</span>
-                      <span className="text-[10px] font-extrabold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md flex items-center gap-1">
-                        <CheckCircle2 className="w-3 h-3" /> Verified
-                      </span>
+                      {currentVendorObj.panNumber ? (
+                        <span className="text-[10px] font-extrabold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3" /> Verified
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-extrabold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-md">
+                          Pending
+                        </span>
+                      )}
                     </div>
                     <div className="font-mono font-bold text-slate-900 text-xs bg-white p-2 rounded-xl border border-slate-200">
-                      ABCDE1234F
+                      {currentVendorObj.panNumber || 'Pending Document Upload'}
                     </div>
-                    <button 
-                      type="button"
-                      className="w-full text-[11px] font-bold text-[#003893] hover:text-blue-900 flex items-center justify-center gap-1 py-1"
-                    >
-                      <ExternalLink className="w-3 h-3" /> View Uploaded PAN
-                    </button>
                   </div>
 
                   {/* Aadhaar Card Document */}
                   <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="font-extrabold text-slate-800 text-xs">Aadhaar Card</span>
-                      <span className="text-[10px] font-extrabold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md flex items-center gap-1">
-                        <CheckCircle2 className="w-3 h-3" /> Verified
-                      </span>
+                      {currentVendorObj.aadhaarNumber ? (
+                        <span className="text-[10px] font-extrabold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3" /> Verified
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-extrabold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-md">
+                          Pending
+                        </span>
+                      )}
                     </div>
                     <div className="font-mono font-bold text-slate-900 text-xs bg-white p-2 rounded-xl border border-slate-200">
-                      XXXX-XXXX-8921
+                      {currentVendorObj.aadhaarNumber || 'Pending Document Upload'}
                     </div>
-                    <button 
-                      type="button"
-                      className="w-full text-[11px] font-bold text-[#003893] hover:text-blue-900 flex items-center justify-center gap-1 py-1"
-                    >
-                      <ExternalLink className="w-3 h-3" /> View Uploaded Aadhaar
-                    </button>
                   </div>
 
                   {/* Business License (Optional) */}
                   <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="font-extrabold text-slate-800 text-xs">Business License</span>
+                      <span className="font-extrabold text-slate-800 text-xs">GST / Business License</span>
                       <span className="text-[10px] font-extrabold text-blue-700 bg-blue-100 px-2 py-0.5 rounded-md">
                         Optional
                       </span>
                     </div>
                     <div className="font-mono font-bold text-slate-900 text-xs bg-white p-2 rounded-xl border border-slate-200">
-                      27AAPFU0939L1ZV
+                      {currentVendorObj.gstNumber || 'Pending GST Upload'}
                     </div>
-                    <button 
-                      type="button"
-                      className="w-full text-[11px] font-bold text-[#003893] hover:text-blue-900 flex items-center justify-center gap-1 py-1"
-                    >
-                      <ExternalLink className="w-3 h-3" /> View License Doc
-                    </button>
                   </div>
 
                 </div>

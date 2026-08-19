@@ -37,3 +37,21 @@ export const authorizeRoles = (...roles: Role[]) => {
     next();
   };
 };
+
+// Optional auth — sets req.user if token present, but doesn't block unauthenticated requests
+export const optionalAuth = (
+  req: AuthenticatedRequest,
+  _res: Response,
+  next: NextFunction
+) => {
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.split(' ')[1];
+    try {
+      req.user = verifyAccessToken(token);
+    } catch {
+      // Invalid token — just proceed without user
+    }
+  }
+  next();
+};

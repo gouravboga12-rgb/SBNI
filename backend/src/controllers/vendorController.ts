@@ -85,10 +85,10 @@ export const searchLenders = async (req: AuthenticatedRequest, res: Response) =>
     }
   }
 
-  // 2. Fetch Verified Lenders
+  // 2. Fetch All Valid Lenders (All non-rejected financer accounts)
   const lenders = await prisma.lenderProfile.findMany({
     where: {
-      verificationStatus: 'VERIFIED',
+      verificationStatus: { not: 'REJECTED' },
       city: city ? { contains: String(city), mode: 'insensitive' } : undefined,
       institutionType: institutionType ? (String(institutionType) as any) : undefined,
     },
@@ -97,6 +97,7 @@ export const searchLenders = async (req: AuthenticatedRequest, res: Response) =>
         select: { email: true, phone: true },
       },
     },
+    orderBy: { createdAt: 'desc' },
   });
 
   const parsedLat = userLat ? parseFloat(String(userLat)) : 19.0760;

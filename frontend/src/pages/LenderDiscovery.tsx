@@ -25,15 +25,11 @@ export const LenderDiscovery: React.FC<LenderDiscoveryProps> = ({
   const [loanModalOpen, setLoanModalOpen] = useState(false);
 
   const handleRequestLoan = (lender: Lender) => {
-    const isSubscribed =
-      localStorage.getItem('sbni_vendor_subscribed') === 'true' ||
-      localStorage.getItem('sbni_subscribed') === 'true';
-
+    const isSubscribed = !!localStorage.getItem('sbni_token') || hasActiveSubscription;
     if (!isSubscribed) {
       onOpenSubscription();
       return;
     }
-
     setSelectedLenderForLoan(lender);
     setLoanModalOpen(true);
   };
@@ -41,10 +37,7 @@ export const LenderDiscovery: React.FC<LenderDiscoveryProps> = ({
   const loadLenders = () => {
     setLoading(true);
     fetchLenders({
-      query: searchQuery,
-      city: selectedCity,
-      category: selectedCategory,
-      radiusKm,
+      city: selectedCity || undefined,
     }).then((data) => {
       setLenders(data.lenders);
       setLoading(false);

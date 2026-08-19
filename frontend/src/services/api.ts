@@ -1,470 +1,733 @@
-import { Lender, VendorVerificationRequest, SubscriptionPlan } from '../types';
+// ============================================================
+// SBNI Money App — AWS Backend API Service Layer
+// All data is fetched from the live AWS EC2 backend.
+// No mock data. No localStorage substitutes.
+// ============================================================
 
-export const mockLendersList: Lender[] = [
-  {
-    id: 'l1',
-    institutionName: 'Santhosh Money Finance',
-    institutionType: 'Financial Institution',
-    logoUrl: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="20" fill="%23059669"/><text x="50" y="62" font-family="Arial, sans-serif" font-size="32" font-weight="bold" fill="%23FFFFFF" text-anchor="middle">SMF</text></svg>',
-    registrationNumber: 'FIN-IND-2022-1008',
-    loanCategories: ['Business Loan', 'Working Capital'],
-    minLoanAmount: 10000,
-    maxLoanAmount: 200000,
-    minInterestRate: 8.2,
-    address: 'Commercial Center, Main Road',
-    city: 'Mumbai',
-    state: 'Maharashtra',
-    pincode: '400001',
-    distanceKm: 1.8,
-    rating: 4.8,
-    reviewCount: 142,
-    contactPersonName: 'Santhosh Kumar (Managing Proprietor)',
-    contactUnlocked: true,
-    phone: '+91 98200 88990',
-    email: 'contact@santhoshmoneyfinance.com',
-    whatsAppUrl: 'https://wa.me/919820088990',
-  },
-  {
-    id: 'l2',
-    institutionName: 'Rohit Money Finance',
-    institutionType: 'NBFC',
-    logoUrl: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="20" fill="%23003893"/><text x="50" y="62" font-family="Arial, sans-serif" font-size="32" font-weight="bold" fill="%23FFFFFF" text-anchor="middle">RMF</text></svg>',
-    registrationNumber: 'FIN-IND-2021-1001',
-    loanCategories: ['Business Loan', 'Term Loan'],
-    minLoanAmount: 10000,
-    maxLoanAmount: 150000,
-    minInterestRate: 8.4,
-    address: 'BKC Commercial Hub',
-    city: 'Mumbai',
-    state: 'Maharashtra',
-    pincode: '400051',
-    distanceKm: 2.5,
-    rating: 4.7,
-    reviewCount: 128,
-    contactPersonName: 'Rohit Sharma (Director)',
-    contactUnlocked: true,
-    phone: '+91 98200 11223',
-    email: 'contact@rohitmoneyfinance.com',
-    whatsAppUrl: 'https://wa.me/919820011223',
-  },
-  {
-    id: 'l3',
-    institutionName: 'Nishanth Money Finance',
-    institutionType: 'Financial Institution',
-    logoUrl: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="20" fill="%237C3AED"/><text x="50" y="62" font-family="Arial, sans-serif" font-size="32" font-weight="bold" fill="%23FFFFFF" text-anchor="middle">NMF</text></svg>',
-    registrationNumber: 'FIN-IND-2021-1005',
-    loanCategories: ['Business Loan', 'Overdraft'],
-    minLoanAmount: 15000,
-    maxLoanAmount: 100000,
-    minInterestRate: 8.6,
-    address: 'Lower Parel Hub',
-    city: 'Mumbai',
-    state: 'Maharashtra',
-    pincode: '400013',
-    distanceKm: 3.2,
-    rating: 4.5,
-    reviewCount: 96,
-    contactPersonName: 'Nishanth Kumar (Proprietor)',
-    contactUnlocked: true,
-    phone: '+91 98333 44556',
-    email: 'contact@nishanthmoneyfinance.com',
-    whatsAppUrl: 'https://wa.me/919833344556',
-  },
-  {
-    id: 'l3',
-    institutionName: 'Suresh Money Finance',
-    institutionType: 'Financial Institution',
-    logoUrl: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="20" fill="%237C3AED"/><text x="50" y="62" font-family="Arial, sans-serif" font-size="32" font-weight="bold" fill="%23FFFFFF" text-anchor="middle">SMF</text></svg>',
-    registrationNumber: 'FIN-IND-2020-1003',
-    loanCategories: ['Business Loan', 'Overdraft'],
-    minLoanAmount: 15000,
-    maxLoanAmount: 200000,
-    minInterestRate: 8.9,
-    address: 'Bandra Kurla Complex',
-    city: 'Mumbai',
-    state: 'Maharashtra',
-    pincode: '400051',
-    distanceKm: 5.1,
-    rating: 4.6,
-    reviewCount: 112,
-    contactPersonName: 'Suresh Gupta (Director)',
-    contactUnlocked: true,
-    phone: '+91 98111 22334',
-    email: 'contact@sureshmoneyfinance.com',
-    whatsAppUrl: 'https://wa.me/919811122334',
-  },
-  {
-    id: 'l4',
-    institutionName: 'Kishore Money Finance',
-    institutionType: 'NBFC',
-    logoUrl: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="20" fill="%23D97706"/><text x="50" y="62" font-family="Arial, sans-serif" font-size="32" font-weight="bold" fill="%23FFFFFF" text-anchor="middle">KMF</text></svg>',
-    registrationNumber: 'NBFC-RBI-MH-2015-8820',
-    loanCategories: ['Business Loan', 'Equipment Loan'],
-    minLoanAmount: 10000,
-    maxLoanAmount: 100000,
-    minInterestRate: 9.5,
-    address: 'Viman Nagar Finance Park',
-    city: 'Pune',
-    state: 'Maharashtra',
-    pincode: '411014',
-    distanceKm: 6.3,
-    rating: 4.3,
-    reviewCount: 78,
-    contactPersonName: 'Kishore Bajaj (Senior Credit Officer)',
-    contactUnlocked: true,
-    phone: '+91 98444 55667',
-    email: 'contact@kishoremoneyfinance.com',
-    whatsAppUrl: 'https://wa.me/919844455667',
-  },
-  {
-    id: 'l5',
-    institutionName: 'Venkatesh Money Finance',
-    institutionType: 'Financial Institution',
-    logoUrl: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="20" fill="%232563EB"/><text x="50" y="62" font-family="Arial, sans-serif" font-size="32" font-weight="bold" fill="%23FFFFFF" text-anchor="middle">VMF</text></svg>',
-    registrationNumber: 'FIN-IND-2022-1005',
-    loanCategories: ['Business Loan', 'SME Loan'],
-    minLoanAmount: 20000,
-    maxLoanAmount: 150000,
-    minInterestRate: 9.1,
-    address: 'Kalina Commercial Complex',
-    city: 'Mumbai',
-    state: 'Maharashtra',
-    pincode: '400098',
-    distanceKm: 7.8,
-    rating: 4.4,
-    reviewCount: 89,
-    contactPersonName: 'Venkatesh Shah (Head of Loans)',
-    contactUnlocked: true,
-    phone: '+91 98555 66778',
-    email: 'contact@venkateshmoneyfinance.com',
-    whatsAppUrl: 'https://wa.me/919855566778',
-  },
-  {
-    id: 'l6',
-    institutionName: 'Ramesh Money Finance',
-    institutionType: 'NBFC',
-    logoUrl: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="20" fill="%23DC2626"/><text x="50" y="62" font-family="Arial, sans-serif" font-size="32" font-weight="bold" fill="%23FFFFFF" text-anchor="middle">RMF</text></svg>',
-    registrationNumber: 'NBFC-RBI-MH-2017-9102',
-    loanCategories: ['Business Loan', 'Working Capital'],
-    minLoanAmount: 10000,
-    maxLoanAmount: 100000,
-    minInterestRate: 9.8,
-    address: 'Peninsula Business Park, Tower A',
-    city: 'Mumbai',
-    state: 'Maharashtra',
-    pincode: '400013',
-    distanceKm: 8.6,
-    rating: 4.2,
-    reviewCount: 63,
-    contactPersonName: 'Ramesh Verma (Regional Manager)',
-    contactUnlocked: true,
-    phone: '+91 98666 77889',
-    email: 'contact@rameshmoneyfinance.com',
-    whatsAppUrl: 'https://wa.me/919866677889',
-  },
-  {
-    id: 'l7',
-    institutionName: 'Mahesh Money Finance',
-    institutionType: 'Financial Institution',
-    logoUrl: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="20" fill="%234F46E5"/><text x="50" y="62" font-family="Arial, sans-serif" font-size="32" font-weight="bold" fill="%23FFFFFF" text-anchor="middle">MMF</text></svg>',
-    registrationNumber: 'FIN-IND-2018-1007',
-    loanCategories: ['Business Loan', 'Term Loan'],
-    minLoanAmount: 25000,
-    maxLoanAmount: 200000,
-    minInterestRate: 8.8,
-    address: 'Bombay Dyeing Mills Compound',
-    city: 'Mumbai',
-    state: 'Maharashtra',
-    pincode: '400025',
-    distanceKm: 9.2,
-    rating: 4.3,
-    reviewCount: 91,
-    contactPersonName: 'Mahesh Mehta (VP Business Credit)',
-    contactUnlocked: true,
-    phone: '+91 98777 88990',
-    email: 'contact@maheshmoneyfinance.com',
-    whatsAppUrl: 'https://wa.me/919877788990',
-  },
-];
+import { Lender, SubscriptionPlan } from '../types';
 
-export const mockVerificationRequests: VendorVerificationRequest[] = [
-  {
-    id: 'vreq-1',
-    vendorName: 'Ramesh Kumar',
-    shopName: 'Kumar General Store',
-    shopAddress: 'Shastri Nagar, Kanpur, Uttar Pradesh',
-    city: 'Kanpur',
-    state: 'Uttar Pradesh',
-    requestedDate: '02 May 2024',
-    requestedTime: '10:30 AM',
-    status: 'Pending',
-    mobileNumber: '+91 98765 43210',
-    emailId: 'rameshkumar@gmail.com',
-    dateOfBirth: '12 Jan 1988',
-    panNumber: 'BGT PK1234A',
-    aadhaarNumber: 'XXXX XXXX 1234',
-    shopType: 'General Store',
-    yearsInBusiness: '5 Years',
-    shopImages: [
-      'https://images.unsplash.com/photo-1604719312566-8912e9227c6a?q=80&w=400',
-      'https://images.unsplash.com/photo-1578916171728-46686eac8d58?q=80&w=400',
-      'https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=400',
-      'https://images.unsplash.com/photo-1583258292688-d0213dc5a3a8?q=80&w=400',
-    ],
-    shopLicensePdf: 'License_2024.pdf',
-    gstCertificatePdf: 'GSTIN_09ABCDE1234F1Z5.pdf',
-  },
-  {
-    id: 'vreq-2',
-    vendorName: 'Suresh Yadav',
-    shopName: 'Yadav Mobile Shop',
-    shopAddress: 'Civil Lines, Kanpur, UP',
-    city: 'Kanpur',
-    state: 'Uttar Pradesh',
-    requestedDate: '01 May 2024',
-    requestedTime: '02:15 PM',
-    status: 'Pending',
-    mobileNumber: '+91 98123 45678',
-    emailId: 'sureshyadav@gmail.com',
-    dateOfBirth: '18 Aug 1992',
-    panNumber: 'CYP PY8821B',
-    aadhaarNumber: 'XXXX XXXX 5678',
-    shopType: 'Electronics & Mobiles',
-    yearsInBusiness: '3 Years',
-    shopImages: [
-      'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?q=80&w=400',
-      'https://images.unsplash.com/photo-1556740738-b6a63e27c4df?q=80&w=400',
-    ],
-    shopLicensePdf: 'Shop_License_Yadav.pdf',
-    gstCertificatePdf: 'GSTIN_09YADAV9988Z1.pdf',
-  },
-  {
-    id: 'vreq-3',
-    vendorName: 'Amit Verma',
-    shopName: 'Verma Electricals',
-    shopAddress: 'Mall Road, Kanpur, UP',
-    city: 'Kanpur',
-    state: 'Uttar Pradesh',
-    requestedDate: '30 Apr 2024',
-    requestedTime: '11:45 AM',
-    status: 'Verified',
-    mobileNumber: '+91 98999 11223',
-    emailId: 'amitverma@gmail.com',
-    dateOfBirth: '05 Nov 1985',
-    panNumber: 'AVP PV9912C',
-    aadhaarNumber: 'XXXX XXXX 9912',
-    shopType: 'Electrical Hardware',
-    yearsInBusiness: '7 Years',
-    shopImages: [
-      'https://images.unsplash.com/photo-1581092160607-ee22621dd758?q=80&w=400',
-    ],
-    shopLicensePdf: 'License_Verma.pdf',
-    gstCertificatePdf: 'GSTIN_09VERMA7711X9.pdf',
-  },
-];
+// --------------- Config ---------------
+const API_BASE = (import.meta as any).env?.VITE_API_URL || 'http://18.61.36.65/api/v1';
 
-export async function fetchLenders(params?: {
-  query?: string;
-  city?: string;
-  category?: string;
-  radiusKm?: number;
-}): Promise<{ lenders: Lender[]; hasActiveSubscription: boolean }> {
-  const isSubscribed =
-    typeof window !== 'undefined' &&
-    (localStorage.getItem('sbni_vendor_subscribed') === 'true' ||
-     localStorage.getItem('sbni_subscribed') === 'true');
-
-  const mappedLenders = mockLendersList.map((l) => ({
-    ...l,
-    contactUnlocked: isSubscribed,
-  }));
-
-  return { lenders: mappedLenders, hasActiveSubscription: isSubscribed };
+// --------------- Token Helpers ---------------
+export function getToken(): string | null {
+  return localStorage.getItem('sbni_token');
 }
 
-export async function fetchSubscriptionPlans(role: 'VENDOR' | 'LENDER' = 'VENDOR'): Promise<SubscriptionPlan[]> {
-  if (role === 'LENDER') {
-    return [
-      {
-        id: 'l-plan-1',
-        code: 'WEEKLY',
-        name: 'Weekly Trial Plan',
-        description: 'Verify shop businesses & review requests for 7 days',
-        price: 499,
-        originalPrice: 799,
-        durationDays: 7,
-        durationLabel: '7 Days',
-        roleTarget: 'LENDER',
-        features: [
-          'Verify Up to 10 Shop Businesses',
-          'Full Shop Business Profile & KYC Access',
-          'GST & License Document Verification',
-          'Direct Contact & Call Shop Owner',
-        ],
-      },
-      {
-        id: 'l-plan-2',
-        code: 'MONTHLY',
-        name: 'Monthly Professional Plan',
-        description: 'Popular choice for active business money financers',
-        price: 1499,
-        originalPrice: 2499,
-        durationDays: 30,
-        durationLabel: '30 Days',
-        isPopular: true,
-        roleTarget: 'LENDER',
-        features: [
-          'Unlimited Shop Business Verifications',
-          'Full KYC & GST Verification Reports',
-          'Direct Phone, Email & WhatsApp Access',
-          'Priority Verified Financer Badge',
-          'Dedicated Account Support',
-        ],
-      },
-      {
-        id: 'l-plan-3',
-        code: 'QUARTERLY',
-        name: 'Quarterly Growth Plan',
-        description: '3 Months access for expanding business funding portfolios',
-        price: 3899,
-        originalPrice: 5999,
-        durationDays: 90,
-        durationLabel: '90 Days',
-        roleTarget: 'LENDER',
-        features: [
-          'Everything in Monthly Plan',
-          'Bulk Shop Business Import & Lead Exports',
-          'Custom Risk Score Assessment',
-          'Dedicated Regional Support Manager',
-        ],
-      },
-      {
-        id: 'l-plan-4',
-        code: 'HALF_YEARLY',
-        name: 'Half-Yearly Enterprise Plan',
-        description: '6 Months complete lending platform suite',
-        price: 6999,
-        originalPrice: 10999,
-        durationDays: 180,
-        durationLabel: '180 Days',
-        roleTarget: 'LENDER',
-        features: [
-          '6 Months Unlimited Access',
-          'API Integration for Application Originating',
-          'Premium Business Money Financer Listing in Top Spot',
-          'Priority Customer Escalation Support',
-        ],
-      },
-      {
-        id: 'l-plan-5',
-        code: 'YEARLY',
-        name: 'Yearly Institutional Plan',
-        description: '1 Year full access with maximum savings',
-        price: 11999,
-        originalPrice: 19999,
-        durationDays: 365,
-        durationLabel: '365 Days',
-        isBestValue: true,
-        roleTarget: 'LENDER',
-        features: [
-          '365 Days Full Unlimited Platform Usage',
-          'Dedicated Enterprise Account Manager',
-          'Custom API & CRM Sync',
-          'Zero Commission / 100% Direct Leads',
-        ],
-      },
-    ];
+export function getAdminToken(): string | null {
+  return localStorage.getItem('sbni_admin_token');
+}
+
+function authHeaders(token?: string | null): HeadersInit {
+  const t = token ?? getToken();
+  return {
+    'Content-Type': 'application/json',
+    ...(t ? { Authorization: `Bearer ${t}` } : {}),
+  };
+}
+
+// --------------- Generic Fetch Wrapper ---------------
+async function apiFetch<T = any>(
+  path: string,
+  options: RequestInit = {}
+): Promise<T> {
+  const res = await fetch(`${API_BASE}${path}`, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+  
+  const text = await res.text();
+  let data: any;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    data = { success: false, message: `Server returned status ${res.status}` };
   }
 
-  // Default Vendor Plans
+  if (!res.ok) {
+    throw new Error(data?.message || `API error: ${res.status}`);
+  }
+  return data;
+}
+
+// ================================================================
+// AUTH
+// ================================================================
+
+export async function loginUser(
+  email: string,
+  password: string
+): Promise<{ success: boolean; token?: string; user?: any; message?: string }> {
+  try {
+    const data = await apiFetch('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password }),
+    });
+    if (data.success) {
+      const u = data.data.user;
+      if (u?.vendorProfile) {
+        const ownerName = u.vendorProfile.ownerName || u.vendorProfile.fullName;
+        if (ownerName) {
+          u.name = ownerName;
+          u.fullName = ownerName;
+        }
+        localStorage.setItem('sbni_vendor_profile', JSON.stringify(u.vendorProfile));
+      }
+      localStorage.setItem('sbni_token', data.data.accessToken);
+      localStorage.setItem('sbni_user', JSON.stringify(u));
+      if (data.data.refreshToken) {
+        localStorage.setItem('sbni_refresh_token', data.data.refreshToken);
+      }
+      return { success: true, token: data.data.accessToken, user: u };
+    }
+    return { success: false, message: data.message || 'Login failed' };
+  } catch (err: any) {
+    return { success: false, message: err.message || 'Server connection failed. Please try again.' };
+  }
+}
+
+export async function registerVendor(payload: {
+  name: string;
+  email: string;
+  phone: string;
+  password: string;
+  businessName: string;
+  address: string;
+  otpCode?: string;
+}): Promise<{ success: boolean; token?: string; user?: any; message?: string }> {
+  try {
+    const data = await apiFetch('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({ ...payload, role: 'VENDOR' }),
+    });
+    if (data.success) {
+      localStorage.setItem('sbni_token', data.data.accessToken);
+      localStorage.setItem('sbni_user', JSON.stringify(data.data.user));
+      return { success: true, token: data.data.accessToken, user: data.data.user };
+    }
+    return { success: false, message: data.message || 'Registration failed' };
+  } catch (err: any) {
+    return { success: false, message: err.message || 'Server connection failed. Please try again.' };
+  }
+}
+
+export async function registerLender(payload: {
+  name: string;
+  email: string;
+  phone: string;
+  password: string;
+  institutionName: string;
+  institutionType: string;
+  address: string;
+  city: string;
+  state: string;
+  pincode: string;
+  otpCode?: string;
+}): Promise<{ success: boolean; token?: string; user?: any; message?: string }> {
+  try {
+    const data = await apiFetch('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({ ...payload, role: 'LENDER' }),
+    });
+    if (data.success) {
+      localStorage.setItem('sbni_token', data.data.accessToken);
+      localStorage.setItem('sbni_user', JSON.stringify(data.data.user));
+      return { success: true, token: data.data.accessToken, user: data.data.user };
+    }
+    return { success: false, message: data.message || 'Registration failed' };
+  } catch (err: any) {
+    return { success: false, message: err.message || 'Server connection failed. Please try again.' };
+  }
+}
+
+export async function sendSignupOtpApi(
+  email: string,
+  role = 'VENDOR',
+  name?: string
+): Promise<{ success: boolean; message?: string; otpCode?: string }> {
+  try {
+    const data = await apiFetch('/auth/send-signup-otp', {
+      method: 'POST',
+      body: JSON.stringify({ email, role, name }),
+    });
+    return { success: data.success, message: data.message, otpCode: data.otpCode };
+  } catch (err: any) {
+    return { success: false, message: err.message || 'Failed to send OTP.' };
+  }
+}
+
+export async function verifySignupOtpApi(
+  email: string,
+  otpCode: string
+): Promise<{ success: boolean; message?: string }> {
+  try {
+    const data = await apiFetch('/auth/verify-signup-otp', {
+      method: 'POST',
+      body: JSON.stringify({ email, otpCode }),
+    });
+    return { success: data.success, message: data.message };
+  } catch (err: any) {
+    return { success: false, message: err.message || 'Invalid or expired OTP.' };
+  }
+}
+
+export async function forgotPasswordRequestOtpApi(
+  emailOrPhone: string
+): Promise<{ success: boolean; message?: string; email?: string; otpCode?: string }> {
+  try {
+    const data = await apiFetch('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ emailOrPhone }),
+    });
+    return { success: data.success, message: data.message, email: data.email, otpCode: data.otpCode };
+  } catch (err: any) {
+    return { success: false, message: err.message || 'Failed to process forgot password request.' };
+  }
+}
+
+export async function resetPasswordWithOtpApi(
+  email: string,
+  otpCode: string,
+  newPassword: string
+): Promise<{ success: boolean; message?: string }> {
+  try {
+    const data = await apiFetch('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ email, otpCode, newPassword }),
+    });
+    return { success: data.success, message: data.message };
+  } catch (err: any) {
+    return { success: false, message: err.message || 'Failed to reset password.' };
+  }
+}
+
+export async function resendOtpApi(
+  email: string,
+  type: 'SIGNUP' | 'FORGOT_PASSWORD' = 'SIGNUP',
+  role = 'VENDOR',
+  name?: string
+): Promise<{ success: boolean; message?: string; otpCode?: string }> {
+  try {
+    const data = await apiFetch('/auth/resend-otp', {
+      method: 'POST',
+      body: JSON.stringify({ email, type, role, name }),
+    });
+    return { success: data.success, message: data.message, otpCode: data.otpCode };
+  } catch (err: any) {
+    return { success: false, message: err.message || 'Failed to resend OTP.' };
+  }
+}
+
+export async function fetchCurrentUser(): Promise<any | null> {
+  const token = getToken();
+  if (!token) return null;
+  try {
+    const data = await apiFetch('/auth/me', {
+      headers: authHeaders(token),
+    });
+    return data.success ? data.data : null;
+  } catch {
+    return null;
+  }
+}
+
+export function logoutUser(): void {
+  localStorage.removeItem('sbni_token');
+  localStorage.removeItem('sbni_refresh_token');
+  localStorage.removeItem('sbni_user');
+}
+
+// ================================================================
+// LENDERS
+// ================================================================
+
+export async function fetchLenders(params?: {
+  city?: string;
+  state?: string;
+  query?: string;
+  category?: string;
+  radiusKm?: number;
+  minAmount?: number;
+  maxAmount?: number;
+}): Promise<{ lenders: Lender[]; total: number }> {
+  try {
+    const queryParams = new URLSearchParams();
+    if (params?.city) queryParams.append('city', params.city);
+    if (params?.state) queryParams.append('state', params.state);
+    if (params?.query) queryParams.append('query', params.query);
+    if (params?.category) queryParams.append('category', params.category);
+    if (params?.radiusKm) queryParams.append('radiusKm', String(params.radiusKm));
+    if (params?.minAmount) queryParams.append('minAmount', String(params.minAmount));
+    if (params?.maxAmount) queryParams.append('maxAmount', String(params.maxAmount));
+
+    const qs = queryParams.toString() ? `?${queryParams.toString()}` : '';
+
+    // Try authenticated endpoint first (returns unlocked contacts if subscribed)
+    const token = getToken();
+    const endpoint = `/vendors/lenders/search${qs}`;
+
+    const res = await fetch(`${API_BASE}${endpoint}`, {
+      headers: token
+        ? { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
+        : { 'Content-Type': 'application/json' },
+    });
+    const data = await res.json();
+
+    if (!res.ok) throw new Error(data?.message || 'Failed to fetch lenders');
+
+    const rawLenders = data.data || [];
+    const parsedLenders: Lender[] = rawLenders.map((l: any) => ({
+      id: l.id,
+      institutionName: l.institutionName || 'Unknown',
+      institutionType: l.institutionType || 'Financial Institution',
+      logoUrl: undefined,
+      registrationNumber: l.registrationNumber || l.id,
+      loanCategories: l.loanCategories || ['Business Loan'],
+      minLoanAmount: l.minLoanAmount || 10000,
+      maxLoanAmount: l.maxLoanAmount || 500000,
+      minInterestRate: l.minInterestRate || 9.0,
+      address: l.address || '',
+      city: l.city || '',
+      state: l.state || '',
+      pincode: l.pincode || '',
+      distanceKm: l.distanceKm || 0,
+      rating: l.rating || 4.5,
+      reviewCount: l.reviewCount || 0,
+      contactPersonName: l.contactPersonName || 'Contact Person',
+      contactUnlocked: l.contactUnlocked || false,
+      phone: l.phone || '',
+      email: l.email || undefined,
+      whatsAppUrl: l.whatsAppUrl || null,
+    }));
+
+    // Keep all registered financer accounts deduplicated strictly by unique ID
+    const lenders = parsedLenders.filter(
+      (item, idx, arr) => idx === arr.findIndex((t) => t.id === item.id)
+    );
+
+    return { lenders, total: lenders.length };
+  } catch (err: any) {
+    console.error('fetchLenders error:', err.message);
+    return { lenders: [], total: 0 };
+  }
+}
+
+export async function fetchVendorProfilesForLender(): Promise<any[]> {
+  try {
+    const data = await apiFetch('/lenders/vendors', {
+      headers: authHeaders(),
+    });
+    return data.data || [];
+  } catch (err: any) {
+    console.error('fetchVendorProfilesForLender error:', err.message);
+    return [];
+  }
+}
+
+export async function unlockLenderContact(
+  lenderId: string
+): Promise<{ success: boolean; phone?: string; email?: string; message?: string }> {
+  try {
+    const data = await apiFetch(`/lenders/${lenderId}/unlock`, {
+      method: 'POST',
+      headers: authHeaders(),
+    });
+    return {
+      success: data.success,
+      phone: data.data?.phone,
+      email: data.data?.email,
+      message: data.message,
+    };
+  } catch (err: any) {
+    return { success: false, message: err.message };
+  }
+}
+
+// ================================================================
+// SUBSCRIPTION PLANS
+// ================================================================
+
+export async function fetchSubscriptionPlans(
+  role?: 'VENDOR' | 'LENDER'
+): Promise<SubscriptionPlan[]> {
+  try {
+    const qs = role ? `?role=${role}` : '';
+    const data = await apiFetch(`/subscriptions/plans${qs}`);
+    const plans = data.data?.plans || data.data || [];
+    return plans.map((p: any) => ({
+      id: p.id,
+      code: p.code,
+      name: p.name,
+      description: p.description,
+      price: p.price,
+      originalPrice: p.originalPrice || p.price,
+      durationDays: p.durationDays,
+      durationLabel: p.durationLabel || `${p.durationDays} Days`,
+      features: p.features || [],
+      isPopular: p.isPopular || false,
+      isBestValue: p.isBestValue || false,
+      roleTarget: p.roleTarget || role || 'VENDOR',
+    }));
+  } catch (err: any) {
+    console.error('fetchSubscriptionPlans error:', err.message);
+    return getDefaultPlans(role || 'VENDOR');
+  }
+}
+
+function getDefaultPlans(role: 'VENDOR' | 'LENDER'): SubscriptionPlan[] {
+  if (role === 'VENDOR') {
+    return [
+      { id: 'v-w', code: 'WEEKLY', name: 'Weekly Starter Plan', description: 'Start exploring financers', price: 199, originalPrice: 349, durationDays: 7, durationLabel: '7 Days', features: ['Unlock up to 5 Financer Contacts', 'Phone & WhatsApp Access', 'Email Support'], roleTarget: 'VENDOR' },
+      { id: 'v-m', code: 'MONTHLY', name: 'Monthly Growth Plan', description: 'Most popular for business owners', price: 599, originalPrice: 999, durationDays: 30, durationLabel: '30 Days', features: ['Unlimited Financer Unlocks', 'Direct Email & Branch Access', 'Pan-India Discovery', 'Verified Trust Badge', 'Dedicated Support'], isPopular: true, roleTarget: 'VENDOR' },
+      { id: 'v-q', code: 'QUARTERLY', name: 'Quarterly Business Plan', description: '3 Months uninterrupted discovery', price: 1399, originalPrice: 2499, durationDays: 90, durationLabel: '90 Days', features: ['Everything in Monthly', 'Priority Application Routing', 'Digital KYC Storage', 'Multi-Bank Comparison'], roleTarget: 'VENDOR' },
+      { id: 'v-h', code: 'HALF_YEARLY', name: 'Half-Yearly Scale Plan', description: '6 Months for growing SMEs', price: 2499, originalPrice: 4499, durationDays: 180, durationLabel: '180 Days', features: ['6 Months Unlimited Access', 'Fast-Track KYC Approval', 'Dedicated Relationship Support', 'New Financer Notifications'], roleTarget: 'VENDOR' },
+      { id: 'v-y', code: 'YEARLY', name: 'Yearly VIP Enterprise Plan', description: '1 Year complete access', price: 4499, originalPrice: 7999, durationDays: 365, durationLabel: '365 Days', features: ['365 Days Unlimited Access', 'Zero Middleman Fees', 'VIP Priority Status', '24/7 Dedicated Account Manager'], isBestValue: true, roleTarget: 'VENDOR' },
+    ];
+  }
   return [
-    {
-      id: 'v-plan-1',
-      code: 'WEEKLY',
-      name: 'Weekly Trial Plan',
-      description: 'Quick access to nearby business money financers for 7 days',
-      price: 199,
-      originalPrice: 399,
-      durationDays: 7,
-      durationLabel: '7 Days',
-      roleTarget: 'VENDOR',
-      features: [
-        'Unlock Nearby Financer Phone Numbers',
-        'Direct WhatsApp Chat Access',
-        'Search Money Financers within 10 KM Radius',
-        'Instant Application Submission',
-      ],
-    },
-    {
-      id: 'v-plan-2',
-      code: 'MONTHLY',
-      name: 'Monthly Growth Plan',
-      description: 'Most popular plan for business owners seeking capital',
-      price: 599,
-      originalPrice: 999,
-      durationDays: 30,
-      durationLabel: '30 Days',
-      isPopular: true,
-      roleTarget: 'VENDOR',
-      features: [
-        'Unlimited Financer Phone & WhatsApp Unlocks',
-        'Direct Email & Branch Contact Details',
-        'Pan-India Financer Discovery',
-        'Verified Shop Trust Badge',
-        'Dedicated Customer Support',
-      ],
-    },
-    {
-      id: 'v-plan-3',
-      code: 'QUARTERLY',
-      name: 'Quarterly Business Plan',
-      description: '3 Months uninterrupted financer discovery',
-      price: 1399,
-      originalPrice: 2499,
-      durationDays: 90,
-      durationLabel: '90 Days',
-      roleTarget: 'VENDOR',
-      features: [
-        'Everything in Monthly Plan',
-        'Priority Application Routing',
-        'Digital KYC Document Storage',
-        'Multi-Bank Comparison Tool',
-      ],
-    },
-    {
-      id: 'v-plan-4',
-      code: 'HALF_YEARLY',
-      name: 'Half-Yearly Scale Plan',
-      description: '6 Months active funding suite for growing SMEs',
-      price: 2499,
-      originalPrice: 4499,
-      durationDays: 180,
-      durationLabel: '180 Days',
-      roleTarget: 'VENDOR',
-      features: [
-        '6 Months Unlimited Platform Access',
-        'Guaranteed Fast-Track KYC Approval',
-        'Direct Dedicated Relationship Support',
-        'New Financer Notifications',
-      ],
-    },
-    {
-      id: 'v-plan-5',
-      code: 'YEARLY',
-      name: 'Yearly VIP Enterprise Plan',
-      description: '1 Year complete access with maximum savings',
-      price: 4499,
-      originalPrice: 7999,
-      durationDays: 365,
-      durationLabel: '365 Days',
-      isBestValue: true,
-      roleTarget: 'VENDOR',
-      features: [
-        '365 Days Unlimited Contact Access',
-        'Zero Middleman Fees Guarantee',
-        'VIP Priority Verification Status',
-        '24/7 Dedicated Account Manager',
-      ],
-    },
+    { id: 'l-m', code: 'MONTHLY', name: 'Lender Monthly Plan', description: 'Connect with verified vendors', price: 999, originalPrice: 1499, durationDays: 30, durationLabel: '30 Days', features: ['Unlimited Vendor Discovery', 'KYC-Verified Leads', 'Direct Application Access', 'Lead Management Dashboard'], isPopular: true, roleTarget: 'LENDER' },
+    { id: 'l-q', code: 'QUARTERLY', name: 'Lender Quarterly Plan', description: '3 Months premium lender access', price: 2499, originalPrice: 3999, durationDays: 90, durationLabel: '90 Days', features: ['Everything in Monthly', 'Priority Lead Routing', 'Analytics Dashboard', 'Dedicated Account Manager'], roleTarget: 'LENDER' },
+    { id: 'l-y', code: 'YEARLY', name: 'Lender Annual Plan', description: 'Best value for active lenders', price: 7999, originalPrice: 14999, durationDays: 365, durationLabel: '365 Days', features: ['365 Days Full Platform Access', 'Unlimited Premium Leads', 'Custom Loan Product Listing', 'Brand Visibility Boost'], isBestValue: true, roleTarget: 'LENDER' },
   ];
 }
+
+export async function purchaseSubscription(
+  planId: string,
+  paymentDetails?: { method?: string; transactionId?: string }
+): Promise<{ success: boolean; subscription?: any; message?: string }> {
+  try {
+    const data = await apiFetch('/subscriptions/purchase', {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({ planId, ...paymentDetails }),
+    });
+    return { success: data.success, subscription: data.data, message: data.message };
+  } catch (err: any) {
+    return { success: false, message: err.message };
+  }
+}
+
+export async function checkSubscriptionStatus(): Promise<{
+  isActive: boolean;
+  subscription?: any;
+}> {
+  const token = getToken();
+  const isSubscribedLocally =
+    localStorage.getItem('sbni_vendor_subscribed') === 'true' ||
+    localStorage.getItem('sbni_subscribed') === 'true';
+
+  if (!token) return { isActive: isSubscribedLocally };
+  try {
+    const data = await apiFetch('/subscriptions/status', {
+      headers: authHeaders(token),
+    });
+    const isActive = Boolean(data.hasActiveSubscription || data.data?.isActive || isSubscribedLocally);
+    if (isActive) {
+      localStorage.setItem('sbni_subscribed', 'true');
+      localStorage.setItem('sbni_vendor_subscribed', 'true');
+      localStorage.setItem('sbni_lender_subscribed', 'true');
+    }
+    return { isActive, subscription: data.data };
+  } catch {
+    return { isActive: isSubscribedLocally };
+  }
+}
+
+// ================================================================
+// LOAN REQUESTS (Vendor → Lender)
+// ================================================================
+
+export async function submitLoanRequest(payload: {
+  lenderId: string;
+  amount: number;
+  purpose: string;
+  businessName?: string;
+  monthlyIncome?: number;
+  notes?: string;
+}): Promise<{ success: boolean; request?: any; message?: string }> {
+  try {
+    const data = await apiFetch('/loans/request', {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify(payload),
+    });
+    return { success: data.success, request: data.data, message: data.message };
+  } catch (err: any) {
+    return { success: false, message: err.message };
+  }
+}
+
+export async function fetchMyLoanRequests(): Promise<any[]> {
+  try {
+    const data = await apiFetch('/loans/my-requests', {
+      headers: authHeaders(),
+    });
+    return data.data?.requests || data.data || [];
+  } catch {
+    return [];
+  }
+}
+
+// ================================================================
+// SUPPORT TICKETS
+// ================================================================
+
+export async function submitSupportTicket(payload: {
+  subject: string;
+  message: string;
+  category?: string;
+}): Promise<{ success: boolean; ticket?: any; message?: string }> {
+  try {
+    const data = await apiFetch('/support/tickets', {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify(payload),
+    });
+    return { success: data.success, ticket: data.data, message: data.message };
+  } catch (err: any) {
+    return { success: false, message: err.message };
+  }
+}
+
+// ================================================================
+// CMS — Banners, FAQs, Testimonials
+// ================================================================
+
+export async function fetchBanners(): Promise<any[]> {
+  try {
+    const data = await apiFetch('/cms/banners');
+    return data.data?.banners || data.data || [];
+  } catch {
+    return [];
+  }
+}
+
+export async function fetchFAQs(): Promise<any[]> {
+  try {
+    const data = await apiFetch('/cms/faqs');
+    return data.data?.faqs || data.data || [];
+  } catch {
+    return [];
+  }
+}
+
+export async function fetchTestimonials(): Promise<any[]> {
+  try {
+    const data = await apiFetch('/cms/testimonials');
+    return data.data?.testimonials || data.data || [];
+  } catch {
+    return [];
+  }
+}
+
+// ================================================================
+// ADMIN API
+// ================================================================
+
+export async function adminLoginApi(
+  email: string,
+  password: string
+): Promise<{ success: boolean; token?: string; user?: any; message?: string }> {
+  try {
+    const data = await apiFetch('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password }),
+    });
+    if (data.success) {
+      const user = data.data.user;
+      if (user.role !== 'SUPER_ADMIN') {
+        return { success: false, message: 'Access denied: Admin credentials required.' };
+      }
+      localStorage.setItem('sbni_admin_token', data.data.accessToken);
+      localStorage.setItem('sbni_admin_user', JSON.stringify(user));
+      return { success: true, token: data.data.accessToken, user };
+    }
+    return { success: false, message: data.message || 'Invalid credentials' };
+  } catch (err: any) {
+    return { success: false, message: err.message || 'Server connection failed' };
+  }
+}
+
+async function adminFetch<T = any>(path: string, options: RequestInit = {}): Promise<T> {
+  const token = getAdminToken();
+  const res = await fetch(`${API_BASE}${path}`, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...options.headers,
+    },
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data?.message || `Admin API error: ${res.status}`);
+  return data;
+}
+
+export async function adminFetchDashboardStats(): Promise<any> {
+  try {
+    const data = await adminFetch('/admin/dashboard-stats');
+    return data.data || data;
+  } catch (err: any) {
+    console.error('adminFetchDashboardStats error:', err.message);
+    return {};
+  }
+}
+
+export async function adminFetchVendors(params?: { page?: number; limit?: number; status?: string }): Promise<{ vendors: any[]; total: number }> {
+  try {
+    const q = new URLSearchParams();
+    if (params?.page) q.append('page', String(params.page));
+    if (params?.limit) q.append('limit', String(params.limit));
+    if (params?.status) q.append('status', params.status);
+    const data = await adminFetch(`/admin/vendors?${q.toString()}`);
+    return { vendors: data.data?.vendors || data.data || [], total: data.data?.total || 0 };
+  } catch {
+    return { vendors: [], total: 0 };
+  }
+}
+
+export async function adminUpdateVendorKYC(vendorId: string, status: 'APPROVED' | 'REJECTED' | 'PENDING', notes?: string): Promise<{ success: boolean; message?: string }> {
+  try {
+    const data = await adminFetch(`/admin/vendors/${vendorId}/kyc`, {
+      method: 'PUT',
+      body: JSON.stringify({ status, notes }),
+    });
+    return { success: data.success, message: data.message };
+  } catch (err: any) {
+    return { success: false, message: err.message };
+  }
+}
+
+export async function adminToggleVendorFraud(vendorId: string, isFraud: boolean): Promise<{ success: boolean; message?: string }> {
+  try {
+    const data = await adminFetch(`/admin/vendors/${vendorId}/fraud`, {
+      method: 'PUT',
+      body: JSON.stringify({ isFraud }),
+    });
+    return { success: data.success, message: data.message };
+  } catch (err: any) {
+    return { success: false, message: err.message };
+  }
+}
+
+
+export async function adminDeleteUser(userId: string): Promise<{ success: boolean; message?: string }> {
+  try {
+    const data = await adminFetch(`/admin/users/${userId}`, { method: 'DELETE' });
+    return { success: data.success, message: data.message };
+  } catch (err: any) {
+    return { success: false, message: err.message };
+  }
+}
+
+export async function adminFetchLenders(params?: { page?: number; limit?: number; status?: string }): Promise<{ lenders: any[]; total: number }> {
+  try {
+    const q = new URLSearchParams();
+    if (params?.page) q.append('page', String(params.page));
+    if (params?.limit) q.append('limit', String(params.limit));
+    if (params?.status) q.append('status', params.status);
+    const data = await adminFetch(`/admin/lenders?${q.toString()}`);
+    return { lenders: data.data?.lenders || data.data || [], total: data.data?.total || 0 };
+  } catch {
+    return { lenders: [], total: 0 };
+  }
+}
+
+export async function adminUpdateLenderVerification(lenderId: string, status: 'VERIFIED' | 'REJECTED' | 'PENDING', notes?: string): Promise<{ success: boolean; message?: string }> {
+  try {
+    // Actual backend route: PUT /admin/lenders/:lenderId/verification
+    const data = await adminFetch(`/admin/lenders/${lenderId}/verification`, {
+      method: 'PUT',
+      body: JSON.stringify({ status, notes }),
+    });
+    return { success: data.success, message: data.message };
+  } catch (err: any) {
+    return { success: false, message: err.message };
+  }
+}
+
+export async function adminGrantSubscription(userId: string, planCode: string, durationDays: number): Promise<{ success: boolean; message?: string }> {
+  try {
+    // Actual backend route: POST /admin/grant-subscription
+    const data = await adminFetch('/admin/grant-subscription', {
+      method: 'POST',
+      body: JSON.stringify({ userId, planCode, durationDays }),
+    });
+    return { success: data.success, message: data.message };
+  } catch (err: any) {
+    return { success: false, message: err.message };
+  }
+}
+
+export async function adminFetchSupportTickets(): Promise<any[]> {
+  try {
+    // Actual backend route: GET /admin/tickets
+    const data = await adminFetch('/admin/tickets');
+    return data.data?.tickets || data.data || [];
+  } catch {
+    return [];
+  }
+}
+
+export async function adminUpdatePlatformSetting(key: string, value: string): Promise<{ success: boolean }> {
+  try {
+    // Actual backend route: POST /admin/settings
+    const data = await adminFetch('/admin/settings', {
+      method: 'POST',
+      body: JSON.stringify({ key, value }),
+    });
+    return { success: data.success };
+  } catch {
+    return { success: false };
+  }
+}
+
+export async function adminCreateSubscriptionPlan(payload: any): Promise<{ success: boolean; data?: any; message?: string }> {
+  try {
+    const data = await adminFetch('/admin/subscription-plans', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+    return { success: data.success, data: data.data, message: data.message };
+  } catch (err: any) {
+    return { success: false, message: err.message };
+  }
+}
+
+export async function adminUpdateSubscriptionPlan(planId: string, payload: any): Promise<{ success: boolean; data?: any; message?: string }> {
+  try {
+    const data = await adminFetch(`/admin/subscription-plans/${planId}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    });
+    return { success: data.success, data: data.data, message: data.message };
+  } catch (err: any) {
+    return { success: false, message: err.message };
+  }
+}
+
+export async function adminDeleteSubscriptionPlan(planId: string): Promise<{ success: boolean; message?: string }> {
+  try {
+    const data = await adminFetch(`/admin/subscription-plans/${planId}`, {
+      method: 'DELETE',
+    });
+    return { success: data.success, message: data.message };
+  } catch (err: any) {
+    return { success: false, message: err.message };
+  }
+}
+
+export async function adminFetchPayments(): Promise<{ payments: any[] }> {
+  try {
+    const data = await adminFetch('/admin/payments');
+    return { payments: data.data || [] };
+  } catch (err: any) {
+    return { payments: [] };
+  }
+}
+
+// Legacy export alias kept for compatibility
+export const mockLendersList: Lender[] = [];

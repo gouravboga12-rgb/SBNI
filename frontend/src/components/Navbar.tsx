@@ -93,7 +93,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   {isVendor ? (
                     <>
                       <Store className="w-4 h-4 text-[#003893]" />
-                      <span>Small Shop Business (Vendors)</span>
+                      <span>Small Shop / Local Startup (Vendors)</span>
                     </>
                   ) : (
                     <>
@@ -134,7 +134,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               >
                 <UserCheck className="w-4.5 h-4.5 sm:w-4 sm:h-4 text-slate-600" />
                 <span className="hidden sm:inline">
-                  {currentUser ? `${currentUser.name.split(' ')[0]} (Switch)` : 'Login'}
+                  {currentUser ? `${(currentUser.name || currentUser.email || 'User').split(' ')[0]} (Switch)` : 'Login'}
                 </span>
               </button>
             </div>
@@ -180,7 +180,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     <div>
                       <div className="font-extrabold text-slate-900 text-sm">{currentUser.name}</div>
                       <div className="text-xs text-slate-500 font-medium flex items-center gap-1.5 mt-0.5">
-                        <span className="capitalize">{currentUser.role === 'VENDOR' ? 'Small Shop Business' : 'Business Money Financer'} Account</span>
+                        <span className="capitalize">{currentUser.role === 'VENDOR' ? 'Small Shop / Local Startup Business' : 'Business Money Financer'} Account</span>
                         <span className="text-slate-300">•</span>
                         <span className={hasActiveSubscription ? 'text-emerald-600 font-bold' : 'text-amber-600 font-bold'}>
                           {hasActiveSubscription ? 'Subscribed' : 'Free Tier'}
@@ -237,7 +237,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 >
                   <div className="flex items-center gap-3">
                     {isVendor ? <Building2 className="w-4 h-4 text-emerald-600" /> : <Store className="w-4 h-4 text-blue-600" />}
-                    <span>{isVendor ? 'Business Money Financers (Lenders)' : 'Shop / Home Business Requests'}</span>
+                    <span>{isVendor ? 'Business Money Financers (Lenders)' : 'Shop / Startup Business Requests'}</span>
                   </div>
                   <ChevronRight className="w-4 h-4 text-slate-400" />
                 </button>

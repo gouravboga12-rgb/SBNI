@@ -27,30 +27,42 @@ export const LenderCard: React.FC<LenderCardProps> = ({ lender, onOpenSubscripti
 
   const [hasApplied, setHasApplied] = useState(() => checkHasApplied(lender.id));
 
+  const checkSubscription = () => {
+    try {
+      if (
+        lender.contactUnlocked ||
+        localStorage.getItem('sbni_vendor_subscribed') === 'true' ||
+        localStorage.getItem('sbni_lender_subscribed') === 'true' ||
+        localStorage.getItem('sbni_subscribed') === 'true'
+      ) {
+        return true;
+      }
+    } catch (e) {}
+    return false;
+  };
+
+  const [isSubscribedState, setIsSubscribedState] = useState(() => checkSubscription());
+
   useEffect(() => {
     const handleUpdate = () => {
       setHasApplied(checkHasApplied(lender.id));
+      setIsSubscribedState(checkSubscription());
     };
     window.addEventListener('sbni_request_submitted', handleUpdate);
+    window.addEventListener('sbni_subscription_updated', handleUpdate);
     window.addEventListener('storage', handleUpdate);
     return () => {
       window.removeEventListener('sbni_request_submitted', handleUpdate);
+      window.removeEventListener('sbni_subscription_updated', handleUpdate);
       window.removeEventListener('storage', handleUpdate);
     };
   }, [lender.id]);
-
-  const checkSubscription = () => {
-    return (
-      localStorage.getItem('sbni_vendor_subscribed') === 'true' ||
-      localStorage.getItem('sbni_subscribed') === 'true'
-    );
-  };
 
   const handleApplyClick = (e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     const isSubscribed = checkSubscription();
     
-    if (!isSubscribed) {
+    if (!isSubscribed && !isSubscribedState) {
       if (onOpenSubscription) {
         onOpenSubscription();
       }
@@ -62,7 +74,110 @@ export const LenderCard: React.FC<LenderCardProps> = ({ lender, onOpenSubscripti
     }
   };
 
-  const isSubscribed = checkSubscription();
+  const getLoggedInVendorDetails = () => {
+    let name = 'Registered Vendor';
+    let phone = '';
+    let email = '';
+    let businessName = '';
+    let address = '';
+    let panNumber = undefined;
+    let aadhaarNumber = undefined;
+    let monthlyIncome = '₹ 50,000 / month';
+    let avatarUrl = undefined;
+
+    try {
+      const uStr = localStorage.getItem('sbni_user');
+      const vpStr = localStorage.getItem('sbni_vendor_profile');
+      const u = uStr ? JSON.parse(uStr) : null;
+      const vp = vpStr ? JSON.parse(vpStr) : null;
+
+      name = vp?.ownerName || vp?.fullName || u?.name || u?.fullName || 'Registered Vendor';
+      phone = vp?.phone || u?.phone || '';
+      email = vp?.email || u?.email || '';
+      businessName = vp?.businessName || (name + ' Enterprise');
+      address = vp?.address || (vp?.city ? `${vp.city}, ${vp.state || ''}` : '');
+      panNumber = vp?.panNumber || u?.panNumber;
+      aadhaarNumber = vp?.aadhaarNumber;
+      monthlyIncome = vp?.monthlyIncome || u?.monthlyIncome || '₹ 50,000 / month';
+      avatarUrl = vp?.liveSelfieDataUrl || vp?.avatarUrl || localStorage.getItem('sbni_vendor_avatar') || undefined;
+    } catch (e) {}
+
+    return { name, phone, email, businessName, address, panNumber, aadhaarNumber, monthlyIncome, avatarUrl };
+  };
+
+  const recordLenderRequest = (actionType: 'APPLY' | 'CALL' | 'WHATSAPP') => {
+    try {
+      const v = getLoggedInVendorDetails();
+      const today = new Date();
+      const formattedDate = today.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+      const formattedTime = today.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+
+      let requestStatus = 'Pending';
+      if (actionType === 'CALL') requestStatus = 'Requested to Call';
+      if (actionType === 'WHATSAPP') requestStatus = 'Requested to WhatsApp';
+
+      const newRequest = {
+        id: 'req-' + Date.now() + '-' + actionType.toLowerCase(),
+        vendorName: v.name,
+        shopName: v.businessName,
+        shopAddress: v.address || 'Registered Location',
+        city: lender.city || 'Mumbai',
+        state: lender.state || 'Maharashtra',
+        requestedDate: formattedDate,
+        requestedTime: formattedTime,
+        status: requestStatus,
+        mobileNumber: v.phone,
+        emailId: v.email,
+        panNumber: v.panNumber,
+        aadhaarNumber: v.aadhaarNumber,
+        monthlyIncome: v.monthlyIncome,
+        lenderId: lender.id,
+        lenderName: lender.institutionName,
+        avatarUrl: v.avatarUrl,
+        liveSelfieUrl: v.avatarUrl,
+        shopImages: [],
+      };
+
+      const existingStr = localStorage.getItem('sbni_vendor_requests');
+      let existingList: any[] = [];
+      if (existingStr) {
+        try { existingList = JSON.parse(existingStr); } catch (e) {}
+      }
+
+      // Avoid exact duplicates
+      const filtered = existingList.filter((r: any) => !(r.lenderId === lender.id && r.status === requestStatus));
+      filtered.unshift(newRequest);
+
+      localStorage.setItem('sbni_vendor_requests', JSON.stringify(filtered));
+      localStorage.setItem(`sbni_applied_${lender.id}`, 'true');
+      setHasApplied(true);
+      window.dispatchEvent(new Event('sbni_request_submitted'));
+    } catch (e) {
+      console.error('Error recording lender request:', e);
+    }
+  };
+
+  const handleCallClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    recordLenderRequest('CALL');
+    if (lender.phone) {
+      window.location.href = `tel:${lender.phone}`;
+    }
+  };
+
+  const handleWhatsAppClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    recordLenderRequest('WHATSAPP');
+    if (lender.whatsAppUrl) {
+      window.open(lender.whatsAppUrl, '_blank');
+    } else if (lender.phone) {
+      const cleanPhone = lender.phone.replace(/\D/g, '');
+      const msg = encodeURIComponent(`Hello ${lender.institutionName}, I am interested in business financing for my shop.`);
+      window.open(`https://wa.me/91${cleanPhone}?text=${msg}`, '_blank');
+    }
+  };
+
+  const isSubscribed = isSubscribedState || checkSubscription();
 
   const minAmt = lender.minLoanAmount ? lender.minLoanAmount.toLocaleString('en-IN') : '10,000';
   const maxAmt = lender.maxLoanAmount ? lender.maxLoanAmount.toLocaleString('en-IN') : '1,00,000';
@@ -90,7 +205,7 @@ export const LenderCard: React.FC<LenderCardProps> = ({ lender, onOpenSubscripti
             />
           ) : (
             <div className="w-full h-full rounded-xl bg-gradient-to-br from-[#003893] to-[#001f54] text-white flex items-center justify-center font-extrabold text-sm shadow-inner">
-              {lender.institutionName.split(' ').map(n => n[0]).join('').slice(0, 3)}
+              {(lender.institutionName || 'Lender').split(' ').map(n => n[0] || '').join('').slice(0, 3)}
             </div>
           )}
         </div>
@@ -171,29 +286,28 @@ export const LenderCard: React.FC<LenderCardProps> = ({ lender, onOpenSubscripti
         {/* Phone Call & WhatsApp Message Options - Always Visible */}
         {lender.contactUnlocked || isSubscribed ? (
           <div className="flex items-center gap-1.5">
-            <a
-              href={`tel:${lender.phone}`}
-              className="btn-call-outline text-xs justify-center flex-1 font-bold py-2 px-3 flex items-center gap-1"
+            <button
+              type="button"
+              onClick={handleCallClick}
+              className="btn-call-outline text-xs justify-center flex-1 font-bold py-2 px-3 flex items-center gap-1 cursor-pointer"
             >
               <Phone className="w-3.5 h-3.5 text-emerald-600 fill-emerald-600 shrink-0" />
               <span>Call</span>
-            </a>
+            </button>
 
-            {lender.whatsAppUrl && (
-              <a
-                href={lender.whatsAppUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="btn-whatsapp-outline text-xs justify-center flex-1 font-bold py-2 px-3 flex items-center gap-1"
-              >
-                <MessageCircle className="w-3.5 h-3.5 text-emerald-600 fill-emerald-600 shrink-0" />
-              </a>
-            )}
+            <button
+              type="button"
+              onClick={handleWhatsAppClick}
+              className="btn-whatsapp-outline text-xs justify-center flex-1 font-bold py-2 px-3 flex items-center gap-1 cursor-pointer"
+            >
+              <MessageCircle className="w-3.5 h-3.5 text-emerald-600 fill-emerald-600 shrink-0" />
+            </button>
           </div>
         ) : (
           <button
+            type="button"
             onClick={onOpenSubscription}
-            className="text-[11px] font-extrabold text-blue-900 hover:text-blue-700 py-1 text-center flex items-center justify-center gap-1 transition-colors"
+            className="text-[11px] font-extrabold text-blue-900 hover:text-blue-700 py-1 text-center flex items-center justify-center gap-1 transition-colors cursor-pointer"
           >
             <Zap className="w-3 h-3 text-amber-500 fill-amber-400 shrink-0" />
             <span>Unlock Direct Contact</span>

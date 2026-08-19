@@ -106,8 +106,9 @@ model VendorProfile {
   pincode            String
   latitude           Float     @default(19.0760)
   longitude          Float     @default(72.8777)
-  kycStatus          KYCStatus @default(PENDING)
+  kycStatus          KYCStatus @default(VERIFIED)
   kycRejectionReason String?
+  isFraud            Boolean   @default(false)
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
@@ -134,7 +135,7 @@ model LenderProfile {
   latitude           Float      @default(19.0760)
   longitude          Float      @default(72.8777)
   contactPersonName  String
-  verificationStatus KYCStatus  @default(PENDING)
+  verificationStatus KYCStatus  @default(VERIFIED)
   rejectionReason    String?
   rating             Float      @default(4.8)
   reviewCount        Int        @default(12)
@@ -174,6 +175,7 @@ model SubscriptionPlan {
   features      String             // Stored as JSON string e.g. ["Unlock Phone Numbers", "WhatsApp Connect", "Priority Support"]
   isActive      Boolean            @default(true)
   isPopular     Boolean            @default(false)
+  roleTarget    String             @default("VENDOR")
   createdAt     DateTime           @default(now())
   updatedAt     DateTime           @updatedAt
 

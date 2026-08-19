@@ -69,6 +69,9 @@ export const Footer: React.FC = () => {
 
         <div className="pt-6 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4 text-center">
           <p>© 2026 Just Paisa App. All Rights Reserved. Production Enterprise FinTech Release.</p>
+          <a href="/admin" className="text-slate-500 hover:text-cyan-400 font-bold transition-colors">
+            Super Admin Portal (/admin)
+          </a>
         </div>
 
       </div>

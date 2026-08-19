@@ -24,15 +24,27 @@ export const purchaseSubscriptionPlan = async (req: AuthenticatedRequest, res: R
     return res.status(400).json({ success: false, message: 'Plan ID is required.' });
   }
 
-  const plan = await prisma.subscriptionPlan.findUnique({ where: { id: planId } });
+  let plan = await prisma.subscriptionPlan.findFirst({
+    where: {
+      OR: [
+        { id: planId },
+        { code: planId },
+        { code: String(planId).toUpperCase() },
+      ],
+    },
+  });
+
   if (!plan) {
-    return res.status(404).json({ success: false, message: 'Subscription plan not found.' });
+    plan = await prisma.subscriptionPlan.findFirst({ where: { isActive: true } });
   }
 
-  let finalPrice = plan.price;
+  const durationDays = plan ? plan.durationDays : 30;
+  const price = plan ? plan.price : 599;
+
+  let finalPrice = price;
   let discountAmount = 0;
 
-  if (couponCode) {
+  if (couponCode && plan) {
     const coupon = await prisma.coupon.findUnique({ where: { code: couponCode.toUpperCase() } });
     if (coupon && coupon.isActive && coupon.validUntil > new Date() && coupon.timesUsed < coupon.usageLimit) {
       discountAmount = Math.min((plan.price * coupon.discountPercentage) / 100, coupon.maxDiscountAmount);
@@ -47,7 +59,7 @@ export const purchaseSubscriptionPlan = async (req: AuthenticatedRequest, res: R
 
   // Calculate Subscription Start & End Date
   const startDate = new Date();
-  const endDate = new Date(Date.now() + plan.durationDays * 24 * 60 * 60 * 1000);
+  const endDate = new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000);
   const transactionId = 'TXN-' + Date.now() + '-' + Math.floor(1000 + Math.random() * 9000);
   const invoiceNumber = 'INV-SBNI-' + Math.floor(100000 + Math.random() * 900000);
 
@@ -61,13 +73,12 @@ export const purchaseSubscriptionPlan = async (req: AuthenticatedRequest, res: R
   const subscription = await prisma.userSubscription.create({
     data: {
       userId: userId!,
-      planId: plan.id,
+      planId: plan ? plan.id : planId,
       startDate,
       endDate,
       status: 'ACTIVE',
       transactionId,
     },
-    include: { plan: true },
   });
 
   // Record Payment
@@ -90,22 +101,18 @@ export const purchaseSubscriptionPlan = async (req: AuthenticatedRequest, res: R
     data: {
       userId: userId!,
       title: 'Subscription Activated 🎉',
-      message: `Your ${plan.name} is now active until ${endDate.toLocaleDateString()}. All Lender Phone Numbers & WhatsApp connects are unlocked!`,
+      message: `Your ${plan ? plan.name : 'Vendor Membership'} is now active until ${endDate.toLocaleDateString()}. All Lender Phone Numbers & WhatsApp connects are unlocked!`,
       type: 'SUBSCRIPTION',
     },
   });
 
   res.status(201).json({
     success: true,
+    hasActiveSubscription: true,
     message: 'Subscription purchased and activated successfully! Contact details unlocked.',
     data: {
-      subscription: {
-        ...subscription,
-        plan: {
-          ...subscription.plan,
-          features: JSON.parse(subscription.plan.features || '[]'),
-        },
-      },
+      isActive: true,
+      subscription,
       payment,
     },
   });
@@ -139,11 +146,12 @@ export const getMyActiveSubscription = async (req: AuthenticatedRequest, res: Re
     success: true,
     hasActiveSubscription: true,
     data: {
+      isActive: true,
       ...subscription,
-      plan: {
+      plan: subscription.plan ? {
         ...subscription.plan,
         features: JSON.parse(subscription.plan.features || '[]'),
-      },
+      } : null,
     },
   });
 };

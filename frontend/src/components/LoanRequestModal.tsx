@@ -47,20 +47,44 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
   const [formError, setFormError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
 
-  // Auto-populate from logged in user if available
+  // Auto-populate from logged-in vendor profile details and registered documents
   useEffect(() => {
     if (isOpen) {
       setSubmitted(false);
       setFormError(null);
+
+      let u: any = {};
+      let vp: any = {};
+
       const storedUserStr = localStorage.getItem('sbni_user');
       if (storedUserStr) {
-        try {
-          const u = JSON.parse(storedUserStr);
-          if (u.name) setFullName(u.name);
-          if (u.phone) setPhone(u.phone);
-          if (u.email) setEmail(u.email);
-        } catch (e) {}
+        try { u = JSON.parse(storedUserStr); } catch (e) {}
       }
+      const storedVpStr = localStorage.getItem('sbni_vendor_profile');
+      if (storedVpStr) {
+        try { vp = JSON.parse(storedVpStr); } catch (e) {}
+      }
+
+      const nameVal = vp.fullName || vp.ownerName || u.name || u.fullName || '';
+      const phoneVal = vp.phone || u.phone || '';
+      const emailVal = vp.email || u.email || '';
+
+      setFullName(nameVal);
+      setPhone(phoneVal);
+      setEmail(emailVal);
+      setMonthlyIncome(vp.monthlyIncome || u.monthlyIncome || '50000');
+      setBankAccountDetails(vp.bankDetails || u.bankDetails || '');
+
+      // Auto-attach registered verification documents so vendor doesn't have to re-upload manually every time
+      const panName = vp.panFileName || 'PAN_Card_Verified.pdf';
+      const aadhaarName = vp.aadhaarFileName || 'Aadhaar_Card_Verified.pdf';
+      const shopName = vp.shopPhotoFileName || 'Shop_Photo_Verified.jpg';
+      const selfieName = vp.liveSelfieFileName || 'Live_Selfie_Verified.jpg';
+
+      setPanFile(new File(['verified_doc'], panName, { type: 'application/pdf' }));
+      setAadhaarFile(new File(['verified_doc'], aadhaarName, { type: 'application/pdf' }));
+      setShopPhotoFile(new File(['verified_doc'], shopName, { type: 'image/jpeg' }));
+      setLiveSelfieFile(new File(['verified_doc'], selfieName, { type: 'image/jpeg' }));
     }
   }, [isOpen]);
 
@@ -94,24 +118,27 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
       setFormError('Please upload your Aadhaar card document.');
       return;
     }
-    if (!shopPhotoFile) {
-      setFormError('Please upload your Shop / Home Business photo.');
-      return;
-    }
-    if (!liveSelfieFile) {
-      setFormError('Please upload a Live photo with person standing in front of shop or home business.');
-      return;
-    }
 
     const today = new Date();
     const formattedDate = today.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
     const formattedTime = today.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
 
+    let vp: any = {};
+    const vendorProfileStr = localStorage.getItem('sbni_vendor_profile');
+    let vendorAvatar = '';
+    if (vendorProfileStr) {
+      try {
+        vp = JSON.parse(vendorProfileStr);
+        if (vp.liveSelfieDataUrl) vendorAvatar = vp.liveSelfieDataUrl;
+        else if (vp.shopPhotoDataUrl) vendorAvatar = vp.shopPhotoDataUrl;
+      } catch (e) {}
+    }
+
     const newRequest: VendorVerificationRequest = {
       id: 'req-' + Date.now(),
       vendorName: fullName,
-      shopName: fullName + ' Enterprise',
-      shopAddress: 'Commercial Market Area, City Center',
+      shopName: vp.businessName || (fullName + ' Enterprise'),
+      shopAddress: vp.address || (lender.city ? `${lender.city}, ${lender.state || ''}` : 'Registered Location'),
       city: lender.city || 'Mumbai',
       state: lender.state || 'Maharashtra',
       requestedDate: formattedDate,
@@ -119,14 +146,20 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
       status: 'Pending',
       mobileNumber: phone,
       emailId: email,
-      panNumber: panFile.name.replace(/\.[^/.]+$/, '').toUpperCase() || 'ABCDE1234F',
-      aadhaarNumber: aadhaarFile.name ? 'XXXX-XXXX-8921' : '9876-5432-1098',
+      panNumber: panFile?.name ? panFile.name.replace(/\.[^/.]+$/, '').toUpperCase() : (vp.panNumber || undefined),
+      aadhaarNumber: aadhaarFile?.name ? 'Aadhaar Verified' : (vp.aadhaarNumber || undefined),
       monthlyIncome: monthlyIncome,
       lenderId: lender.id,
       lenderName: lender.institutionName,
       bankAccountDetails: bankAccountDetails || undefined,
-      shopLicensePdf: 'license_document.pdf',
-      gstCertificatePdf: 'gst_certificate.pdf',
+      shopLicensePdf: vp.shopLicensePdf || undefined,
+      gstCertificatePdf: vp.gstCertificatePdf || undefined,
+      avatarUrl: vendorAvatar || undefined,
+      panFileUrl: panFile?.name || vp.panFileName || undefined,
+      aadhaarFileUrl: aadhaarFile?.name || vp.aadhaarFileName || undefined,
+      shopPhotoUrl: shopPhotoFile?.name || vp.shopPhotoFileName || undefined,
+      liveSelfieUrl: vendorAvatar || liveSelfieFile?.name || vp.liveSelfieFileName || undefined,
+      shopImages: [],
     };
 
     // Save to localStorage so Lender Dashboard can read dynamic requests
@@ -235,6 +268,16 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
           ) : (
             /* Enquire Form */
             <form onSubmit={handleSubmit} className="space-y-4">
+              
+              <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center justify-between gap-2 shadow-xs">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span><strong>Auto-filled</strong> from your registered profile. Edit any detail if needed.</span>
+                </div>
+                <span className="text-[10px] bg-emerald-200 text-emerald-900 font-extrabold px-2 py-0.5 rounded-full shrink-0">
+                  Editable
+                </span>
+              </div>
               
               {/* Full Name */}
               <div>
@@ -362,19 +405,19 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
 
               {/* Shop Photo & Live Selfie Verification Uploads */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                {/* Shop / Home Business Photo Upload */}
+                {/* Shop / Business Photo Upload */}
                 <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200">
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs font-extrabold text-slate-800 flex items-center gap-1">
                       <Store className="w-3.5 h-3.5 text-[#003893]" />
-                      Shop / Business Photo *
+                      Shop / Business Photo
                     </span>
                     {shopPhotoFile ? (
                       <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded flex items-center gap-1">
                         <CheckCircle2 className="w-3 h-3" /> Uploaded
                       </span>
                     ) : (
-                      <span className="text-[10px] text-rose-600 font-bold">Required</span>
+                      <span className="text-[10px] font-semibold text-slate-500 bg-slate-200 px-1.5 py-0.5 rounded">Optional</span>
                     )}
                   </div>
                   <label className="border-2 border-dashed border-slate-300 hover:border-[#003893] rounded-xl p-2.5 text-center cursor-pointer block bg-white transition-colors">
@@ -386,9 +429,9 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
                     />
                     <Camera className="w-5 h-5 text-[#003893] mx-auto mb-1" />
                     <div className="text-[11px] font-bold text-slate-700 truncate">
-                      {shopPhotoFile ? shopPhotoFile.name : 'Upload Shop Photo'}
+                      {shopPhotoFile ? shopPhotoFile.name : 'Upload Shop Photo (Optional)'}
                     </div>
-                    <div className="text-[9px] text-slate-400">Shop / Home Business Exterior</div>
+                    <div className="text-[9px] text-slate-400">Shop / Business Exterior</div>
                   </label>
                 </div>
 
@@ -397,14 +440,14 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs font-extrabold text-slate-800 flex items-center gap-1">
                       <UserCheck className="w-3.5 h-3.5 text-[#003893]" />
-                      Live Photo in Front *
+                      Live Photo in Front
                     </span>
                     {liveSelfieFile ? (
                       <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded flex items-center gap-1">
                         <CheckCircle2 className="w-3 h-3" /> Uploaded
                       </span>
                     ) : (
-                      <span className="text-[10px] text-rose-600 font-bold">Required</span>
+                      <span className="text-[10px] font-semibold text-slate-500 bg-slate-200 px-1.5 py-0.5 rounded">Optional</span>
                     )}
                   </div>
                   <label className="border-2 border-dashed border-slate-300 hover:border-[#003893] rounded-xl p-2.5 text-center cursor-pointer block bg-white transition-colors">
@@ -417,9 +460,9 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
                     />
                     <Camera className="w-5 h-5 text-[#003893] mx-auto mb-1" />
                     <div className="text-[11px] font-bold text-slate-700 truncate">
-                      {liveSelfieFile ? liveSelfieFile.name : 'Photo in Front of Shop'}
+                      {liveSelfieFile ? liveSelfieFile.name : 'Live Photo with Person in Front (Optional)'}
                     </div>
-                    <div className="text-[9px] text-slate-400">Live Photo / Selfie in Front</div>
+                    <div className="text-[9px] text-slate-400">Person Standing in Front (Max 5MB)</div>
                   </label>
                 </div>
               </div>
