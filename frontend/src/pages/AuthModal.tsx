@@ -361,7 +361,28 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         });
 
         if (result.success && result.user) {
-          onAuthSuccess(result.user);
+          if (pendingLenderData.avatarUrl) {
+            localStorage.setItem('sbni_lender_avatar', pendingLenderData.avatarUrl);
+          }
+          const userWithProfile = {
+            ...result.user,
+            name: pendingLenderData.name,
+            fullName: pendingLenderData.name,
+            lenderProfile: result.user.lenderProfile || {
+              institutionName: pendingLenderData.institutionName,
+              contactPersonName: pendingLenderData.name,
+              minLoanAmount: pendingLenderData.minLoanAmount,
+              maxLoanAmount: pendingLenderData.maxLoanAmount,
+              lendingRadiusKm: pendingLenderData.lendingRadiusKm,
+              city: pendingLenderData.city,
+              state: pendingLenderData.state,
+              address: pendingLenderData.address,
+              pincode: pendingLenderData.pincode,
+            },
+          };
+          localStorage.setItem('sbni_user', JSON.stringify(userWithProfile));
+          localStorage.setItem('sbni_lender_profile', JSON.stringify(userWithProfile.lenderProfile));
+          onAuthSuccess(userWithProfile);
           onClose();
         } else {
           setFormError(result.message || 'Lender registration failed. Please try again.');
@@ -1690,6 +1711,7 @@ const LenderRegisterForm: React.FC<LenderRegisterFormProps> = ({
   onError,
   isSubmitting,
 }) => {
+  const [lAvatarPreview, setLAvatarPreview] = useState<string | null>(null);
   const [lName, setLName] = useState('');
   const [lInstitution, setLInstitution] = useState('');
   const [isCustomFinancerName, setIsCustomFinancerName] = useState(false);
@@ -1705,6 +1727,20 @@ const LenderRegisterForm: React.FC<LenderRegisterFormProps> = ({
   const [lMinLoan, setLMinLoan] = useState('10000');
   const [lMaxLoan, setLMaxLoan] = useState('100000');
   const [lRadius, setLRadius] = useState('50');
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      onError('Photo size must be less than 5MB.');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      setLAvatarPreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
 
   // Auto-sync Contact Officer Name to "Name Money Financer" (e.g. Gourav -> Gourav Money Financer)
   const handleNameChange = (nameVal: string) => {
@@ -1758,6 +1794,7 @@ const LenderRegisterForm: React.FC<LenderRegisterFormProps> = ({
       minLoanAmount: parseFloat(lMinLoan) || 10000,
       maxLoanAmount: parseFloat(lMaxLoan) || 100000,
       lendingRadiusKm: parseFloat(lRadius) || 50,
+      avatarUrl: lAvatarPreview || undefined,
     });
   };
 
@@ -1789,6 +1826,44 @@ const LenderRegisterForm: React.FC<LenderRegisterFormProps> = ({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
+      {/* Profile Photo Upload */}
+      <div className="flex items-center gap-4 p-3 bg-emerald-50/70 border border-emerald-200/80 rounded-2xl">
+        <div className="relative shrink-0">
+          <div className="w-16 h-16 rounded-2xl overflow-hidden border-2 border-emerald-500 shadow-sm bg-white flex items-center justify-center">
+            {lAvatarPreview ? (
+              <img src={lAvatarPreview} alt="Profile Preview" className="w-full h-full object-cover" />
+            ) : (
+              <User className="w-8 h-8 text-emerald-500" />
+            )}
+          </div>
+          <label
+            htmlFor="lender-avatar-file-input"
+            className="absolute -bottom-1 -right-1 p-1.5 rounded-full bg-[#007a33] text-white hover:bg-[#005e27] cursor-pointer shadow-md transition-transform active:scale-95 flex items-center justify-center"
+            title="Upload Profile Photo"
+          >
+            <Camera className="w-3.5 h-3.5" />
+          </label>
+          <input
+            id="lender-avatar-file-input"
+            type="file"
+            accept="image/*"
+            onChange={handleAvatarChange}
+            className="hidden"
+          />
+        </div>
+        <div className="flex-1 min-w-0">
+          <label
+            htmlFor="lender-avatar-file-input"
+            className="text-xs font-extrabold text-[#007a33] hover:underline cursor-pointer block truncate"
+          >
+            {lAvatarPreview ? '✓ Photo Selected (Change)' : '+ Upload Profile Photo'}
+          </label>
+          <p className="text-[10px] text-slate-500 font-medium mt-0.5">
+            Display your professional photo on your Money Financer profile
+          </p>
+        </div>
+      </div>
+
       {field('Full Name / Contact Officer', 'Enter Contact Officer Name (e.g. Gourav)', lName, handleNameChange)}
       {field('Business Money Revenue', 'e.g. Gourav Money Financer', lInstitution, handleFinancerNameChange, 'text', true, handleFinancerNameBlur)}
 

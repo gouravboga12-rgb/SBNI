@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { VendorVerificationRequest } from '../types';
 import { BannerCarousel, BannerSlide } from '../components/BannerCarousel';
-import { fetchVendorProfilesForLender, updateLenderProfileApi } from '../services/api';
+import { fetchVendorProfilesForLender, updateLenderProfileApi, getMyProfileApi } from '../services/api';
 import { LocationPickerModal } from '../components/LocationPickerModal';
 import { getGoogleMapsNavigationUrl } from '../services/mapboxService';
 import {
@@ -64,6 +64,65 @@ interface LenderDashboardProps {
   onTabChange?: (tab: 'home' | 'businesses' | 'reports' | 'profile') => void;
 }
 
+function resolveInitialLenderDetails() {
+  try {
+    const u = localStorage.getItem('sbni_user');
+    const p = localStorage.getItem('sbni_lender_profile');
+    const user = u ? JSON.parse(u) : null;
+    const profile = p ? JSON.parse(p) : null;
+
+    let officer = profile?.contactPersonName || user?.name || user?.fullName || '';
+    if (!officer || officer.includes('@') || officer === 'Credit Officer' || officer === 'Business Money Financer') {
+      const email = user?.email || profile?.email || '';
+      if (email.toLowerCase().includes('gourav')) {
+        officer = 'Gourav';
+      } else if (email) {
+        const handle = email.split('@')[0].replace(/[0-9_.-]/g, ' ').trim();
+        officer = handle ? handle.split(' ').map((s: string) => s.charAt(0).toUpperCase() + s.slice(1)).join(' ') : 'Gourav';
+      } else {
+        officer = 'Gourav';
+      }
+    }
+
+    let financerName = profile?.institutionName || '';
+    if (!financerName || financerName === 'Business Money Financer' || financerName.includes('@')) {
+      financerName = `${officer} Money Financer`;
+    } else if (!financerName.toLowerCase().includes('money financer')) {
+      financerName = `${financerName} Money Financer`;
+    }
+
+    return {
+      name: financerName,
+      contactPerson: officer,
+      phone: user?.phone || profile?.phone || '+91 98200 11223',
+      email: user?.email || profile?.email || 'lender@justpaisa.com',
+      city: profile?.city || 'Mumbai',
+      state: profile?.state || 'Maharashtra',
+      regNo: profile?.registrationNumber || 'REG-FIN-1001',
+      institutionType: 'Money Financer',
+      minLoan: profile?.minLoanAmount || 10000,
+      maxLoan: profile?.maxLoanAmount || 100000,
+      minRate: profile?.minInterestRate || 9.5,
+      lendingRadius: profile?.lendingRadiusKm || 50,
+    };
+  } catch (e) {
+    return {
+      name: 'Gourav Money Financer',
+      contactPerson: 'Gourav',
+      phone: '+91 98200 11223',
+      email: 'lender@justpaisa.com',
+      city: 'Mumbai',
+      state: 'Maharashtra',
+      regNo: 'REG-FIN-1001',
+      institutionType: 'Money Financer',
+      minLoan: 10000,
+      maxLoan: 100000,
+      minRate: 9.5,
+      lendingRadius: 50,
+    };
+  }
+}
+
 export const LenderDashboard: React.FC<LenderDashboardProps> = ({
   onOpenSubscription,
   onLogout,
@@ -95,51 +154,79 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
     );
   });
 
-  const currentUserObj = (() => {
-    try {
-      const u = localStorage.getItem('sbni_user');
-      const p = localStorage.getItem('sbni_lender_profile');
-      const user = u ? JSON.parse(u) : null;
-      const profile = p ? JSON.parse(p) : null;
+  const [currentUserObj, setCurrentUserObj] = useState(resolveInitialLenderDetails);
+  const [lenderAvatarUrl, setLenderAvatarUrl] = useState<string>(() => {
+    return localStorage.getItem('sbni_lender_avatar') || 'https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=200';
+  });
 
-      // Display name: institutionName (e.g. "Gourav Money Financer") or full name, never raw email
-      const rawName = profile?.institutionName || user?.name || user?.fullName || 'Business Money Financer';
-      // Make sure the name shows as "X Money Financer" if it doesn't already contain it
-      const displayName = rawName.toLowerCase().includes('money financer')
-        ? rawName
-        : `${rawName} Money Financer`;
+  // Fetch live profile from server on mount
+  useEffect(() => {
+    async function loadFreshProfile() {
+      try {
+        const res = await getMyProfileApi();
+        if (res?.success && res?.data) {
+          const u = res.data;
+          const lp = u.lenderProfile;
 
-      return {
-        name: displayName,
-        contactPerson: user?.name || profile?.contactPersonName || 'Credit Officer',
-        phone: user?.phone || profile?.phone || '+91 98200 11223',
-        email: user?.email || profile?.email || 'lender@justpaisa.com',
-        city: profile?.city || 'Mumbai',
-        state: profile?.state || 'Maharashtra',
-        regNo: profile?.registrationNumber || 'REG-FIN-1001',
-        institutionType: 'Money Financer',
-        minLoan: profile?.minLoanAmount || 10000,
-        maxLoan: profile?.maxLoanAmount || 100000,
-        minRate: profile?.minInterestRate || 9.5,
-        lendingRadius: profile?.lendingRadiusKm || 50,
-      };
-    } catch (e) {
-      return {
-        name: 'Business Money Financer',
-        contactPerson: 'Credit Officer',
-        phone: '+91 98200 11223',
-        email: 'lender@justpaisa.com',
-        city: 'Mumbai',
-        state: 'Maharashtra',
-        regNo: 'REG-FIN-1001',
-        institutionType: 'Money Financer',
-        minLoan: 10000,
-        maxLoan: 100000,
-        minRate: 9.5,
-        lendingRadius: 50,
-      };
+          let officer = lp?.contactPersonName || u.name || u.fullName || '';
+          if (!officer || officer.includes('@') || officer === 'Credit Officer' || officer === 'Business Money Financer') {
+            if (u.email?.toLowerCase().includes('gourav')) officer = 'Gourav';
+            else if (u.email) {
+              const handle = u.email.split('@')[0].replace(/[0-9_.-]/g, ' ').trim();
+              officer = handle ? handle.split(' ').map((s: string) => s.charAt(0).toUpperCase() + s.slice(1)).join(' ') : 'Gourav';
+            } else officer = 'Gourav';
+          }
+
+          let financer = lp?.institutionName || '';
+          if (!financer || financer === 'Business Money Financer' || financer.includes('@')) {
+            financer = `${officer} Money Financer`;
+          } else if (!financer.toLowerCase().includes('money financer')) {
+            financer = `${financer} Money Financer`;
+          }
+
+          const freshData = {
+            name: financer,
+            contactPerson: officer,
+            phone: u.phone || lp?.phone || '+91 98200 11223',
+            email: u.email || 'lender@justpaisa.com',
+            city: lp?.city || 'Mumbai',
+            state: lp?.state || 'Maharashtra',
+            regNo: lp?.registrationNumber || 'REG-FIN-1001',
+            institutionType: 'Money Financer',
+            minLoan: lp?.minLoanAmount || 10000,
+            maxLoan: lp?.maxLoanAmount || 100000,
+            minRate: lp?.minInterestRate || 9.5,
+            lendingRadius: lp?.lendingRadiusKm || 50,
+          };
+
+          setCurrentUserObj(freshData);
+          localStorage.setItem('sbni_user', JSON.stringify({ ...u, name: officer, fullName: officer }));
+          if (lp) {
+            localStorage.setItem('sbni_lender_profile', JSON.stringify({ ...lp, institutionName: financer, contactPersonName: officer }));
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load fresh profile:', err);
+      }
     }
-  })();
+    loadFreshProfile();
+  }, []);
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Photo size must be less than 5MB.');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      setLenderAvatarUrl(dataUrl);
+      localStorage.setItem('sbni_lender_avatar', dataUrl);
+    };
+    reader.readAsDataURL(file);
+  };
 
   const [lenderLocation, setLenderLocation] = useState<{
     place: string;
@@ -218,24 +305,6 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
   };
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [lenderAvatarUrl, setLenderAvatarUrl] = useState<string | null>(() => {
-    return localStorage.getItem('sbni_lender_avatar') || null;
-  });
-
-  const handleLenderAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        if (event.target?.result) {
-          const dataUrl = event.target.result as string;
-          setLenderAvatarUrl(dataUrl);
-          localStorage.setItem('sbni_lender_avatar', dataUrl);
-        }
-      };
-      reader.readAsDataURL(file);
-    }
-  };
 
   const loadVendorRequests = async () => {
     let localReqs: VendorVerificationRequest[] = [];
@@ -504,7 +573,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                     ref={fileInputRef}
                     type="file"
                     accept="image/*"
-                    onChange={handleLenderAvatarUpload}
+                    onChange={handleAvatarChange}
                     className="hidden"
                   />
                 </div>
@@ -1334,11 +1403,27 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
               
               {/* Header Box */}
               <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 pb-6 border-b border-slate-100">
-                <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl overflow-hidden shadow-lg border-4 border-white ring-2 ring-emerald-100 shrink-0">
-                  <img
-                    src={lenderAvatarUrl || 'https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=200'}
-                    alt="Business Financer Profile"
-                    className="w-full h-full object-cover"
+                <div className="relative group shrink-0">
+                  <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl overflow-hidden shadow-lg border-4 border-white ring-2 ring-emerald-100 bg-emerald-50 flex items-center justify-center">
+                    <img
+                      src={lenderAvatarUrl || 'https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=200'}
+                      alt="Business Financer Profile"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <label
+                    htmlFor="lender-profile-avatar-input"
+                    className="absolute -bottom-1 -right-1 p-2 rounded-full bg-[#007a33] text-white hover:bg-[#005e27] cursor-pointer shadow-md transition-transform active:scale-95 flex items-center justify-center"
+                    title="Change Profile Photo"
+                  >
+                    <Camera className="w-4 h-4" />
+                  </label>
+                  <input
+                    id="lender-profile-avatar-input"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleAvatarChange}
+                    className="hidden"
                   />
                 </div>
 

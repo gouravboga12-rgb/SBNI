@@ -6,6 +6,19 @@
 
 import { Lender, SubscriptionPlan } from '../types';
 
+export async function getMyProfileApi(): Promise<{ success: boolean; data?: any; message?: string }> {
+  try {
+    const token = getToken();
+    if (!token) return { success: false, message: 'No token' };
+    const res = await apiFetch('/auth/me', {
+      headers: authHeaders(token),
+    });
+    return res;
+  } catch (err: any) {
+    return { success: false, message: err.message };
+  }
+}
+
 // --------------- Config ---------------
 const API_BASE = (import.meta as any).env?.VITE_API_URL || 'http://18.61.36.65/api/v1';
 
