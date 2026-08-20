@@ -136,7 +136,7 @@ export const verifySignupOtp = async (req: Request, res: Response) => {
  * 3. REGISTER USER (Vendor or Lender)
  */
 export const registerUser = async (req: Request, res: Response) => {
-  const { email, phone, password, role, name, businessName, address, city, state, pincode, otpCode } = req.body;
+  const { email, phone, password, role, name, businessName, address, city, state, pincode, otpCode, institutionType, minLoanAmount, maxLoanAmount, lendingRadiusKm } = req.body;
 
   if (!email || !phone || !password || !role) {
     return res.status(400).json({ success: false, message: 'Please provide email, phone, password and role.' });
@@ -204,13 +204,22 @@ export const registerUser = async (req: Request, res: Response) => {
       },
     });
   } else if (role === 'LENDER') {
+    // Build financer name: ensure it ends with "Money Financer"
+    let financerName = businessName || name || 'Business Money Financer';
+    if (!financerName.toLowerCase().includes('money financer')) {
+      financerName = `${financerName} Money Financer`;
+    }
+
     await prisma.lenderProfile.create({
       data: {
         userId: user.id,
-        institutionName: businessName || name || 'Financial Institution',
-        institutionType: 'NBFC',
+        institutionName: financerName,
+        institutionType: 'MONEY_FINANCER' as any,
         registrationNumber: 'REG-' + Math.floor(100000 + Math.random() * 900000),
         loanCategories: JSON.stringify(['Business Loan', 'MSME Working Capital']),
+        minLoanAmount: minLoanAmount ? parseFloat(minLoanAmount) : 10000,
+        maxLoanAmount: maxLoanAmount ? parseFloat(maxLoanAmount) : 100000,
+        lendingRadiusKm: lendingRadiusKm ? parseFloat(lendingRadiusKm) : 50,
         address: address || 'Financial Center',
         city: city || 'Mumbai',
         state: state || 'Maharashtra',

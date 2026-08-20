@@ -101,32 +101,42 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
       const p = localStorage.getItem('sbni_lender_profile');
       const user = u ? JSON.parse(u) : null;
       const profile = p ? JSON.parse(p) : null;
+
+      // Display name: institutionName (e.g. "Gourav Money Financer") or full name, never raw email
+      const rawName = profile?.institutionName || user?.name || user?.fullName || 'Business Money Financer';
+      // Make sure the name shows as "X Money Financer" if it doesn't already contain it
+      const displayName = rawName.toLowerCase().includes('money financer')
+        ? rawName
+        : `${rawName} Money Financer`;
+
       return {
-        name: profile?.institutionName || user?.name || (user?.email ? user.email.split('@')[0] : 'Business Money Financer'),
-        contactPerson: profile?.contactPersonName || user?.name || 'Credit Officer',
+        name: displayName,
+        contactPerson: user?.name || profile?.contactPersonName || 'Credit Officer',
         phone: user?.phone || profile?.phone || '+91 98200 11223',
         email: user?.email || profile?.email || 'lender@justpaisa.com',
         city: profile?.city || 'Mumbai',
         state: profile?.state || 'Maharashtra',
         regNo: profile?.registrationNumber || 'REG-FIN-1001',
-        institutionType: profile?.institutionType || 'NBFC / Money Financer',
-        minLoan: profile?.minLoanAmount || 100000,
-        maxLoan: profile?.maxLoanAmount || 10000000,
+        institutionType: 'Money Financer',
+        minLoan: profile?.minLoanAmount || 10000,
+        maxLoan: profile?.maxLoanAmount || 100000,
         minRate: profile?.minInterestRate || 9.5,
+        lendingRadius: profile?.lendingRadiusKm || 50,
       };
     } catch (e) {
       return {
-        name: 'Business Money Financer Account',
+        name: 'Business Money Financer',
         contactPerson: 'Credit Officer',
         phone: '+91 98200 11223',
         email: 'lender@justpaisa.com',
         city: 'Mumbai',
         state: 'Maharashtra',
         regNo: 'REG-FIN-1001',
-        institutionType: 'NBFC',
-        minLoan: 100000,
-        maxLoan: 10000000,
+        institutionType: 'Money Financer',
+        minLoan: 10000,
+        maxLoan: 100000,
         minRate: 9.5,
+        lendingRadius: 50,
       };
     }
   })();
@@ -1341,7 +1351,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                   </div>
                   <div className="text-sm font-semibold text-slate-700 flex items-center justify-center sm:justify-start gap-1.5">
                     <Building2 className="w-4 h-4 text-emerald-600" />
-                    <span>{currentUserObj.institutionType}</span>
+                    <span>Money Financer</span>
                   </div>
                   <p className="text-xs text-slate-400 font-medium pt-1">
                     Registration No: <span className="font-mono text-slate-700 font-bold">{currentUserObj.regNo}</span>

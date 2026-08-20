@@ -141,7 +141,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     {(currentUser.name || currentUser.email || 'U')[0].toUpperCase()}
                   </div>
                   <span className="hidden sm:inline max-w-[150px] truncate font-bold text-slate-800">
-                    {currentUser.email || currentUser.name || 'Profile'}
+                    {currentUser.name || currentUser.fullName || currentUser.email || 'Profile'}
                   </span>
                 </button>
               ) : (

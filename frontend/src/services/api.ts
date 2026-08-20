@@ -134,17 +134,26 @@ export async function registerLender(payload: {
   city: string;
   state: string;
   pincode: string;
+  minLoanAmount?: number;
+  maxLoanAmount?: number;
+  lendingRadiusKm?: number;
   otpCode?: string;
 }): Promise<{ success: boolean; token?: string; user?: any; message?: string }> {
   try {
     const data = await apiFetch('/auth/register', {
       method: 'POST',
-      body: JSON.stringify({ ...payload, role: 'LENDER' }),
+      body: JSON.stringify({ ...payload, businessName: payload.institutionName, role: 'LENDER' }),
     });
     if (data.success) {
+      const user = data.data?.user || {};
+      // Persist institution name so profile page can show it correctly
+      if (payload.institutionName) {
+        const storedProfile = { institutionName: payload.institutionName, institutionType: 'Money Financer', minLoanAmount: payload.minLoanAmount, maxLoanAmount: payload.maxLoanAmount, lendingRadiusKm: payload.lendingRadiusKm };
+        localStorage.setItem('sbni_lender_profile', JSON.stringify(storedProfile));
+      }
       localStorage.setItem('sbni_token', data.data.accessToken);
-      localStorage.setItem('sbni_user', JSON.stringify(data.data.user));
-      return { success: true, token: data.data.accessToken, user: data.data.user };
+      localStorage.setItem('sbni_user', JSON.stringify({ ...user, name: payload.name }));
+      return { success: true, token: data.data.accessToken, user: { ...user, name: payload.name } };
     }
     return { success: false, message: data.message || 'Registration failed' };
   } catch (err: any) {

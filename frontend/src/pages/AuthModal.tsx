@@ -1702,6 +1702,9 @@ const LenderRegisterForm: React.FC<LenderRegisterFormProps> = ({
   const [lPincode, setLPincode] = useState('');
   const [lPassword, setLPassword] = useState('');
   const [lConfirmPassword, setLConfirmPassword] = useState('');
+  const [lMinLoan, setLMinLoan] = useState('10000');
+  const [lMaxLoan, setLMaxLoan] = useState('100000');
+  const [lRadius, setLRadius] = useState('50');
 
   // Auto-sync Contact Officer Name to "Name Money Financer" (e.g. Gourav -> Gourav Money Financer)
   const handleNameChange = (nameVal: string) => {
@@ -1752,6 +1755,9 @@ const LenderRegisterForm: React.FC<LenderRegisterFormProps> = ({
       city: lCity,
       state: lState,
       pincode: lPincode,
+      minLoanAmount: parseFloat(lMinLoan) || 10000,
+      maxLoanAmount: parseFloat(lMaxLoan) || 100000,
+      lendingRadiusKm: parseFloat(lRadius) || 50,
     });
   };
 
@@ -1808,6 +1814,70 @@ const LenderRegisterForm: React.FC<LenderRegisterFormProps> = ({
         {field('City', 'Mumbai', lCity, setLCity)}
         {field('State', 'Maharashtra', lState, setLState)}
         {field('Pincode', '400001', lPincode, setLPincode)}
+      </div>
+
+      {/* Loan Amount Range */}
+      <div>
+        <label className="block text-xs font-bold text-slate-700 mb-1">Lending Amount Range *</label>
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <select
+              value={lMinLoan}
+              onChange={(e) => setLMinLoan(e.target.value)}
+              className="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-medium text-slate-900 outline-none focus:border-[#007a33]"
+              required
+            >
+              <option value="5000">Min: ₹5,000</option>
+              <option value="10000">Min: ₹10,000</option>
+              <option value="25000">Min: ₹25,000</option>
+              <option value="50000">Min: ₹50,000</option>
+              <option value="100000">Min: ₹1 Lakh</option>
+              <option value="200000">Min: ₹2 Lakhs</option>
+              <option value="500000">Min: ₹5 Lakhs</option>
+            </select>
+            <p className="text-[10px] text-slate-400 mt-0.5 pl-1">Minimum amount</p>
+          </div>
+          <div>
+            <select
+              value={lMaxLoan}
+              onChange={(e) => setLMaxLoan(e.target.value)}
+              className="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-medium text-slate-900 outline-none focus:border-[#007a33]"
+              required
+            >
+              <option value="50000">Max: ₹50,000</option>
+              <option value="100000">Max: ₹1 Lakh</option>
+              <option value="200000">Max: ₹2 Lakhs</option>
+              <option value="500000">Max: ₹5 Lakhs</option>
+              <option value="1000000">Max: ₹10 Lakhs</option>
+              <option value="2000000">Max: ₹20 Lakhs</option>
+              <option value="5000000">Max: ₹50 Lakhs</option>
+              <option value="10000000">Max: ₹1 Crore</option>
+            </select>
+            <p className="text-[10px] text-slate-400 mt-0.5 pl-1">Maximum amount</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Lending Radius */}
+      <div>
+        <label className="block text-xs font-bold text-slate-700 mb-1">Lending Service Radius *</label>
+        <div className="grid grid-cols-4 gap-2">
+          {['30', '50', '70', '100'].map((km) => (
+            <button
+              key={km}
+              type="button"
+              onClick={() => setLRadius(km)}
+              className={`py-2.5 rounded-xl border text-xs font-extrabold transition-all ${
+                lRadius === km
+                  ? 'bg-[#007a33] text-white border-[#007a33] shadow-md'
+                  : 'bg-white text-slate-700 border-slate-300 hover:border-[#007a33] hover:text-[#007a33]'
+              }`}
+            >
+              {km} km
+            </button>
+          ))}
+        </div>
+        <p className="text-[10px] text-slate-400 mt-1 pl-0.5">Area you can actively lend to shop owners</p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
