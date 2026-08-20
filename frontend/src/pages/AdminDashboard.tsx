@@ -2080,7 +2080,7 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
                 <table className="w-full text-left text-xs text-slate-800">
                   <thead className="bg-slate-100 text-slate-700 uppercase text-[10px] font-extrabold tracking-wider border-b border-slate-200">
                     <tr>
-                      <th className="p-4">Financing Institution & Officer</th>
+                      <th className="p-4">Business Financer & Officer</th>
                       <th className="p-4">Plan Subscribed</th>
                       <th className="p-4">Amount Paid</th>
                       <th className="p-4">Payment Day & Exact Time</th>
@@ -2654,7 +2654,7 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
                 <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
                 <input
                   type="text"
-                  placeholder="Search financer institution, officer, email, city..."
+                  placeholder="Search business financer, officer, email, city..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full bg-slate-50 border border-slate-300 rounded-xl pl-10 pr-3 py-2 text-xs font-medium text-slate-900 focus:outline-none focus:border-[#007a33]"
@@ -2668,7 +2668,7 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
                 <table className="w-full text-left text-xs text-slate-800">
                   <thead className="bg-slate-100 text-slate-700 uppercase text-[10px] font-extrabold tracking-wider border-b border-slate-200">
                     <tr>
-                      <th className="p-4">Institution & Contact Officer</th>
+                      <th className="p-4">Business Financer & Contact Officer</th>
                       <th className="p-4">Type</th>
                       <th className="p-4">Registration #</th>
                       <th className="p-4">City / State</th>

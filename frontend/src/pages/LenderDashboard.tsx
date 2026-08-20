@@ -1316,7 +1316,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
             <div>
               <h2 className="text-2xl font-extrabold text-slate-900 font-heading">Business Money Financer Profile & Security</h2>
               <p className="text-xs text-slate-500 font-medium mt-0.5">
-                Manage institution credentials, credit officer contact details, and session status
+                Manage financer credentials, credit officer contact details, and session status
               </p>
             </div>
 
@@ -1498,7 +1498,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
         initialLocation={lenderLocation}
         mode="LENDER_RADIUS"
         title="Configure Lending Area & Service Radius"
-        subtitle="Small businesses within this radius will discover your institution"
+        subtitle="Small businesses within this radius will discover your financer profile"
       />
 
       {/* Bottom Sticky Navigation Bar */}

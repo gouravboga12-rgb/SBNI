@@ -1692,7 +1692,8 @@ const LenderRegisterForm: React.FC<LenderRegisterFormProps> = ({
 }) => {
   const [lName, setLName] = useState('');
   const [lInstitution, setLInstitution] = useState('');
-  const [lType, setLType] = useState('Financial Institution');
+  const [isCustomFinancerName, setIsCustomFinancerName] = useState(false);
+  const [lType, setLType] = useState('Money Financer');
   const [lPhone, setLPhone] = useState('');
   const [lEmail, setLEmail] = useState('');
   const [lAddress, setLAddress] = useState('');
@@ -1702,19 +1703,51 @@ const LenderRegisterForm: React.FC<LenderRegisterFormProps> = ({
   const [lPassword, setLPassword] = useState('');
   const [lConfirmPassword, setLConfirmPassword] = useState('');
 
+  // Auto-sync Contact Officer Name to "Name Money Financer" (e.g. Gourav -> Gourav Money Financer)
+  const handleNameChange = (nameVal: string) => {
+    setLName(nameVal);
+    if (!isCustomFinancerName) {
+      if (nameVal.trim().length > 0) {
+        setLInstitution(`${nameVal.trim()} Money Financer`);
+      } else {
+        setLInstitution('');
+      }
+    }
+  };
+
+  const handleFinancerNameChange = (val: string) => {
+    setIsCustomFinancerName(true);
+    setLInstitution(val);
+  };
+
+  const handleFinancerNameBlur = () => {
+    if (lInstitution.trim().length > 0 && !lInstitution.toLowerCase().includes('money financer')) {
+      setLInstitution(`${lInstitution.trim()} Money Financer`);
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (lPassword !== lConfirmPassword) {
       onError('Passwords do not match.');
       return;
     }
+
+    let finalFinancerName = lInstitution.trim();
+    if (finalFinancerName.length > 0 && !finalFinancerName.toLowerCase().includes('money financer')) {
+      finalFinancerName = `${finalFinancerName} Money Financer`;
+    }
+    if (!finalFinancerName && lName.trim()) {
+      finalFinancerName = `${lName.trim()} Money Financer`;
+    }
+
     onFormReady({
       name: lName,
       email: lEmail,
       phone: lPhone,
       password: lPassword,
-      institutionName: lInstitution,
-      institutionType: lType,
+      institutionName: finalFinancerName,
+      institutionType: lType || 'Money Financer',
       address: lAddress,
       city: lCity,
       state: lState,
@@ -1728,7 +1761,8 @@ const LenderRegisterForm: React.FC<LenderRegisterFormProps> = ({
     value: string,
     onChange: (v: string) => void,
     type = 'text',
-    required = true
+    required = true,
+    onBlur?: () => void
   ) => (
     <div>
       <label className="block text-xs font-bold text-slate-700 mb-1">
@@ -1740,6 +1774,7 @@ const LenderRegisterForm: React.FC<LenderRegisterFormProps> = ({
         placeholder={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        onBlur={onBlur}
         required={required}
         className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-medium text-slate-900 outline-none focus:border-[#007a33] transition-colors"
       />
@@ -1748,27 +1783,23 @@ const LenderRegisterForm: React.FC<LenderRegisterFormProps> = ({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
-      {field('Full Name / Contact Officer', 'Enter Contact Officer Name', lName, setLName)}
-      {field('Financing Institution / Company', 'e.g. Capital Finance NBFC Ltd.', lInstitution, setLInstitution)}
+      {field('Full Name / Contact Officer', 'Enter Contact Officer Name (e.g. Gourav)', lName, handleNameChange)}
+      {field('Business Money Revenue', 'e.g. Gourav Money Financer', lInstitution, handleFinancerNameChange, 'text', true, handleFinancerNameBlur)}
 
       <div>
-        <label className="block text-xs font-bold text-slate-700 mb-1">Institution Type *</label>
+        <label className="block text-xs font-bold text-slate-700 mb-1">Business Financer Type *</label>
         <select
           value={lType}
           onChange={(e) => setLType(e.target.value)}
           className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-medium text-slate-900 outline-none focus:border-[#007a33]"
         >
-          <option>Financial Institution</option>
-          <option>NBFC</option>
-          <option>Bank</option>
-          <option>MFI</option>
-          <option>Cooperative</option>
+          <option value="Money Financer">Money Financer</option>
         </select>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {field('Mobile Number', '+91 98200 11223', lPhone, setLPhone, 'tel')}
-        {field('Official Email ID (For OTP Verification)', 'lender@institution.com', lEmail, setLEmail, 'email')}
+        {field('Official Email ID (For OTP Verification)', 'financer@gmail.com', lEmail, setLEmail, 'email')}
       </div>
 
       {field('Address', 'Plot/Office No., Street, Area', lAddress, setLAddress)}
@@ -1791,7 +1822,7 @@ const LenderRegisterForm: React.FC<LenderRegisterFormProps> = ({
       <button
         type="submit"
         disabled={isSubmitting}
-        className="w-full py-3.5 rounded-xl text-white font-extrabold text-base shadow-md transition-all bg-[#007a33] hover:bg-[#005e27] mt-2 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+        className="w-full py-3.5 rounded-xl text-white font-extrabold text-base shadow-md transition-all bg-[#007a33] hover:bg-[#005e27] mt-2 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
       >
         {isSubmitting ? (
           <>

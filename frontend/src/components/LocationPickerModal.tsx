@@ -360,7 +360,7 @@ export const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
 
               <p className="text-[11px] text-slate-600 leading-relaxed font-medium">
                 Small shop businesses within <strong className="text-slate-900">{radiusKm} KM</strong> of{' '}
-                <strong className="text-slate-900">{place || city}</strong> will discover your financing institution.
+                <strong className="text-slate-900">{place || city}</strong> will discover your financer profile.
               </p>
 
               {/* Radius Quick Selector Chips */}
