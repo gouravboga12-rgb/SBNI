@@ -28,86 +28,168 @@ async function main() {
   });
   console.log('✅ Super Admin created:', adminUser.email);
 
-  // 3. Sample Subscriptions Plans (Weekly, Monthly, Quarterly, Half-Yearly, Yearly)
+  // 3. Subscription Plans (Vendor & Lender)
   const plans = [
+    // --- VENDOR PLANS ---
     {
-      code: 'WEEKLY',
-      name: 'Weekly Trial Plan',
-      description: 'Unlock lender contacts & WhatsApp connect for 7 days',
-      price: 299,
-      originalPrice: 499,
+      code: 'VENDOR_WEEKLY',
+      name: 'Weekly Starter Plan',
+      description: 'Start exploring nearby business financers',
+      price: 79,
+      originalPrice: 99,
       durationDays: 7,
       isPopular: false,
+      isBestValue: false,
+      roleTarget: 'VENDOR',
+      isActive: true,
       features: JSON.stringify([
-        'Unlock Verified Lender Phone Numbers',
-        'Direct WhatsApp Chat Access',
-        'Location Radius Discovery (Up to 25 km)',
-        'In-App Notification Alerts',
+        'Unlock up to 5 Financer Contacts',
+        'Direct Phone & WhatsApp Access',
+        'Verified Financer Trust Badge',
+        'Dedicated Help Desk Support',
       ]),
     },
     {
-      code: 'MONTHLY',
+      code: 'VENDOR_MONTHLY',
       name: 'Monthly Growth Plan',
-      description: 'Ideal for active business owners seeking capital',
-      price: 899,
-      originalPrice: 1499,
+      description: 'Most popular plan for small shop businesses seeking capital',
+      price: 199,
+      originalPrice: 299,
       durationDays: 30,
       isPopular: true,
+      isBestValue: true,
+      roleTarget: 'VENDOR',
+      isActive: true,
       features: JSON.stringify([
-        'Unlimited Verified Lender Phone Unlocks',
-        'Direct WhatsApp & Email Access',
-        'Pan-India Lender Discovery',
-        'Priority KYC Verification Tag',
-        'Dedicated Support Assistance',
+        'Unlimited Financer Phone & WhatsApp Unlocks',
+        'Direct Email & Branch Contact Access',
+        'Pan-India Financer Discovery',
+        'Priority Application Routing',
+        'Dedicated Account Manager',
       ]),
     },
     {
-      code: 'QUARTERLY',
-      name: 'Quarterly Value Plan',
-      description: '90 days of continuous access with 25% savings',
-      price: 2299,
-      originalPrice: 3499,
+      code: 'VENDOR_QUARTERLY',
+      name: 'Quarterly Business Plan',
+      description: '3 Months uninterrupted financer discovery suite',
+      price: 349,
+      originalPrice: 499,
       durationDays: 90,
       isPopular: false,
+      isBestValue: false,
+      roleTarget: 'VENDOR',
+      isActive: true,
       features: JSON.stringify([
-        'Unlimited Lender Unlocks for 3 Months',
-        'WhatsApp & Direct Calling Unlocked',
-        'Priority Business Profile Listing',
-        'Direct Institution Inquiry Access',
-        'Full Invoice & Tax Support',
+        'Everything in Monthly Growth Plan',
+        'Priority KYC Document Storage',
+        'Multi-Financer Rate Comparison Tool',
+        'New Financer Instant Alerts',
       ]),
     },
     {
-      code: 'HALF_YEARLY',
-      name: 'Half-Yearly Business Plan',
-      description: '6 months access for expanding enterprises',
-      price: 3999,
-      originalPrice: 6999,
-      durationDays: 180,
-      isPopular: false,
-      features: JSON.stringify([
-        '6 Months Access to All Verified Lenders',
-        'Instant Document Sharing with Lenders',
-        'VIP Badge on Vendor Profile',
-        'Exclusive Direct NBFC & Bank Directory',
-      ]),
-    },
-    {
-      code: 'YEARLY',
-      name: 'Annual Enterprise Plan',
-      description: '365 days of full marketplace access with maximum savings',
-      price: 6999,
-      originalPrice: 12999,
+      code: 'VENDOR_YEARLY',
+      name: 'Yearly VIP Enterprise Plan',
+      description: '1 Year complete access with maximum savings',
+      price: 599,
+      originalPrice: 999,
       durationDays: 365,
       isPopular: false,
+      isBestValue: true,
+      roleTarget: 'VENDOR',
+      isActive: true,
       features: JSON.stringify([
-        '1 Full Year of Unlimited Marketplace Access',
-        'All Features Unlocked Forever',
-        'Personal Relationship Manager Support',
-        'Custom Loan Requirement Broadcast to 100+ Lenders',
+        '365 Days Unlimited Contact Access',
+        'Zero Middleman Fees Guarantee',
+        'VIP Priority Verification Status',
+        '24/7 Dedicated Account Manager',
+      ]),
+    },
+
+    // --- LENDER (FINANCER) PLANS ---
+    {
+      code: 'LENDER_WEEKLY',
+      name: 'Financer Weekly Starter',
+      description: '7 Days trial access for business financers',
+      price: 79,
+      originalPrice: 99,
+      durationDays: 7,
+      isPopular: false,
+      isBestValue: false,
+      roleTarget: 'LENDER',
+      isActive: true,
+      features: JSON.stringify([
+        'Connect with Verified Shop Businesses',
+        'View Up to 10 Vendor KYC Files',
+        'Direct Owner WhatsApp Link',
+      ]),
+    },
+    {
+      code: 'LENDER_MONTHLY',
+      name: 'Financer Monthly Plan',
+      description: 'Most popular plan for NBFCs & financial institutions',
+      price: 199,
+      originalPrice: 249,
+      durationDays: 30,
+      isPopular: true,
+      isBestValue: true,
+      roleTarget: 'LENDER',
+      isActive: true,
+      features: JSON.stringify([
+        'Unlimited Verified Shop Business Leads',
+        'Complete KYC & GST Report Access',
+        'Direct Application Routing',
+        'Lead Management Dashboard',
+      ]),
+    },
+    {
+      code: 'LENDER_QUARTERLY',
+      name: 'Financer Quarterly Growth',
+      description: '3 Months uninterrupted business financing suite',
+      price: 399,
+      originalPrice: 499,
+      durationDays: 90,
+      isPopular: false,
+      isBestValue: false,
+      roleTarget: 'LENDER',
+      isActive: true,
+      features: JSON.stringify([
+        'Everything in Monthly Plan',
+        'Priority Lead Allocation',
+        'Risk & Analytics Dashboard',
+        'Dedicated Relationship Support',
+      ]),
+    },
+    {
+      code: 'LENDER_ANNUAL',
+      name: 'Financer Annual VIP Plan',
+      description: '1 Year maximum visibility & premium leads',
+      price: 599,
+      originalPrice: 999,
+      durationDays: 365,
+      isPopular: false,
+      isBestValue: true,
+      roleTarget: 'LENDER',
+      isActive: true,
+      features: JSON.stringify([
+        '365 Days Full Platform Access',
+        'Unlimited Premium Lead Discovery',
+        'Custom Product Promotion Listing',
+        'Featured Top Badge on Financer Directory',
       ]),
     },
   ];
+
+  // Deactivate old legacy plans
+  await prisma.subscriptionPlan.updateMany({
+    where: {
+      code: {
+        notIn: plans.map((p) => p.code),
+      },
+    },
+    data: {
+      isActive: false,
+    },
+  });
 
   for (const plan of plans) {
     await prisma.subscriptionPlan.upsert({
@@ -116,7 +198,7 @@ async function main() {
       create: plan,
     });
   }
-  console.log('✅ Subscription plans seeded.');
+  console.log('✅ Subscription plans seeded successfully.');
 
   // 4. Sample Banners
   const banners = [

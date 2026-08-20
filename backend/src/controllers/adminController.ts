@@ -384,54 +384,155 @@ export const grantManualSubscription = async (req: AuthenticatedRequest, res: Re
 export const createSubscriptionPlanAdmin = async (req: AuthenticatedRequest, res: Response) => {
   const { name, code, description, price, originalPrice, durationDays, features, isPopular, isBestValue, roleTarget } = req.body;
 
-  if (!name || !code || !price || !durationDays) {
-    return res.status(400).json({ success: false, message: 'Name, code, price, and durationDays are required.' });
+  if (!name || !price || !durationDays) {
+    return res.status(400).json({ success: false, message: 'Name, price, and durationDays are required.' });
   }
 
-  const newPlan = await prisma.subscriptionPlan.create({
-    data: {
-      name,
-      code: code.toUpperCase(),
-      description: description || '',
-      price: parseFloat(price),
-      originalPrice: originalPrice ? parseFloat(originalPrice) : parseFloat(price),
-      durationDays: parseInt(durationDays),
-      features: Array.isArray(features) ? JSON.stringify(features) : (typeof features === 'string' ? features : '[]'),
-      isPopular: !!isPopular,
-      isBestValue: !!isBestValue,
-      roleTarget: roleTarget || 'VENDOR',
+  const planCode = (code || `PLAN_${Date.now()}`).toUpperCase().replace(/\s+/g, '_');
+  const targetRole = roleTarget ? String(roleTarget).toUpperCase() : 'VENDOR';
+
+  const existing = await prisma.subscriptionPlan.findFirst({
+    where: {
+      OR: [
+        { code: planCode },
+        { code: `${targetRole}_${planCode}` },
+      ],
     },
   });
 
-  res.status(201).json({ success: true, message: 'Subscription plan created successfully.', data: { ...newPlan, features: JSON.parse(newPlan.features) } });
+  let plan;
+  if (existing) {
+    plan = await prisma.subscriptionPlan.update({
+      where: { id: existing.id },
+      data: {
+        name,
+        description: description || '',
+        price: parseFloat(price),
+        originalPrice: originalPrice ? parseFloat(originalPrice) : parseFloat(price),
+        durationDays: parseInt(durationDays),
+        features: Array.isArray(features) ? JSON.stringify(features) : (typeof features === 'string' ? features : '[]'),
+        isPopular: !!isPopular,
+        isBestValue: !!isBestValue,
+        roleTarget: targetRole,
+        isActive: true,
+      },
+    });
+  } else {
+    plan = await prisma.subscriptionPlan.create({
+      data: {
+        name,
+        code: planCode,
+        description: description || '',
+        price: parseFloat(price),
+        originalPrice: originalPrice ? parseFloat(originalPrice) : parseFloat(price),
+        durationDays: parseInt(durationDays),
+        features: Array.isArray(features) ? JSON.stringify(features) : (typeof features === 'string' ? features : '[]'),
+        isPopular: !!isPopular,
+        isBestValue: !!isBestValue,
+        roleTarget: targetRole,
+        isActive: true,
+      },
+    });
+  }
+
+  let parsedFeatures: string[] = [];
+  try {
+    parsedFeatures = typeof plan.features === 'string' ? JSON.parse(plan.features || '[]') : plan.features;
+  } catch {
+    parsedFeatures = [];
+  }
+
+  res.status(201).json({
+    success: true,
+    message: 'Subscription plan saved successfully in database.',
+    data: { ...plan, features: parsedFeatures },
+  });
 };
 
 export const updateSubscriptionPlanAdmin = async (req: AuthenticatedRequest, res: Response) => {
   const { planId } = req.params;
-  const { name, description, price, originalPrice, durationDays, features, isPopular, isBestValue, isActive, roleTarget } = req.body;
+  const { name, code, description, price, originalPrice, durationDays, features, isPopular, isBestValue, isActive, roleTarget } = req.body;
 
-  const updatedPlan = await prisma.subscriptionPlan.update({
-    where: { id: planId },
-    data: {
-      name,
-      description,
-      price: price !== undefined ? parseFloat(price) : undefined,
-      originalPrice: originalPrice !== undefined ? parseFloat(originalPrice) : undefined,
-      durationDays: durationDays !== undefined ? parseInt(durationDays) : undefined,
-      features: features !== undefined ? (Array.isArray(features) ? JSON.stringify(features) : String(features)) : undefined,
-      isPopular: isPopular !== undefined ? !!isPopular : undefined,
-      isBestValue: isBestValue !== undefined ? !!isBestValue : undefined,
-      isActive: isActive !== undefined ? !!isActive : undefined,
-      roleTarget: roleTarget !== undefined ? String(roleTarget) : undefined,
+  const targetCode = (code || planId || '').toUpperCase().replace(/\s+/g, '_');
+  const targetRole = roleTarget ? String(roleTarget).toUpperCase() : 'VENDOR';
+
+  // Look up by id or code
+  const existing = await prisma.subscriptionPlan.findFirst({
+    where: {
+      OR: [
+        { id: planId },
+        { code: targetCode },
+        { code: planId.toUpperCase() },
+      ],
     },
   });
 
-  res.json({ success: true, message: 'Subscription plan updated successfully.', data: { ...updatedPlan, features: JSON.parse(updatedPlan.features) } });
+  let updatedPlan;
+  if (existing) {
+    updatedPlan = await prisma.subscriptionPlan.update({
+      where: { id: existing.id },
+      data: {
+        name: name || existing.name,
+        code: code ? code.toUpperCase() : existing.code,
+        description: description !== undefined ? description : existing.description,
+        price: price !== undefined ? parseFloat(price) : existing.price,
+        originalPrice: originalPrice !== undefined ? parseFloat(originalPrice) : existing.originalPrice,
+        durationDays: durationDays !== undefined ? parseInt(durationDays) : existing.durationDays,
+        features: features !== undefined ? (Array.isArray(features) ? JSON.stringify(features) : String(features)) : existing.features,
+        isPopular: isPopular !== undefined ? !!isPopular : existing.isPopular,
+        isBestValue: isBestValue !== undefined ? !!isBestValue : existing.isBestValue,
+        isActive: isActive !== undefined ? !!isActive : existing.isActive,
+        roleTarget: roleTarget !== undefined ? targetRole : existing.roleTarget,
+      },
+    });
+  } else {
+    updatedPlan = await prisma.subscriptionPlan.create({
+      data: {
+        name: name || 'Subscription Plan',
+        code: targetCode || `PLAN_${Date.now()}`,
+        description: description || '',
+        price: price !== undefined ? parseFloat(price) : 199,
+        originalPrice: originalPrice !== undefined ? parseFloat(originalPrice) : (price ? parseFloat(price) : 199),
+        durationDays: durationDays !== undefined ? parseInt(durationDays) : 30,
+        features: Array.isArray(features) ? JSON.stringify(features) : (typeof features === 'string' ? features : '[]'),
+        isPopular: !!isPopular,
+        isBestValue: !!isBestValue,
+        roleTarget: targetRole,
+        isActive: isActive !== undefined ? !!isActive : true,
+      },
+    });
+  }
+
+  let parsedFeatures: string[] = [];
+  try {
+    parsedFeatures = typeof updatedPlan.features === 'string' ? JSON.parse(updatedPlan.features || '[]') : updatedPlan.features;
+  } catch {
+    parsedFeatures = [];
+  }
+
+  res.json({
+    success: true,
+    message: 'Subscription plan updated successfully in database.',
+    data: { ...updatedPlan, features: parsedFeatures },
+  });
 };
 
 export const deleteSubscriptionPlanAdmin = async (req: AuthenticatedRequest, res: Response) => {
   const { planId } = req.params;
-  await prisma.subscriptionPlan.delete({ where: { id: planId } });
+  const targetCode = planId.toUpperCase().replace(/\s+/g, '_');
+  const existing = await prisma.subscriptionPlan.findFirst({
+    where: {
+      OR: [
+        { id: planId },
+        { code: targetCode },
+        { code: planId.toUpperCase() },
+      ],
+    },
+  });
+
+  if (existing) {
+    await prisma.subscriptionPlan.delete({ where: { id: existing.id } });
+  }
   res.json({ success: true, message: 'Subscription plan deleted successfully.' });
 };
 
