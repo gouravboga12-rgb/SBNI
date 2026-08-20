@@ -80,10 +80,18 @@ export const LenderCard: React.FC<LenderCardProps> = ({ lender, onOpenSubscripti
     let email = '';
     let businessName = '';
     let address = '';
+    let city = '';
+    let state = '';
     let panNumber = undefined;
     let aadhaarNumber = undefined;
     let monthlyIncome = '₹ 50,000 / month';
     let avatarUrl = undefined;
+    let panFileUrl = undefined;
+    let aadhaarFileUrl = undefined;
+    let shopLicensePdf = undefined;
+    let gstCertificatePdf = undefined;
+    let shopPhotoUrl = undefined;
+    let liveSelfieUrl = undefined;
 
     try {
       const uStr = localStorage.getItem('sbni_user');
@@ -95,14 +103,40 @@ export const LenderCard: React.FC<LenderCardProps> = ({ lender, onOpenSubscripti
       phone = vp?.phone || u?.phone || '';
       email = vp?.email || u?.email || '';
       businessName = vp?.businessName || (name + ' Enterprise');
-      address = vp?.address || (vp?.city ? `${vp.city}, ${vp.state || ''}` : '');
+      city = vp?.city || '';
+      state = vp?.state || '';
+      address = vp?.address || (city ? `${city}, ${state}` : '');
       panNumber = vp?.panNumber || u?.panNumber;
       aadhaarNumber = vp?.aadhaarNumber;
       monthlyIncome = vp?.monthlyIncome || u?.monthlyIncome || '₹ 50,000 / month';
-      avatarUrl = vp?.liveSelfieDataUrl || vp?.avatarUrl || localStorage.getItem('sbni_vendor_avatar') || undefined;
+      avatarUrl = vp?.avatarUrl || vp?.photoDataUrl || localStorage.getItem('sbni_vendor_avatar') || undefined;
+      panFileUrl = vp?.panFileUrl || vp?.panDataUrl || undefined;
+      aadhaarFileUrl = vp?.aadhaarFileUrl || vp?.aadhaarDataUrl || undefined;
+      shopLicensePdf = vp?.shopLicensePdf || vp?.licenseDataUrl || undefined;
+      gstCertificatePdf = vp?.gstCertificatePdf || vp?.gstDataUrl || vp?.licenseDataUrl || undefined;
+      shopPhotoUrl = vp?.shopPhotoUrl || vp?.shopPhotoDataUrl || undefined;
+      liveSelfieUrl = vp?.liveSelfieUrl || vp?.liveSelfieDataUrl || avatarUrl || undefined;
     } catch (e) {}
 
-    return { name, phone, email, businessName, address, panNumber, aadhaarNumber, monthlyIncome, avatarUrl };
+    return {
+      name,
+      phone,
+      email,
+      businessName,
+      address,
+      city,
+      state,
+      panNumber,
+      aadhaarNumber,
+      monthlyIncome,
+      avatarUrl,
+      panFileUrl,
+      aadhaarFileUrl,
+      shopLicensePdf,
+      gstCertificatePdf,
+      shopPhotoUrl,
+      liveSelfieUrl,
+    };
   };
 
   const recordLenderRequest = (actionType: 'APPLY' | 'CALL' | 'WHATSAPP') => {
@@ -112,30 +146,43 @@ export const LenderCard: React.FC<LenderCardProps> = ({ lender, onOpenSubscripti
       const formattedDate = today.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
       const formattedTime = today.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
 
-      let requestStatus = 'Pending';
-      if (actionType === 'CALL') requestStatus = 'Requested to Call';
-      if (actionType === 'WHATSAPP') requestStatus = 'Requested to WhatsApp';
+      let inquiryType: 'LOAN_APPLICATION' | 'PHONE_CALL' | 'WHATSAPP' = 'LOAN_APPLICATION';
+      let inquiryMessage = '📝 Vendor submitted a Working Capital Loan application.';
+      if (actionType === 'CALL') {
+        inquiryType = 'PHONE_CALL';
+        inquiryMessage = '📞 This customer/vendor has called you to discuss financing.';
+      } else if (actionType === 'WHATSAPP') {
+        inquiryType = 'WHATSAPP';
+        inquiryMessage = '💬 This customer/vendor messaged you on WhatsApp for financing.';
+      }
 
       const newRequest = {
         id: 'req-' + Date.now() + '-' + actionType.toLowerCase(),
         vendorName: v.name,
         shopName: v.businessName,
-        shopAddress: v.address || 'Registered Location',
-        city: lender.city || 'Mumbai',
-        state: lender.state || 'Maharashtra',
+        shopAddress: v.address || (lender.city ? `${lender.city}, ${lender.state || ''}` : 'Registered Location'),
+        city: lender.city || v.city || 'Mumbai',
+        state: lender.state || v.state || 'Maharashtra',
         requestedDate: formattedDate,
         requestedTime: formattedTime,
-        status: requestStatus,
+        status: 'Pending',
+        inquiryType,
+        inquiryMessage,
         mobileNumber: v.phone,
         emailId: v.email,
-        panNumber: v.panNumber,
-        aadhaarNumber: v.aadhaarNumber,
+        panNumber: v.panNumber || 'PAN Verified',
+        aadhaarNumber: v.aadhaarNumber || 'Aadhaar Verified',
         monthlyIncome: v.monthlyIncome,
         lenderId: lender.id,
         lenderName: lender.institutionName,
-        avatarUrl: v.avatarUrl,
-        liveSelfieUrl: v.avatarUrl,
-        shopImages: [],
+        avatarUrl: v.avatarUrl || v.liveSelfieUrl,
+        panFileUrl: v.panFileUrl,
+        aadhaarFileUrl: v.aadhaarFileUrl,
+        shopLicensePdf: v.shopLicensePdf,
+        gstCertificatePdf: v.gstCertificatePdf,
+        shopPhotoUrl: v.shopPhotoUrl,
+        liveSelfieUrl: v.liveSelfieUrl,
+        shopImages: v.shopPhotoUrl ? [v.shopPhotoUrl] : [],
       };
 
       const existingStr = localStorage.getItem('sbni_vendor_requests');
@@ -145,7 +192,7 @@ export const LenderCard: React.FC<LenderCardProps> = ({ lender, onOpenSubscripti
       }
 
       // Avoid exact duplicates
-      const filtered = existingList.filter((r: any) => !(r.lenderId === lender.id && r.status === requestStatus));
+      const filtered = existingList.filter((r: any) => !(r.lenderId === lender.id && r.inquiryType === inquiryType && r.vendorName === v.name));
       filtered.unshift(newRequest);
 
       localStorage.setItem('sbni_vendor_requests', JSON.stringify(filtered));
@@ -159,6 +206,12 @@ export const LenderCard: React.FC<LenderCardProps> = ({ lender, onOpenSubscripti
 
   const handleCallClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+    const isSubscribed = checkSubscription();
+    if (!isSubscribed && !isSubscribedState) {
+      if (onOpenSubscription) onOpenSubscription();
+      return;
+    }
+
     recordLenderRequest('CALL');
     if (lender.phone) {
       window.location.href = `tel:${lender.phone}`;
@@ -167,6 +220,12 @@ export const LenderCard: React.FC<LenderCardProps> = ({ lender, onOpenSubscripti
 
   const handleWhatsAppClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+    const isSubscribed = checkSubscription();
+    if (!isSubscribed && !isSubscribedState) {
+      if (onOpenSubscription) onOpenSubscription();
+      return;
+    }
+
     recordLenderRequest('WHATSAPP');
     if (lender.whatsAppUrl) {
       window.open(lender.whatsAppUrl, '_blank');

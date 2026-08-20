@@ -54,7 +54,9 @@ export interface VendorVerificationRequest {
   lenderLongitude?: number;
   requestedDate: string;
   requestedTime: string;
-  status: 'Pending' | 'Verified' | 'Rejected';
+  status: 'Pending' | 'Verified' | 'Accepted' | 'Rejected' | string;
+  inquiryType?: 'LOAN_APPLICATION' | 'PHONE_CALL' | 'WHATSAPP';
+  inquiryMessage?: string;
   isFraud?: boolean;
   mobileNumber: string;
   emailId: string;
