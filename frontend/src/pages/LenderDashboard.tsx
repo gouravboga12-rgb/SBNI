@@ -632,8 +632,8 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
 
                 <button
                   onClick={() => {
-                    if (appliedRequests.length > 0) setSelectedVendor(appliedRequests[0]);
-                    else handleBusinessesClick('Pending');
+                    if (requests.length > 0) setSelectedVendor(requests[0]);
+                    else handleBusinessesClick('PENDING');
                   }}
                   className="btn-sbni-green splash-btn-effect text-xs md:text-sm py-2.5 px-4 font-extrabold flex items-center gap-1.5 w-fit shadow-lg cursor-pointer"
                 >
@@ -666,10 +666,10 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
 
                 <div className="card-white p-4 flex items-center justify-between hover:shadow-md transition-all">
                   <div>
-                    <div className="text-xs text-slate-500 font-medium">Verified Businesses</div>
-                    <div className="text-2xl font-extrabold text-slate-900 font-heading mt-0.5">{verifiedCount}</div>
+                    <div className="text-xs text-slate-500 font-medium">Accepted Requests</div>
+                    <div className="text-2xl font-extrabold text-emerald-700 font-heading mt-0.5">{acceptedCount}</div>
                     <button
-                      onClick={() => handleBusinessesClick('Verified')}
+                      onClick={() => handleBusinessesClick('ACCEPTED')}
                       className="text-xs text-emerald-600 font-bold mt-1 hover:underline flex items-center gap-0.5 cursor-pointer"
                     >
                       View All <ChevronRight className="w-3 h-3" />
@@ -682,10 +682,10 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
 
                 <div className="card-white p-4 flex items-center justify-between hover:shadow-md transition-all">
                   <div>
-                    <div className="text-xs text-slate-500 font-medium">Pending Verification</div>
-                    <div className="text-2xl font-extrabold text-slate-900 font-heading mt-0.5">{pendingCount}</div>
+                    <div className="text-xs text-slate-500 font-medium">Pending Requests</div>
+                    <div className="text-2xl font-extrabold text-amber-600 font-heading mt-0.5">{pendingCount}</div>
                     <button
-                      onClick={() => handleBusinessesClick('Pending')}
+                      onClick={() => handleBusinessesClick('PENDING')}
                       className="text-xs text-amber-600 font-bold mt-1 hover:underline flex items-center gap-0.5 cursor-pointer"
                     >
                       View All <ChevronRight className="w-3 h-3" />
@@ -711,7 +711,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                   </button>
                 </div>
 
-                {appliedRequests.length === 0 ? (
+                {requests.length === 0 ? (
                   <div className="card-white p-8 text-center space-y-3">
                     <Clock className="w-10 h-10 text-slate-400 mx-auto" />
                     <div className="font-bold text-slate-700 text-sm">No Recent Applied Requests</div>
@@ -724,7 +724,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                   </div>
                 ) : (
                   <div className="card-white splash-highlight-card divide-y divide-slate-100 overflow-hidden shadow-lg bg-white">
-                    {appliedRequests.map((req) => (
+                    {requests.slice(0, 5).map((req) => (
                       <div
                         key={req.id}
                         onClick={() => handleVendorSelect(req)}
