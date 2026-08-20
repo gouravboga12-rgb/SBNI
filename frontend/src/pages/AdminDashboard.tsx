@@ -52,6 +52,8 @@ import {
   adminFetchLenders,
   adminUpdateVendorKYC,
   adminDeleteUser,
+  adminDeleteVendor,
+  adminDeleteLender,
   adminFetchPayments,
 } from '../services/api';
 import { SBNILogo } from '../components/SBNILogo';
@@ -224,6 +226,8 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
     return [];
   });
 
+  const [isLoadingData, setIsLoadingData] = useState(false);
+
   const loadAdminPayments = async () => {
     try {
       const res = await adminFetchPayments();
@@ -237,6 +241,7 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
   };
 
   const loadAdminVendorsAndLenders = async () => {
+    setIsLoadingData(true);
     try {
       const [vRes, lRes] = await Promise.all([
         adminFetchVendors(),
@@ -244,54 +249,50 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
       ]);
 
       const storedFraud = JSON.parse(localStorage.getItem('sbni_fraud_vendors') || '{}');
-      const deletedVendorIds = JSON.parse(localStorage.getItem('sbni_deleted_vendors') || '[]');
-      const deletedLenderIds = JSON.parse(localStorage.getItem('sbni_deleted_lenders') || '[]');
 
       if (vRes.vendors && Array.isArray(vRes.vendors)) {
-        const mappedVendors: VendorData[] = vRes.vendors
-          .filter((v: any) => !deletedVendorIds.includes(v.id))
-          .map((v: any) => ({
-            id: v.id,
-            businessName: v.businessName || 'Business Enterprise',
-            ownerName: v.ownerName || v.user?.name || 'Owner Name',
-            city: v.city || 'Mumbai',
-            state: v.state || 'Maharashtra',
-            annualTurnover: v.annualTurnover || '50L - 1Cr',
-            category: v.category || 'Retail',
-            kycStatus: v.kycStatus === 'REJECTED' ? 'REJECTED' : 'VERIFIED',
-            isFraud: storedFraud[v.id] !== undefined ? storedFraud[v.id] : !!v.isFraud,
-            userEmail: v.user?.email || v.email || 'N/A',
-            userPhone: v.user?.phone || v.phone || 'N/A',
-            createdAt: v.createdAt ? String(v.createdAt).substring(0, 10) : '2026-08-13',
-          }));
+        const mappedVendors: VendorData[] = vRes.vendors.map((v: any) => ({
+          id: v.id,
+          businessName: v.businessName || 'Business Enterprise',
+          ownerName: v.ownerName || v.user?.name || 'Owner Name',
+          city: v.city || 'Mumbai',
+          state: v.state || 'Maharashtra',
+          annualTurnover: v.annualTurnover || '10-50 Lakhs',
+          category: v.category || 'Retail',
+          kycStatus: v.kycStatus === 'REJECTED' ? 'REJECTED' : (v.kycStatus || 'VERIFIED'),
+          isFraud: storedFraud[v.id] !== undefined ? storedFraud[v.id] : !!v.isFraud,
+          userEmail: v.user?.email || v.email || 'N/A',
+          userPhone: v.user?.phone || v.phone || 'N/A',
+          createdAt: v.createdAt ? String(v.createdAt).substring(0, 10) : '2026-08-13',
+        }));
         setVendors(mappedVendors);
         localStorage.setItem('sbni_admin_vendors', JSON.stringify(mappedVendors));
       }
 
       if (lRes.lenders && Array.isArray(lRes.lenders)) {
-        const mappedLenders: LenderData[] = lRes.lenders
-          .filter((l: any) => !deletedLenderIds.includes(l.id))
-          .map((l: any) => ({
-            id: l.id,
-            institutionName: l.institutionName || 'Financial Institution',
-            institutionType: l.institutionType === 'BANK' ? 'BANK' : l.institutionType === 'NBFC' ? 'NBFC' : 'FINANCIAL_INSTITUTION',
-            registrationNumber: l.registrationNumber || 'REG-1001',
-            city: l.city || 'Mumbai',
-            state: l.state || 'Maharashtra',
-            verificationStatus: l.verificationStatus === 'REJECTED' ? 'REJECTED' : 'VERIFIED',
-            minLoanAmount: l.minLoanAmount || 100000,
-            maxLoanAmount: l.maxLoanAmount || 10000000,
-            minInterestRate: l.minInterestRate || 10.5,
-            contactPersonName: l.contactPersonName || 'Branch Officer',
-            userEmail: l.user?.email || l.email || 'N/A',
-            userPhone: l.user?.phone || l.phone || 'N/A',
-            createdAt: l.createdAt ? String(l.createdAt).substring(0, 10) : '2026-08-13',
-          }));
+        const mappedLenders: LenderData[] = lRes.lenders.map((l: any) => ({
+          id: l.id,
+          institutionName: l.institutionName || 'Financial Institution',
+          institutionType: l.institutionType === 'BANK' ? 'BANK' : l.institutionType === 'NBFC' ? 'NBFC' : 'FINANCIAL_INSTITUTION',
+          registrationNumber: l.registrationNumber || 'REG-1001',
+          city: l.city || 'Mumbai',
+          state: l.state || 'Maharashtra',
+          verificationStatus: l.verificationStatus === 'REJECTED' ? 'REJECTED' : (l.verificationStatus || 'VERIFIED'),
+          minLoanAmount: l.minLoanAmount || 100000,
+          maxLoanAmount: l.maxLoanAmount || 10000000,
+          minInterestRate: l.minInterestRate || 8.5,
+          contactPersonName: l.contactPersonName || l.institutionName || 'Branch Officer',
+          userEmail: l.user?.email || l.email || 'N/A',
+          userPhone: l.user?.phone || l.phone || 'N/A',
+          createdAt: l.createdAt ? String(l.createdAt).substring(0, 10) : '2026-08-13',
+        }));
         setLenders(mappedLenders);
         localStorage.setItem('sbni_admin_lenders', JSON.stringify(mappedLenders));
       }
     } catch (e) {
       console.error('loadAdminVendorsAndLenders error:', e);
+    } finally {
+      setIsLoadingData(false);
     }
   };
 
@@ -508,6 +509,12 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
     localStorage.removeItem('justpaisa_admin_transactions');
     localStorage.removeItem('justpaisa_admin_referrals');
 
+    const handleAuthExpired = () => {
+      setIsAdminAuthenticated(false);
+      setLoginError('Your admin session has expired. Please log in again.');
+    };
+    window.addEventListener('sbni_admin_auth_expired', handleAuthExpired);
+
     const adminToken = localStorage.getItem('sbni_admin_token');
     const adminUser = localStorage.getItem('sbni_admin_user');
     if (adminToken && adminUser) {
@@ -515,6 +522,10 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
       loadAdminVendorsAndLenders();
       loadAdminPayments();
     }
+
+    return () => {
+      window.removeEventListener('sbni_admin_auth_expired', handleAuthExpired);
+    };
   }, []);
 
   const handleAdminLogin = async (e: React.FormEvent) => {
@@ -747,7 +758,42 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
     showToast(`✅ Paid ₹${item?.rewardAmount || 200} reward to ${item?.referrerName || 'Partner'}!`);
   };
 
-  // CSV Export Utility
+  // ─── FILTERED VENDORS & LENDERS ───────────────────────────────────────────
+  const filteredVendors = useMemo(() => {
+    return vendors.filter((v) => {
+      if (statusFilter === 'VERIFIED' && v.kycStatus !== 'VERIFIED') return false;
+      if (statusFilter === 'PENDING' && v.kycStatus !== 'PENDING') return false;
+      if (statusFilter === 'FRAUD' && !v.isFraud) return false;
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase().trim();
+        const match =
+          (v.businessName || '').toLowerCase().includes(q) ||
+          (v.ownerName || '').toLowerCase().includes(q) ||
+          (v.userEmail || '').toLowerCase().includes(q) ||
+          (v.userPhone || '').includes(q) ||
+          (v.city || '').toLowerCase().includes(q) ||
+          (v.category || '').toLowerCase().includes(q);
+        if (!match) return false;
+      }
+      return true;
+    });
+  }, [vendors, statusFilter, searchQuery]);
+
+  const filteredLenders = useMemo(() => {
+    return lenders.filter((l) => {
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase().trim();
+        const match =
+          (l.institutionName || '').toLowerCase().includes(q) ||
+          (l.contactPersonName || '').toLowerCase().includes(q) ||
+          (l.userEmail || '').toLowerCase().includes(q) ||
+          (l.userPhone || '').includes(q) ||
+          (l.city || '').toLowerCase().includes(q);
+        if (!match) return false;
+      }
+      return true;
+    });
+  }, [lenders, searchQuery]);
   const exportToCsv = (data: any[], filename: string) => {
     if (!data.length) {
       showToast('No records to export.');
@@ -846,19 +892,35 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
   const handleDeleteVendor = async (vendorId: string) => {
     const vendorObj = vendors.find((v) => v.id === vendorId);
     const vendorName = vendorObj?.businessName || vendorObj?.ownerName || 'Vendor';
-    if (confirm(`Are you sure you want to permanently remove vendor account "${vendorName}"?`)) {
-      const updated = vendors.filter((v) => v.id !== vendorId);
-      setVendors(updated);
-      localStorage.setItem('sbni_admin_vendors', JSON.stringify(updated));
+    if (!window.confirm(`Are you sure you want to permanently remove vendor account "${vendorName}"? This action cannot be undone.`)) {
+      return;
+    }
 
-      const deletedIds = JSON.parse(localStorage.getItem('sbni_deleted_vendors') || '[]');
-      if (!deletedIds.includes(vendorId)) deletedIds.push(vendorId);
-      localStorage.setItem('sbni_deleted_vendors', JSON.stringify(deletedIds));
+    try {
+      const res = await adminDeleteVendor(vendorId);
+      if (res.success) {
+        const updated = vendors.filter((v) => v.id !== vendorId);
+        setVendors(updated);
+        localStorage.setItem('sbni_admin_vendors', JSON.stringify(updated));
 
-      try {
-        await adminDeleteUser(vendorId);
-      } catch {}
-      showToast(`Vendor "${vendorName}" permanently removed from system.`);
+        setAuditLogs([
+          {
+            id: 'a-' + Date.now(),
+            time: new Date().toISOString().replace('T', ' ').substring(0, 19),
+            action: 'VENDOR_DELETED',
+            detail: `Vendor account "${vendorName}" permanently deleted from database.`,
+          },
+          ...auditLogs,
+        ]);
+
+        showToast(`✅ Vendor "${vendorName}" permanently removed from database.`);
+      } else {
+        alert(res.message || 'Failed to delete vendor account. Please try again.');
+        showToast(`❌ Error: ${res.message || 'Deletion failed'}`);
+      }
+    } catch (err: any) {
+      alert(err.message || 'Error occurred while deleting vendor account.');
+      showToast(`❌ Error: ${err.message || 'Deletion failed'}`);
     }
   };
 
@@ -882,20 +944,36 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
   };
 
   const handleDeleteLender = async (lenderId: string) => {
-    const lenderName = lenders.find((l) => l.id === lenderId)?.institutionName;
-    if (confirm(`Are you sure you want to permanently remove financer "${lenderName}"?`)) {
-      const updated = lenders.filter((l) => l.id !== lenderId);
-      setLenders(updated);
-      localStorage.setItem('sbni_admin_lenders', JSON.stringify(updated));
+    const lenderName = lenders.find((l) => l.id === lenderId)?.institutionName || 'Financer';
+    if (!window.confirm(`Are you sure you want to permanently remove financer "${lenderName}"? This action cannot be undone.`)) {
+      return;
+    }
 
-      const deletedIds = JSON.parse(localStorage.getItem('sbni_deleted_lenders') || '[]');
-      if (!deletedIds.includes(lenderId)) deletedIds.push(deletedIds);
-      localStorage.setItem('sbni_deleted_lenders', JSON.stringify(deletedIds));
+    try {
+      const res = await adminDeleteLender(lenderId);
+      if (res.success) {
+        const updated = lenders.filter((l) => l.id !== lenderId);
+        setLenders(updated);
+        localStorage.setItem('sbni_admin_lenders', JSON.stringify(updated));
 
-      try {
-        await adminDeleteUser(lenderId);
-      } catch {}
-      showToast(`Lender "${lenderName}" permanently removed from system.`);
+        setAuditLogs([
+          {
+            id: 'a-' + Date.now(),
+            time: new Date().toISOString().replace('T', ' ').substring(0, 19),
+            action: 'LENDER_DELETED',
+            detail: `Financer account "${lenderName}" permanently deleted from database.`,
+          },
+          ...auditLogs,
+        ]);
+
+        showToast(`✅ Financer "${lenderName}" permanently removed from database.`);
+      } else {
+        alert(res.message || 'Failed to delete financer account. Please try again.');
+        showToast(`❌ Error: ${res.message || 'Deletion failed'}`);
+      }
+    } catch (err: any) {
+      alert(err.message || 'Error occurred while deleting financer account.');
+      showToast(`❌ Error: ${err.message || 'Deletion failed'}`);
     }
   };
 
@@ -2381,6 +2459,17 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
                   Manage shop owner accounts, verify KYC documents, and moderate fraud accounts
                 </p>
               </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={loadAdminVendorsAndLenders}
+                  disabled={isLoadingData}
+                  className="px-4 py-2 bg-blue-50 hover:bg-blue-100 text-[#003893] border border-blue-200 font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center gap-2 cursor-pointer active:scale-95"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isLoadingData ? 'animate-spin' : ''}`} />
+                  <span>{isLoadingData ? 'Refreshing...' : 'Refresh Live Data'}</span>
+                </button>
+              </div>
             </div>
 
             {/* Search & Filter Toolbar */}
@@ -2402,7 +2491,7 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
                   onChange={(e) => setStatusFilter(e.target.value)}
                   className="bg-slate-50 border border-slate-300 text-xs font-bold text-slate-700 rounded-xl px-3 py-2 focus:outline-none focus:border-[#003893]"
                 >
-                  <option value="ALL">All KYC Statuses</option>
+                  <option value="ALL">All KYC Statuses ({vendors.length})</option>
                   <option value="VERIFIED">Verified Only</option>
                   <option value="PENDING">Pending Only</option>
                   <option value="FRAUD">Fraud Accounts Only 🚨</option>
@@ -2425,14 +2514,14 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {vendors.length === 0 ? (
+                    {filteredVendors.length === 0 ? (
                       <tr>
                         <td colSpan={6} className="p-8 text-center text-slate-400 font-bold">
-                          No vendor accounts found.
+                          {isLoadingData ? 'Loading vendor accounts from database...' : 'No vendor accounts found.'}
                         </td>
                       </tr>
                     ) : (
-                      vendors.map((v) => (
+                      filteredVendors.map((v) => (
                         <tr
                           key={v.id}
                           className={`hover:bg-slate-50 transition-colors ${
@@ -2546,6 +2635,31 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
                   Verify NBFC credentials, monitor registered financers, and manage lender statuses
                 </p>
               </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={loadAdminVendorsAndLenders}
+                  disabled={isLoadingData}
+                  className="px-4 py-2 bg-emerald-50 hover:bg-emerald-100 text-[#007a33] border border-emerald-200 font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center gap-2 cursor-pointer active:scale-95"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isLoadingData ? 'animate-spin' : ''}`} />
+                  <span>{isLoadingData ? 'Refreshing...' : 'Refresh Live Data'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Search Toolbar for Lenders */}
+            <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm">
+              <div className="relative">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                <input
+                  type="text"
+                  placeholder="Search financer institution, officer, email, city..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl pl-10 pr-3 py-2 text-xs font-medium text-slate-900 focus:outline-none focus:border-[#007a33]"
+                />
+              </div>
             </div>
 
             {/* Lenders Table */}
@@ -2564,14 +2678,14 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {lenders.length === 0 ? (
+                    {filteredLenders.length === 0 ? (
                       <tr>
                         <td colSpan={7} className="p-8 text-center text-slate-400 font-bold">
-                          No business financers found.
+                          {isLoadingData ? 'Loading business financers from database...' : 'No business financers found.'}
                         </td>
                       </tr>
                     ) : (
-                      lenders.map((l) => (
+                      filteredLenders.map((l) => (
                         <tr key={l.id} className="hover:bg-slate-50 transition-colors">
                           <td className="p-4">
                             <div className="font-extrabold text-slate-900 text-sm">{l.institutionName}</div>

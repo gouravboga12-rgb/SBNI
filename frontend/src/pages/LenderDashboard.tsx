@@ -1,7 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { VendorVerificationRequest } from '../types';
 import { BannerCarousel, BannerSlide } from '../components/BannerCarousel';
-import { fetchVendorProfilesForLender } from '../services/api';
+import { fetchVendorProfilesForLender, updateLenderProfileApi } from '../services/api';
+import { LocationPickerModal } from '../components/LocationPickerModal';
+import { getGoogleMapsNavigationUrl } from '../services/mapboxService';
 import {
   Building2,
   Users,
@@ -25,6 +27,9 @@ import {
   MapPin,
   Camera,
   AlertTriangle,
+  Navigation,
+  Radio,
+  Compass,
 } from 'lucide-react';
 
 const LENDER_BANNER_SLIDES: BannerSlide[] = [
@@ -55,13 +60,26 @@ const DEFAULT_VENDOR_REQUESTS: VendorVerificationRequest[] = [];
 interface LenderDashboardProps {
   onOpenSubscription?: () => void;
   onLogout?: (roleTarget?: 'VENDOR' | 'LENDER') => void;
+  activeTab?: 'home' | 'businesses' | 'reports' | 'profile';
+  onTabChange?: (tab: 'home' | 'businesses' | 'reports' | 'profile') => void;
 }
 
-export const LenderDashboard: React.FC<LenderDashboardProps> = ({ onOpenSubscription, onLogout }) => {
+export const LenderDashboard: React.FC<LenderDashboardProps> = ({
+  onOpenSubscription,
+  onLogout,
+  activeTab: controlledActiveTab,
+  onTabChange,
+}) => {
   const [selectedVendor, setSelectedVendor] = useState<VendorVerificationRequest | null>(null);
   const [requests, setRequests] = useState<VendorVerificationRequest[]>([]);
   const [actionFeedback, setActionFeedback] = useState('');
-  const [activeTab, setActiveTab] = useState<'home' | 'businesses' | 'reports' | 'profile'>('home');
+  const [internalActiveTab, setInternalActiveTab] = useState<'home' | 'businesses' | 'reports' | 'profile'>('home');
+  const activeTab = controlledActiveTab !== undefined ? controlledActiveTab : internalActiveTab;
+  const setActiveTab = (tab: 'home' | 'businesses' | 'reports' | 'profile') => {
+    setInternalActiveTab(tab);
+    if (onTabChange) onTabChange(tab);
+    if (tab === 'profile') setSelectedVendor(null);
+  };
   const [businessFilterStatus, setBusinessFilterStatus] = useState<'ALL' | 'Verified' | 'Pending'>('ALL');
   const [businessSearchQuery, setBusinessSearchQuery] = useState('');
   const [previewDocModal, setPreviewDocModal] = useState<{ title: string; url: string; type: 'image' | 'doc' } | null>(null);
@@ -112,6 +130,82 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({ onOpenSubscrip
       };
     }
   })();
+
+  const [lenderLocation, setLenderLocation] = useState<{
+    place: string;
+    city: string;
+    state: string;
+    country: string;
+    latitude: number;
+    longitude: number;
+    lendingRadiusKm: number;
+  }>(() => {
+    try {
+      const p = localStorage.getItem('sbni_lender_profile');
+      if (p) {
+        const parsed = JSON.parse(p);
+        return {
+          place: parsed.place || 'Dilsukhnagar',
+          city: parsed.city || 'Hyderabad',
+          state: parsed.state || 'Telangana',
+          country: parsed.country || 'India',
+          latitude: parsed.latitude ? Number(parsed.latitude) : 17.3688,
+          longitude: parsed.longitude ? Number(parsed.longitude) : 78.5247,
+          lendingRadiusKm: parsed.lendingRadiusKm ? Number(parsed.lendingRadiusKm) : 50,
+        };
+      }
+    } catch (e) {}
+    return {
+      place: 'Dilsukhnagar',
+      city: 'Hyderabad',
+      state: 'Telangana',
+      country: 'India',
+      latitude: 17.3688,
+      longitude: 78.5247,
+      lendingRadiusKm: 50,
+    };
+  });
+
+  const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
+  const [locationSuccessMsg, setLocationSuccessMsg] = useState<string | null>(null);
+
+  const handleSaveLenderLocation = async (loc: {
+    place: string;
+    city: string;
+    state: string;
+    country: string;
+    latitude: number;
+    longitude: number;
+    lendingRadiusKm?: number;
+  }) => {
+    const updated = {
+      place: loc.place,
+      city: loc.city,
+      state: loc.state,
+      country: loc.country,
+      latitude: loc.latitude,
+      longitude: loc.longitude,
+      lendingRadiusKm: loc.lendingRadiusKm || 50,
+    };
+    setLenderLocation(updated);
+
+    // Save to local storage
+    try {
+      const pStr = localStorage.getItem('sbni_lender_profile') || '{}';
+      const parsed = JSON.parse(pStr);
+      const merged = { ...parsed, ...updated };
+      localStorage.setItem('sbni_lender_profile', JSON.stringify(merged));
+    } catch (e) {}
+
+    // Save to AWS Backend
+    try {
+      await updateLenderProfileApi(updated);
+      setLocationSuccessMsg(`✅ Lending area updated to ${loc.place}, ${loc.city} (${updated.lendingRadiusKm} KM radius)`);
+      setTimeout(() => setLocationSuccessMsg(null), 4000);
+    } catch (e) {
+      console.error('Failed to sync lender profile location to backend:', e);
+    }
+  };
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [lenderAvatarUrl, setLenderAvatarUrl] = useState<string | null>(() => {
@@ -1016,9 +1110,24 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({ onOpenSubscrip
                   </div>
                 </div>
 
-                {/* Shop Information */}
+                {/* Shop Information & GPS Navigation */}
                 <div className="card-white p-5 space-y-4">
-                  <h4 className="font-bold text-slate-900 text-base font-heading">Shop Information</h4>
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <h4 className="font-bold text-slate-900 text-base font-heading">Shop Information & Location</h4>
+                    <a
+                      href={getGoogleMapsNavigationUrl(
+                        selectedVendor.latitude || 17.3688,
+                        selectedVendor.longitude || 78.5247,
+                        `${selectedVendor.shopName} (${selectedVendor.vendorName})`
+                      )}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-extrabold flex items-center gap-1.5 shadow-sm transition-all active:scale-95 cursor-pointer"
+                    >
+                      <Navigation className="w-3.5 h-3.5" />
+                      <span>🧭 Navigate (Google Maps)</span>
+                    </a>
+                  </div>
                   <div className="space-y-3 text-xs md:text-sm">
                     <div className="flex justify-between py-1.5 border-b border-slate-100">
                       <span className="text-slate-500">Shop Name</span>
@@ -1026,7 +1135,11 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({ onOpenSubscrip
                     </div>
                     <div className="flex justify-between py-1.5 border-b border-slate-100">
                       <span className="text-slate-500">Shop Address</span>
-                      <span className="font-semibold text-slate-900">{selectedVendor.shopAddress}</span>
+                      <span className="font-semibold text-slate-900 text-right">{selectedVendor.shopAddress}</span>
+                    </div>
+                    <div className="flex justify-between py-1.5 border-b border-slate-100">
+                      <span className="text-slate-500">City / State</span>
+                      <span className="font-semibold text-slate-900">{selectedVendor.city}, {selectedVendor.state}</span>
                     </div>
                     <div className="flex justify-between py-1.5 border-b border-slate-100">
                       <span className="text-slate-500">Shop Type</span>
@@ -1287,6 +1400,68 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({ onOpenSubscrip
                 </div>
               </div>
 
+              {/* Mapbox Lending Area & Service Radius Section */}
+              <div className="space-y-4 border-t border-slate-100 pt-5">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div>
+                    <h4 className="font-extrabold text-slate-900 text-sm font-heading flex items-center gap-1.5">
+                      <Compass className="w-4 h-4 text-[#003893]" />
+                      <span>Lending Area & Geographic Service Radius</span>
+                    </h4>
+                    <p className="text-xs text-slate-500 font-medium mt-0.5">
+                      Set your office coordinates and active loan coverage radius using Mapbox
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsLocationModalOpen(true)}
+                    className="px-4 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-[#003893] border border-blue-200 font-extrabold text-xs flex items-center gap-1.5 transition-all shadow-xs active:scale-95 cursor-pointer"
+                  >
+                    <Compass className="w-3.5 h-3.5" />
+                    <span>Edit Lending Area & Radius</span>
+                  </button>
+                </div>
+
+                {locationSuccessMsg && (
+                  <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-[#007a33] text-xs font-bold flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>{locationSuccessMsg}</span>
+                  </div>
+                )}
+
+                <div className="p-4 rounded-2xl bg-gradient-to-r from-blue-50/70 to-indigo-50/70 border border-blue-200/80 space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <MapPin className="w-5 h-5 text-rose-500 shrink-0" />
+                      <div>
+                        <div className="font-extrabold text-slate-900 text-sm">
+                          {lenderLocation.place}, {lenderLocation.city}
+                        </div>
+                        <div className="text-xs text-slate-500 font-medium">
+                          {lenderLocation.state}, {lenderLocation.country}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <span className="bg-[#003893] text-white px-3 py-1 rounded-full text-xs font-black shadow-xs">
+                        ⚡ {lenderLocation.lendingRadiusKm} KM Service Radius
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="pt-2 border-t border-blue-200/60 flex items-center justify-between text-[11px] text-slate-600 font-mono flex-wrap gap-2">
+                    <span>
+                      GPS: <strong>{Number(lenderLocation.latitude).toFixed(4)}</strong>,{' '}
+                      <strong>{Number(lenderLocation.longitude).toFixed(4)}</strong>
+                    </span>
+                    <span className="text-emerald-700 font-bold font-sans">
+                      ✓ Active & matching small businesses within {lenderLocation.lendingRadiusKm} KM
+                    </span>
+                  </div>
+                </div>
+              </div>
+
               {/* SECTION: Account Session & Logout */}
               <div className="pt-6 border-t border-slate-200 space-y-4">
                 <div className="flex items-center justify-between flex-wrap gap-3">
@@ -1314,6 +1489,17 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({ onOpenSubscrip
         )}
 
       </div>
+
+      {/* Location Picker Modal for Lender Service Area */}
+      <LocationPickerModal
+        isOpen={isLocationModalOpen}
+        onClose={() => setIsLocationModalOpen(false)}
+        onSave={handleSaveLenderLocation}
+        initialLocation={lenderLocation}
+        mode="LENDER_RADIUS"
+        title="Configure Lending Area & Service Radius"
+        subtitle="Small businesses within this radius will discover your institution"
+      />
 
       {/* Bottom Sticky Navigation Bar */}
       <div className="fixed bottom-0 sm:bottom-5 inset-x-0 z-50 bg-white/95 backdrop-blur-md border-t sm:border border-slate-200/90 py-1.5 sm:py-3.5 px-2 sm:px-10 flex items-center justify-between sm:justify-around w-full max-w-md sm:max-w-3xl lg:max-w-4xl mx-auto shadow-2xl rounded-t-2xl sm:rounded-3xl transition-all">

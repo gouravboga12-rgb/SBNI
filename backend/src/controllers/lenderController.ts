@@ -14,13 +14,20 @@ export const updateLenderProfile = async (req: AuthenticatedRequest, res: Respon
     maxLoanAmount,
     minInterestRate,
     address,
+    place,
     city,
     state,
+    country,
     pincode,
     latitude,
     longitude,
+    lendingRadiusKm,
     contactPersonName,
   } = req.body;
+
+  const parsedLat = latitude !== undefined && latitude !== null ? parseFloat(String(latitude)) : undefined;
+  const parsedLng = longitude !== undefined && longitude !== null ? parseFloat(String(longitude)) : undefined;
+  const parsedRadius = lendingRadiusKm !== undefined && lendingRadiusKm !== null ? parseFloat(String(lendingRadiusKm)) : undefined;
 
   const profile = await prisma.lenderProfile.upsert({
     where: { userId },
@@ -33,11 +40,14 @@ export const updateLenderProfile = async (req: AuthenticatedRequest, res: Respon
       maxLoanAmount: maxLoanAmount ? parseFloat(maxLoanAmount) : undefined,
       minInterestRate: minInterestRate ? parseFloat(minInterestRate) : undefined,
       address,
+      place,
       city,
       state,
+      country: country || 'India',
       pincode,
-      latitude: latitude ? parseFloat(latitude) : undefined,
-      longitude: longitude ? parseFloat(longitude) : undefined,
+      latitude: parsedLat,
+      longitude: parsedLng,
+      lendingRadiusKm: parsedRadius,
       contactPersonName,
     },
     create: {
@@ -50,16 +60,19 @@ export const updateLenderProfile = async (req: AuthenticatedRequest, res: Respon
       maxLoanAmount: maxLoanAmount ? parseFloat(maxLoanAmount) : 10000000,
       minInterestRate: minInterestRate ? parseFloat(minInterestRate) : 9.5,
       address: address || 'Default Address',
+      place: place || 'Financial District',
       city: city || 'Mumbai',
       state: state || 'Maharashtra',
+      country: country || 'India',
       pincode: pincode || '400001',
-      latitude: latitude ? parseFloat(latitude) : 19.0760,
-      longitude: longitude ? parseFloat(longitude) : 72.8777,
+      latitude: parsedLat ?? 19.0760,
+      longitude: parsedLng ?? 72.8777,
+      lendingRadiusKm: parsedRadius ?? 50.0,
       contactPersonName: contactPersonName || 'Lending Officer',
     },
   });
 
-  res.json({ success: true, message: 'Lender institution profile updated successfully.', data: profile });
+  res.json({ success: true, message: 'Lender institution profile and lending area updated successfully.', data: profile });
 };
 
 export const getVendorProfiles = async (req: AuthenticatedRequest, res: Response) => {

@@ -233,38 +233,79 @@ export const updatePlatformSetting = async (req: AuthenticatedRequest, res: Resp
 
 // Additional Account Management
 export const deleteUser = async (req: AuthenticatedRequest, res: Response) => {
-  const { userId } = req.params;
+  const targetId = req.params.userId || req.params.vendorId || req.params.lenderId;
+
+  if (!targetId) {
+    return res.status(400).json({ success: false, message: 'Target ID is required for deletion.' });
+  }
 
   try {
-    // 1. Try deleting user directly if userId is User ID
-    await prisma.user.delete({
-      where: { id: userId },
+    // 1. Identify the user record (either by User.id, VendorProfile.id/userId, or LenderProfile.id/userId)
+    let user = await prisma.user.findUnique({
+      where: { id: targetId },
     });
-    return res.json({ success: true, message: 'User account permanently deleted successfully.' });
-  } catch (e1) {
-    try {
-      // 2. Try finding VendorProfile by ID or userId
-      const v = await prisma.vendorProfile.findFirst({
-        where: { OR: [{ id: userId }, { userId }] },
-      });
-      if (v) {
-        await prisma.user.delete({ where: { id: v.userId } });
-        return res.json({ success: true, message: 'Vendor user account permanently deleted.' });
-      }
 
-      // 3. Try finding LenderProfile by ID or userId
-      const l = await prisma.lenderProfile.findFirst({
-        where: { OR: [{ id: userId }, { userId }] },
+    if (!user) {
+      const vendorProf = await prisma.vendorProfile.findFirst({
+        where: { OR: [{ id: targetId }, { userId: targetId }] },
       });
-      if (l) {
-        await prisma.user.delete({ where: { id: l.userId } });
-        return res.json({ success: true, message: 'Lender user account permanently deleted.' });
+      if (vendorProf) {
+        user = await prisma.user.findUnique({ where: { id: vendorProf.userId } });
       }
-
-      return res.status(404).json({ success: false, message: 'User not found or already deleted.' });
-    } catch (e2: any) {
-      return res.status(500).json({ success: false, message: e2?.message || 'Deletion error' });
     }
+
+    if (!user) {
+      const lenderProf = await prisma.lenderProfile.findFirst({
+        where: { OR: [{ id: targetId }, { userId: targetId }] },
+      });
+      if (lenderProf) {
+        user = await prisma.user.findUnique({ where: { id: lenderProf.userId } });
+      }
+    }
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'Target user account not found or already removed.' });
+    }
+
+    const resolvedUserId = user.id;
+
+    // 2. Perform atomic deletion of all relations and the user in a transaction
+    await prisma.$transaction(async (tx) => {
+      // Delete user's payments
+      await tx.payment.deleteMany({ where: { userId: resolvedUserId } });
+
+      // Delete user's subscriptions
+      await tx.userSubscription.deleteMany({ where: { userId: resolvedUserId } });
+
+      // Delete KYC documents
+      await tx.kYCDocument.deleteMany({ where: { userId: resolvedUserId } });
+
+      // Delete notifications
+      await tx.notification.deleteMany({ where: { userId: resolvedUserId } });
+
+      // Delete support tickets
+      await tx.supportTicket.deleteMany({ where: { userId: resolvedUserId } });
+
+      // Delete vendor profile if exists
+      await tx.vendorProfile.deleteMany({ where: { userId: resolvedUserId } });
+
+      // Delete lender profile if exists
+      await tx.lenderProfile.deleteMany({ where: { userId: resolvedUserId } });
+
+      // Delete the user record
+      await tx.user.delete({ where: { id: resolvedUserId } });
+    });
+
+    return res.json({
+      success: true,
+      message: `Account (${user.email}) and all associated records permanently removed from database.`,
+    });
+  } catch (error: any) {
+    console.error('deleteUser error:', error);
+    return res.status(500).json({
+      success: false,
+      message: error?.message || 'Failed to permanently delete user account from database.',
+    });
   }
 };
 

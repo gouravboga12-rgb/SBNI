@@ -59,15 +59,24 @@ async function apiFetch<T = any>(
 
 export async function loginUser(
   email: string,
-  password: string
+  password: string,
+  role?: 'VENDOR' | 'LENDER' | 'SUPER_ADMIN' | string
 ): Promise<{ success: boolean; token?: string; user?: any; message?: string }> {
   try {
     const data = await apiFetch('/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, password, role }),
     });
     if (data.success) {
       const u = data.data.user;
+      if (role && u.role !== role && u.role !== 'ADMIN') {
+        return {
+          success: false,
+          message: `This account is registered as a ${
+            u.role === 'VENDOR' ? 'Small Shop / Local Startup Business' : 'Business Money Financer (Lender)'
+          }. Please log in through the correct portal.`,
+        };
+      }
       if (u?.vendorProfile) {
         const ownerName = u.vendorProfile.ownerName || u.vendorProfile.fullName;
         if (ownerName) {
@@ -175,12 +184,13 @@ export async function verifySignupOtpApi(
 }
 
 export async function forgotPasswordRequestOtpApi(
-  emailOrPhone: string
+  emailOrPhone: string,
+  role?: 'VENDOR' | 'LENDER' | 'SUPER_ADMIN' | string
 ): Promise<{ success: boolean; message?: string; email?: string; otpCode?: string }> {
   try {
     const data = await apiFetch('/auth/forgot-password', {
       method: 'POST',
-      body: JSON.stringify({ emailOrPhone }),
+      body: JSON.stringify({ emailOrPhone, role }),
     });
     return { success: data.success, message: data.message, email: data.email, otpCode: data.otpCode };
   } catch (err: any) {
@@ -247,9 +257,12 @@ export function logoutUser(): void {
 export async function fetchLenders(params?: {
   city?: string;
   state?: string;
+  place?: string;
   query?: string;
   category?: string;
   radiusKm?: number;
+  userLat?: number;
+  userLng?: number;
   minAmount?: number;
   maxAmount?: number;
 }): Promise<{ lenders: Lender[]; total: number }> {
@@ -257,9 +270,12 @@ export async function fetchLenders(params?: {
     const queryParams = new URLSearchParams();
     if (params?.city) queryParams.append('city', params.city);
     if (params?.state) queryParams.append('state', params.state);
+    if (params?.place) queryParams.append('place', params.place);
     if (params?.query) queryParams.append('query', params.query);
     if (params?.category) queryParams.append('category', params.category);
     if (params?.radiusKm) queryParams.append('radiusKm', String(params.radiusKm));
+    if (params?.userLat !== undefined) queryParams.append('userLat', String(params.userLat));
+    if (params?.userLng !== undefined) queryParams.append('userLng', String(params.userLng));
     if (params?.minAmount) queryParams.append('minAmount', String(params.minAmount));
     if (params?.maxAmount) queryParams.append('maxAmount', String(params.maxAmount));
 
@@ -290,10 +306,15 @@ export async function fetchLenders(params?: {
       maxLoanAmount: l.maxLoanAmount || 500000,
       minInterestRate: l.minInterestRate || 9.0,
       address: l.address || '',
+      place: l.place || '',
       city: l.city || '',
       state: l.state || '',
+      country: l.country || 'India',
       pincode: l.pincode || '',
-      distanceKm: l.distanceKm || 0,
+      latitude: l.latitude ? Number(l.latitude) : undefined,
+      longitude: l.longitude ? Number(l.longitude) : undefined,
+      lendingRadiusKm: l.lendingRadiusKm ? Number(l.lendingRadiusKm) : 50,
+      distanceKm: l.distanceKm !== undefined ? Number(l.distanceKm) : 0,
       rating: l.rating || 4.5,
       reviewCount: l.reviewCount || 0,
       contactPersonName: l.contactPersonName || 'Contact Person',
@@ -312,6 +333,66 @@ export async function fetchLenders(params?: {
   } catch (err: any) {
     console.error('fetchLenders error:', err.message);
     return { lenders: [], total: 0 };
+  }
+}
+
+export async function updateLenderProfileApi(payload: {
+  institutionName?: string;
+  institutionType?: string;
+  registrationNumber?: string;
+  loanCategories?: string[];
+  minLoanAmount?: number;
+  maxLoanAmount?: number;
+  minInterestRate?: number;
+  address?: string;
+  place?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  pincode?: string;
+  latitude?: number;
+  longitude?: number;
+  lendingRadiusKm?: number;
+  contactPersonName?: string;
+}): Promise<{ success: boolean; data?: any; message?: string }> {
+  try {
+    const data = await apiFetch('/lenders/profile', {
+      method: 'PUT',
+      headers: authHeaders(),
+      body: JSON.stringify(payload),
+    });
+    return { success: data.success, data: data.data, message: data.message };
+  } catch (err: any) {
+    return { success: false, message: err.message || 'Failed to update lender profile.' };
+  }
+}
+
+export async function updateVendorProfileApi(payload: {
+  businessName?: string;
+  ownerName?: string;
+  gstNumber?: string;
+  panNumber?: string;
+  registrationType?: string;
+  annualTurnover?: string;
+  category?: string;
+  address?: string;
+  place?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  pincode?: string;
+  latitude?: number;
+  longitude?: number;
+}): Promise<{ success: boolean; data?: any; message?: string }> {
+  try {
+    const data = await apiFetch('/vendors/profile', {
+      method: 'PUT',
+      headers: authHeaders(),
+      body: JSON.stringify(payload),
+    });
+    return { success: data.success, data: data.data, message: data.message };
+  } catch (err: any) {
+    return { success: false, message: err.message || 'Failed to update vendor profile.' };
   }
 }
 
@@ -561,6 +642,14 @@ async function adminFetch<T = any>(path: string, options: RequestInit = {}): Pro
       ...options.headers,
     },
   });
+
+  if (res.status === 401 || res.status === 403) {
+    localStorage.removeItem('sbni_admin_token');
+    localStorage.removeItem('sbni_admin_user');
+    window.dispatchEvent(new Event('sbni_admin_auth_expired'));
+    throw new Error('Admin session expired or unauthorized. Please log in again.');
+  }
+
   const data = await res.json();
   if (!res.ok) throw new Error(data?.message || `Admin API error: ${res.status}`);
   return data;
@@ -583,8 +672,10 @@ export async function adminFetchVendors(params?: { page?: number; limit?: number
     if (params?.limit) q.append('limit', String(params.limit));
     if (params?.status) q.append('status', params.status);
     const data = await adminFetch(`/admin/vendors?${q.toString()}`);
-    return { vendors: data.data?.vendors || data.data || [], total: data.data?.total || 0 };
-  } catch {
+    const vendorsList = Array.isArray(data.data) ? data.data : (data.data?.vendors || []);
+    return { vendors: vendorsList, total: data.count || data.data?.total || vendorsList.length };
+  } catch (err: any) {
+    console.error('adminFetchVendors error:', err.message);
     return { vendors: [], total: 0 };
   }
 }
@@ -623,6 +714,24 @@ export async function adminDeleteUser(userId: string): Promise<{ success: boolea
   }
 }
 
+export async function adminDeleteVendor(vendorId: string): Promise<{ success: boolean; message?: string }> {
+  try {
+    const data = await adminFetch(`/admin/vendors/${vendorId}`, { method: 'DELETE' });
+    return { success: data.success, message: data.message };
+  } catch (err: any) {
+    return { success: false, message: err.message };
+  }
+}
+
+export async function adminDeleteLender(lenderId: string): Promise<{ success: boolean; message?: string }> {
+  try {
+    const data = await adminFetch(`/admin/lenders/${lenderId}`, { method: 'DELETE' });
+    return { success: data.success, message: data.message };
+  } catch (err: any) {
+    return { success: false, message: err.message };
+  }
+}
+
 export async function adminFetchLenders(params?: { page?: number; limit?: number; status?: string }): Promise<{ lenders: any[]; total: number }> {
   try {
     const q = new URLSearchParams();
@@ -630,8 +739,10 @@ export async function adminFetchLenders(params?: { page?: number; limit?: number
     if (params?.limit) q.append('limit', String(params.limit));
     if (params?.status) q.append('status', params.status);
     const data = await adminFetch(`/admin/lenders?${q.toString()}`);
-    return { lenders: data.data?.lenders || data.data || [], total: data.data?.total || 0 };
-  } catch {
+    const lendersList = Array.isArray(data.data) ? data.data : (data.data?.lenders || []);
+    return { lenders: lendersList, total: data.count || data.data?.total || lendersList.length };
+  } catch (err: any) {
+    console.error('adminFetchLenders error:', err.message);
     return { lenders: [], total: 0 };
   }
 }

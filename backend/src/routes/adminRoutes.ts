@@ -49,10 +49,12 @@ router.get('/vendors', asyncHandler(getAllVendors));
 router.put('/vendors/:vendorId/kyc', asyncHandler(updateVendorKYCStatus));
 router.put('/vendors/:vendorId/fraud', asyncHandler(updateVendorFraudStatus));
 router.put('/vendors/:vendorId', asyncHandler(updateVendorDetails));
+router.delete('/vendors/:vendorId', asyncHandler(deleteUser));
 
 router.get('/lenders', asyncHandler(getAllLenders));
 router.put('/lenders/:lenderId/verification', asyncHandler(updateLenderVerificationStatus));
 router.put('/lenders/:lenderId', asyncHandler(updateLenderDetails));
+router.delete('/lenders/:lenderId', asyncHandler(deleteUser));
 
 // Banners & FAQs
 router.post('/banners', asyncHandler(createBanner));

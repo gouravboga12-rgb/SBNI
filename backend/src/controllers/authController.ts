@@ -43,6 +43,14 @@ export const sendSignupOtp = async (req: Request, res: Response) => {
   });
 
   if (existingUser && !existingUser.isDeleted) {
+    if (existingUser.role !== role) {
+      const existingRoleLabel = existingUser.role === 'VENDOR' ? 'Small Shop / Local Startup Business' : 'Business Money Financer (Lender)';
+      const attemptedRoleLabel = role === 'VENDOR' ? 'Small Shop / Local Startup Business' : 'Business Money Financer (Lender)';
+      return res.status(400).json({
+        success: false,
+        message: `This email is already registered as a ${existingRoleLabel}. It cannot be registered as a ${attemptedRoleLabel}. Accounts are kept strictly separate.`,
+      });
+    }
     return res.status(400).json({
       success: false,
       message: 'An account with this email address already exists. Please login instead.',
@@ -154,6 +162,14 @@ export const registerUser = async (req: Request, res: Response) => {
         await prisma.user.delete({ where: { id: existingUser.id } });
       } catch (e) {}
     } else {
+      if (existingUser.role !== role) {
+        const existingRoleLabel = existingUser.role === 'VENDOR' ? 'Small Shop / Local Startup Business' : 'Business Money Financer (Lender)';
+        const attemptedRoleLabel = role === 'VENDOR' ? 'Small Shop / Local Startup Business' : 'Business Money Financer (Lender)';
+        return res.status(400).json({
+          success: false,
+          message: `This account is already registered as a ${existingRoleLabel}. It cannot be registered as a ${attemptedRoleLabel}.`,
+        });
+      }
       return res.status(400).json({ success: false, message: 'User with this email or phone already exists.' });
     }
   }
@@ -231,7 +247,7 @@ export const registerUser = async (req: Request, res: Response) => {
  * 4. LOGIN USER
  */
 export const loginUser = async (req: Request, res: Response) => {
-  const { email, password } = req.body;
+  const { email, password, role } = req.body;
 
   if (!email || !password) {
     return res.status(400).json({ success: false, message: 'Please provide email/phone and password.' });
@@ -250,6 +266,26 @@ export const loginUser = async (req: Request, res: Response) => {
 
   if (!user || user.isDeleted) {
     return res.status(401).json({ success: false, message: 'Invalid credentials or user does not exist.' });
+  }
+
+  // Strict Role Validation: Prevent cross-role login
+  if (role && user.role !== (role as Role) && user.role !== Role.SUPER_ADMIN) {
+    if (role === 'VENDOR' && user.role === 'LENDER') {
+      return res.status(403).json({
+        success: false,
+        message: 'This account is registered as a Business Money Financer (Lender). Please select "Login as Financer" to log in.',
+      });
+    }
+    if (role === 'LENDER' && user.role === 'VENDOR') {
+      return res.status(403).json({
+        success: false,
+        message: 'This account is registered as a Small Shop / Local Startup Business. Please select "Login as Shop / Startup Owner" to log in.',
+      });
+    }
+    return res.status(403).json({
+      success: false,
+      message: `Access denied. This account cannot be logged into as ${role === 'VENDOR' ? 'a Small Shop Business' : 'a Business Money Financer'}.`,
+    });
   }
 
   const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
@@ -289,7 +325,7 @@ export const loginUser = async (req: Request, res: Response) => {
  * Generates OTP and sends it via JustPaisa SMTP Mailer to user's registered email
  */
 export const forgotPasswordRequest = async (req: Request, res: Response) => {
-  const { emailOrPhone } = req.body;
+  const { emailOrPhone, role } = req.body;
 
   if (!emailOrPhone) {
     return res.status(400).json({ success: false, message: 'Please provide your registered Email or Mobile number.' });
@@ -311,6 +347,22 @@ export const forgotPasswordRequest = async (req: Request, res: Response) => {
       success: false,
       message: 'No registered account found with that email or phone number.',
     });
+  }
+
+  // Strict Role Validation for Password Reset
+  if (role && user.role !== (role as Role) && user.role !== Role.SUPER_ADMIN) {
+    if (role === 'VENDOR' && user.role === 'LENDER') {
+      return res.status(403).json({
+        success: false,
+        message: 'This account is registered as a Business Money Financer (Lender). Please reset password from the Financer section.',
+      });
+    }
+    if (role === 'LENDER' && user.role === 'VENDOR') {
+      return res.status(403).json({
+        success: false,
+        message: 'This account is registered as a Small Shop / Local Startup Business. Please reset password from the Shop Owner section.',
+      });
+    }
   }
 
   // Generate 6-digit OTP

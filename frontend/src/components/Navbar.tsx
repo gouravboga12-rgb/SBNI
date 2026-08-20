@@ -25,6 +25,8 @@ interface NavbarProps {
   onOpenTerms: () => void;
   onNavigateHome: () => void;
   onNavigateLenders: () => void;
+  onNavigateProfile?: () => void;
+  onLogout?: (roleTarget?: 'VENDOR' | 'LENDER') => void;
   hasActiveSubscription: boolean;
   currentUser: any;
 }
@@ -39,6 +41,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenTerms,
   onNavigateHome,
   onNavigateLenders,
+  onNavigateProfile,
+  onLogout,
   hasActiveSubscription,
   currentUser,
 }) => {
@@ -126,17 +130,30 @@ export const Navbar: React.FC<NavbarProps> = ({
                 </span>
               </div>
 
-              {/* Account Login / Switch Account */}
-              <button
-                onClick={onOpenAuth}
-                className="text-xs font-bold p-1.5 sm:px-3.5 sm:py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 transition-colors flex items-center gap-1.5 shrink-0"
-                title="Account Settings & Switch"
-              >
-                <UserCheck className="w-4.5 h-4.5 sm:w-4 sm:h-4 text-slate-600" />
-                <span className="hidden sm:inline">
-                  {currentUser ? `${(currentUser.name || currentUser.email || 'User').split(' ')[0]} (Switch)` : 'Login'}
-                </span>
-              </button>
+              {/* Account Login / Profile Button */}
+              {currentUser ? (
+                <button
+                  onClick={onNavigateProfile}
+                  className="text-xs font-bold p-1.5 sm:px-3 sm:py-2 rounded-xl bg-blue-50/90 hover:bg-blue-100/90 text-[#003893] border border-blue-200/90 transition-all flex items-center gap-2 shrink-0 active:scale-95 cursor-pointer shadow-xs"
+                  title="View Profile & Account Settings"
+                >
+                  <div className="w-5 h-5 rounded-full bg-[#003893] text-white text-[10px] font-extrabold flex items-center justify-center shrink-0 shadow-xs">
+                    {(currentUser.name || currentUser.email || 'U')[0].toUpperCase()}
+                  </div>
+                  <span className="hidden sm:inline max-w-[150px] truncate font-bold text-slate-800">
+                    {currentUser.email || currentUser.name || 'Profile'}
+                  </span>
+                </button>
+              ) : (
+                <button
+                  onClick={onOpenAuth}
+                  className="text-xs font-bold p-1.5 sm:px-3.5 sm:py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 transition-colors flex items-center gap-1.5 shrink-0 cursor-pointer"
+                  title="Sign In / Register"
+                >
+                  <UserCheck className="w-4.5 h-4.5 sm:w-4 sm:h-4 text-slate-600" />
+                  <span className="hidden sm:inline">Login</span>
+                </button>
+              )}
             </div>
 
           </div>
@@ -170,19 +187,23 @@ export const Navbar: React.FC<NavbarProps> = ({
               {/* Active User Card / Guest Login Prompt */}
               <div className="p-4 bg-slate-50 border-b border-slate-100">
                 {currentUser ? (
-                  <div className="flex items-center gap-3">
+                  <div
+                    onClick={() => handleNavClick(onNavigateProfile)}
+                    className="flex items-center gap-3 p-2 rounded-2xl hover:bg-slate-100 cursor-pointer transition-colors"
+                    title="Click to view full profile"
+                  >
                     <div
-                      className="w-11 h-11 rounded-2xl flex items-center justify-center font-extrabold text-white text-base shadow-sm"
+                      className="w-11 h-11 rounded-2xl flex items-center justify-center font-extrabold text-white text-base shadow-sm shrink-0"
                       style={{ backgroundColor: isVendor ? '#003893' : '#059669' }}
                     >
                       {currentUser.name ? currentUser.name[0] : 'U'}
                     </div>
-                    <div>
-                      <div className="font-extrabold text-slate-900 text-sm">{currentUser.name}</div>
+                    <div className="min-w-0 flex-1">
+                      <div className="font-extrabold text-slate-900 text-sm truncate">{currentUser.name || currentUser.email}</div>
                       <div className="text-xs text-slate-500 font-medium flex items-center gap-1.5 mt-0.5">
-                        <span className="capitalize">{currentUser.role === 'VENDOR' ? 'Small Shop / Local Startup Business' : 'Business Money Financer'} Account</span>
+                        <span className="capitalize truncate">{currentUser.role === 'VENDOR' ? 'Small Shop / Startup' : 'Business Financer'}</span>
                         <span className="text-slate-300">•</span>
-                        <span className={hasActiveSubscription ? 'text-emerald-600 font-bold' : 'text-amber-600 font-bold'}>
+                        <span className={hasActiveSubscription ? 'text-emerald-600 font-bold shrink-0' : 'text-amber-600 font-bold shrink-0'}>
                           {hasActiveSubscription ? 'Subscribed' : 'Free Tier'}
                         </span>
                       </div>
@@ -216,7 +237,21 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <ChevronRight className="w-4 h-4 text-slate-400" />
                 </button>
 
-                {/* 2. Subscription Plans */}
+                {/* 2. My Profile & Settings */}
+                {currentUser && (
+                  <button
+                    onClick={() => handleNavClick(onNavigateProfile)}
+                    className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-blue-50 text-[#003893] text-xs font-bold transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <User className="w-4 h-4 text-[#003893]" />
+                      <span>My Profile & Settings</span>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-slate-400" />
+                  </button>
+                )}
+
+                {/* 3. Subscription Plans */}
                 <button
                   onClick={() => handleNavClick(onOpenSubscription)}
                   className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-amber-50 text-amber-900 text-xs font-bold transition-colors"
@@ -230,7 +265,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   </span>
                 </button>
 
-                {/* 3. Find Nearby Lenders / Verification Requests */}
+                {/* 4. Find Nearby Lenders / Verification Requests */}
                 <button
                   onClick={() => handleNavClick(onNavigateLenders)}
                   className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-slate-100 text-slate-800 text-xs font-bold transition-colors"
@@ -242,7 +277,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <ChevronRight className="w-4 h-4 text-slate-400" />
                 </button>
 
-                {/* 4. Terms & Privacy Policy */}
+                {/* 5. Terms & Privacy Policy */}
                 <button
                   onClick={() => handleNavClick(onOpenTerms)}
                   className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-slate-100 text-slate-800 text-xs font-bold transition-colors"
@@ -259,13 +294,33 @@ export const Navbar: React.FC<NavbarProps> = ({
 
             {/* Bottom Drawer Actions */}
             <div className="p-4 border-t border-slate-100 space-y-2">
-              <button
-                onClick={() => handleNavClick(onOpenAuth)}
-                className="w-full py-2.5 px-3 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-100 text-xs font-bold flex items-center justify-center gap-2 transition-colors"
-              >
-                <User className="w-4 h-4 text-slate-600" />
-                <span>Switch / Sign In Account</span>
-              </button>
+              {currentUser ? (
+                <>
+                  <button
+                    onClick={() => handleNavClick(() => onLogout && onLogout(currentRole))}
+                    className="w-full py-2.5 px-3 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                  >
+                    <LogOut className="w-4 h-4 text-rose-600" />
+                    <span>Log Out Account</span>
+                  </button>
+
+                  <button
+                    onClick={() => handleNavClick(onOpenAuth)}
+                    className="w-full py-2 px-3 rounded-xl text-slate-500 hover:text-slate-800 text-[11px] font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                  >
+                    <User className="w-3.5 h-3.5" />
+                    <span>Switch / Login Another Account</span>
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={() => handleNavClick(onOpenAuth)}
+                  className="w-full py-2.5 px-3 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-100 text-xs font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                >
+                  <User className="w-4 h-4 text-slate-600" />
+                  <span>Sign In / Register</span>
+                </button>
+              )}
 
               <div className="text-[10px] text-slate-400 text-center">
                 Just Paisa App v1.0 • Enterprise FinTech Platform

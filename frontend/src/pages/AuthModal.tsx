@@ -180,8 +180,19 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setFormError(null);
     setIsSubmitting(true);
     try {
-      const result = await loginUser(emailOrPhone, loginPassword);
+      const result = await loginUser(emailOrPhone, loginPassword, role);
       if (result.success && result.user) {
+        if (result.user.role !== role && result.user.role !== 'ADMIN') {
+          setFormError(
+            `This account is registered as a ${
+              result.user.role === 'VENDOR'
+                ? 'Small Shop / Local Startup Business'
+                : 'Business Money Financer'
+            }. Please log in using the correct portal.`
+          );
+          setIsSubmitting(false);
+          return;
+        }
         onAuthSuccess(result.user);
         onClose();
       } else {
@@ -395,7 +406,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
     setIsSubmitting(true);
     try {
-      const res = await forgotPasswordRequestOtpApi(forgotEmailOrPhone.trim());
+      const res = await forgotPasswordRequestOtpApi(forgotEmailOrPhone.trim(), role);
       if (res.success && res.email) {
         setForgotTargetEmail(res.email);
         setForgotStep('RESET');

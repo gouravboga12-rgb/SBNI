@@ -24,6 +24,7 @@ export function App() {
   );
   const [currentRole, setCurrentRole] = useState<'VENDOR' | 'LENDER'>('VENDOR');
   const [vendorActiveTab, setVendorActiveTab] = useState<'home' | 'lenders' | 'requests' | 'profile'>('home');
+  const [lenderActiveTab, setLenderActiveTab] = useState<'home' | 'businesses' | 'reports' | 'profile'>('home');
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [subModalOpen, setSubModalOpen] = useState(false);
   const [kycModalOpen, setKycModalOpen] = useState(false);
@@ -102,7 +103,9 @@ export function App() {
   }, [currentRole]);
 
   const handleRoleSwitch = (role: 'VENDOR' | 'LENDER') => {
-    setCurrentRole(role);
+    if (!currentUser) {
+      setCurrentRole(role);
+    }
   };
 
   const handleOpenSubscription = () => {
@@ -156,11 +159,22 @@ export function App() {
 
   const handleNavigateHome = () => {
     setVendorActiveTab('home');
+    setLenderActiveTab('home');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleNavigateLenders = () => {
     setVendorActiveTab('lenders');
+    setLenderActiveTab('businesses');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleNavigateProfile = () => {
+    if (currentRole === 'VENDOR') {
+      setVendorActiveTab('profile');
+    } else {
+      setLenderActiveTab('profile');
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -178,6 +192,7 @@ export function App() {
     setAuthRole(targetRole);
     setAuthSubscribeIntent(false);
     setVendorActiveTab('home');
+    setLenderActiveTab('home');
     setAuthModalOpen(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -223,6 +238,8 @@ export function App() {
         onOpenTerms={() => setTermsModalOpen(true)}
         onNavigateHome={handleNavigateHome}
         onNavigateLenders={handleNavigateLenders}
+        onNavigateProfile={handleNavigateProfile}
+        onLogout={handleLogout}
         hasActiveSubscription={hasActiveSubscription}
         currentUser={currentUser}
       />
@@ -240,6 +257,8 @@ export function App() {
         ) : (
           <LenderDashboard
             onOpenSubscription={handleOpenSubscription}
+            activeTab={lenderActiveTab}
+            onTabChange={setLenderActiveTab}
             onLogout={handleLogout}
           />
         )}

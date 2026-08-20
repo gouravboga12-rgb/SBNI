@@ -13,7 +13,7 @@ export interface User {
 export interface Lender {
   id: string;
   institutionName: string;
-  institutionType: 'Bank' | 'NBFC' | 'Financial Institution';
+  institutionType: 'Bank' | 'NBFC' | 'Financial Institution' | string;
   logoUrl?: string;
   registrationNumber: string;
   loanCategories: string[];
@@ -21,9 +21,14 @@ export interface Lender {
   maxLoanAmount: number;
   minInterestRate: number;
   address: string;
+  place?: string;
   city: string;
   state: string;
+  country?: string;
   pincode: string;
+  latitude?: number;
+  longitude?: number;
+  lendingRadiusKm?: number;
   distanceKm: number;
   rating: number;
   reviewCount: number;
@@ -39,8 +44,14 @@ export interface VendorVerificationRequest {
   vendorName: string;
   shopName: string;
   shopAddress: string;
+  place?: string;
   city: string;
   state: string;
+  country?: string;
+  latitude?: number;
+  longitude?: number;
+  lenderLatitude?: number;
+  lenderLongitude?: number;
   requestedDate: string;
   requestedTime: string;
   status: 'Pending' | 'Verified' | 'Rejected';

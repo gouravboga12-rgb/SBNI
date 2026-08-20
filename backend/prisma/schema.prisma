@@ -5,9 +5,8 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 enum Role {
@@ -101,8 +100,10 @@ model VendorProfile {
   annualTurnover     String    @default("10-50 Lakhs")
   category           String    @default("Retail")
   address            String
+  place              String?   @default("Commercial Center")
   city               String
   state              String
+  country            String    @default("India")
   pincode            String
   latitude           Float     @default(19.0760)
   longitude          Float     @default(72.8777)
@@ -115,6 +116,7 @@ model VendorProfile {
   @@index([city, state])
   @@index([kycStatus])
   @@index([category])
+  @@index([latitude, longitude])
 }
 
 model LenderProfile {
@@ -129,11 +131,14 @@ model LenderProfile {
   maxLoanAmount      Float      @default(50000000)
   minInterestRate    Float      @default(8.5)
   address            String
+  place              String?    @default("Financial District")
   city               String
   state              String
+  country            String     @default("India")
   pincode            String
   latitude           Float      @default(19.0760)
   longitude          Float      @default(72.8777)
+  lendingRadiusKm    Float      @default(50.0) // 10, 25, 50, 70, 100 km radius
   contactPersonName  String
   verificationStatus KYCStatus  @default(VERIFIED)
   rejectionReason    String?
@@ -145,6 +150,7 @@ model LenderProfile {
   @@index([city, state])
   @@index([institutionType])
   @@index([verificationStatus])
+  @@index([latitude, longitude])
 }
 
 model KYCDocument {

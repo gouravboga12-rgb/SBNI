@@ -1,8 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Lender } from '../types';
 import { LenderCard } from '../components/LenderCard';
 import { LoanRequestModal } from '../components/LoanRequestModal';
 import { BannerCarousel, BannerSlide } from '../components/BannerCarousel';
+import { LocationPickerModal } from '../components/LocationPickerModal';
+import {
+  getGoogleMapsNavigationUrl,
+  getBrowserLocation,
+  reverseGeocodeMapbox,
+} from '../services/mapboxService';
+import { fetchLenders, updateVendorProfileApi } from '../services/api';
 import {
   Store,
   Building2,
@@ -27,6 +34,11 @@ import {
   Mail,
   ShieldAlert,
   LogOut,
+  Navigation,
+  Compass,
+  Radio,
+  Loader2,
+  RefreshCw,
 } from 'lucide-react';
 
 const VENDOR_BANNER_SLIDES: BannerSlide[] = [
@@ -72,6 +84,169 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
   const [selectedLenderForLoan, setSelectedLenderForLoan] = useState<Lender | null>(null);
   const [loanModalOpen, setLoanModalOpen] = useState(false);
 
+  // Search & Profile Location State (Mapbox Powered)
+  const [searchLocation, setSearchLocation] = useState<{
+    place: string;
+    city: string;
+    state: string;
+    country: string;
+    latitude: number;
+    longitude: number;
+  }>(() => {
+    try {
+      const vp = localStorage.getItem('sbni_vendor_profile');
+      if (vp) {
+        const parsed = JSON.parse(vp);
+        return {
+          place: parsed.place || 'Chaitanyapuri',
+          city: parsed.city || 'Hyderabad',
+          state: parsed.state || 'Telangana',
+          country: parsed.country || 'India',
+          latitude: parsed.latitude ? Number(parsed.latitude) : 17.3688,
+          longitude: parsed.longitude ? Number(parsed.longitude) : 78.5247,
+        };
+      }
+    } catch (e) {}
+    return {
+      place: 'Chaitanyapuri',
+      city: 'Hyderabad',
+      state: 'Telangana',
+      country: 'India',
+      latitude: 17.3688,
+      longitude: 78.5247,
+    };
+  });
+
+  const [liveLenders, setLiveLenders] = useState<Lender[]>(lenders);
+  const [isLoadingLenders, setIsLoadingLenders] = useState(false);
+  const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
+  const [locationModalMode, setLocationModalMode] = useState<'VENDOR_SEARCH' | 'GENERAL_LOCATION'>('VENDOR_SEARCH');
+  const [isLocatingGPS, setIsLocatingGPS] = useState(false);
+  const [locationToast, setLocationToast] = useState<string | null>(null);
+
+  // Applications List
+  const [vendorApplications, setVendorApplications] = useState<any[]>(() => {
+    try {
+      const dynamicStr = localStorage.getItem('sbni_vendor_requests');
+      if (dynamicStr) {
+        const parsed = JSON.parse(dynamicStr);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {}
+    return [
+      {
+        id: 'REQ-9842',
+        title: 'Working Capital Application',
+        status: 'Under Review',
+        amount: '₹ 5,00,000',
+        lenderName: 'Nishanth Money Finance',
+        date: '02 May 2024',
+        lenderLatitude: 17.3688,
+        lenderLongitude: 78.5247,
+      },
+      {
+        id: 'REQ-4410',
+        title: 'Small Business Express Financer',
+        status: 'Verified',
+        amount: '₹ 2,50,000',
+        lenderName: 'Sharma Financer & NBFC',
+        date: '30 Apr 2024',
+        lenderLatitude: 17.3688,
+        lenderLongitude: 78.5247,
+      },
+    ];
+  });
+
+  // Load Lenders based on current Search Coordinates (strictly radius matched by backend)
+  const loadNearbyLenders = async (lat = searchLocation.latitude, lng = searchLocation.longitude, place = searchLocation.place, city = searchLocation.city) => {
+    setIsLoadingLenders(true);
+    try {
+      const res = await fetchLenders({
+        userLat: lat,
+        userLng: lng,
+        place,
+        city,
+      });
+      if (res.lenders) {
+        setLiveLenders(res.lenders);
+      }
+    } catch (e) {
+      console.error('loadNearbyLenders error:', e);
+    } finally {
+      setIsLoadingLenders(false);
+    }
+  };
+
+  useEffect(() => {
+    loadNearbyLenders();
+  }, [searchLocation.latitude, searchLocation.longitude]);
+
+  // Use My Location (Mapbox GPS) quick trigger
+  const handleVendorQuickGPS = async () => {
+    setIsLocatingGPS(true);
+    try {
+      const coords = await getBrowserLocation();
+      const reverse = await reverseGeocodeMapbox(coords.latitude, coords.longitude);
+      const newLoc = {
+        place: reverse?.place || 'Current Area',
+        city: reverse?.city || 'Hyderabad',
+        state: reverse?.state || 'Telangana',
+        country: reverse?.country || 'India',
+        latitude: coords.latitude,
+        longitude: coords.longitude,
+      };
+      setSearchLocation(newLoc);
+      setLocationToast(`📍 Located at: ${newLoc.place}, ${newLoc.city}`);
+      setTimeout(() => setLocationToast(null), 4000);
+      loadNearbyLenders(coords.latitude, coords.longitude, newLoc.place, newLoc.city);
+    } catch (err: any) {
+      setLocationToast(`⚠️ ${err.message || 'GPS location could not be fetched.'}`);
+      setTimeout(() => setLocationToast(null), 4500);
+    } finally {
+      setIsLocatingGPS(false);
+    }
+  };
+
+  // Save selected search/shop location from Modal
+  const handleSaveLocation = async (loc: {
+    place: string;
+    city: string;
+    state: string;
+    country: string;
+    latitude: number;
+    longitude: number;
+  }) => {
+    const updated = {
+      place: loc.place,
+      city: loc.city,
+      state: loc.state,
+      country: loc.country,
+      latitude: loc.latitude,
+      longitude: loc.longitude,
+    };
+
+    setSearchLocation(updated);
+
+    // Save to local storage profile
+    try {
+      const pStr = localStorage.getItem('sbni_vendor_profile') || '{}';
+      const parsed = JSON.parse(pStr);
+      const merged = { ...parsed, ...updated };
+      localStorage.setItem('sbni_vendor_profile', JSON.stringify(merged));
+    } catch (e) {}
+
+    // Save to AWS Backend
+    try {
+      await updateVendorProfileApi(updated);
+      setLocationToast(`✅ Search location updated to ${loc.place}, ${loc.city}`);
+      setTimeout(() => setLocationToast(null), 4000);
+    } catch (e) {
+      console.error('Failed to sync vendor location to backend:', e);
+    }
+
+    loadNearbyLenders(loc.latitude, loc.longitude, loc.place, loc.city);
+  };
+
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   // Profile Avatar & Password Visibility State
@@ -104,6 +279,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
 
       let addressParts = [];
       if (profile?.address) addressParts.push(profile.address);
+      if (profile?.place) addressParts.push(profile.place);
       if (profile?.city) addressParts.push(profile.city);
       if (profile?.state) addressParts.push(profile.state);
       if (profile?.pincode) addressParts.push(profile.pincode);
@@ -186,9 +362,12 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const filteredLenders = lenders.filter((l) =>
+  const currentLendersList = liveLenders.length > 0 ? liveLenders : lenders;
+  const filteredLenders = currentLendersList.filter((l) =>
     l.institutionName.toLowerCase().includes(searchQuery.toLowerCase()) ||
     l.institutionType.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (l.place && l.place.toLowerCase().includes(searchQuery.toLowerCase())) ||
+    l.city.toLowerCase().includes(searchQuery.toLowerCase()) ||
     l.loanCategories.some((c) => c.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
@@ -423,45 +602,140 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
         {activeTab === 'lenders' && (
           <div className="space-y-6">
             
-            {/* Header & Filter Controls */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div>
-                <h2 className="text-2xl font-extrabold text-slate-900 font-heading">Business Money Financers (Lenders) Near You</h2>
-                <div className="text-xs text-slate-500 font-medium mt-0.5">
-                  Showing verified business money financers (lenders) within <span className="text-emerald-600 font-bold">10 KM Radius</span>
+            {/* Mapbox Powered Location Search Bar & Switcher */}
+            <div className="bg-gradient-to-r from-slate-900 to-blue-950 p-5 sm:p-6 rounded-3xl text-white shadow-xl border border-blue-900/60 space-y-4">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 text-[11px] font-black px-3 py-0.5 rounded-full flex items-center gap-1.5 shadow-sm">
+                      <Compass className="w-3.5 h-3.5 text-emerald-400" />
+                      Mapbox Geographic Discovery
+                    </span>
+                    <span className="text-xs text-blue-200 font-medium">
+                      Matched by Lender Service Radius
+                    </span>
+                  </div>
+                  <h2 className="text-xl sm:text-2xl font-extrabold font-heading text-white pt-1">
+                    Business Money Financers (Lenders) Near You
+                  </h2>
+                  <div className="text-xs text-slate-300 flex items-center gap-1.5 pt-0.5">
+                    <MapPin className="w-4 h-4 text-rose-400 shrink-0" />
+                    <span>Searching area:</span>
+                    <strong className="text-white font-bold underline decoration-blue-400 underline-offset-2">
+                      {searchLocation.place}, {searchLocation.city}, {searchLocation.state}
+                    </strong>
+                  </div>
+                </div>
+
+                {/* Location Action Buttons */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={handleVendorQuickGPS}
+                    disabled={isLocatingGPS}
+                    className="px-4 py-2.5 rounded-2xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-400/40 font-extrabold text-xs flex items-center gap-2 transition-all active:scale-95 cursor-pointer disabled:opacity-60"
+                  >
+                    {isLocatingGPS ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin text-emerald-400" />
+                        <span>Locating...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Navigation className="w-4 h-4 text-emerald-400" />
+                        <span>Use My Location</span>
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLocationModalMode('VENDOR_SEARCH');
+                      setIsLocationModalOpen(true);
+                    }}
+                    className="px-4 py-2.5 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs flex items-center gap-2 transition-all shadow-md active:scale-95 cursor-pointer border border-blue-400/40"
+                  >
+                    <Compass className="w-4 h-4" />
+                    <span>Change Search Location</span>
+                  </button>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
-                <div className="relative flex-1 sm:w-80">
-                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              {/* Toast Feedback */}
+              {locationToast && (
+                <div className="p-3 rounded-2xl bg-blue-500/20 border border-blue-400/30 text-blue-100 text-xs font-bold flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-blue-300 shrink-0" />
+                  <span>{locationToast}</span>
+                </div>
+              )}
+
+              {/* Search by Financer Name/Category */}
+              <div className="pt-2">
+                <div className="relative">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                   <input
                     type="text"
-                    placeholder="Search business money financers by name..."
+                    placeholder="Search by financer institution name, loan category, or place..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="input-sbni pl-10 text-xs py-2.5"
+                    className="w-full bg-white/10 text-white placeholder-slate-400 border border-white/20 rounded-2xl pl-11 pr-4 py-3 text-xs font-semibold focus:outline-none focus:bg-white/20 focus:border-white transition-all backdrop-blur-md"
                   />
+                  {isLoadingLenders && (
+                    <Loader2 className="w-4 h-4 text-blue-300 animate-spin absolute right-4 top-1/2 -translate-y-1/2" />
+                  )}
                 </div>
-
-                <button className="p-2.5 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 flex items-center gap-1.5 text-xs font-bold">
-                  <SlidersHorizontal className="w-4 h-4" />
-                  <span className="hidden sm:inline">Filter</span>
-                </button>
               </div>
             </div>
 
-            {/* Lender Cards Grid (1 col Mobile, 2 col Tablet, 3 col Desktop) */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-              {filteredLenders.map((lender) => (
-                <LenderCard
-                  key={lender.id}
-                  lender={lender}
-                  onOpenSubscription={onOpenSubscription}
-                  onRequestLoan={handleRequestLoan}
-                />
-              ))}
+            {/* Results Count Bar */}
+            <div className="flex items-center justify-between px-1">
+              <div className="text-xs text-slate-600 font-bold">
+                Found <strong className="text-[#003893] font-black">{filteredLenders.length}</strong> eligible financers within service coverage of{' '}
+                <strong className="text-slate-900">{searchLocation.place || searchLocation.city}</strong>
+              </div>
+              <button
+                onClick={() => loadNearbyLenders()}
+                className="text-xs text-blue-700 font-bold hover:underline flex items-center gap-1 cursor-pointer"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isLoadingLenders ? 'animate-spin' : ''}`} />
+                <span>Refresh</span>
+              </button>
             </div>
+
+            {/* Lender Cards Grid */}
+            {filteredLenders.length === 0 ? (
+              <div className="p-12 text-center bg-white rounded-3xl border border-slate-200 space-y-3">
+                <Compass className="w-12 h-12 text-slate-300 mx-auto" />
+                <div className="font-extrabold text-slate-800 text-base">No Eligible Financers in This Area Radius</div>
+                <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
+                  No registered financers currently cover <strong className="text-slate-700">{searchLocation.place}, {searchLocation.city}</strong> within their configured service radius.
+                </p>
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLocationModalMode('VENDOR_SEARCH');
+                      setIsLocationModalOpen(true);
+                    }}
+                    className="px-5 py-2.5 rounded-xl bg-[#003893] text-white font-extrabold text-xs hover:bg-[#002669] transition-all shadow-md cursor-pointer"
+                  >
+                    Try Searching a Different City (e.g. Hyderabad / Mumbai)
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+                {filteredLenders.map((lender) => (
+                  <LenderCard
+                    key={lender.id}
+                    lender={lender}
+                    onOpenSubscription={onOpenSubscription}
+                    onRequestLoan={handleRequestLoan}
+                  />
+                ))}
+              </div>
+            )}
 
             {/* Data Protection Footer Banner */}
             <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-center text-xs text-emerald-800 flex items-center justify-center gap-2 font-medium">
@@ -472,42 +746,71 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
           </div>
         )}
 
-        {/* TAB 3: APPLICATIONS VIEW */}
+        {/* TAB 3: APPLICATIONS & NAVIGATION VIEW */}
         {activeTab === 'requests' && (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-2xl font-extrabold text-slate-900 font-heading">My Applications & Requests</h2>
-                <p className="text-xs text-slate-500 font-medium">Track your active applications and business financer connections</p>
+                <h2 className="text-2xl font-extrabold text-slate-900 font-heading">My Applications & Financer Connections</h2>
+                <p className="text-xs text-slate-500 font-medium">
+                  Track your loan submissions and navigate to financer offices once approved
+                </p>
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="card-white p-5 space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="badge-pending-amber">Under Review</span>
-                  <span className="text-xs text-slate-400">Application #REQ-9842</span>
-                </div>
-                <h3 className="font-extrabold text-slate-900 text-base">Working Capital Application</h3>
-                <div className="text-xs text-slate-600 space-y-1">
-                  <div>Requested Amount: <span className="font-bold text-slate-900">₹5,00,000</span></div>
-                  <div>Submitted to: <span className="font-bold text-blue-900">Nishanth Money Finance & Rajesh Money Finance</span></div>
-                  <div>Date: <span className="font-medium">02 May 2024</span></div>
-                </div>
-              </div>
+              {vendorApplications.map((app, idx) => {
+                const isAccepted =
+                  app.status === 'Verified' ||
+                  app.status === 'Approved' ||
+                  app.status === 'Accepted' ||
+                  app.status === 'Completed';
 
-              <div className="card-white p-5 space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="badge-verified-green">KYC Verified</span>
-                  <span className="text-xs text-slate-400">Doc #KYC-4410</span>
-                </div>
-                <h3 className="font-extrabold text-slate-900 text-base">Shop Business KYC Verification</h3>
-                <div className="text-xs text-slate-600 space-y-1">
-                  <div>Status: <span className="font-bold text-emerald-700">Verified & Active</span></div>
-                  <div>GST / License: <span className="font-bold text-slate-900">27AAPFU0939L1ZV</span></div>
-                  <div>Verified on: <span className="font-medium">30 Apr 2024</span></div>
-                </div>
-              </div>
+                return (
+                  <div key={app.id || idx} className="card-white p-5 space-y-4 shadow-sm border border-slate-200/90 rounded-2xl">
+                    <div className="flex items-center justify-between">
+                      <span className={isAccepted ? 'badge-verified-green' : 'badge-pending-amber'}>
+                        {isAccepted ? '✓ Request Accepted' : app.status || 'Under Review'}
+                      </span>
+                      <span className="text-xs text-slate-400 font-mono">App #{app.id}</span>
+                    </div>
+
+                    <div>
+                      <h3 className="font-extrabold text-slate-900 text-base">{app.title || app.lenderName || 'Capital Application'}</h3>
+                      <p className="text-xs text-blue-900 font-bold mt-0.5">Financer: {app.lenderName}</p>
+                    </div>
+
+                    <div className="text-xs text-slate-600 space-y-1 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                      <div>Requested Amount: <span className="font-bold text-slate-900">{app.amount || '₹ 5,00,000'}</span></div>
+                      <div>Application Date: <span className="font-medium">{app.date || app.requestedDate || 'Recent'}</span></div>
+                    </div>
+
+                    {/* Navigation Action: Enabled ONLY after acceptance as per requirement */}
+                    <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
+                      {isAccepted ? (
+                        <a
+                          href={getGoogleMapsNavigationUrl(
+                            app.lenderLatitude || 17.3688,
+                            app.lenderLongitude || 78.5247,
+                            `Financer: ${app.lenderName}`
+                          )}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="w-full py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-sm transition-all active:scale-95 cursor-pointer"
+                        >
+                          <Navigation className="w-4 h-4 text-white" />
+                          <span>🧭 Navigate to Financer Office (Google Maps)</span>
+                        </a>
+                      ) : (
+                        <div className="w-full py-2.5 px-4 rounded-xl bg-slate-100 text-slate-400 font-bold text-xs flex items-center justify-center gap-2 border border-slate-200 cursor-not-allowed">
+                          <Lock className="w-3.5 h-3.5 text-slate-400" />
+                          <span>Navigation unlocks once Financer accepts application</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
@@ -645,6 +948,63 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                 </div>
               </div>
 
+              {/* Mapbox Registered Shop Location & Coordinates Section */}
+              <div className="space-y-4 pt-2">
+                <div className="flex items-center justify-between flex-wrap gap-2 pb-1 border-b border-slate-100">
+                  <div className="flex items-center gap-2 text-slate-900 font-extrabold text-base font-heading">
+                    <Compass className="w-4 h-4 text-[#003893]" />
+                    <span>Registered Shop Business Location (Mapbox Verified)</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLocationModalMode('GENERAL_LOCATION');
+                      setIsLocationModalOpen(true);
+                    }}
+                    className="px-3.5 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-[#003893] border border-blue-200 font-extrabold text-xs flex items-center gap-1.5 transition-all shadow-xs active:scale-95 cursor-pointer"
+                  >
+                    <Compass className="w-3.5 h-3.5" />
+                    <span>Update Shop Coordinates</span>
+                  </button>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-gradient-to-r from-blue-50/70 to-indigo-50/70 border border-blue-200/80 space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <MapPin className="w-5 h-5 text-rose-500 shrink-0" />
+                      <div>
+                        <div className="font-extrabold text-slate-900 text-sm">
+                          {searchLocation.place}, {searchLocation.city}
+                        </div>
+                        <div className="text-xs text-slate-500 font-medium">
+                          {searchLocation.state}, {searchLocation.country}
+                        </div>
+                      </div>
+                    </div>
+
+                    <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+                      ✓ Active for Financer Radius Matching
+                    </span>
+                  </div>
+
+                  <div className="pt-2 border-t border-blue-200/60 flex items-center justify-between text-[11px] text-slate-600 font-mono flex-wrap gap-2">
+                    <span>
+                      Latitude: <strong className="text-slate-900">{Number(searchLocation.latitude).toFixed(4)}</strong>, Longitude:{' '}
+                      <strong className="text-slate-900">{Number(searchLocation.longitude).toFixed(4)}</strong>
+                    </span>
+                    <a
+                      href={getGoogleMapsNavigationUrl(searchLocation.latitude, searchLocation.longitude, currentVendorObj.shopName)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-700 font-bold hover:underline flex items-center gap-1 font-sans"
+                    >
+                      <Navigation className="w-3 h-3 text-blue-600" />
+                      <span>View on Google Maps</span>
+                    </a>
+                  </div>
+                </div>
+              </div>
+
               {/* SECTION 2: Registration Verification Documents */}
               <div className="space-y-4 pt-2">
                 <div className="flex items-center gap-2 text-slate-900 font-extrabold text-base font-heading pb-1 border-b border-slate-100">
@@ -736,6 +1096,17 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
         )}
 
       </div>
+
+      {/* Reusable Location Picker Modal */}
+      <LocationPickerModal
+        isOpen={isLocationModalOpen}
+        onClose={() => setIsLocationModalOpen(false)}
+        onSave={handleSaveLocation}
+        initialLocation={searchLocation}
+        mode={locationModalMode}
+        title={locationModalMode === 'VENDOR_SEARCH' ? 'Change Search Location' : 'Update Registered Shop Location'}
+        subtitle={locationModalMode === 'VENDOR_SEARCH' ? 'Select place/city to discover eligible nearby financers' : 'Set exact coordinates for your shop premises'}
+      />
 
       {/* Bottom Sticky Navigation Bar - Mobile & Desktop Responsive Floating Dock */}
       <div className="fixed bottom-0 sm:bottom-5 inset-x-0 z-50 bg-white/95 backdrop-blur-md border-t sm:border border-slate-200/90 py-1.5 sm:py-3.5 px-2 sm:px-10 flex items-center justify-between sm:justify-around w-full max-w-md sm:max-w-3xl lg:max-w-4xl mx-auto shadow-2xl rounded-t-2xl sm:rounded-3xl transition-all">
