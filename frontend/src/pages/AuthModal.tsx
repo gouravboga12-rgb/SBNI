@@ -1723,9 +1723,12 @@ const LenderRegisterForm: React.FC<LenderRegisterFormProps> = ({
   const [lState, setLState] = useState('');
   const [lPincode, setLPincode] = useState('');
   const [lPassword, setLPassword] = useState('');
-  const [lConfirmPassword, setLConfirmPassword] = useState('');
   const [lMinLoan, setLMinLoan] = useState('10000');
+  const [isCustomMin, setIsCustomMin] = useState(false);
+  const [customMinInput, setCustomMinInput] = useState('');
   const [lMaxLoan, setLMaxLoan] = useState('100000');
+  const [isCustomMax, setIsCustomMax] = useState(false);
+  const [customMaxInput, setCustomMaxInput] = useState('');
   const [lRadius, setLRadius] = useState('50');
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1895,40 +1898,121 @@ const LenderRegisterForm: React.FC<LenderRegisterFormProps> = ({
       <div>
         <label className="block text-xs font-bold text-slate-700 mb-1">Lending Amount Range *</label>
         <div className="grid grid-cols-2 gap-2">
+          {/* Min Loan Selector / Custom Input */}
           <div>
-            <select
-              value={lMinLoan}
-              onChange={(e) => setLMinLoan(e.target.value)}
-              className="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-medium text-slate-900 outline-none focus:border-[#007a33]"
-              required
-            >
-              <option value="5000">Min: ₹5,000</option>
-              <option value="10000">Min: ₹10,000</option>
-              <option value="25000">Min: ₹25,000</option>
-              <option value="50000">Min: ₹50,000</option>
-              <option value="100000">Min: ₹1 Lakh</option>
-              <option value="200000">Min: ₹2 Lakhs</option>
-              <option value="500000">Min: ₹5 Lakhs</option>
-            </select>
-            <p className="text-[10px] text-slate-400 mt-0.5 pl-1">Minimum amount</p>
+            {!isCustomMin ? (
+              <select
+                value={lMinLoan}
+                onChange={(e) => {
+                  if (e.target.value === 'CUSTOM') {
+                    setIsCustomMin(true);
+                    setCustomMinInput(lMinLoan);
+                  } else {
+                    setLMinLoan(e.target.value);
+                  }
+                }}
+                className="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-medium text-slate-900 outline-none focus:border-[#007a33]"
+                required
+              >
+                <option value="5000">Min: ₹5,000</option>
+                <option value="10000">Min: ₹10,000</option>
+                <option value="25000">Min: ₹25,000</option>
+                <option value="50000">Min: ₹50,000</option>
+                <option value="100000">Min: ₹1 Lakh</option>
+                <option value="200000">Min: ₹2 Lakhs</option>
+                <option value="500000">Min: ₹5 Lakhs</option>
+                <option value="CUSTOM">✏️ Custom Min Amount...</option>
+              </select>
+            ) : (
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-500">₹</span>
+                <input
+                  type="number"
+                  placeholder="Min Amount"
+                  value={customMinInput}
+                  onChange={(e) => {
+                    setCustomMinInput(e.target.value);
+                    setLMinLoan(e.target.value);
+                  }}
+                  className="w-full pl-6 pr-14 py-2.5 bg-white border-2 border-[#007a33] rounded-xl text-xs font-bold text-slate-900 outline-none"
+                  required
+                  autoFocus
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsCustomMin(false);
+                    setLMinLoan('10000');
+                  }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-extrabold text-[#007a33] hover:underline"
+                  title="Switch to Presets"
+                >
+                  Presets
+                </button>
+              </div>
+            )}
+            <p className="text-[10px] text-slate-400 mt-0.5 pl-1">
+              {isCustomMin ? 'Custom minimum amount' : 'Minimum amount'}
+            </p>
           </div>
+
+          {/* Max Loan Selector / Custom Input */}
           <div>
-            <select
-              value={lMaxLoan}
-              onChange={(e) => setLMaxLoan(e.target.value)}
-              className="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-medium text-slate-900 outline-none focus:border-[#007a33]"
-              required
-            >
-              <option value="50000">Max: ₹50,000</option>
-              <option value="100000">Max: ₹1 Lakh</option>
-              <option value="200000">Max: ₹2 Lakhs</option>
-              <option value="500000">Max: ₹5 Lakhs</option>
-              <option value="1000000">Max: ₹10 Lakhs</option>
-              <option value="2000000">Max: ₹20 Lakhs</option>
-              <option value="5000000">Max: ₹50 Lakhs</option>
-              <option value="10000000">Max: ₹1 Crore</option>
-            </select>
-            <p className="text-[10px] text-slate-400 mt-0.5 pl-1">Maximum amount</p>
+            {!isCustomMax ? (
+              <select
+                value={lMaxLoan}
+                onChange={(e) => {
+                  if (e.target.value === 'CUSTOM') {
+                    setIsCustomMax(true);
+                    setCustomMaxInput(lMaxLoan);
+                  } else {
+                    setLMaxLoan(e.target.value);
+                  }
+                }}
+                className="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-medium text-slate-900 outline-none focus:border-[#007a33]"
+                required
+              >
+                <option value="50000">Max: ₹50,000</option>
+                <option value="100000">Max: ₹1 Lakh</option>
+                <option value="200000">Max: ₹2 Lakhs</option>
+                <option value="500000">Max: ₹5 Lakhs</option>
+                <option value="1000000">Max: ₹10 Lakhs</option>
+                <option value="2000000">Max: ₹20 Lakhs</option>
+                <option value="5000000">Max: ₹50 Lakhs</option>
+                <option value="10000000">Max: ₹1 Crore</option>
+                <option value="CUSTOM">✏️ Custom Max Amount...</option>
+              </select>
+            ) : (
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-500">₹</span>
+                <input
+                  type="number"
+                  placeholder="Max Amount"
+                  value={customMaxInput}
+                  onChange={(e) => {
+                    setCustomMaxInput(e.target.value);
+                    setLMaxLoan(e.target.value);
+                  }}
+                  className="w-full pl-6 pr-14 py-2.5 bg-white border-2 border-[#007a33] rounded-xl text-xs font-bold text-slate-900 outline-none"
+                  required
+                  autoFocus
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsCustomMax(false);
+                    setLMaxLoan('100000');
+                  }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-extrabold text-[#007a33] hover:underline"
+                  title="Switch to Presets"
+                >
+                  Presets
+                </button>
+              </div>
+            )}
+            <p className="text-[10px] text-slate-400 mt-0.5 pl-1">
+              {isCustomMax ? 'Custom maximum amount' : 'Maximum amount'}
+            </p>
           </div>
         </div>
       </div>
