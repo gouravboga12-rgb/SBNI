@@ -124,38 +124,43 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
   const [isLocatingGPS, setIsLocatingGPS] = useState(false);
   const [locationToast, setLocationToast] = useState<string | null>(null);
 
-  // Applications List
+  // Applications List (Strictly Real User Applications - Zero Dummy Data)
   const [vendorApplications, setVendorApplications] = useState<any[]>(() => {
     try {
       const dynamicStr = localStorage.getItem('sbni_vendor_requests');
       if (dynamicStr) {
         const parsed = JSON.parse(dynamicStr);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed)) {
+          // Filter out any legacy dummy requests
+          return parsed.filter((r) => r && r.id !== 'REQ-9842' && r.id !== 'REQ-4410' && !r.lenderName?.includes('Nishanth Money Finance') && !r.lenderName?.includes('Sharma Financer & NBFC'));
+        }
       }
     } catch (e) {}
-    return [
-      {
-        id: 'REQ-9842',
-        title: 'Working Capital Application',
-        status: 'Under Review',
-        amount: '₹ 5,00,000',
-        lenderName: 'Nishanth Money Finance',
-        date: '02 May 2024',
-        lenderLatitude: 17.3688,
-        lenderLongitude: 78.5247,
-      },
-      {
-        id: 'REQ-4410',
-        title: 'Small Business Express Financer',
-        status: 'Verified',
-        amount: '₹ 2,50,000',
-        lenderName: 'Sharma Financer & NBFC',
-        date: '30 Apr 2024',
-        lenderLatitude: 17.3688,
-        lenderLongitude: 78.5247,
-      },
-    ];
+    return [];
   });
+
+  useEffect(() => {
+    const handleRequestsSync = () => {
+      try {
+        const dynamicStr = localStorage.getItem('sbni_vendor_requests');
+        if (dynamicStr) {
+          const parsed = JSON.parse(dynamicStr);
+          if (Array.isArray(parsed)) {
+            setVendorApplications(parsed.filter((r) => r && r.id !== 'REQ-9842' && r.id !== 'REQ-4410' && !r.lenderName?.includes('Nishanth Money Finance') && !r.lenderName?.includes('Sharma Financer & NBFC')));
+            return;
+          }
+        }
+      } catch (e) {}
+      setVendorApplications([]);
+    };
+
+    window.addEventListener('sbni_request_submitted', handleRequestsSync);
+    window.addEventListener('storage', handleRequestsSync);
+    return () => {
+      window.removeEventListener('sbni_request_submitted', handleRequestsSync);
+      window.removeEventListener('storage', handleRequestsSync);
+    };
+  }, []);
 
   // Load Lenders based on current Search Coordinates (strictly radius matched by backend)
   const loadNearbyLenders = async (lat = searchLocation.latitude, lng = searchLocation.longitude, place = searchLocation.place, city = searchLocation.city) => {
@@ -758,60 +763,83 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {vendorApplications.map((app, idx) => {
-                const isAccepted =
-                  app.status === 'Verified' ||
-                  app.status === 'Approved' ||
-                  app.status === 'Accepted' ||
-                  app.status === 'Completed';
+            {vendorApplications.length === 0 ? (
+              <div className="card-white p-12 text-center rounded-3xl border border-slate-200/90 shadow-sm space-y-4 max-w-xl mx-auto my-8">
+                <div className="w-16 h-16 rounded-2xl bg-blue-50 border border-blue-200 flex items-center justify-center mx-auto text-blue-600">
+                  <FileText className="w-8 h-8" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-extrabold text-slate-900 font-heading">No Applications Submitted Yet</h3>
+                  <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1.5 leading-relaxed">
+                    You haven't submitted any capital applications yet. Explore verified financers and click <strong>Apply for Loan</strong> to connect with lenders.
+                  </p>
+                </div>
+                <div className="pt-2">
+                  <button
+                    onClick={() => setActiveTab('financers')}
+                    className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs shadow-md transition-all active:scale-95 cursor-pointer inline-flex items-center gap-2"
+                  >
+                    <Search className="w-3.5 h-3.5" />
+                    <span>Explore Verified Financers</span>
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {vendorApplications.map((app, idx) => {
+                  const isAccepted =
+                    app.status === 'Verified' ||
+                    app.status === 'Approved' ||
+                    app.status === 'Accepted' ||
+                    app.status === 'Completed';
 
-                return (
-                  <div key={app.id || idx} className="card-white p-5 space-y-4 shadow-sm border border-slate-200/90 rounded-2xl">
-                    <div className="flex items-center justify-between">
-                      <span className={isAccepted ? 'badge-verified-green' : 'badge-pending-amber'}>
-                        {isAccepted ? '✓ Request Accepted' : app.status || 'Under Review'}
-                      </span>
-                      <span className="text-xs text-slate-400 font-mono">App #{app.id}</span>
-                    </div>
+                  return (
+                    <div key={app.id || idx} className="card-white p-5 space-y-4 shadow-sm border border-slate-200/90 rounded-2xl">
+                      <div className="flex items-center justify-between">
+                        <span className={isAccepted ? 'badge-verified-green' : 'badge-pending-amber'}>
+                          {isAccepted ? '✓ Request Accepted' : app.status || 'Under Review'}
+                        </span>
+                        <span className="text-xs text-slate-400 font-mono">App #{app.id}</span>
+                      </div>
 
-                    <div>
-                      <h3 className="font-extrabold text-slate-900 text-base">{app.title || app.lenderName || 'Capital Application'}</h3>
-                      <p className="text-xs text-blue-900 font-bold mt-0.5">Financer: {app.lenderName}</p>
-                    </div>
+                      <div>
+                        <h3 className="font-extrabold text-slate-900 text-base">{app.title || app.lenderName || 'Capital Application'}</h3>
+                        <p className="text-xs text-blue-900 font-bold mt-0.5">Financer: {app.lenderName}</p>
+                      </div>
 
-                    <div className="text-xs text-slate-600 space-y-1 bg-slate-50 p-3 rounded-xl border border-slate-200">
-                      <div>Requested Amount: <span className="font-bold text-slate-900">{app.amount || '₹ 5,00,000'}</span></div>
-                      <div>Application Date: <span className="font-medium">{app.date || app.requestedDate || 'Recent'}</span></div>
-                    </div>
+                      <div className="text-xs text-slate-600 space-y-1 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                        <div>Requested Amount: <span className="font-bold text-slate-900">{app.amount || '₹ 5,00,000'}</span></div>
+                        <div>Application Date: <span className="font-medium">{app.date || app.requestedDate || 'Recent'}</span></div>
+                      </div>
 
-                    {/* Navigation Action: Enabled ONLY after acceptance as per requirement */}
-                    <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
-                      {isAccepted ? (
-                        <a
-                          href={getGoogleMapsNavigationUrl(
-                            app.lenderLatitude || 17.3688,
-                            app.lenderLongitude || 78.5247,
-                            `Financer: ${app.lenderName}`
-                          )}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="w-full py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-sm transition-all active:scale-95 cursor-pointer"
-                        >
-                          <Navigation className="w-4 h-4 text-white" />
-                          <span>🧭 Navigate to Financer Office (Google Maps)</span>
-                        </a>
-                      ) : (
-                        <div className="w-full py-2.5 px-4 rounded-xl bg-slate-100 text-slate-400 font-bold text-xs flex items-center justify-center gap-2 border border-slate-200 cursor-not-allowed">
-                          <Lock className="w-3.5 h-3.5 text-slate-400" />
-                          <span>Navigation unlocks once Financer accepts application</span>
-                        </div>
-                      )}
+                      {/* Navigation Action: Enabled ONLY after acceptance as per requirement */}
+                      <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
+                        {isAccepted ? (
+                          <a
+                            href={getGoogleMapsNavigationUrl(
+                              app.lenderLatitude || 17.3688,
+                              app.lenderLongitude || 78.5247,
+                              `Financer: ${app.lenderName}`
+                            )}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="w-full py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-sm transition-all active:scale-95 cursor-pointer"
+                          >
+                            <Navigation className="w-4 h-4 text-white" />
+                            <span>🧭 Navigate to Financer Office (Google Maps)</span>
+                          </a>
+                        ) : (
+                          <div className="w-full py-2.5 px-4 rounded-xl bg-slate-100 text-slate-400 font-bold text-xs flex items-center justify-center gap-2 border border-slate-200 cursor-not-allowed">
+                            <Lock className="w-3.5 h-3.5 text-slate-400" />
+                            <span>Navigation unlocks once Financer accepts application</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
 
