@@ -90,7 +90,7 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
 
   if (!isOpen || !lender) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
 
@@ -119,6 +119,33 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
       return;
     }
 
+    const readFileDataUrl = (file: File): Promise<string> => {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = () => resolve('');
+        reader.readAsDataURL(file);
+      });
+    };
+
+    let panUrl = '';
+    let aadhaarUrl = '';
+    let shopPhotoUrlVal = '';
+    let liveSelfieUrlVal = '';
+
+    if (panFile) {
+      try { panUrl = await readFileDataUrl(panFile); } catch (e) {}
+    }
+    if (aadhaarFile) {
+      try { aadhaarUrl = await readFileDataUrl(aadhaarFile); } catch (e) {}
+    }
+    if (shopPhotoFile) {
+      try { shopPhotoUrlVal = await readFileDataUrl(shopPhotoFile); } catch (e) {}
+    }
+    if (liveSelfieFile) {
+      try { liveSelfieUrlVal = await readFileDataUrl(liveSelfieFile); } catch (e) {}
+    }
+
     const today = new Date();
     const formattedDate = today.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
     const formattedTime = today.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
@@ -129,7 +156,8 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
     if (vendorProfileStr) {
       try {
         vp = JSON.parse(vendorProfileStr);
-        if (vp.liveSelfieDataUrl) vendorAvatar = vp.liveSelfieDataUrl;
+        if (vp.avatarUrl) vendorAvatar = vp.avatarUrl;
+        else if (vp.liveSelfieDataUrl) vendorAvatar = vp.liveSelfieDataUrl;
         else if (vp.shopPhotoDataUrl) vendorAvatar = vp.shopPhotoDataUrl;
       } catch (e) {}
     }
@@ -139,26 +167,26 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
       vendorName: fullName,
       shopName: vp.businessName || (fullName + ' Enterprise'),
       shopAddress: vp.address || (lender.city ? `${lender.city}, ${lender.state || ''}` : 'Registered Location'),
-      city: lender.city || 'Mumbai',
-      state: lender.state || 'Maharashtra',
+      city: lender.city || vp.city || 'Mumbai',
+      state: lender.state || vp.state || 'Maharashtra',
       requestedDate: formattedDate,
       requestedTime: formattedTime,
       status: 'Pending',
       mobileNumber: phone,
       emailId: email,
-      panNumber: panFile?.name ? panFile.name.replace(/\.[^/.]+$/, '').toUpperCase() : (vp.panNumber || undefined),
-      aadhaarNumber: aadhaarFile?.name ? 'Aadhaar Verified' : (vp.aadhaarNumber || undefined),
+      panNumber: panFile?.name ? panFile.name.replace(/\.[^/.]+$/, '').toUpperCase() : (vp.panNumber || 'PAN Verified'),
+      aadhaarNumber: aadhaarFile?.name ? 'Aadhaar Verified' : (vp.aadhaarNumber || 'Aadhaar Verified'),
       monthlyIncome: monthlyIncome,
       lenderId: lender.id,
       lenderName: lender.institutionName,
       bankAccountDetails: bankAccountDetails || undefined,
-      shopLicensePdf: vp.shopLicensePdf || undefined,
-      gstCertificatePdf: vp.gstCertificatePdf || undefined,
-      avatarUrl: vendorAvatar || undefined,
-      panFileUrl: panFile?.name || vp.panFileName || undefined,
-      aadhaarFileUrl: aadhaarFile?.name || vp.aadhaarFileName || undefined,
-      shopPhotoUrl: shopPhotoFile?.name || vp.shopPhotoFileName || undefined,
-      liveSelfieUrl: vendorAvatar || liveSelfieFile?.name || vp.liveSelfieFileName || undefined,
+      shopLicensePdf: vp.shopLicensePdf || vp.licenseDataUrl || undefined,
+      gstCertificatePdf: vp.gstCertificatePdf || vp.licenseDataUrl || undefined,
+      avatarUrl: vendorAvatar || liveSelfieUrlVal || undefined,
+      panFileUrl: panUrl || vp.panFileUrl || vp.panDataUrl || undefined,
+      aadhaarFileUrl: aadhaarUrl || vp.aadhaarFileUrl || vp.aadhaarDataUrl || undefined,
+      shopPhotoUrl: shopPhotoUrlVal || vp.shopPhotoUrl || vp.shopPhotoDataUrl || undefined,
+      liveSelfieUrl: liveSelfieUrlVal || vp.liveSelfieUrl || vp.liveSelfieDataUrl || vendorAvatar || undefined,
       shopImages: [],
     };
 

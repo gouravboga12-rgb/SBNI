@@ -304,11 +304,23 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           };
 
           let avatarDataUrl = '';
+          let panDataUrl = '';
+          let aadhaarDataUrl = '';
+          let licenseDataUrl = '';
           let shopPhotoDataUrl = '';
           let liveSelfieDataUrl = '';
 
           if (pendingVendorData.photoFile) {
             try { avatarDataUrl = await readFileAsDataURL(pendingVendorData.photoFile); } catch (e) {}
+          }
+          if (pendingVendorData.panFile) {
+            try { panDataUrl = await readFileAsDataURL(pendingVendorData.panFile); } catch (e) {}
+          }
+          if (pendingVendorData.aadhaarFile) {
+            try { aadhaarDataUrl = await readFileAsDataURL(pendingVendorData.aadhaarFile); } catch (e) {}
+          }
+          if (pendingVendorData.licenseFile) {
+            try { licenseDataUrl = await readFileAsDataURL(pendingVendorData.licenseFile); } catch (e) {}
           }
           if (pendingVendorData.shopPhotoFile) {
             try { shopPhotoDataUrl = await readFileAsDataURL(pendingVendorData.shopPhotoFile); } catch (e) {}
@@ -324,16 +336,28 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             email: pendingVendorData.email,
             businessName: pendingVendorData.businessName,
             address: pendingVendorData.address,
+            city: pendingVendorData.city || 'Mumbai',
+            state: pendingVendorData.state || 'Maharashtra',
+            pincode: pendingVendorData.pincode || '400001',
             panFileName: pendingVendorData.panFile?.name || 'PAN_Card_Verified.pdf',
-            panNumber: 'PAN Card Verified',
+            panNumber: pendingVendorData.panNumber || 'PAN Card Verified',
+            panFileUrl: panDataUrl || undefined,
+            panDataUrl: panDataUrl || undefined,
             aadhaarFileName: pendingVendorData.aadhaarFile?.name || 'Aadhaar_Card_Verified.pdf',
-            aadhaarNumber: 'Aadhaar Card Verified',
+            aadhaarNumber: pendingVendorData.aadhaarNumber || 'Aadhaar Card Verified',
+            aadhaarFileUrl: aadhaarDataUrl || undefined,
+            aadhaarDataUrl: aadhaarDataUrl || undefined,
             licenseFileName: pendingVendorData.licenseFile?.name || undefined,
+            shopLicensePdf: licenseDataUrl || pendingVendorData.licenseFile?.name || undefined,
+            licenseDataUrl: licenseDataUrl || undefined,
+            gstCertificatePdf: licenseDataUrl || undefined,
             shopPhotoFileName: pendingVendorData.shopPhotoFile?.name || undefined,
-            liveSelfieFileName: pendingVendorData.liveSelfieFile?.name || undefined,
-            avatarUrl: avatarDataUrl || liveSelfieDataUrl || shopPhotoDataUrl || undefined,
+            shopPhotoUrl: shopPhotoDataUrl || undefined,
             shopPhotoDataUrl: shopPhotoDataUrl || undefined,
+            liveSelfieFileName: pendingVendorData.liveSelfieFile?.name || undefined,
+            liveSelfieUrl: liveSelfieDataUrl || avatarDataUrl || undefined,
             liveSelfieDataUrl: liveSelfieDataUrl || avatarDataUrl || undefined,
+            avatarUrl: avatarDataUrl || liveSelfieDataUrl || shopPhotoDataUrl || undefined,
           };
 
           localStorage.setItem('sbni_user', JSON.stringify(fullUser));

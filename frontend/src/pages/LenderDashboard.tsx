@@ -1281,64 +1281,66 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
 
                 {/* Additional Documents */}
                 <div className="card-white p-5 space-y-4">
-                  <h4 className="font-bold text-slate-900 text-base font-heading">Additional Documents</h4>
+                  <h4 className="font-bold text-slate-900 text-base font-heading">Additional Business Documents</h4>
                   <div className="space-y-3">
                     <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between text-xs md:text-sm hover:border-slate-300 transition-colors">
                       <div className="flex items-center gap-3">
-                        <FileText className="w-5 h-5 text-blue-600" />
+                        <FileText className="w-5 h-5 text-blue-600 shrink-0" />
                         <div>
-                          <div className="font-bold text-slate-900">Shop & Establishment License</div>
-                          <div className="text-xs text-slate-400 mt-0.5">{selectedVendor.shopLicensePdf || 'Pending Document Upload'}</div>
+                          <div className="font-bold text-slate-900">Business License / Shop & Establishment</div>
+                          <div className="text-xs text-slate-400 mt-0.5 truncate max-w-[200px] sm:max-w-xs">
+                            {selectedVendor.shopLicensePdf ? 'Uploaded Document' : 'Optional / Not Uploaded'}
+                          </div>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
                         {selectedVendor.shopLicensePdf ? (
                           <>
+                            <span className="badge-verified-green text-[10px]">Uploaded</span>
                             <button
-                              onClick={() => setPreviewDocModal({ title: 'Shop & Establishment License', url: 'https://images.unsplash.com/photo-1568992687947-868a62a9f521?q=80&w=800', type: 'doc' })}
+                              onClick={() => setPreviewDocModal({
+                                title: `Business License (${selectedVendor.shopName})`,
+                                url: selectedVendor.shopLicensePdf!,
+                                type: 'doc',
+                              })}
                               className="p-2 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer"
                             >
                               <Eye className="w-4 h-4" /> View
                             </button>
-                            <button
-                              onClick={() => alert(`Downloading ${selectedVendor.shopLicensePdf}...`)}
-                              className="p-2 rounded-lg bg-slate-200 text-slate-700 hover:bg-slate-300 text-xs font-bold transition-colors cursor-pointer"
-                            >
-                              <Download className="w-4 h-4" />
-                            </button>
                           </>
                         ) : (
-                          <span className="badge-pending-amber text-[10px]">Pending Upload</span>
+                          <span className="badge-pending-amber text-[10px]">Not Uploaded</span>
                         )}
                       </div>
                     </div>
 
                     <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between text-xs md:text-sm hover:border-slate-300 transition-colors">
                       <div className="flex items-center gap-3">
-                        <FileText className="w-5 h-5 text-blue-600" />
+                        <FileText className="w-5 h-5 text-blue-600 shrink-0" />
                         <div>
                           <div className="font-bold text-slate-900">GST Registration Certificate</div>
-                          <div className="text-xs text-slate-400 mt-0.5">{selectedVendor.gstCertificatePdf || 'Pending GST Certificate'}</div>
+                          <div className="text-xs text-slate-400 mt-0.5 truncate max-w-[200px] sm:max-w-xs">
+                            {selectedVendor.gstCertificatePdf ? 'Uploaded Document' : 'Optional / Not Uploaded'}
+                          </div>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
                         {selectedVendor.gstCertificatePdf ? (
                           <>
+                            <span className="badge-verified-green text-[10px]">Uploaded</span>
                             <button
-                              onClick={() => setPreviewDocModal({ title: 'GST Registration Certificate', url: 'https://images.unsplash.com/photo-1450133064473-71024230f91b?q=80&w=800', type: 'doc' })}
+                              onClick={() => setPreviewDocModal({
+                                title: `GST Certificate (${selectedVendor.shopName})`,
+                                url: selectedVendor.gstCertificatePdf!,
+                                type: 'doc',
+                              })}
                               className="p-2 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer"
                             >
                               <Eye className="w-4 h-4" /> View
                             </button>
-                            <button
-                              onClick={() => alert(`Downloading ${selectedVendor.gstCertificatePdf}...`)}
-                              className="p-2 rounded-lg bg-slate-200 text-slate-700 hover:bg-slate-300 text-xs font-bold transition-colors cursor-pointer"
-                            >
-                              <Download className="w-4 h-4" />
-                            </button>
                           </>
                         ) : (
-                          <span className="badge-pending-amber text-[10px]">Pending Upload</span>
+                          <span className="badge-pending-amber text-[10px]">Not Uploaded</span>
                         )}
                       </div>
                     </div>
