@@ -3,15 +3,29 @@ import prisma from '../config/prisma';
 import { AuthenticatedRequest } from '../middlewares/auth';
 
 export const getSubscriptionPlans = async (req: Request, res: Response) => {
+  const role = req.query.role as string;
+  const whereClause: any = { isActive: true };
+  if (role) {
+    whereClause.roleTarget = role.toUpperCase();
+  }
+
   const plans = await prisma.subscriptionPlan.findMany({
-    where: { isActive: true },
+    where: whereClause,
     orderBy: { price: 'asc' },
   });
 
-  const formattedPlans = plans.map((plan) => ({
-    ...plan,
-    features: JSON.parse(plan.features || '[]'),
-  }));
+  const formattedPlans = plans.map((plan) => {
+    let parsedFeatures: string[] = [];
+    try {
+      parsedFeatures = Array.isArray(plan.features) ? plan.features : JSON.parse(plan.features || '[]');
+    } catch {
+      parsedFeatures = typeof plan.features === 'string' ? plan.features.split(',').map(s => s.trim()) : [];
+    }
+    return {
+      ...plan,
+      features: parsedFeatures,
+    };
+  });
 
   res.json({ success: true, count: formattedPlans.length, data: formattedPlans });
 };

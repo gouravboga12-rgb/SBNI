@@ -25,7 +25,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
 
-  useEffect(() => {
+  const loadPlans = () => {
     fetchSubscriptionPlans(userRole).then((data) => {
       setPlans(data);
       if (data.length > 0) {
@@ -33,6 +33,17 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
         setSelectedPlan(popular);
       }
     });
+  };
+
+  useEffect(() => {
+    if (isOpen) {
+      loadPlans();
+    }
+  }, [userRole, isOpen]);
+
+  useEffect(() => {
+    window.addEventListener('sbni_subscription_plans_updated', loadPlans);
+    return () => window.removeEventListener('sbni_subscription_plans_updated', loadPlans);
   }, [userRole]);
 
   if (!isOpen) return null;

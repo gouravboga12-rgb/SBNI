@@ -456,27 +456,60 @@ export async function unlockLenderContact(
 export async function fetchSubscriptionPlans(
   role?: 'VENDOR' | 'LENDER'
 ): Promise<SubscriptionPlan[]> {
+  const targetRole = role || 'VENDOR';
+  const adminKey = targetRole === 'LENDER' ? 'sbni_admin_lender_plans' : 'sbni_admin_vendor_plans';
+
+  // 1. Check if admin configured customized plans in localStorage
   try {
-    const qs = role ? `?role=${role}` : '';
+    const adminSaved = localStorage.getItem(adminKey);
+    if (adminSaved) {
+      const parsed = JSON.parse(adminSaved);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed.map((p: any) => ({
+          id: p.id,
+          code: p.code || p.id,
+          name: p.name,
+          description: p.description || '',
+          price: Number(p.price) || 0,
+          originalPrice: Number(p.originalPrice) || Number(p.price) || 0,
+          durationDays: Number(p.durationDays) || 30,
+          durationLabel: p.durationLabel || `${p.durationDays || 30} Days`,
+          features: Array.isArray(p.features)
+            ? p.features
+            : (typeof p.features === 'string' ? JSON.parse(p.features || '[]') : []),
+          isPopular: !!p.isPopular,
+          isBestValue: !!p.isBestValue,
+          roleTarget: p.roleTarget || targetRole,
+        }));
+      }
+    }
+  } catch (e) {}
+
+  // 2. Fetch from live AWS backend
+  try {
+    const qs = `?role=${targetRole}`;
     const data = await apiFetch(`/subscriptions/plans${qs}`);
     const plans = data.data?.plans || data.data || [];
-    return plans.map((p: any) => ({
-      id: p.id,
-      code: p.code,
-      name: p.name,
-      description: p.description,
-      price: p.price,
-      originalPrice: p.originalPrice || p.price,
-      durationDays: p.durationDays,
-      durationLabel: p.durationLabel || `${p.durationDays} Days`,
-      features: p.features || [],
-      isPopular: p.isPopular || false,
-      isBestValue: p.isBestValue || false,
-      roleTarget: p.roleTarget || role || 'VENDOR',
-    }));
+    if (Array.isArray(plans) && plans.length > 0) {
+      return plans.map((p: any) => ({
+        id: p.id,
+        code: p.code,
+        name: p.name,
+        description: p.description,
+        price: Number(p.price) || 0,
+        originalPrice: Number(p.originalPrice) || Number(p.price) || 0,
+        durationDays: Number(p.durationDays) || 30,
+        durationLabel: p.durationLabel || `${p.durationDays} Days`,
+        features: Array.isArray(p.features) ? p.features : [],
+        isPopular: !!p.isPopular,
+        isBestValue: !!p.isBestValue,
+        roleTarget: p.roleTarget || targetRole,
+      }));
+    }
+    return getDefaultPlans(targetRole);
   } catch (err: any) {
     console.error('fetchSubscriptionPlans error:', err.message);
-    return getDefaultPlans(role || 'VENDOR');
+    return getDefaultPlans(targetRole);
   }
 }
 

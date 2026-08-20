@@ -1077,6 +1077,7 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
       try {
         await adminUpdateSubscriptionPlan(editingPlan.id, updatedPlan);
       } catch {}
+      window.dispatchEvent(new Event('sbni_subscription_plans_updated'));
       showToast(`Subscription Plan "${formPlanName}" updated successfully!`);
     } else {
       const newPlan: AdminSubscriptionPlan = {
@@ -1109,6 +1110,7 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
       try {
         await adminCreateSubscriptionPlan(newPlan);
       } catch {}
+      window.dispatchEvent(new Event('sbni_subscription_plans_updated'));
       showToast(`New ${planTargetRole === 'VENDOR' ? 'Vendor' : 'Financer'} Plan "${formPlanName}" published!`);
     }
     setPlanModalOpen(false);
@@ -1130,6 +1132,7 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
       try {
         await adminDeleteSubscriptionPlan(planId);
       } catch {}
+      window.dispatchEvent(new Event('sbni_subscription_plans_updated'));
       showToast(`Subscription Plan "${planName}" deleted.`);
     }
   };
