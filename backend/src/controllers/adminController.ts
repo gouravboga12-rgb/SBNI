@@ -382,7 +382,7 @@ export const grantManualSubscription = async (req: AuthenticatedRequest, res: Re
 
 // Subscription Plans CRUD
 export const createSubscriptionPlanAdmin = async (req: AuthenticatedRequest, res: Response) => {
-  const { name, code, description, price, originalPrice, durationDays, features, isPopular, roleTarget } = req.body;
+  const { name, code, description, price, originalPrice, durationDays, features, isPopular, isBestValue, roleTarget } = req.body;
 
   if (!name || !code || !price || !durationDays) {
     return res.status(400).json({ success: false, message: 'Name, code, price, and durationDays are required.' });
@@ -398,6 +398,7 @@ export const createSubscriptionPlanAdmin = async (req: AuthenticatedRequest, res
       durationDays: parseInt(durationDays),
       features: Array.isArray(features) ? JSON.stringify(features) : (typeof features === 'string' ? features : '[]'),
       isPopular: !!isPopular,
+      isBestValue: !!isBestValue,
       roleTarget: roleTarget || 'VENDOR',
     },
   });
@@ -407,7 +408,7 @@ export const createSubscriptionPlanAdmin = async (req: AuthenticatedRequest, res
 
 export const updateSubscriptionPlanAdmin = async (req: AuthenticatedRequest, res: Response) => {
   const { planId } = req.params;
-  const { name, description, price, originalPrice, durationDays, features, isPopular, isActive, roleTarget } = req.body;
+  const { name, description, price, originalPrice, durationDays, features, isPopular, isBestValue, isActive, roleTarget } = req.body;
 
   const updatedPlan = await prisma.subscriptionPlan.update({
     where: { id: planId },
@@ -419,6 +420,7 @@ export const updateSubscriptionPlanAdmin = async (req: AuthenticatedRequest, res
       durationDays: durationDays !== undefined ? parseInt(durationDays) : undefined,
       features: features !== undefined ? (Array.isArray(features) ? JSON.stringify(features) : String(features)) : undefined,
       isPopular: isPopular !== undefined ? !!isPopular : undefined,
+      isBestValue: isBestValue !== undefined ? !!isBestValue : undefined,
       isActive: isActive !== undefined ? !!isActive : undefined,
       roleTarget: roleTarget !== undefined ? String(roleTarget) : undefined,
     },

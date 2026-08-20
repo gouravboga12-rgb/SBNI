@@ -148,17 +148,19 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                     : 'bg-slate-50/80 border-slate-200 hover:border-slate-300 hover:bg-white hover:shadow-sm'
                 }`}
               >
-                {plan.isPopular && (
-                  <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-[9px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider whitespace-nowrap shadow-sm">
-                    Most Popular
-                  </span>
-                )}
+                <div className="absolute -top-2.5 inset-x-0 flex items-center justify-center gap-1.5 pointer-events-none">
+                  {plan.isPopular && (
+                    <span className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-[9px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider whitespace-nowrap shadow-sm">
+                      Most Popular
+                    </span>
+                  )}
 
-                {plan.isBestValue && (
-                  <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-[9px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider whitespace-nowrap shadow-sm">
-                    Best Value
-                  </span>
-                )}
+                  {plan.isBestValue && (
+                    <span className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-[9px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider whitespace-nowrap shadow-sm">
+                      ✨ Best Value
+                    </span>
+                  )}
+                </div>
 
                 <div>
                   <div className={`text-[9px] font-extrabold uppercase tracking-widest mb-0.5 ${isLender ? 'text-[#059669]' : 'text-[#003893]'}`}>

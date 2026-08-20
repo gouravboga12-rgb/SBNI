@@ -2782,11 +2782,18 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
                         <h3 className="font-extrabold text-slate-900 text-base font-heading">{plan.name}</h3>
                         <span className="font-mono text-[10px] text-slate-400 font-bold">{plan.code}</span>
                       </div>
-                      {plan.isPopular && (
-                        <span className="bg-amber-100 text-amber-800 text-[10px] font-extrabold px-2 py-0.5 rounded-full border border-amber-200">
-                          Popular
-                        </span>
-                      )}
+                      <div className="flex items-center gap-1 flex-wrap justify-end">
+                        {plan.isPopular && (
+                          <span className="bg-amber-100 text-amber-800 text-[10px] font-extrabold px-2 py-0.5 rounded-full border border-amber-200">
+                            Popular
+                          </span>
+                        )}
+                        {plan.isBestValue && (
+                          <span className="bg-emerald-100 text-emerald-800 text-[10px] font-extrabold px-2 py-0.5 rounded-full border border-emerald-200">
+                            ✨ Best Value
+                          </span>
+                        )}
+                      </div>
                     </div>
 
                     <div className="flex items-baseline gap-2 pt-1">
@@ -2864,11 +2871,18 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
                         <h3 className="font-extrabold text-slate-900 text-base font-heading">{plan.name}</h3>
                         <span className="font-mono text-[10px] text-slate-400 font-bold">{plan.code}</span>
                       </div>
-                      {plan.isPopular && (
-                        <span className="bg-emerald-100 text-emerald-800 text-[10px] font-extrabold px-2 py-0.5 rounded-full border border-emerald-200">
-                          Popular
-                        </span>
-                      )}
+                      <div className="flex items-center gap-1 flex-wrap justify-end">
+                        {plan.isPopular && (
+                          <span className="bg-emerald-100 text-emerald-800 text-[10px] font-extrabold px-2 py-0.5 rounded-full border border-emerald-200">
+                            Popular
+                          </span>
+                        )}
+                        {plan.isBestValue && (
+                          <span className="bg-purple-100 text-purple-800 text-[10px] font-extrabold px-2 py-0.5 rounded-full border border-purple-200">
+                            ✨ Best Value
+                          </span>
+                        )}
+                      </div>
                     </div>
 
                     <div className="flex items-baseline gap-2 pt-1">
