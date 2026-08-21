@@ -25,9 +25,32 @@ export const updateLenderProfile = async (req: AuthenticatedRequest, res: Respon
     contactPersonName,
   } = req.body;
 
-  const parsedLat = latitude !== undefined && latitude !== null ? parseFloat(String(latitude)) : undefined;
-  const parsedLng = longitude !== undefined && longitude !== null ? parseFloat(String(longitude)) : undefined;
+  let parsedLat = latitude !== undefined && latitude !== null ? parseFloat(String(latitude)) : undefined;
+  let parsedLng = longitude !== undefined && longitude !== null ? parseFloat(String(longitude)) : undefined;
   const parsedRadius = lendingRadiusKm !== undefined && lendingRadiusKm !== null ? parseFloat(String(lendingRadiusKm)) : undefined;
+
+  if (parsedLat === undefined || parsedLng === undefined || (Math.abs(parsedLat - 19.076) < 0.01 && Math.abs(parsedLng - 72.8777) < 0.01)) {
+    const combined = `${address || ''} ${place || ''} ${city || ''} ${state || ''}`.toLowerCase();
+    if (combined.includes('hyderabad') || combined.includes('telangana') || combined.includes('kothapet') || combined.includes('chaitanyapuri') || combined.includes('secunderabad')) {
+      parsedLat = 17.3850;
+      parsedLng = 78.4867;
+    } else if (combined.includes('delhi') || combined.includes('ncr') || combined.includes('gurgaon')) {
+      parsedLat = 28.6139;
+      parsedLng = 77.2090;
+    } else if (combined.includes('bangalore') || combined.includes('bengaluru')) {
+      parsedLat = 12.9716;
+      parsedLng = 77.5946;
+    } else if (combined.includes('chennai')) {
+      parsedLat = 13.0827;
+      parsedLng = 80.2707;
+    } else if (combined.includes('pune')) {
+      parsedLat = 18.5204;
+      parsedLng = 73.8567;
+    } else if (combined.includes('mumbai')) {
+      parsedLat = 19.0760;
+      parsedLng = 72.8777;
+    }
+  }
 
   const profile = await prisma.lenderProfile.upsert({
     where: { userId },
@@ -61,12 +84,12 @@ export const updateLenderProfile = async (req: AuthenticatedRequest, res: Respon
       minInterestRate: minInterestRate ? parseFloat(minInterestRate) : 9.5,
       address: address || 'Default Address',
       place: place || 'Financial District',
-      city: city || 'Mumbai',
-      state: state || 'Maharashtra',
+      city: city || 'Hyderabad',
+      state: state || 'Telangana',
       country: country || 'India',
-      pincode: pincode || '400001',
-      latitude: parsedLat ?? 19.0760,
-      longitude: parsedLng ?? 72.8777,
+      pincode: pincode || '500001',
+      latitude: parsedLat ?? 17.3850,
+      longitude: parsedLng ?? 78.4867,
       lendingRadiusKm: parsedRadius ?? 50.0,
       contactPersonName: contactPersonName || 'Lending Officer',
     },

@@ -94,8 +94,22 @@ export function App() {
 
   // Load lenders from AWS whenever role changes
   const loadLenders = async () => {
-    const res = await fetchLenders();
-    setLenders(res.lenders);
+    try {
+      let lat = 17.3850;
+      let lng = 78.4867;
+      const vp = localStorage.getItem('sbni_vendor_profile');
+      if (vp) {
+        const parsed = JSON.parse(vp);
+        if (parsed.latitude) lat = Number(parsed.latitude);
+        if (parsed.longitude) lng = Number(parsed.longitude);
+      }
+      const res = await fetchLenders({ userLat: lat, userLng: lng });
+      if (res.lenders) {
+        setLenders(res.lenders);
+      }
+    } catch (e) {
+      console.error('Failed to load lenders in App:', e);
+    }
   };
 
   useEffect(() => {

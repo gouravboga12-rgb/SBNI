@@ -1808,6 +1808,16 @@ const LenderRegisterForm: React.FC<LenderRegisterFormProps> = ({
       finalFinancerName = `${lName.trim()} Money Financer`;
     }
 
+    let lat = 17.3850;
+    let lng = 78.4867;
+    const combined = `${lAddress} ${lCity} ${lState}`.toLowerCase();
+    if (combined.includes('mumbai')) { lat = 19.0760; lng = 72.8777; }
+    else if (combined.includes('delhi')) { lat = 28.6139; lng = 77.2090; }
+    else if (combined.includes('bangalore') || combined.includes('bengaluru')) { lat = 12.9716; lng = 77.5946; }
+    else if (combined.includes('chennai')) { lat = 13.0827; lng = 80.2707; }
+    else if (combined.includes('pune')) { lat = 18.5204; lng = 73.8567; }
+    else if (combined.includes('hyderabad') || combined.includes('telangana') || combined.includes('kothapet') || combined.includes('chaitanyapuri')) { lat = 17.3713; lng = 78.5320; }
+
     onFormReady({
       name: lName,
       email: lEmail,
@@ -1819,6 +1829,8 @@ const LenderRegisterForm: React.FC<LenderRegisterFormProps> = ({
       city: lCity,
       state: lState,
       pincode: lPincode,
+      latitude: lat,
+      longitude: lng,
       minLoanAmount: parseFloat(lMinLoan) || 10000,
       maxLoanAmount: parseFloat(lMaxLoan) || 100000,
       lendingRadiusKm: parseFloat(lRadius) || 50,

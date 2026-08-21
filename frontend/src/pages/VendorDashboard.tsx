@@ -545,22 +545,45 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                   </div>
                   <button
                     onClick={() => handleTabChange('lenders')}
-                    className="text-xs text-blue-700 font-bold hover:underline flex items-center gap-1"
+                    className="text-xs text-blue-700 font-bold hover:underline flex items-center gap-1 cursor-pointer"
                   >
-                    <span>View All ({lenders.length})</span>
+                    <span>View All ({currentLendersList.length})</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
 
                 <div className="space-y-3">
-                  {lenders.slice(0, 3).map((lender) => (
-                    <LenderCard
-                      key={lender.id}
-                      lender={lender}
-                      onOpenSubscription={onOpenSubscription}
-                      onRequestLoan={handleRequestLoan}
-                    />
-                  ))}
+                  {isLoadingLenders ? (
+                    <div className="card-white p-8 text-center text-xs text-slate-500 font-medium space-y-2">
+                      <div className="w-6 h-6 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin mx-auto" />
+                      <div>Discovering nearby verified financers with Mapbox GPS...</div>
+                    </div>
+                  ) : currentLendersList.length === 0 ? (
+                    <div className="card-white p-8 text-center rounded-2xl border border-slate-200/90 shadow-sm space-y-3">
+                      <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto">
+                        <Users className="w-6 h-6" />
+                      </div>
+                      <h4 className="font-extrabold text-slate-900 text-sm">No Financers Located in Current Area</h4>
+                      <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                        No active financers found within 50 km of {searchLocation.place}, {searchLocation.city}. Expand your location search or explore all financers.
+                      </p>
+                      <button
+                        onClick={() => handleTabChange('lenders')}
+                        className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs shadow-sm transition-all"
+                      >
+                        Explore All Financers
+                      </button>
+                    </div>
+                  ) : (
+                    currentLendersList.slice(0, 3).map((lender) => (
+                      <LenderCard
+                        key={lender.id}
+                        lender={lender}
+                        onOpenSubscription={onOpenSubscription}
+                        onRequestLoan={handleRequestLoan}
+                      />
+                    ))
+                  )}
                 </div>
               </div>
 

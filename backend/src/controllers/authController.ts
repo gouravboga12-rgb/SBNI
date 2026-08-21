@@ -210,6 +210,21 @@ export const registerUser = async (req: Request, res: Response) => {
       financerName = `${financerName} Money Financer`;
     }
 
+    let lenderLat = 17.3850;
+    let lenderLng = 78.4867;
+    const combinedAddr = `${address || ''} ${city || ''} ${state || ''}`.toLowerCase();
+    if (combinedAddr.includes('mumbai')) { lenderLat = 19.0760; lenderLng = 72.8777; }
+    else if (combinedAddr.includes('delhi')) { lenderLat = 28.6139; lenderLng = 77.2090; }
+    else if (combinedAddr.includes('bangalore') || combinedAddr.includes('bengaluru')) { lenderLat = 12.9716; lenderLng = 77.5946; }
+    else if (combinedAddr.includes('chennai')) { lenderLat = 13.0827; lenderLng = 80.2707; }
+    else if (combinedAddr.includes('pune')) { lenderLat = 18.5204; lenderLng = 73.8567; }
+    else if (combinedAddr.includes('kolkata')) { lenderLat = 22.5726; lenderLng = 88.3639; }
+    else if (combinedAddr.includes('vijayawada')) { lenderLat = 16.5062; lenderLng = 80.6480; }
+    else if (combinedAddr.includes('hyderabad') || combinedAddr.includes('telangana')) { lenderLat = 17.3850; lenderLng = 78.4867; }
+
+    if (req.body.latitude) lenderLat = parseFloat(String(req.body.latitude));
+    if (req.body.longitude) lenderLng = parseFloat(String(req.body.longitude));
+
     await prisma.lenderProfile.create({
       data: {
         userId: user.id,
@@ -221,9 +236,12 @@ export const registerUser = async (req: Request, res: Response) => {
         maxLoanAmount: maxLoanAmount ? parseFloat(maxLoanAmount) : 100000,
         lendingRadiusKm: lendingRadiusKm ? parseFloat(lendingRadiusKm) : 50,
         address: address || 'Financial Center',
-        city: city || 'Mumbai',
-        state: state || 'Maharashtra',
-        pincode: pincode || '400001',
+        place: req.body.place || 'Financial District',
+        city: city || 'Hyderabad',
+        state: state || 'Telangana',
+        pincode: pincode || '500001',
+        latitude: lenderLat,
+        longitude: lenderLng,
         contactPersonName: name || 'Lending Officer',
         verificationStatus: 'VERIFIED',
       },
