@@ -608,10 +608,6 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
           safeSetLocalStorage('sbni_vendor_requests', JSON.stringify(cleaned));
 
           localReqs = cleaned.filter((r) => {
-            // Exclude WhatsApp / Call quick contacts (only real loan applications)
-            if (r.inquiryType === 'WHATSAPP' || r.inquiryType === 'CALL' || r.inquiryType === 'PHONE_CALL') return false;
-            if (r.type === 'WHATSAPP' || r.type === 'CALL' || r.type === 'PHONE_CALL') return false;
-
             // Must strictly match THIS specific lender account
             const lenderReg = (currentUserObj as any)?.regNo || '';
             const lenderId = (currentUserObj as any)?.id || (currentUser as any)?.id || (currentUser as any)?.userId || (currentUser as any)?.lenderProfile?.id || '';
@@ -634,7 +630,6 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
       if (Array.isArray(leadsList)) {
         awsReqs = leadsList
           .filter((lead: any) => {
-            if (lead.type === 'WHATSAPP' || lead.type === 'CALL' || lead.type === 'PHONE_CALL') return false;
             const v = lead.vendor || {};
             let snapshot: any = {};
             try {

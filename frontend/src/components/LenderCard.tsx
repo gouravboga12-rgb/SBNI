@@ -221,6 +221,7 @@ export const LenderCard: React.FC<LenderCardProps> = ({ lender, onOpenSubscripti
       return;
     }
 
+    recordLenderRequest('CALL');
     if (lender.phone) {
       window.location.href = `tel:${lender.phone}`;
     }
@@ -234,6 +235,7 @@ export const LenderCard: React.FC<LenderCardProps> = ({ lender, onOpenSubscripti
       return;
     }
 
+    recordLenderRequest('WHATSAPP');
     if (lender.whatsAppUrl) {
       window.open(lender.whatsAppUrl, '_blank');
     } else if (lender.phone) {

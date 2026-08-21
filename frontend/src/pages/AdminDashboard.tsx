@@ -1143,6 +1143,46 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
         setLenders(updated);
         safeSetLocalStorage('sbni_admin_lenders', JSON.stringify(updated));
 
+        // Add to deleted lenders blacklist
+        try {
+          const deleted = JSON.parse(localStorage.getItem('sbni_deleted_lenders') || '[]');
+          const lenderObj = lenders.find((l) => l.id === lenderId);
+          const toAdd = [
+            lenderId,
+            lenderObj?.id,
+            lenderObj?.registrationNumber,
+            lenderObj?.institutionName,
+            lenderObj?.userPhone,
+            lenderObj?.userEmail,
+            lenderName,
+          ].filter(Boolean);
+          const updatedDeleted = Array.from(new Set([...deleted, ...toAdd]));
+          safeSetLocalStorage('sbni_deleted_lenders', JSON.stringify(updatedDeleted));
+        } catch (e) {}
+
+        // Remove from local sbni_vendor_requests
+        try {
+          const storedReqs = localStorage.getItem('sbni_vendor_requests');
+          if (storedReqs) {
+            const reqs = JSON.parse(storedReqs);
+            if (Array.isArray(reqs)) {
+              const lenderObj = lenders.find((l) => l.id === lenderId);
+              const cleaned = reqs.filter((r: any) =>
+                r.lenderId !== lenderId &&
+                r.lenderId !== lenderObj?.registrationNumber &&
+                r.lenderName !== lenderObj?.institutionName &&
+                r.lenderName !== lenderName
+              );
+              safeSetLocalStorage('sbni_vendor_requests', JSON.stringify(cleaned));
+            }
+          }
+        } catch (e) {}
+
+        // Broadcast global events so all accounts (Vendor, Lender, Admin) clear it
+        window.dispatchEvent(new CustomEvent('sbni_lender_deleted', { detail: { lenderId, lenderName } }));
+        window.dispatchEvent(new Event('sbni_request_submitted'));
+        window.dispatchEvent(new Event('sbni_lender_profile_updated'));
+
         setAuditLogs([
           {
             id: 'a-' + Date.now(),
