@@ -295,7 +295,13 @@ export const LenderCard: React.FC<LenderCardProps> = ({ lender, onOpenSubscripti
               <div className="flex items-center gap-2 text-xs flex-wrap pt-0.5">
                 <span className="text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-lg text-[11px] font-extrabold border border-emerald-200/80 flex items-center gap-1.5 shadow-2xs">
                   <TrendingUp className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                  <span>{lender.successRate || '80% - 90%'} Success Rate on Borrowing Money</span>
+                  <span>
+                    {lender.successRate
+                      ? lender.successRate.toLowerCase().includes('success rate')
+                        ? lender.successRate
+                        : `${lender.successRate} Success Rate on Borrowing Money`
+                      : '80% - 90% Success Rate on Borrowing Money'}
+                  </span>
                 </span>
               </div>
 
