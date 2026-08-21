@@ -257,68 +257,75 @@ export const LenderCard: React.FC<LenderCardProps> = ({ lender, onOpenSubscripti
       <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50/50 rounded-full blur-2xl pointer-events-none group-hover:bg-blue-100/60 transition-colors" />
 
       {/* Left Column: Financer Logo & Details */}
-      <div 
-        onClick={handleApplyClick}
-        className="flex items-start gap-3.5 sm:gap-4 flex-1 min-w-0 w-full cursor-pointer z-10"
-      >
-        
-        {/* Institution Brand Avatar / Logo */}
-        <div className="w-14 h-14 min-w-[3.5rem] min-h-[3.5rem] max-w-[3.5rem] max-h-[3.5rem] rounded-2xl bg-gradient-to-br from-slate-50 to-blue-50 border border-slate-200/80 p-2 flex items-center justify-center shrink-0 shadow-sm group-hover:scale-105 group-hover:shadow-md transition-all duration-300 overflow-hidden">
-          {lender.logoUrl && !imgError ? (
-            <img
-              src={lender.logoUrl}
-              alt={lender.institutionName}
-              className="w-full h-full object-contain pointer-events-none"
-              onError={() => setImgError(true)}
-            />
-          ) : (
-            <div className="w-full h-full rounded-xl bg-gradient-to-br from-[#003893] to-[#001f54] text-white flex items-center justify-center font-extrabold text-sm shadow-inner">
-              {(lender.institutionName || 'Lender').split(' ').map(n => n[0] || '').join('').slice(0, 3)}
+      {(() => {
+        const effectiveLogo = lender.logoUrl || (lender as any).avatarUrl || (typeof window !== 'undefined' ? localStorage.getItem('sbni_lender_avatar') : null);
+        const displayName = lender.institutionName && !lender.institutionName.toLowerCase().includes('money financer')
+          ? `${lender.institutionName} Money Financer`
+          : (lender.institutionName || 'Business Money Financer');
+
+        return (
+          <div 
+            onClick={handleApplyClick}
+            className="flex items-start gap-3.5 sm:gap-4 flex-1 min-w-0 w-full cursor-pointer z-10"
+          >
+            {/* Institution Brand Avatar / Logo */}
+            <div className="w-14 h-14 min-w-[3.5rem] min-h-[3.5rem] max-w-[3.5rem] max-h-[3.5rem] rounded-2xl bg-gradient-to-br from-slate-50 to-blue-50 border border-slate-200/80 p-0.5 flex items-center justify-center shrink-0 shadow-sm group-hover:scale-105 group-hover:shadow-md transition-all duration-300 overflow-hidden">
+              {effectiveLogo && !imgError ? (
+                <img
+                  src={effectiveLogo}
+                  alt={displayName}
+                  className="w-full h-full object-cover rounded-xl pointer-events-none"
+                  onError={() => setImgError(true)}
+                />
+              ) : (
+                <div className="w-full h-full rounded-xl bg-gradient-to-br from-[#003893] to-[#001f54] text-white flex items-center justify-center font-extrabold text-sm shadow-inner">
+                  {(displayName || 'Lender').split(' ').map(n => n[0] || '').join('').slice(0, 3)}
+                </div>
+              )}
             </div>
-          )}
-        </div>
 
-        {/* Institution Information */}
-        <div className="flex-1 min-w-0 space-y-1.5">
-          <div className="flex items-center gap-2 flex-wrap">
-            <h3 className="font-extrabold text-slate-900 text-base sm:text-lg font-heading leading-tight truncate group-hover:text-[#003893] transition-colors">
-              {lender.institutionName}
-            </h3>
-            <span className="badge-verified-green">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 fill-emerald-100 shrink-0" />
-              Verified Partner
-            </span>
-          </div>
-
-          {/* Success Rate Badge */}
-          <div className="flex items-center gap-2 text-xs flex-wrap pt-0.5">
-            <span className="text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-lg text-[11px] font-extrabold border border-emerald-200/80 flex items-center gap-1.5 shadow-2xs">
-              <TrendingUp className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-              <span>80% - 90% Success Rate on Borrowing Money</span>
-            </span>
-          </div>
-
-            {/* Money Range Tag & Distance */}
-            <div className="flex items-center gap-2 text-xs flex-wrap pt-0.5">
-              <span className="text-blue-900 bg-blue-50 px-2.5 py-1 rounded-lg text-[11px] font-extrabold border border-blue-200/80 flex items-center gap-1.5 shadow-2xs">
-                <Coins className="w-3.5 h-3.5 text-[#003893] shrink-0" />
-                <span>Limit: ₹{minAmt} to ₹{maxAmt}</span>
-              </span>
-
-              <span className="text-emerald-900 bg-emerald-100/90 px-2.5 py-1 rounded-lg text-[11px] font-extrabold border border-emerald-300 flex items-center gap-1.5 shadow-xs animate-pulse-subtle">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-600"></span>
+            {/* Institution Information */}
+            <div className="flex-1 min-w-0 space-y-1.5">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="font-extrabold text-slate-900 text-base sm:text-lg font-heading leading-tight truncate group-hover:text-[#003893] transition-colors">
+                  {displayName}
+                </h3>
+                <span className="badge-verified-green">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 fill-emerald-100 shrink-0" />
+                  Verified Partner
                 </span>
-                <MapPin className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
-                <span>
-                  {lender.distanceKm} KM away • {lender.place ? `${lender.place}, ` : ''}{lender.city} (Inside {lender.lendingRadiusKm || 50} KM Radius)
+              </div>
+
+              {/* Success Rate Badge */}
+              <div className="flex items-center gap-2 text-xs flex-wrap pt-0.5">
+                <span className="text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-lg text-[11px] font-extrabold border border-emerald-200/80 flex items-center gap-1.5 shadow-2xs">
+                  <TrendingUp className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  <span>80% - 90% Success Rate on Borrowing Money</span>
                 </span>
-              </span>
+              </div>
+
+              {/* Money Range Tag & Distance */}
+              <div className="flex items-center gap-2 text-xs flex-wrap pt-0.5">
+                <span className="text-blue-900 bg-blue-50 px-2.5 py-1 rounded-lg text-[11px] font-extrabold border border-blue-200/80 flex items-center gap-1.5 shadow-2xs">
+                  <Coins className="w-3.5 h-3.5 text-[#003893] shrink-0" />
+                  <span>Limit: ₹{minAmt} to ₹{maxAmt}</span>
+                </span>
+
+                <span className="text-emerald-900 bg-emerald-100/90 px-2.5 py-1 rounded-lg text-[11px] font-extrabold border border-emerald-300 flex items-center gap-1.5 shadow-xs animate-pulse-subtle">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-600"></span>
+                  </span>
+                  <MapPin className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
+                  <span>
+                    {lender.distanceKm} KM away • {lender.place ? `${lender.place}, ` : ''}{lender.city} (Inside {lender.lendingRadiusKm || 50} KM Radius)
+                  </span>
+                </span>
+              </div>
             </div>
-        </div>
-
-      </div>
+          </div>
+        );
+      })()}
 
       {/* Right Column: Apply Now, Phone Call & WhatsApp Message Buttons */}
       <div className="flex flex-col gap-2 flex-shrink-0 w-full sm:w-auto justify-end border-t sm:border-t-0 pt-3 sm:pt-0 border-slate-100 z-10 min-w-[130px]">

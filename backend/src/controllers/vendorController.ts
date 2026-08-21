@@ -181,10 +181,17 @@ export const searchLenders = async (req: AuthenticatedRequest, res: Response) =>
     const maskedPhone = rawPhone.substring(0, 3) + '******' + rawPhone.substring(rawPhone.length - 2);
     const maskedEmail = lender.user?.email ? lender.user.email.replace(/(.{2})(.*)(?=@)/, '$1***') : 'contact***@lender.com';
 
+    let formattedInstName = lender.institutionName || 'Business Money Financer';
+    if (!formattedInstName.toLowerCase().includes('money financer')) {
+      formattedInstName = `${formattedInstName} Money Financer`;
+    }
+
     return {
       id: lender.id,
-      institutionName: lender.institutionName,
+      institutionName: formattedInstName,
       institutionType: lender.institutionType,
+      logoUrl: (lender as any).logoUrl || (lender as any).avatarUrl || undefined,
+      avatarUrl: (lender as any).avatarUrl || (lender as any).logoUrl || undefined,
       registrationNumber: lender.registrationNumber,
       loanCategories: categoriesArray,
       minLoanAmount: lender.minLoanAmount,

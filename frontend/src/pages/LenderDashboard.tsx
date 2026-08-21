@@ -228,10 +228,21 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
       return;
     }
     const reader = new FileReader();
-    reader.onload = () => {
+    reader.onload = async () => {
       const dataUrl = reader.result as string;
       setLenderAvatarUrl(dataUrl);
       localStorage.setItem('sbni_lender_avatar', dataUrl);
+
+      // Persist to backend lender profile so all vendors immediately see this brand avatar
+      try {
+        await updateLenderProfileApi({
+          avatarUrl: dataUrl,
+          logoUrl: dataUrl,
+          institutionName: currentUserObj.name,
+        } as any);
+      } catch (err) {
+        console.error('Failed to sync lender avatar to backend:', err);
+      }
     };
     reader.readAsDataURL(file);
   };

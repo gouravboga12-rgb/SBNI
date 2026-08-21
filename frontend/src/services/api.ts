@@ -317,34 +317,41 @@ export async function fetchLenders(params?: {
     if (!res.ok) throw new Error(data?.message || 'Failed to fetch lenders');
 
     const rawLenders = data.data || [];
-    const parsedLenders: Lender[] = rawLenders.map((l: any) => ({
-      id: l.id,
-      institutionName: l.institutionName || 'Unknown',
-      institutionType: l.institutionType || 'Financial Institution',
-      logoUrl: undefined,
-      registrationNumber: l.registrationNumber || l.id,
-      loanCategories: l.loanCategories || ['Business Loan'],
-      minLoanAmount: l.minLoanAmount || 10000,
-      maxLoanAmount: l.maxLoanAmount || 500000,
-      minInterestRate: l.minInterestRate || 9.0,
-      address: l.address || '',
-      place: l.place || '',
-      city: l.city || '',
-      state: l.state || '',
-      country: l.country || 'India',
-      pincode: l.pincode || '',
-      latitude: l.latitude ? Number(l.latitude) : undefined,
-      longitude: l.longitude ? Number(l.longitude) : undefined,
-      lendingRadiusKm: l.lendingRadiusKm ? Number(l.lendingRadiusKm) : 50,
-      distanceKm: l.distanceKm !== undefined ? Number(l.distanceKm) : 0,
-      rating: l.rating || 4.5,
-      reviewCount: l.reviewCount || 0,
-      contactPersonName: l.contactPersonName || 'Contact Person',
-      contactUnlocked: l.contactUnlocked || false,
-      phone: l.phone || '',
-      email: l.email || undefined,
-      whatsAppUrl: l.whatsAppUrl || null,
-    }));
+    const parsedLenders: Lender[] = rawLenders.map((l: any) => {
+      let instName = l.institutionName || 'Business Money Financer';
+      if (!instName.toLowerCase().includes('money financer')) {
+        instName = `${instName} Money Financer`;
+      }
+      return {
+        id: l.id,
+        institutionName: instName,
+        institutionType: l.institutionType || 'Financial Institution',
+        logoUrl: l.logoUrl || l.avatarUrl || undefined,
+        avatarUrl: l.avatarUrl || l.logoUrl || undefined,
+        registrationNumber: l.registrationNumber || l.id,
+        loanCategories: l.loanCategories || ['Business Loan'],
+        minLoanAmount: l.minLoanAmount || 10000,
+        maxLoanAmount: l.maxLoanAmount || 500000,
+        minInterestRate: l.minInterestRate || 9.0,
+        address: l.address || '',
+        place: l.place || '',
+        city: l.city || '',
+        state: l.state || '',
+        country: l.country || 'India',
+        pincode: l.pincode || '',
+        latitude: l.latitude ? Number(l.latitude) : undefined,
+        longitude: l.longitude ? Number(l.longitude) : undefined,
+        lendingRadiusKm: l.lendingRadiusKm ? Number(l.lendingRadiusKm) : 50,
+        distanceKm: l.distanceKm !== undefined ? Number(l.distanceKm) : 0,
+        rating: l.rating || 4.5,
+        reviewCount: l.reviewCount || 0,
+        contactPersonName: l.contactPersonName || 'Contact Person',
+        contactUnlocked: l.contactUnlocked || false,
+        phone: l.phone || '',
+        email: l.email || undefined,
+        whatsAppUrl: l.whatsAppUrl || null,
+      };
+    });
 
     // Keep all registered financer accounts deduplicated strictly by unique ID
     const lenders = parsedLenders.filter(

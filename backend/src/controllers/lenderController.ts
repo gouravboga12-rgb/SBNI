@@ -23,11 +23,18 @@ export const updateLenderProfile = async (req: AuthenticatedRequest, res: Respon
     longitude,
     lendingRadiusKm,
     contactPersonName,
+    avatarUrl,
+    logoUrl,
   } = req.body;
 
   let parsedLat = latitude !== undefined && latitude !== null ? parseFloat(String(latitude)) : undefined;
   let parsedLng = longitude !== undefined && longitude !== null ? parseFloat(String(longitude)) : undefined;
   const parsedRadius = lendingRadiusKm !== undefined && lendingRadiusKm !== null ? parseFloat(String(lendingRadiusKm)) : undefined;
+
+  let financerName = institutionName;
+  if (financerName && !financerName.toLowerCase().includes('money financer')) {
+    financerName = `${financerName} Money Financer`;
+  }
 
   if (parsedLat === undefined || parsedLng === undefined || (Math.abs(parsedLat - 19.076) < 0.01 && Math.abs(parsedLng - 72.8777) < 0.01)) {
     const combined = `${address || ''} ${place || ''} ${city || ''} ${state || ''}`.toLowerCase();
@@ -52,10 +59,10 @@ export const updateLenderProfile = async (req: AuthenticatedRequest, res: Respon
     }
   }
 
-  const profile = await prisma.lenderProfile.upsert({
+  const profile = await (prisma.lenderProfile as any).upsert({
     where: { userId },
     update: {
-      institutionName,
+      institutionName: financerName,
       institutionType: institutionType ? (institutionType as LenderType) : undefined,
       registrationNumber,
       loanCategories: Array.isArray(loanCategories) ? JSON.stringify(loanCategories) : loanCategories,
@@ -72,10 +79,12 @@ export const updateLenderProfile = async (req: AuthenticatedRequest, res: Respon
       longitude: parsedLng,
       lendingRadiusKm: parsedRadius,
       contactPersonName,
+      avatarUrl: avatarUrl || logoUrl || undefined,
+      logoUrl: logoUrl || avatarUrl || undefined,
     },
     create: {
       userId: userId!,
-      institutionName: institutionName || 'Financial Institution',
+      institutionName: financerName || 'Business Money Financer',
       institutionType: (institutionType as LenderType) || 'NBFC',
       registrationNumber: registrationNumber || 'REG-1001',
       loanCategories: Array.isArray(loanCategories) ? JSON.stringify(loanCategories) : JSON.stringify(['Business Loan']),
@@ -92,6 +101,8 @@ export const updateLenderProfile = async (req: AuthenticatedRequest, res: Respon
       longitude: parsedLng ?? 78.4867,
       lendingRadiusKm: parsedRadius ?? 50.0,
       contactPersonName: contactPersonName || 'Lending Officer',
+      avatarUrl: avatarUrl || logoUrl || undefined,
+      logoUrl: logoUrl || avatarUrl || undefined,
     },
   });
 

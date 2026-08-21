@@ -110,6 +110,8 @@ model VendorProfile {
   kycStatus          KYCStatus @default(VERIFIED)
   kycRejectionReason String?
   isFraud            Boolean   @default(false)
+  avatarUrl          String?
+  logoUrl            String?
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
@@ -147,6 +149,8 @@ model LenderProfile {
   rejectionReason    String?
   rating             Float      @default(4.8)
   reviewCount        Int        @default(12)
+  avatarUrl          String?
+  logoUrl            String?
   createdAt          DateTime   @default(now())
   updatedAt          DateTime   @updatedAt
 
