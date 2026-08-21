@@ -203,19 +203,19 @@ export const getVendorProfiles = async (req: AuthenticatedRequest, res: Response
       lendingRadiusKm: lenderRadiusKm,
       mobileNumber: v.user?.phone || 'Not provided',
       emailId: v.user?.email || 'vendor@justpaisa.com',
-      panNumber: v.panNumber || panDoc?.documentNumber || null,
-      aadhaarNumber: (v as any).aadhaarNumber || aadhaarDoc?.documentNumber || null,
-      gstNumber: v.gstNumber || gstDoc?.documentNumber || null,
+      panNumber: null, // Redacted for discovery security
+      aadhaarNumber: null, // Redacted for discovery security
+      gstNumber: null, // Redacted for discovery security
       kycStatus: v.kycStatus,
       avatarUrl: v.avatarUrl || v.logoUrl || null,
-      panFileUrl: (v as any).panFileUrl || panDoc?.fileUrl || null,
-      aadhaarFileUrl: (v as any).aadhaarFileUrl || aadhaarDoc?.fileUrl || null,
-      shopLicensePdf: (v as any).businessLicenseUrl || shopDoc?.fileUrl || null,
-      gstCertificatePdf: (v as any).gstFileUrl || gstDoc?.fileUrl || null,
+      panFileUrl: null, // Redacted for discovery security
+      aadhaarFileUrl: null, // Redacted for discovery security
+      shopLicensePdf: null, // Redacted for discovery security
+      gstCertificatePdf: null, // Redacted for discovery security
       shopPhotoUrl: (v as any).shopPhotos ? (() => { try { const p = JSON.parse((v as any).shopPhotos); return p[0] || null; } catch { return null; } })() : (v.logoUrl || v.avatarUrl || null),
       shopPhotos: (v as any).shopPhotos ? (() => { try { return JSON.parse((v as any).shopPhotos); } catch { return []; } })() : (v.avatarUrl ? [v.avatarUrl] : []),
       liveSelfieUrl: v.avatarUrl || null,
-      kycDocuments: kycDocs,
+      kycDocuments: [], // Redacted for discovery security
     };
   });
 
