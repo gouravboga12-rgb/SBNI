@@ -1040,13 +1040,13 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                 
                 <div className="card-white p-4 flex items-center justify-between hover:shadow-md transition-all">
                   <div>
-                    <div className="text-xs text-slate-500 font-medium">Nearby Shop Businesses</div>
-                    <div className="text-2xl font-extrabold text-slate-900 font-heading mt-0.5">{nearbyBusinesses.length}</div>
+                    <div className="text-xs text-slate-500 font-medium">Total Shop Businesses</div>
+                    <div className="text-2xl font-extrabold text-slate-900 font-heading mt-0.5">{requests.length}</div>
                     <button
-                      onClick={handleBusinessesClick}
+                      onClick={() => handleReportsClick('ALL')}
                       className="text-xs text-blue-600 font-bold mt-1 hover:underline flex items-center gap-0.5 cursor-pointer"
                     >
-                      Explore All <ChevronRight className="w-3 h-3" />
+                      View All <ChevronRight className="w-3 h-3" />
                     </button>
                   </div>
                   <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 flex-shrink-0">
@@ -1089,64 +1089,75 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
               </div>
             </div>
 
-            {/* Discovered Nearby Businesses on Home */}
+            {/* Recent Verification Requests on Home */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               
               <div className="lg:col-span-2 space-y-4">
                 <div className="flex items-center justify-between flex-wrap gap-2">
-                  <div>
-                    <h3 className="font-extrabold text-slate-900 text-base md:text-lg font-heading splash-text-effect">
-                      Nearby Discovered Shop & Startup Businesses
-                    </h3>
-                    <p className="text-xs text-slate-500 font-medium">
-                      Businesses located near {lenderLocation.place}, {lenderLocation.city}
-                    </p>
-                  </div>
-                  <button onClick={handleBusinessesClick} className="text-xs text-blue-600 font-bold hover:underline cursor-pointer">
-                    View All ({nearbyBusinesses.length})
+                  <h3 className="font-extrabold text-slate-900 text-base md:text-lg font-heading splash-text-effect">
+                    Recent Verification Requests
+                  </h3>
+                  <button onClick={() => handleReportsClick('ALL')} className="text-xs text-blue-600 font-bold hover:underline cursor-pointer">
+                    View All
                   </button>
                 </div>
 
-                <div className="card-white splash-highlight-card divide-y divide-slate-100 overflow-hidden shadow-lg bg-white">
-                  {nearbyBusinesses.slice(0, 5).map((biz) => (
-                    <div
-                      key={biz.id}
-                      onClick={() => handleVendorSelect(biz)}
-                      className="p-4 flex items-center justify-between cursor-pointer hover:bg-emerald-50/40 transition-all group"
-                    >
-                      <div className="flex items-center gap-4 min-w-0">
-                        <div className="w-12 h-12 rounded-2xl bg-slate-100 border border-slate-200 overflow-hidden flex-shrink-0 group-hover:scale-105 transition-transform shadow-xs flex items-center justify-center font-bold text-slate-700">
-                          {biz.avatarUrl ? (
-                            <img src={biz.avatarUrl} alt={biz.shopName} className="w-full h-full object-cover" />
-                          ) : (
-                            <span>{biz.shopName.charAt(0).toUpperCase()}</span>
-                          )}
+                {requests.length === 0 ? (
+                  <div className="card-white p-8 text-center space-y-3">
+                    <Clock className="w-10 h-10 text-slate-400 mx-auto" />
+                    <div className="font-bold text-slate-700 text-sm">No Recent Applied Requests</div>
+                    <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                      Vendors who submit loan requests specifically to your business money financer account will appear here.
+                    </p>
+                    <button onClick={handleBusinessesClick} className="btn-sbni-green text-xs py-2 px-4 font-bold mx-auto">
+                      Explore All Registered Shop Businesses
+                    </button>
+                  </div>
+                ) : (
+                  <div className="card-white splash-highlight-card divide-y divide-slate-100 overflow-hidden shadow-lg bg-white">
+                    {requests.slice(0, 5).map((req) => (
+                      <div
+                        key={req.id}
+                        onClick={() => handleVendorSelect(req)}
+                        className="p-4 flex items-center justify-between cursor-pointer hover:bg-emerald-50/40 transition-all group"
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 rounded-full bg-slate-200 border-2 border-emerald-300 overflow-hidden flex-shrink-0 group-hover:scale-105 transition-transform shadow-xs flex items-center justify-center font-bold text-slate-700">
+                            {req.avatarUrl || req.liveSelfieUrl ? (
+                              <img
+                                src={req.avatarUrl || req.liveSelfieUrl}
+                                alt={req.vendorName}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <span>{req.vendorName.charAt(0).toUpperCase()}</span>
+                            )}
+                          </div>
+                          <div>
+                            <div className="font-bold text-slate-900 text-sm md:text-base group-hover:text-emerald-800 transition-colors">
+                              {req.vendorName}
+                            </div>
+                            <div className="text-xs text-slate-600 font-medium">Shop: {req.shopName}</div>
+                            <div className="text-xs text-slate-400 mt-0.5">Requested on {req.requestedDate}</div>
+                          </div>
                         </div>
-                        <div className="min-w-0">
-                          <div className="font-bold text-slate-900 text-sm md:text-base group-hover:text-emerald-800 transition-colors truncate">
-                            {biz.shopName}
-                          </div>
-                          <div className="text-xs text-slate-600 font-medium flex items-center gap-1.5 truncate">
-                            <span>Owner: {biz.vendorName}</span>
-                            <span className="text-slate-300">•</span>
-                            <span className="text-slate-500">{biz.category}</span>
-                          </div>
-                          <div className="text-[11px] text-emerald-700 font-bold mt-0.5 flex items-center gap-1">
-                            <MapPin className="w-3 h-3 text-rose-500 shrink-0" />
-                            <span>{biz.distanceKm} KM away • {biz.place}, {biz.city}</span>
-                          </div>
-                        </div>
-                      </div>
 
-                      <div className="flex items-center gap-3 shrink-0">
-                        <span className="badge-verified-green hidden sm:inline-flex">
-                          ✓ Verified Shop
-                        </span>
-                        <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-emerald-600 group-hover:translate-x-1 transition-all" />
+                        <div className="flex items-center gap-3">
+                          {checkVendorIsFraud(req) ? (
+                            <span className="px-2.5 py-1 rounded-full bg-rose-600 text-white font-extrabold text-[10px] uppercase shadow-md animate-pulse">
+                              🚨 FRAUD ACCOUNT
+                            </span>
+                          ) : (
+                            <span className={req.status === 'Verified' ? 'badge-verified-green' : 'badge-pending-amber'}>
+                              {req.status}
+                            </span>
+                          )}
+                          <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-emerald-600 group-hover:translate-x-1 transition-all" />
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Quick Actions Panel */}
