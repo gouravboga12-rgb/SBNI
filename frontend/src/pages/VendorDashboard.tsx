@@ -17,6 +17,11 @@ import {
   uploadFileToEc2Api,
 } from '../services/api';
 import {
+  downloadDocumentFile,
+  resolveDocumentUrl,
+  isPdfDocument,
+} from '../utils/documentGenerators';
+import {
   Store,
   Building2,
   Search,
@@ -50,6 +55,7 @@ import {
   X,
   Plus,
   XCircle,
+  Download,
 } from 'lucide-react';
 
 const VENDOR_BANNER_SLIDES: BannerSlide[] = [
@@ -2075,43 +2081,69 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
       />
 
       {/* Document & Photo Preview Modal */}
-      {previewDocModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-3xl p-6 max-w-2xl w-full shadow-2xl space-y-4 border border-slate-200">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div className="font-extrabold text-slate-900 text-base flex items-center gap-2 font-heading">
-                <FileText className="w-5 h-5 text-blue-600" />
-                {previewDocModal.title}
+      {previewDocModal && (() => {
+        const targetUrl = resolveDocumentUrl(previewDocModal.url);
+        const isPdf = isPdfDocument(previewDocModal.url);
+
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in">
+            <div className="bg-white rounded-3xl p-6 max-w-2xl w-full shadow-2xl space-y-4 border border-slate-200">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div className="font-extrabold text-slate-900 text-base flex items-center gap-2 font-heading">
+                  <FileText className="w-5 h-5 text-blue-600" />
+                  {previewDocModal.title}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setPreviewDocModal(null)}
+                  className="p-2 rounded-full hover:bg-slate-100 text-slate-500 cursor-pointer"
+                >
+                  <XCircle className="w-6 h-6" />
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => setPreviewDocModal(null)}
-                className="p-2 rounded-full hover:bg-slate-100 text-slate-500 cursor-pointer"
-              >
-                <XCircle className="w-6 h-6" />
-              </button>
-            </div>
 
-            <div className="rounded-2xl border border-slate-200 overflow-hidden max-h-[70vh] flex items-center justify-center bg-slate-900 p-2">
-              <img
-                src={previewDocModal.url}
-                alt={previewDocModal.title}
-                className="max-h-[65vh] w-auto object-contain rounded-xl"
-              />
-            </div>
+              <div className="rounded-2xl border border-slate-200 overflow-hidden max-h-[70vh] flex items-center justify-center bg-slate-900 p-2">
+                {isPdf ? (
+                  <iframe
+                    src={targetUrl}
+                    title={previewDocModal.title}
+                    className="w-full h-[65vh] rounded-xl bg-white"
+                  />
+                ) : (
+                  <img
+                    src={targetUrl}
+                    alt={previewDocModal.title}
+                    className="max-h-[65vh] w-auto object-contain rounded-xl"
+                  />
+                )}
+              </div>
 
-            <div className="flex justify-end gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => setPreviewDocModal(null)}
-                className="px-5 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-bold text-xs hover:bg-slate-100 cursor-pointer"
-              >
-                Close Preview
-              </button>
+              <div className="flex items-center justify-between gap-3 pt-2 flex-wrap">
+                <div className="text-xs text-slate-500 font-medium">
+                  Official KYC Document • Stored securely on AWS
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => downloadDocumentFile(targetUrl, previewDocModal.title.replace(/[^a-zA-Z0-9_-]/g, '_'))}
+                    className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs flex items-center gap-1.5 shadow-md transition-all active:scale-95 cursor-pointer"
+                  >
+                    <Download className="w-4 h-4" />
+                    <span>Download File</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPreviewDocModal(null)}
+                    className="px-5 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-bold text-xs hover:bg-slate-100 cursor-pointer"
+                  >
+                    Close Preview
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
     </div>
   );

@@ -337,19 +337,44 @@ export function generateGstCertDataUrl(shopName: string, vendorName: string, gst
 }
 
 /**
+ * Resolves relative /uploads/... URLs to direct accessible endpoint
+ */
+export function resolveDocumentUrl(url: string | null | undefined): string {
+  if (!url) return '';
+  const trimmed = url.trim();
+  if (trimmed.startsWith('data:') || trimmed.startsWith('blob:') || trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+    return trimmed;
+  }
+  if (trimmed.startsWith('/uploads/')) {
+    if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '18.61.36.65') {
+      return trimmed;
+    }
+    return `http://18.61.36.65${trimmed}`;
+  }
+  return trimmed;
+}
+
+export function isPdfDocument(url: string | null | undefined): boolean {
+  if (!url) return false;
+  const lower = url.toLowerCase();
+  return lower.includes('.pdf') || lower.startsWith('data:application/pdf');
+}
+
+/**
  * Trigger browser file download for any image/document URL or data link from AWS EC2 / RDS
  */
 export function downloadDocumentFile(fileUrl: string, fileName: string) {
   if (!fileUrl) return;
 
-  const isPdf = fileUrl.toLowerCase().includes('.pdf');
+  const targetUrl = resolveDocumentUrl(fileUrl);
+  const isPdf = isPdfDocument(fileUrl);
   const cleanName = fileName.endsWith('.png') || fileName.endsWith('.jpg') || fileName.endsWith('.svg') || fileName.endsWith('.pdf') || fileName.endsWith('.webp')
     ? fileName
     : (isPdf ? `${fileName}.pdf` : `${fileName}.png`);
 
-  if (fileUrl.startsWith('data:') || fileUrl.startsWith('blob:')) {
+  if (targetUrl.startsWith('data:') || targetUrl.startsWith('blob:')) {
     const link = document.createElement('a');
-    link.href = fileUrl;
+    link.href = targetUrl;
     link.download = cleanName;
     document.body.appendChild(link);
     link.click();
@@ -358,7 +383,7 @@ export function downloadDocumentFile(fileUrl: string, fileName: string) {
   }
 
   // If HTTP URL from AWS EC2
-  fetch(fileUrl)
+  fetch(targetUrl)
     .then((res) => res.blob())
     .then((blob) => {
       const blobUrl = window.URL.createObjectURL(blob);
@@ -367,17 +392,10 @@ export function downloadDocumentFile(fileUrl: string, fileName: string) {
       link.download = cleanName;
       document.body.appendChild(link);
       link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(blobUrl);
+      setTimeout(() => window.URL.revokeObjectURL(blobUrl), 1000);
     })
-    .catch(() => {
-      // Fallback direct link download
-      const link = document.createElement('a');
-      link.href = fileUrl;
-      link.target = '_blank';
-      link.download = cleanName;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+    .catch((err) => {
+      console.warn('Direct blob download failed, falling back to window.open:', err);
+      window.open(targetUrl, '_blank');
     });
 }
