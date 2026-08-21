@@ -420,6 +420,8 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
   });
   const [isSavingVendorProfile, setIsSavingVendorProfile] = useState(false);
   const [vendorSaveSuccess, setVendorSaveSuccess] = useState<string | null>(null);
+  const [uploadingDocField, setUploadingDocField] = useState<string | null>(null);
+  const [uploadedDocNames, setUploadedDocNames] = useState<Record<string, string>>({});
 
   const startEditingVendor = () => {
     if (!currentVendorObj) {
@@ -446,6 +448,38 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
     setIsEditingVendorProfile(true);
   };
 
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Photo size must be under 5MB.');
+      return;
+    }
+    setUploadingDocField('avatar');
+    try {
+      const res = await uploadFileToEc2Api(file, 'avatars', file.name, 'AVATAR');
+      const fileUrl = res.fileUrl || res.fullUrl;
+      if (fileUrl) {
+        setAvatarUrl(fileUrl);
+        await updateVendorProfileApi({
+          avatarUrl: fileUrl,
+          logoUrl: fileUrl,
+        });
+        window.dispatchEvent(new CustomEvent('sbni_vendor_profile_updated'));
+        setVendorSaveSuccess('✅ Profile photo updated & saved on AWS!');
+        setTimeout(() => setVendorSaveSuccess(null), 4000);
+      } else {
+        alert(res.message || 'Failed to upload photo.');
+      }
+    } catch (err: any) {
+      console.error('Failed to upload avatar to AWS EC2:', err);
+      alert('Failed to upload profile photo. Please try again.');
+    } finally {
+      setUploadingDocField(null);
+      if (e.target) e.target.value = '';
+    }
+  };
+
   const handleDocFileUpload = async (
     e: React.ChangeEvent<HTMLInputElement>,
     field: 'panFileUrl' | 'aadhaarFileUrl' | 'businessLicenseUrl' | 'gstFileUrl'
@@ -456,16 +490,27 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
       alert('File size must be under 10MB.');
       return;
     }
+    const fileName = file.name;
+    setUploadingDocField(field);
     try {
-      const folder = field === 'panFileUrl' || field === 'aadhaarFileUrl' ? 'documents' : 'documents';
+      const folder = 'documents';
       const docType = field === 'panFileUrl' ? 'PAN' : field === 'aadhaarFileUrl' ? 'AADHAAR' : field === 'gstFileUrl' ? 'GST_CERTIFICATE' : 'BUSINESS_PROOF';
-      const res = await uploadFileToEc2Api(file, folder, file.name, docType);
+      const res = await uploadFileToEc2Api(file, folder, fileName, docType);
       const fileUrl = res.fileUrl || res.fullUrl;
       if (fileUrl) {
         setVendorEditForm((prev) => ({ ...prev, [field]: fileUrl }));
+        setUploadedDocNames((prev) => ({ ...prev, [field]: fileName }));
+        setVendorSaveSuccess(`✅ Uploaded "${fileName}" to AWS! Click "Save & Apply" at the bottom to apply changes.`);
+        setTimeout(() => setVendorSaveSuccess(null), 6000);
+      } else {
+        alert(res.message || 'Failed to upload file to AWS server.');
       }
     } catch (err) {
       console.error('Failed to upload document to AWS EC2:', err);
+      alert('Failed to upload file to AWS server.');
+    } finally {
+      setUploadingDocField(null);
+      if (e.target) e.target.value = '';
     }
   };
 
@@ -476,17 +521,27 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
       alert('Photo size must be under 10MB.');
       return;
     }
+    const fileName = file.name;
+    setUploadingDocField('shopPhotos');
     try {
-      const res = await uploadFileToEc2Api(file, 'shops', file.name, 'SHOP_PREMISES');
+      const res = await uploadFileToEc2Api(file, 'shops', fileName, 'SHOP_PREMISES');
       const fileUrl = res.fileUrl || res.fullUrl;
       if (fileUrl) {
         setVendorEditForm((prev) => ({
           ...prev,
           shopPhotos: [...(prev.shopPhotos || []), fileUrl],
         }));
+        setVendorSaveSuccess(`✅ Added shop photo "${fileName}". Click "Save & Apply" to apply.`);
+        setTimeout(() => setVendorSaveSuccess(null), 5000);
+      } else {
+        alert(res.message || 'Failed to upload shop photo.');
       }
     } catch (err) {
       console.error('Failed to upload shop photo to AWS EC2:', err);
+      alert('Failed to upload shop photo.');
+    } finally {
+      setUploadingDocField(null);
+      if (e.target) e.target.value = '';
     }
   };
 
@@ -567,27 +622,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
     }
   };
 
-  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      try {
-        const uploadRes = await uploadFileToEc2Api(file, 'avatars', file.name);
-        const hostedUrl = uploadRes.fileUrl || uploadRes.fullUrl;
-        if (hostedUrl) {
-          setAvatarUrl(hostedUrl);
-          await updateVendorProfileApi({
-            avatarUrl: hostedUrl,
-            logoUrl: hostedUrl,
-            ownerName: currentVendorObj?.name || 'Business Owner',
-            businessName: currentVendorObj?.shopName || 'Business Enterprise',
-          });
-          window.dispatchEvent(new CustomEvent('sbni_vendor_profile_updated'));
-        }
-      } catch (err) {
-        console.error('Failed to upload vendor avatar to AWS EC2 / RDS:', err);
-      }
-    }
-  };
+
 
   const handleRequestLoan = (lender: Lender) => {
     if (!currentUser) {
@@ -1734,9 +1769,14 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                     <div className="p-4 rounded-2xl bg-blue-50/40 border border-blue-200/80 space-y-2.5">
                       <div className="flex items-center justify-between">
                         <label className="font-extrabold text-slate-800 text-xs block">1. PAN Card Details *</label>
-                        {vendorEditForm.panFileUrl && (
-                          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                            ✓ Document Attached
+                        {vendorEditForm.panFileUrl ? (
+                          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 flex items-center gap-1">
+                            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                            {uploadedDocNames.panFileUrl ? `✓ Attached: ${uploadedDocNames.panFileUrl}` : '✓ Document Attached'}
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
+                            Required
                           </span>
                         )}
                       </div>
@@ -1747,25 +1787,52 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                         placeholder="Enter PAN Number (e.g. ABCDE1234F)"
                         className="w-full px-3 py-2 bg-white rounded-xl border border-slate-300 font-mono font-bold text-slate-900 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none uppercase"
                       />
-                      <label className="w-full py-2 px-3 rounded-xl bg-white border border-dashed border-blue-400 hover:bg-blue-50/80 text-blue-700 font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-2xs">
-                        <Camera className="w-4 h-4 text-blue-600" />
-                        <span>{vendorEditForm.panFileUrl ? 'Change PAN Card Photo / PDF' : 'Upload PAN Card Photo / PDF'}</span>
-                        <input
-                          type="file"
-                          accept="image/*,application/pdf"
-                          onChange={(e) => handleDocFileUpload(e, 'panFileUrl')}
-                          className="hidden"
-                        />
-                      </label>
+                      
+                      {uploadingDocField === 'panFileUrl' ? (
+                        <div className="w-full py-2.5 px-3 rounded-xl bg-blue-100/80 border border-blue-300 text-[#003893] font-bold text-xs flex items-center justify-center gap-2 animate-pulse">
+                          <Loader2 className="w-4 h-4 animate-spin text-[#003893]" />
+                          <span>Uploading PAN to AWS EC2...</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <label className="flex-1 py-2 px-3 rounded-xl bg-white border border-dashed border-blue-400 hover:bg-blue-50/80 text-blue-700 font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-2xs">
+                            <Camera className="w-4 h-4 text-blue-600" />
+                            <span>{vendorEditForm.panFileUrl ? 'Change PAN Card' : 'Upload PAN Card Photo / PDF'}</span>
+                            <input
+                              type="file"
+                              accept="image/*,application/pdf"
+                              onClick={(e) => { (e.target as HTMLInputElement).value = ''; }}
+                              onChange={(e) => handleDocFileUpload(e, 'panFileUrl')}
+                              className="hidden"
+                            />
+                          </label>
+                          {vendorEditForm.panFileUrl && (
+                            <button
+                              type="button"
+                              onClick={() => setPreviewDocModal({ title: `PAN Card (${vendorEditForm.panNumber || 'Verified'})`, url: vendorEditForm.panFileUrl, type: 'doc' })}
+                              className="px-3 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs border border-blue-200 flex items-center gap-1 shrink-0 cursor-pointer"
+                              title="Preview PAN Document"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                              <span>Preview</span>
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     {/* Aadhaar Card Input & File Upload */}
                     <div className="p-4 rounded-2xl bg-blue-50/40 border border-blue-200/80 space-y-2.5">
                       <div className="flex items-center justify-between">
                         <label className="font-extrabold text-slate-800 text-xs block">2. Aadhaar Card Details *</label>
-                        {vendorEditForm.aadhaarFileUrl && (
-                          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                            ✓ Document Attached
+                        {vendorEditForm.aadhaarFileUrl ? (
+                          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 flex items-center gap-1">
+                            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                            {uploadedDocNames.aadhaarFileUrl ? `✓ Attached: ${uploadedDocNames.aadhaarFileUrl}` : '✓ Document Attached'}
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
+                            Required
                           </span>
                         )}
                       </div>
@@ -1776,49 +1843,99 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                         placeholder="Enter 12-Digit Aadhaar (e.g. 1234 5678 9012)"
                         className="w-full px-3 py-2 bg-white rounded-xl border border-slate-300 font-mono font-bold text-slate-900 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
                       />
-                      <label className="w-full py-2 px-3 rounded-xl bg-white border border-dashed border-blue-400 hover:bg-blue-50/80 text-blue-700 font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-2xs">
-                        <Camera className="w-4 h-4 text-blue-600" />
-                        <span>{vendorEditForm.aadhaarFileUrl ? 'Change Aadhaar Card Photo / PDF' : 'Upload Aadhaar Card Photo / PDF'}</span>
-                        <input
-                          type="file"
-                          accept="image/*,application/pdf"
-                          onChange={(e) => handleDocFileUpload(e, 'aadhaarFileUrl')}
-                          className="hidden"
-                        />
-                      </label>
+
+                      {uploadingDocField === 'aadhaarFileUrl' ? (
+                        <div className="w-full py-2.5 px-3 rounded-xl bg-blue-100/80 border border-blue-300 text-[#003893] font-bold text-xs flex items-center justify-center gap-2 animate-pulse">
+                          <Loader2 className="w-4 h-4 animate-spin text-[#003893]" />
+                          <span>Uploading Aadhaar to AWS EC2...</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <label className="flex-1 py-2 px-3 rounded-xl bg-white border border-dashed border-blue-400 hover:bg-blue-50/80 text-blue-700 font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-2xs">
+                            <Camera className="w-4 h-4 text-blue-600" />
+                            <span>{vendorEditForm.aadhaarFileUrl ? 'Change Aadhaar Card' : 'Upload Aadhaar Card Photo / PDF'}</span>
+                            <input
+                              type="file"
+                              accept="image/*,application/pdf"
+                              onClick={(e) => { (e.target as HTMLInputElement).value = ''; }}
+                              onChange={(e) => handleDocFileUpload(e, 'aadhaarFileUrl')}
+                              className="hidden"
+                            />
+                          </label>
+                          {vendorEditForm.aadhaarFileUrl && (
+                            <button
+                              type="button"
+                              onClick={() => setPreviewDocModal({ title: `Aadhaar Card (${vendorEditForm.aadhaarNumber || 'Verified'})`, url: vendorEditForm.aadhaarFileUrl, type: 'doc' })}
+                              className="px-3 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs border border-blue-200 flex items-center gap-1 shrink-0 cursor-pointer"
+                              title="Preview Aadhaar Document"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                              <span>Preview</span>
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     {/* Business License / Shop Proof */}
                     <div className="p-4 rounded-2xl bg-blue-50/40 border border-blue-200/80 space-y-2.5">
                       <div className="flex items-center justify-between">
                         <label className="font-extrabold text-slate-800 text-xs block">3. Business License / Shop Act (Optional)</label>
-                        {vendorEditForm.businessLicenseUrl && (
-                          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                            ✓ Document Attached
+                        {vendorEditForm.businessLicenseUrl ? (
+                          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 flex items-center gap-1">
+                            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                            {uploadedDocNames.businessLicenseUrl ? `✓ Attached: ${uploadedDocNames.businessLicenseUrl}` : '✓ Document Attached'}
                           </span>
+                        ) : (
+                          <span className="text-[10px] font-medium text-slate-400">Optional</span>
                         )}
                       </div>
                       <p className="text-slate-500 text-[11px]">Upload Shop & Establishment license, Trade license, or Udyam MSME certificate.</p>
-                      <label className="w-full py-2 px-3 rounded-xl bg-white border border-dashed border-blue-400 hover:bg-blue-50/80 text-blue-700 font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-2xs">
-                        <FileText className="w-4 h-4 text-blue-600" />
-                        <span>{vendorEditForm.businessLicenseUrl ? 'Change License Document' : 'Upload Business License Proof'}</span>
-                        <input
-                          type="file"
-                          accept="image/*,application/pdf"
-                          onChange={(e) => handleDocFileUpload(e, 'businessLicenseUrl')}
-                          className="hidden"
-                        />
-                      </label>
+                      
+                      {uploadingDocField === 'businessLicenseUrl' ? (
+                        <div className="w-full py-2.5 px-3 rounded-xl bg-blue-100/80 border border-blue-300 text-[#003893] font-bold text-xs flex items-center justify-center gap-2 animate-pulse">
+                          <Loader2 className="w-4 h-4 animate-spin text-[#003893]" />
+                          <span>Uploading License to AWS EC2...</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <label className="flex-1 py-2 px-3 rounded-xl bg-white border border-dashed border-blue-400 hover:bg-blue-50/80 text-blue-700 font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-2xs">
+                            <FileText className="w-4 h-4 text-blue-600" />
+                            <span>{vendorEditForm.businessLicenseUrl ? 'Change License Document' : 'Upload Business License Proof'}</span>
+                            <input
+                              type="file"
+                              accept="image/*,application/pdf"
+                              onClick={(e) => { (e.target as HTMLInputElement).value = ''; }}
+                              onChange={(e) => handleDocFileUpload(e, 'businessLicenseUrl')}
+                              className="hidden"
+                            />
+                          </label>
+                          {vendorEditForm.businessLicenseUrl && (
+                            <button
+                              type="button"
+                              onClick={() => setPreviewDocModal({ title: `Business License (${vendorEditForm.shopName})`, url: vendorEditForm.businessLicenseUrl, type: 'doc' })}
+                              className="px-3 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs border border-blue-200 flex items-center gap-1 shrink-0 cursor-pointer"
+                              title="Preview Business License"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                              <span>Preview</span>
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     {/* GST Certificate */}
                     <div className="p-4 rounded-2xl bg-blue-50/40 border border-blue-200/80 space-y-2.5">
                       <div className="flex items-center justify-between">
                         <label className="font-extrabold text-slate-800 text-xs block">4. GST Certificate (Optional)</label>
-                        {vendorEditForm.gstFileUrl && (
-                          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                            ✓ Document Attached
+                        {vendorEditForm.gstFileUrl ? (
+                          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 flex items-center gap-1">
+                            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                            {uploadedDocNames.gstFileUrl ? `✓ Attached: ${uploadedDocNames.gstFileUrl}` : '✓ Document Attached'}
                           </span>
+                        ) : (
+                          <span className="text-[10px] font-medium text-slate-400">Optional</span>
                         )}
                       </div>
                       <input
@@ -1828,16 +1945,38 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                         placeholder="Enter 15-Digit GSTIN (e.g. 36AAAPL1234C1Z5)"
                         className="w-full px-3 py-2 bg-white rounded-xl border border-slate-300 font-mono font-bold text-slate-900 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none uppercase"
                       />
-                      <label className="w-full py-2 px-3 rounded-xl bg-white border border-dashed border-blue-400 hover:bg-blue-50/80 text-blue-700 font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-2xs">
-                        <FileText className="w-4 h-4 text-blue-600" />
-                        <span>{vendorEditForm.gstFileUrl ? 'Change GST Certificate' : 'Upload GST Certificate (PDF / Image)'}</span>
-                        <input
-                          type="file"
-                          accept="image/*,application/pdf"
-                          onChange={(e) => handleDocFileUpload(e, 'gstFileUrl')}
-                          className="hidden"
-                        />
-                      </label>
+                      
+                      {uploadingDocField === 'gstFileUrl' ? (
+                        <div className="w-full py-2.5 px-3 rounded-xl bg-blue-100/80 border border-blue-300 text-[#003893] font-bold text-xs flex items-center justify-center gap-2 animate-pulse">
+                          <Loader2 className="w-4 h-4 animate-spin text-[#003893]" />
+                          <span>Uploading GST Certificate to AWS EC2...</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <label className="flex-1 py-2 px-3 rounded-xl bg-white border border-dashed border-blue-400 hover:bg-blue-50/80 text-blue-700 font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-2xs">
+                            <FileText className="w-4 h-4 text-blue-600" />
+                            <span>{vendorEditForm.gstFileUrl ? 'Change GST Certificate' : 'Upload GST Certificate (PDF / Image)'}</span>
+                            <input
+                              type="file"
+                              accept="image/*,application/pdf"
+                              onClick={(e) => { (e.target as HTMLInputElement).value = ''; }}
+                              onChange={(e) => handleDocFileUpload(e, 'gstFileUrl')}
+                              className="hidden"
+                            />
+                          </label>
+                          {vendorEditForm.gstFileUrl && (
+                            <button
+                              type="button"
+                              onClick={() => setPreviewDocModal({ title: `GST Certificate (${vendorEditForm.gstNumber || vendorEditForm.shopName})`, url: vendorEditForm.gstFileUrl, type: 'doc' })}
+                              className="px-3 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs border border-blue-200 flex items-center gap-1 shrink-0 cursor-pointer"
+                              title="Preview GST Certificate"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                              <span>Preview</span>
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                   </div>
@@ -1852,16 +1991,24 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                     <span>Shop Photos & Storefront Gallery</span>
                   </div>
                   {isEditingVendorProfile && (
-                    <label className="px-3.5 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-extrabold text-xs flex items-center gap-1.5 transition-all shadow-xs cursor-pointer active:scale-95">
-                      <Plus className="w-3.5 h-3.5" />
-                      <span>+ Add Shop Photo</span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleAddShopPhoto}
-                        className="hidden"
-                      />
-                    </label>
+                    uploadingDocField === 'shopPhotos' ? (
+                      <div className="px-3.5 py-1.5 rounded-xl bg-indigo-100 text-indigo-800 font-extrabold text-xs flex items-center gap-1.5 animate-pulse">
+                        <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-600" />
+                        <span>Uploading Photo to AWS...</span>
+                      </div>
+                    ) : (
+                      <label className="px-3.5 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-extrabold text-xs flex items-center gap-1.5 transition-all shadow-xs cursor-pointer active:scale-95">
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>+ Add Shop Photo</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onClick={(e) => { (e.target as HTMLInputElement).value = ''; }}
+                          onChange={handleAddShopPhoto}
+                          className="hidden"
+                        />
+                      </label>
+                    )
                   )}
                 </div>
 
