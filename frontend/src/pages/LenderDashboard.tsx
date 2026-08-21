@@ -1920,6 +1920,11 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                     if (selectedVendor.shopImages && selectedVendor.shopImages.length > 0) {
                       selectedVendor.shopImages.forEach((img, i) => photos.push({ title: `Shop Photo ${i + 1}`, url: img }));
                     }
+                    if (selectedVendor.shopPhotos && Array.isArray(selectedVendor.shopPhotos) && selectedVendor.shopPhotos.length > 0) {
+                      selectedVendor.shopPhotos.forEach((img: string, i: number) => {
+                        if (img && !photos.some(p => p.url === img)) photos.push({ title: `Storefront / Premises ${i + 1}`, url: img });
+                      });
+                    }
 
                     if (photos.length > 0) {
                       return (

@@ -440,6 +440,11 @@ export async function updateVendorProfileApi(payload: {
   longitude?: number;
   avatarUrl?: string;
   logoUrl?: string;
+  panFileUrl?: string;
+  aadhaarFileUrl?: string;
+  businessLicenseUrl?: string;
+  gstFileUrl?: string;
+  shopPhotos?: string[] | string;
 }): Promise<{ success: boolean; data?: any; message?: string }> {
   try {
     const data = await apiFetch('/vendors/profile', {

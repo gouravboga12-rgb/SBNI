@@ -42,6 +42,8 @@ import {
   Edit3,
   Save,
   X,
+  Plus,
+  XCircle,
 } from 'lucide-react';
 
 const VENDOR_BANNER_SLIDES: BannerSlide[] = [
@@ -343,6 +345,16 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
       const category = profile?.category || profile?.registrationType || 'Retail Shop Business';
       const shopId = profile?.id ? `SHOP-${String(profile.id).substring(0, 5).toUpperCase()}` : 'SHOP-1001';
       const isVerified = profile?.kycStatus === 'VERIFIED' || user?.isVerified || false;
+      const panFileUrl = profile?.panFileUrl || null;
+      const aadhaarFileUrl = profile?.aadhaarFileUrl || null;
+      const businessLicenseUrl = profile?.businessLicenseUrl || profile?.shopLicensePdf || null;
+      const gstFileUrl = profile?.gstFileUrl || profile?.gstCertificatePdf || null;
+      let shopPhotos: string[] = [];
+      try {
+        if (profile?.shopPhotos) {
+          shopPhotos = typeof profile.shopPhotos === 'string' ? JSON.parse(profile.shopPhotos) : profile.shopPhotos;
+        }
+      } catch (e) {}
 
       return {
         name,
@@ -356,6 +368,11 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
         category,
         shopId,
         isVerified,
+        panFileUrl,
+        aadhaarFileUrl,
+        businessLicenseUrl,
+        gstFileUrl,
+        shopPhotos,
       };
     } catch (e) {
       return {
@@ -370,10 +387,16 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
         category: 'Retail Shop Business',
         shopId: 'SHOP-1001',
         isVerified: true,
+        panFileUrl: null,
+        aadhaarFileUrl: null,
+        businessLicenseUrl: null,
+        gstFileUrl: null,
+        shopPhotos: [],
       };
     }
   })();
 
+  const [previewDocModal, setPreviewDocModal] = useState<{ title: string; url: string; type: 'image' | 'doc' } | null>(null);
   const [isEditingVendorProfile, setIsEditingVendorProfile] = useState(false);
   const [vendorEditForm, setVendorEditForm] = useState({
     name: '',
@@ -386,6 +409,11 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
     panNumber: '',
     aadhaarNumber: '',
     gstNumber: '',
+    panFileUrl: '',
+    aadhaarFileUrl: '',
+    businessLicenseUrl: '',
+    gstFileUrl: '',
+    shopPhotos: [] as string[],
   });
   const [isSavingVendorProfile, setIsSavingVendorProfile] = useState(false);
   const [vendorSaveSuccess, setVendorSaveSuccess] = useState<string | null>(null);
@@ -402,8 +430,51 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
       panNumber: currentVendorObj.panNumber || '',
       aadhaarNumber: currentVendorObj.aadhaarNumber || '',
       gstNumber: currentVendorObj.gstNumber || '',
+      panFileUrl: currentVendorObj.panFileUrl || '',
+      aadhaarFileUrl: currentVendorObj.aadhaarFileUrl || '',
+      businessLicenseUrl: currentVendorObj.businessLicenseUrl || '',
+      gstFileUrl: currentVendorObj.gstFileUrl || '',
+      shopPhotos: currentVendorObj.shopPhotos || [],
     });
     setIsEditingVendorProfile(true);
+  };
+
+  const handleDocFileUpload = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    field: 'panFileUrl' | 'aadhaarFileUrl' | 'businessLicenseUrl' | 'gstFileUrl'
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      alert('File size must be under 10MB.');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (reader.result) {
+        setVendorEditForm((prev) => ({ ...prev, [field]: reader.result as string }));
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleAddShopPhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      alert('Photo size must be under 10MB.');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (reader.result) {
+        setVendorEditForm((prev) => ({
+          ...prev,
+          shopPhotos: [...(prev.shopPhotos || []), reader.result as string],
+        }));
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleSaveVendorProfile = async () => {
@@ -435,6 +506,11 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
         aadhaarNumber: vendorEditForm.aadhaarNumber,
         gstNumber: vendorEditForm.gstNumber,
         avatarUrl: avatarUrl || undefined,
+        panFileUrl: vendorEditForm.panFileUrl || p.panFileUrl || undefined,
+        aadhaarFileUrl: vendorEditForm.aadhaarFileUrl || p.aadhaarFileUrl || undefined,
+        businessLicenseUrl: vendorEditForm.businessLicenseUrl || p.businessLicenseUrl || undefined,
+        gstFileUrl: vendorEditForm.gstFileUrl || p.gstFileUrl || undefined,
+        shopPhotos: vendorEditForm.shopPhotos.length > 0 ? JSON.stringify(vendorEditForm.shopPhotos) : p.shopPhotos || undefined,
       };
 
       localStorage.setItem('sbni_user', JSON.stringify(mergedUser));
@@ -453,6 +529,11 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
         aadhaarNumber: vendorEditForm.aadhaarNumber,
         gstNumber: vendorEditForm.gstNumber,
         avatarUrl: avatarUrl || undefined,
+        panFileUrl: vendorEditForm.panFileUrl || undefined,
+        aadhaarFileUrl: vendorEditForm.aadhaarFileUrl || undefined,
+        businessLicenseUrl: vendorEditForm.businessLicenseUrl || undefined,
+        gstFileUrl: vendorEditForm.gstFileUrl || undefined,
+        shopPhotos: vendorEditForm.shopPhotos,
       });
 
       if (!apiRes.success) {
@@ -462,7 +543,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
 
       window.dispatchEvent(new CustomEvent('sbni_vendor_profile_updated'));
 
-      setVendorSaveSuccess('✅ Business profile updated and synced globally!');
+      setVendorSaveSuccess('✅ Business profile and documents updated & synced globally!');
       setTimeout(() => setVendorSaveSuccess(null), 4000);
       setIsEditingVendorProfile(false);
     } catch (err: any) {
@@ -1393,20 +1474,27 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
               <div className="space-y-4 pt-2">
                 <div className="flex items-center gap-2 text-slate-900 font-extrabold text-base font-heading pb-1 border-b border-slate-100">
                   <FileCheck className="w-4 h-4 text-emerald-600" />
-                  <span>KYC & Registration Documents</span>
+                  <span>KYC & Identity Verification Documents</span>
                 </div>
 
                 {!isEditingVendorProfile ? (
                   /* View Mode Documents */
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
                     
                     {/* PAN Card Document */}
-                    <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2">
+                    <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2.5">
                       <div className="flex items-center justify-between">
-                        <span className="font-extrabold text-slate-800 text-xs">PAN Card</span>
-                        {currentVendorObj.panNumber ? (
+                        <span className="font-extrabold text-slate-800 text-xs flex items-center gap-1.5">
+                          <FileText className="w-3.5 h-3.5 text-blue-600" />
+                          PAN Card
+                        </span>
+                        {currentVendorObj.panFileUrl ? (
                           <span className="text-[10px] font-extrabold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md flex items-center gap-1">
-                            <CheckCircle2 className="w-3 h-3" /> Verified
+                            <CheckCircle2 className="w-3 h-3" /> Uploaded
+                          </span>
+                        ) : currentVendorObj.panNumber ? (
+                          <span className="text-[10px] font-extrabold text-blue-700 bg-blue-100 px-2 py-0.5 rounded-md">
+                            Number Set
                           </span>
                         ) : (
                           <span className="text-[10px] font-extrabold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-md">
@@ -1414,18 +1502,34 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                           </span>
                         )}
                       </div>
-                      <div className="font-mono font-bold text-slate-900 text-xs bg-white p-2 rounded-xl border border-slate-200">
-                        {currentVendorObj.panNumber || 'Pending Document Upload'}
+                      <div className="font-mono font-bold text-slate-900 text-xs bg-white p-2 rounded-xl border border-slate-200 truncate">
+                        {currentVendorObj.panNumber || 'No PAN Provided'}
                       </div>
+                      {currentVendorObj.panFileUrl && (
+                        <button
+                          type="button"
+                          onClick={() => setPreviewDocModal({ title: `PAN Card (${currentVendorObj.panNumber || currentVendorObj.name})`, url: currentVendorObj.panFileUrl!, type: 'doc' })}
+                          className="w-full py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-extrabold text-[11px] flex items-center justify-center gap-1.5 transition-colors cursor-pointer border border-blue-200"
+                        >
+                          <Eye className="w-3.5 h-3.5" /> View PAN Document
+                        </button>
+                      )}
                     </div>
 
                     {/* Aadhaar Card Document */}
-                    <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2">
+                    <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2.5">
                       <div className="flex items-center justify-between">
-                        <span className="font-extrabold text-slate-800 text-xs">Aadhaar Card</span>
-                        {currentVendorObj.aadhaarNumber ? (
+                        <span className="font-extrabold text-slate-800 text-xs flex items-center gap-1.5">
+                          <FileText className="w-3.5 h-3.5 text-blue-600" />
+                          Aadhaar Card
+                        </span>
+                        {currentVendorObj.aadhaarFileUrl ? (
                           <span className="text-[10px] font-extrabold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md flex items-center gap-1">
-                            <CheckCircle2 className="w-3 h-3" /> Verified
+                            <CheckCircle2 className="w-3 h-3" /> Uploaded
+                          </span>
+                        ) : currentVendorObj.aadhaarNumber ? (
+                          <span className="text-[10px] font-extrabold text-blue-700 bg-blue-100 px-2 py-0.5 rounded-md">
+                            Number Set
                           </span>
                         ) : (
                           <span className="text-[10px] font-extrabold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-md">
@@ -1433,68 +1537,299 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                           </span>
                         )}
                       </div>
-                      <div className="font-mono font-bold text-slate-900 text-xs bg-white p-2 rounded-xl border border-slate-200">
-                        {currentVendorObj.aadhaarNumber || 'Pending Document Upload'}
+                      <div className="font-mono font-bold text-slate-900 text-xs bg-white p-2 rounded-xl border border-slate-200 truncate">
+                        {currentVendorObj.aadhaarNumber || 'No Aadhaar Provided'}
                       </div>
+                      {currentVendorObj.aadhaarFileUrl && (
+                        <button
+                          type="button"
+                          onClick={() => setPreviewDocModal({ title: `Aadhaar Card (${currentVendorObj.aadhaarNumber || currentVendorObj.name})`, url: currentVendorObj.aadhaarFileUrl!, type: 'doc' })}
+                          className="w-full py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-extrabold text-[11px] flex items-center justify-center gap-1.5 transition-colors cursor-pointer border border-blue-200"
+                        >
+                          <Eye className="w-3.5 h-3.5" /> View Aadhaar Card
+                        </button>
+                      )}
                     </div>
 
-                    {/* Business License (Optional) */}
-                    <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2">
+                    {/* Business License / Shop Proof */}
+                    <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2.5">
                       <div className="flex items-center justify-between">
-                        <span className="font-extrabold text-slate-800 text-xs">GST / Business License</span>
-                        <span className="text-[10px] font-extrabold text-blue-700 bg-blue-100 px-2 py-0.5 rounded-md">
-                          Optional
+                        <span className="font-extrabold text-slate-800 text-xs flex items-center gap-1.5">
+                          <FileText className="w-3.5 h-3.5 text-blue-600" />
+                          Business License
                         </span>
+                        {currentVendorObj.businessLicenseUrl ? (
+                          <span className="text-[10px] font-extrabold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md flex items-center gap-1">
+                            <CheckCircle2 className="w-3 h-3" /> Uploaded
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-extrabold text-slate-500 bg-slate-200 px-2 py-0.5 rounded-md">
+                            Optional
+                          </span>
+                        )}
                       </div>
-                      <div className="font-mono font-bold text-slate-900 text-xs bg-white p-2 rounded-xl border border-slate-200">
-                        {currentVendorObj.gstNumber || 'Pending GST Upload'}
+                      <div className="font-mono font-bold text-slate-700 text-xs bg-white p-2 rounded-xl border border-slate-200 truncate">
+                        {currentVendorObj.businessLicenseUrl ? 'Shop & Establishment Proof' : 'Not Uploaded'}
                       </div>
+                      {currentVendorObj.businessLicenseUrl && (
+                        <button
+                          type="button"
+                          onClick={() => setPreviewDocModal({ title: `Business License (${currentVendorObj.shopName})`, url: currentVendorObj.businessLicenseUrl!, type: 'doc' })}
+                          className="w-full py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-extrabold text-[11px] flex items-center justify-center gap-1.5 transition-colors cursor-pointer border border-blue-200"
+                        >
+                          <Eye className="w-3.5 h-3.5" /> View License Document
+                        </button>
+                      )}
+                    </div>
+
+                    {/* GST Certificate */}
+                    <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <span className="font-extrabold text-slate-800 text-xs flex items-center gap-1.5">
+                          <FileText className="w-3.5 h-3.5 text-blue-600" />
+                          GST Certificate
+                        </span>
+                        {currentVendorObj.gstFileUrl ? (
+                          <span className="text-[10px] font-extrabold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md flex items-center gap-1">
+                            <CheckCircle2 className="w-3 h-3" /> Uploaded
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-extrabold text-slate-500 bg-slate-200 px-2 py-0.5 rounded-md">
+                            Optional
+                          </span>
+                        )}
+                      </div>
+                      <div className="font-mono font-bold text-slate-900 text-xs bg-white p-2 rounded-xl border border-slate-200 truncate">
+                        {currentVendorObj.gstNumber || 'Optional GST'}
+                      </div>
+                      {currentVendorObj.gstFileUrl && (
+                        <button
+                          type="button"
+                          onClick={() => setPreviewDocModal({ title: `GST Certificate (${currentVendorObj.shopName})`, url: currentVendorObj.gstFileUrl!, type: 'doc' })}
+                          className="w-full py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-extrabold text-[11px] flex items-center justify-center gap-1.5 transition-colors cursor-pointer border border-blue-200"
+                        >
+                          <Eye className="w-3.5 h-3.5" /> View GST Certificate
+                        </button>
+                      )}
                     </div>
 
                   </div>
                 ) : (
                   /* Edit Mode Documents */
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                     
-                    {/* PAN Card Input */}
-                    <div className="p-3.5 rounded-2xl bg-blue-50/40 border border-blue-200/80 space-y-1.5">
-                      <label className="font-extrabold text-slate-700 text-xs block">PAN Card Number</label>
+                    {/* PAN Card Input & File Upload */}
+                    <div className="p-4 rounded-2xl bg-blue-50/40 border border-blue-200/80 space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <label className="font-extrabold text-slate-800 text-xs block">1. PAN Card Details *</label>
+                        {vendorEditForm.panFileUrl && (
+                          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                            ✓ Document Attached
+                          </span>
+                        )}
+                      </div>
                       <input
                         type="text"
                         value={vendorEditForm.panNumber}
                         onChange={(e) => setVendorEditForm({ ...vendorEditForm, panNumber: e.target.value.toUpperCase() })}
-                        placeholder="e.g. ABCDE1234F"
+                        placeholder="Enter PAN Number (e.g. ABCDE1234F)"
                         className="w-full px-3 py-2 bg-white rounded-xl border border-slate-300 font-mono font-bold text-slate-900 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none uppercase"
                       />
+                      <label className="w-full py-2 px-3 rounded-xl bg-white border border-dashed border-blue-400 hover:bg-blue-50/80 text-blue-700 font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-2xs">
+                        <Camera className="w-4 h-4 text-blue-600" />
+                        <span>{vendorEditForm.panFileUrl ? 'Change PAN Card Photo / PDF' : 'Upload PAN Card Photo / PDF'}</span>
+                        <input
+                          type="file"
+                          accept="image/*,application/pdf"
+                          onChange={(e) => handleDocFileUpload(e, 'panFileUrl')}
+                          className="hidden"
+                        />
+                      </label>
                     </div>
 
-                    {/* Aadhaar Card Input */}
-                    <div className="p-3.5 rounded-2xl bg-blue-50/40 border border-blue-200/80 space-y-1.5">
-                      <label className="font-extrabold text-slate-700 text-xs block">Aadhaar Card Number</label>
+                    {/* Aadhaar Card Input & File Upload */}
+                    <div className="p-4 rounded-2xl bg-blue-50/40 border border-blue-200/80 space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <label className="font-extrabold text-slate-800 text-xs block">2. Aadhaar Card Details *</label>
+                        {vendorEditForm.aadhaarFileUrl && (
+                          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                            ✓ Document Attached
+                          </span>
+                        )}
+                      </div>
                       <input
                         type="text"
                         value={vendorEditForm.aadhaarNumber}
                         onChange={(e) => setVendorEditForm({ ...vendorEditForm, aadhaarNumber: e.target.value })}
-                        placeholder="e.g. 1234 5678 9012"
+                        placeholder="Enter 12-Digit Aadhaar (e.g. 1234 5678 9012)"
                         className="w-full px-3 py-2 bg-white rounded-xl border border-slate-300 font-mono font-bold text-slate-900 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
                       />
+                      <label className="w-full py-2 px-3 rounded-xl bg-white border border-dashed border-blue-400 hover:bg-blue-50/80 text-blue-700 font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-2xs">
+                        <Camera className="w-4 h-4 text-blue-600" />
+                        <span>{vendorEditForm.aadhaarFileUrl ? 'Change Aadhaar Card Photo / PDF' : 'Upload Aadhaar Card Photo / PDF'}</span>
+                        <input
+                          type="file"
+                          accept="image/*,application/pdf"
+                          onChange={(e) => handleDocFileUpload(e, 'aadhaarFileUrl')}
+                          className="hidden"
+                        />
+                      </label>
                     </div>
 
-                    {/* GST Number Input */}
-                    <div className="p-3.5 rounded-2xl bg-blue-50/40 border border-blue-200/80 space-y-1.5">
-                      <label className="font-extrabold text-slate-700 text-xs block">GST / Business License (Optional)</label>
+                    {/* Business License / Shop Proof */}
+                    <div className="p-4 rounded-2xl bg-blue-50/40 border border-blue-200/80 space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <label className="font-extrabold text-slate-800 text-xs block">3. Business License / Shop Act (Optional)</label>
+                        {vendorEditForm.businessLicenseUrl && (
+                          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                            ✓ Document Attached
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-slate-500 text-[11px]">Upload Shop & Establishment license, Trade license, or Udyam MSME certificate.</p>
+                      <label className="w-full py-2 px-3 rounded-xl bg-white border border-dashed border-blue-400 hover:bg-blue-50/80 text-blue-700 font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-2xs">
+                        <FileText className="w-4 h-4 text-blue-600" />
+                        <span>{vendorEditForm.businessLicenseUrl ? 'Change License Document' : 'Upload Business License Proof'}</span>
+                        <input
+                          type="file"
+                          accept="image/*,application/pdf"
+                          onChange={(e) => handleDocFileUpload(e, 'businessLicenseUrl')}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
+
+                    {/* GST Certificate */}
+                    <div className="p-4 rounded-2xl bg-blue-50/40 border border-blue-200/80 space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <label className="font-extrabold text-slate-800 text-xs block">4. GST Certificate (Optional)</label>
+                        {vendorEditForm.gstFileUrl && (
+                          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                            ✓ Document Attached
+                          </span>
+                        )}
+                      </div>
                       <input
                         type="text"
                         value={vendorEditForm.gstNumber}
                         onChange={(e) => setVendorEditForm({ ...vendorEditForm, gstNumber: e.target.value.toUpperCase() })}
-                        placeholder="e.g. 36AAAPL1234C1Z5"
+                        placeholder="Enter 15-Digit GSTIN (e.g. 36AAAPL1234C1Z5)"
                         className="w-full px-3 py-2 bg-white rounded-xl border border-slate-300 font-mono font-bold text-slate-900 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none uppercase"
                       />
+                      <label className="w-full py-2 px-3 rounded-xl bg-white border border-dashed border-blue-400 hover:bg-blue-50/80 text-blue-700 font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-2xs">
+                        <FileText className="w-4 h-4 text-blue-600" />
+                        <span>{vendorEditForm.gstFileUrl ? 'Change GST Certificate' : 'Upload GST Certificate (PDF / Image)'}</span>
+                        <input
+                          type="file"
+                          accept="image/*,application/pdf"
+                          onChange={(e) => handleDocFileUpload(e, 'gstFileUrl')}
+                          className="hidden"
+                        />
+                      </label>
                     </div>
 
                   </div>
                 )}
+              </div>
 
+              {/* SECTION 3: Shop Photos & Premises Gallery */}
+              <div className="space-y-4 pt-2">
+                <div className="flex items-center justify-between flex-wrap gap-2 pb-1 border-b border-slate-100">
+                  <div className="flex items-center gap-2 text-slate-900 font-extrabold text-base font-heading">
+                    <Camera className="w-4 h-4 text-indigo-600" />
+                    <span>Shop Photos & Storefront Gallery</span>
+                  </div>
+                  {isEditingVendorProfile && (
+                    <label className="px-3.5 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-extrabold text-xs flex items-center gap-1.5 transition-all shadow-xs cursor-pointer active:scale-95">
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>+ Add Shop Photo</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleAddShopPhoto}
+                        className="hidden"
+                      />
+                    </label>
+                  )}
+                </div>
+
+                {!isEditingVendorProfile ? (
+                  /* View Mode Photos */
+                  (() => {
+                    const photos: { title: string; url: string }[] = [];
+                    if (currentVendorObj.shopPhotos && currentVendorObj.shopPhotos.length > 0) {
+                      currentVendorObj.shopPhotos.forEach((img: string, i: number) => {
+                        if (img) photos.push({ title: `Storefront / Shop Photo ${i + 1}`, url: img });
+                      });
+                    }
+                    if (avatarUrl && !photos.some(p => p.url === avatarUrl)) {
+                      photos.push({ title: 'Live Storefront Photo / Profile', url: avatarUrl });
+                    }
+
+                    if (photos.length > 0) {
+                      return (
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                          {photos.map((p, i) => (
+                            <div
+                              key={i}
+                              onClick={() => setPreviewDocModal({ title: p.title, url: p.url, type: 'image' })}
+                              className="relative group rounded-2xl overflow-hidden border border-slate-200 shadow-xs cursor-pointer bg-slate-100 aspect-video sm:aspect-square"
+                            >
+                              <img
+                                src={p.url}
+                                alt={p.title}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                              />
+                              <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-bold gap-1">
+                                <Eye className="w-4 h-4" /> View
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div className="p-6 rounded-2xl bg-slate-50 border border-slate-200 text-center space-y-1 text-slate-500 text-xs">
+                        <Camera className="w-8 h-8 text-slate-400 mx-auto mb-1" />
+                        <div className="font-bold text-slate-700">No Storefront Photos Uploaded</div>
+                        <p className="text-slate-400 text-[11px]">Click "Edit Business Profile" above to attach real photos of your shop front and inventory.</p>
+                      </div>
+                    );
+                  })()
+                ) : (
+                  /* Edit Mode Photos */
+                  <div className="space-y-3">
+                    {vendorEditForm.shopPhotos && vendorEditForm.shopPhotos.length > 0 ? (
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                        {vendorEditForm.shopPhotos.map((photoUrl, idx) => (
+                          <div key={idx} className="relative rounded-2xl overflow-hidden border border-slate-200 aspect-video sm:aspect-square group bg-slate-100">
+                            <img src={photoUrl} alt={`Shop Photo ${idx + 1}`} className="w-full h-full object-cover" />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setVendorEditForm((prev) => ({
+                                  ...prev,
+                                  shopPhotos: prev.shopPhotos.filter((_, i) => i !== idx),
+                                }));
+                              }}
+                              className="absolute top-1.5 right-1.5 p-1 rounded-lg bg-rose-600 text-white hover:bg-rose-700 shadow-md transition-transform active:scale-95 cursor-pointer text-[10px] font-bold"
+                              title="Delete photo"
+                            >
+                              ✕ Remove
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="p-5 rounded-2xl bg-blue-50/40 border border-dashed border-blue-300 text-center space-y-1 text-xs">
+                        <Camera className="w-6 h-6 text-blue-500 mx-auto" />
+                        <div className="font-bold text-slate-800">No Additional Shop Photos Added</div>
+                        <p className="text-slate-500 text-[11px]">Use "+ Add Shop Photo" above to upload photos of your shop exterior, billing counter, and inventory.</p>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Bottom Sticky Save Action Bar in Edit Mode */}
@@ -1632,6 +1967,45 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
         onClose={() => setLoanModalOpen(false)}
         lender={selectedLenderForLoan}
       />
+
+      {/* Document & Photo Preview Modal */}
+      {previewDocModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-3xl p-6 max-w-2xl w-full shadow-2xl space-y-4 border border-slate-200">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="font-extrabold text-slate-900 text-base flex items-center gap-2 font-heading">
+                <FileText className="w-5 h-5 text-blue-600" />
+                {previewDocModal.title}
+              </div>
+              <button
+                type="button"
+                onClick={() => setPreviewDocModal(null)}
+                className="p-2 rounded-full hover:bg-slate-100 text-slate-500 cursor-pointer"
+              >
+                <XCircle className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 overflow-hidden max-h-[70vh] flex items-center justify-center bg-slate-900 p-2">
+              <img
+                src={previewDocModal.url}
+                alt={previewDocModal.title}
+                className="max-h-[65vh] w-auto object-contain rounded-xl"
+              />
+            </div>
+
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setPreviewDocModal(null)}
+                className="px-5 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-bold text-xs hover:bg-slate-100 cursor-pointer"
+              >
+                Close Preview
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

@@ -113,6 +113,11 @@ model VendorProfile {
   isFraud            Boolean   @default(false)
   avatarUrl          String?
   logoUrl            String?
+  panFileUrl         String?
+  aadhaarFileUrl     String?
+  businessLicenseUrl String?
+  gstFileUrl         String?
+  shopPhotos         String?   // Stored as JSON string array e.g. ["url1", "url2"]
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 

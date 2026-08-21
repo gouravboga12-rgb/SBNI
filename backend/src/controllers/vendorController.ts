@@ -77,6 +77,11 @@ export const updateVendorProfile = async (req: AuthenticatedRequest, res: Respon
       longitude: parsedLng,
       avatarUrl: effectiveAvatar,
       logoUrl: effectiveAvatar,
+      panFileUrl: req.body.panFileUrl || undefined,
+      aadhaarFileUrl: req.body.aadhaarFileUrl || undefined,
+      businessLicenseUrl: req.body.businessLicenseUrl || req.body.shopLicensePdf || undefined,
+      gstFileUrl: req.body.gstFileUrl || req.body.gstCertificatePdf || undefined,
+      shopPhotos: req.body.shopPhotos ? (Array.isArray(req.body.shopPhotos) ? JSON.stringify(req.body.shopPhotos) : String(req.body.shopPhotos)) : undefined,
     },
     create: {
       userId: userId!,
@@ -98,8 +103,43 @@ export const updateVendorProfile = async (req: AuthenticatedRequest, res: Respon
       longitude: parsedLng ?? 78.5320,
       avatarUrl: effectiveAvatar,
       logoUrl: effectiveAvatar,
+      panFileUrl: req.body.panFileUrl || undefined,
+      aadhaarFileUrl: req.body.aadhaarFileUrl || undefined,
+      businessLicenseUrl: req.body.businessLicenseUrl || req.body.shopLicensePdf || undefined,
+      gstFileUrl: req.body.gstFileUrl || req.body.gstCertificatePdf || undefined,
+      shopPhotos: req.body.shopPhotos ? (Array.isArray(req.body.shopPhotos) ? JSON.stringify(req.body.shopPhotos) : String(req.body.shopPhotos)) : undefined,
     },
   });
+
+  // Sync to KYCDocument table if document files are uploaded
+  if (userId) {
+    if (req.body.panFileUrl && (panNumber || profile.panNumber)) {
+      try {
+        await prisma.kYCDocument.create({
+          data: {
+            userId,
+            docType: 'PAN',
+            documentNumber: panNumber || profile.panNumber || 'PAN-ENTERED',
+            fileUrl: req.body.panFileUrl,
+            status: 'VERIFIED',
+          },
+        });
+      } catch (e) {}
+    }
+    if (req.body.aadhaarFileUrl && (aadhaarNumber || profile.aadhaarNumber)) {
+      try {
+        await prisma.kYCDocument.create({
+          data: {
+            userId,
+            docType: 'AADHAAR',
+            documentNumber: aadhaarNumber || profile.aadhaarNumber || 'AADHAAR-ENTERED',
+            fileUrl: req.body.aadhaarFileUrl,
+            status: 'VERIFIED',
+          },
+        });
+      } catch (e) {}
+    }
+  }
 
   res.json({ success: true, message: 'Vendor business profile updated successfully.', data: profile });
 };

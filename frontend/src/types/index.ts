@@ -78,6 +78,7 @@ export interface VendorVerificationRequest {
   panFileUrl?: string;
   aadhaarFileUrl?: string;
   shopPhotoUrl?: string;
+  shopPhotos?: string[];
   liveSelfieUrl?: string;
 }
 
