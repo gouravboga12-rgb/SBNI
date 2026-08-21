@@ -20,7 +20,7 @@ export async function getMyProfileApi(): Promise<{ success: boolean; data?: any;
 }
 
 // --------------- Config ---------------
-const API_BASE = (import.meta as any).env?.VITE_API_URL || 'http://18.61.36.65/api/v1';
+const API_BASE = (import.meta as any).env?.VITE_API_URL || '/api/v1';
 
 // --------------- Storage Protection Helpers (Zero Images/Files in Local Storage) ---------------
 const FILE_KEYS_TO_STRIP = new Set([
