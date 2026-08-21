@@ -96,6 +96,7 @@ model VendorProfile {
   ownerName          String
   gstNumber          String?
   panNumber          String?
+  aadhaarNumber      String?
   registrationType   String    @default("Proprietorship") // Proprietorship, PVT LTD, Partnership, etc.
   annualTurnover     String    @default("10-50 Lakhs")
   category           String    @default("Retail")

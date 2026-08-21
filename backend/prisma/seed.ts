@@ -344,115 +344,7 @@ async function main() {
     });
   }
 
-  // 10. Sample Verified Lenders
-  const lenderUser1 = await prisma.user.upsert({
-    where: { email: 'contact@capitalgrowthnbfc.com' },
-    update: {},
-    create: {
-      email: 'contact@capitalgrowthnbfc.com',
-      phone: '9820011223',
-      passwordHash: defaultPasswordHash,
-      role: Role.LENDER,
-      isVerified: true,
-    },
-  });
-
-  await prisma.lenderProfile.upsert({
-    where: { userId: lenderUser1.id },
-    update: {},
-    create: {
-      userId: lenderUser1.id,
-      institutionName: 'Nishanth Finance',
-      institutionType: LenderType.NBFC,
-      registrationNumber: 'FIN-IND-2021-1001',
-      loanCategories: JSON.stringify(['Business Loan', 'MSME Working Capital', 'Machinery Loan']),
-      minLoanAmount: 200000,
-      maxLoanAmount: 25000000,
-      minInterestRate: 9.5,
-      address: 'BKC Financial District, Bandra East',
-      city: 'Mumbai',
-      state: 'Maharashtra',
-      pincode: '400051',
-      latitude: 19.0674,
-      longitude: 72.8687,
-      contactPersonName: 'Nishanth Kumar (Proprietor)',
-      verificationStatus: KYCStatus.VERIFIED,
-      rating: 4.9,
-      reviewCount: 38,
-    },
-  });
-
-  const lenderUser2 = await prisma.user.upsert({
-    where: { email: 'loans@rajeshfinance.in' },
-    update: {},
-    create: {
-      email: 'loans@rajeshfinance.in',
-      phone: '9833344556',
-      passwordHash: defaultPasswordHash,
-      role: Role.LENDER,
-      isVerified: true,
-    },
-  });
-
-  await prisma.lenderProfile.upsert({
-    where: { userId: lenderUser2.id },
-    update: {},
-    create: {
-      userId: lenderUser2.id,
-      institutionName: 'Rajesh Finance',
-      institutionType: LenderType.NBFC,
-      registrationNumber: 'FIN-IND-2019-1002',
-      loanCategories: JSON.stringify(['Commercial Loan', 'Letter of Credit', 'Export Finance', 'MSME Loan']),
-      minLoanAmount: 500000,
-      maxLoanAmount: 100000000,
-      minInterestRate: 8.25,
-      address: 'Connaught Place Commercial Hub',
-      city: 'New Delhi',
-      state: 'Delhi',
-      pincode: '110001',
-      latitude: 28.6315,
-      longitude: 77.2167,
-      contactPersonName: 'Rajesh Sharma (Managing Director)',
-      verificationStatus: KYCStatus.VERIFIED,
-      rating: 4.8,
-      reviewCount: 54,
-    },
-  });
-
-  console.log('✅ Sample Verified Lenders created.');
-
-  // 11. Sample Vendor Demo Account
-  const vendorUser1 = await prisma.user.upsert({
-    where: { email: 'rajesh@sharmatextiles.com' },
-    update: {},
-    create: {
-      email: 'rajesh@sharmatextiles.com',
-      phone: '9820099887',
-      passwordHash: defaultPasswordHash,
-      role: Role.VENDOR,
-      isVerified: true,
-    },
-  });
-
-  await prisma.vendorProfile.upsert({
-    where: { userId: vendorUser1.id },
-    update: {},
-    create: {
-      userId: vendorUser1.id,
-      businessName: 'Sharma Textile Exports',
-      ownerName: 'Rajesh Sharma',
-      annualTurnover: '50L - 1Cr',
-      category: 'Retail & Garments',
-      address: 'Shop No 42, Textile Market, Lower Parel',
-      city: 'Mumbai',
-      state: 'Maharashtra',
-      pincode: '400013',
-      kycStatus: KYCStatus.VERIFIED,
-    },
-  });
-
-  console.log('✅ Sample Vendor created:', vendorUser1.email);
-  console.log('🎉 SBNI Money Database Seeding Completed Successfully!');
+  console.log('🎉 SBNI Money Database Seeding Completed Successfully (Zero Dummy Accounts)!');
 }
 
 main()
@@ -463,3 +355,4 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
+

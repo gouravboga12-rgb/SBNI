@@ -171,6 +171,22 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
     return localStorage.getItem('sbni_lender_avatar') || 'https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=200';
   });
 
+  const [nearbyBusinesses, setNearbyBusinesses] = useState<any[]>([]);
+  const [nearbySearchQuery, setNearbySearchQuery] = useState('');
+  const [reportsFilterStatus, setReportsFilterStatus] = useState<'PENDING' | 'ACCEPTED' | 'REJECTED' | 'FRAUD' | 'ALL'>('PENDING');
+  const [reportsSearchQuery, setReportsSearchQuery] = useState('');
+
+  const loadNearbyBusinessesList = async () => {
+    try {
+      const list = await fetchVendorProfilesForLender();
+      if (Array.isArray(list)) {
+        setNearbyBusinesses(list);
+      }
+    } catch (e) {
+      console.error('Failed to load nearby businesses:', e);
+    }
+  };
+
   // Fetch live profile from server on mount
   useEffect(() => {
     async function loadFreshProfile() {
@@ -196,17 +212,22 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
             financer = `${financer} Money Financer`;
           }
 
+          if (lp?.avatarUrl || lp?.logoUrl) {
+            setLenderAvatarUrl(lp.avatarUrl || lp.logoUrl);
+            localStorage.setItem('sbni_lender_avatar', lp.avatarUrl || lp.logoUrl);
+          }
+
           const freshData = {
             name: financer,
             contactPerson: officer,
             phone: u.phone || lp?.phone || '+91 98200 11223',
             email: u.email || 'lender@justpaisa.com',
-            city: lp?.city || 'Mumbai',
-            state: lp?.state || 'Maharashtra',
+            city: lp?.city || 'Hyderabad',
+            state: lp?.state || 'Telangana',
             regNo: lp?.registrationNumber || 'REG-FIN-1001',
             institutionType: 'Money Financer',
-            minLoan: lp?.minLoanAmount || 10000,
-            maxLoan: lp?.maxLoanAmount || 100000,
+            minLoan: lp?.minLoanAmount ?? 5000,
+            maxLoan: lp?.maxLoanAmount ?? 100000,
             minRate: lp?.minInterestRate || 9.5,
             lendingRadius: lp?.lendingRadiusKm || 50,
           };
@@ -222,6 +243,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
       }
     }
     loadFreshProfile();
+    loadNearbyBusinessesList();
   }, []);
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -243,6 +265,12 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
           avatarUrl: dataUrl,
           logoUrl: dataUrl,
           institutionName: currentUserObj.name,
+          contactPersonName: currentUserObj.contactPerson,
+          minLoanAmount: currentUserObj.minLoan,
+          maxLoanAmount: currentUserObj.maxLoan,
+          lendingRadiusKm: currentUserObj.lendingRadius,
+          city: currentUserObj.city,
+          state: currentUserObj.state,
         } as any);
       } catch (err) {
         console.error('Failed to sync lender avatar to backend:', err);
@@ -263,17 +291,12 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
     state: '',
     pincode: '',
     regNo: '',
-    minLoan: 100000,
-    maxLoan: 50000000,
+    minLoan: 5000,
+    maxLoan: 100000,
     lendingRadius: 50,
   });
   const [isSavingLenderProfile, setIsSavingLenderProfile] = useState(false);
   const [lenderSaveSuccess, setLenderSaveSuccess] = useState<string | null>(null);
-
-  const [nearbyBusinesses, setNearbyBusinesses] = useState<any[]>([]);
-  const [nearbySearchQuery, setNearbySearchQuery] = useState('');
-  const [reportsFilterStatus, setReportsFilterStatus] = useState<'PENDING' | 'ACCEPTED' | 'REJECTED' | 'FRAUD' | 'ALL'>('PENDING');
-  const [reportsSearchQuery, setReportsSearchQuery] = useState('');
 
   const startEditingLender = () => {
     let pObj: any = {};

@@ -2,6 +2,7 @@ import { Response } from 'express';
 import prisma from '../config/prisma';
 import { AuthenticatedRequest } from '../middlewares/auth';
 import { LenderType } from '@prisma/client';
+import { calculateDistanceKm } from '../utils/distance';
 
 export const updateLenderProfile = async (req: AuthenticatedRequest, res: Response) => {
   const userId = req.user?.userId;
@@ -39,7 +40,7 @@ export const updateLenderProfile = async (req: AuthenticatedRequest, res: Respon
   }
 
   // Update user phone / email if provided
-  if (userId && (phone || email)) {
+  if (userId && (phone || email || contactPersonName)) {
     try {
       await prisma.user.update({
         where: { id: userId },
@@ -55,7 +56,7 @@ export const updateLenderProfile = async (req: AuthenticatedRequest, res: Respon
 
   if (parsedLat === undefined || parsedLng === undefined || (Math.abs(parsedLat - 19.076) < 0.01 && Math.abs(parsedLng - 72.8777) < 0.01)) {
     const combined = `${address || ''} ${place || ''} ${city || ''} ${state || ''}`.toLowerCase();
-    if (combined.includes('hyderabad') || combined.includes('telangana') || combined.includes('kothapet') || combined.includes('chaitanyapuri') || combined.includes('secunderabad')) {
+    if (combined.includes('hyderabad') || combined.includes('telangana') || combined.includes('kothapet') || combined.includes('chaitanyapuri') || combined.includes('secunderabad') || combined.includes('dilsukhnagar')) {
       parsedLat = 17.3850;
       parsedLng = 78.4867;
     } else if (combined.includes('delhi') || combined.includes('ncr') || combined.includes('gurgaon')) {
@@ -76,28 +77,30 @@ export const updateLenderProfile = async (req: AuthenticatedRequest, res: Respon
     }
   }
 
+  const effectiveAvatar = avatarUrl || logoUrl || undefined;
+
   const profile = await (prisma.lenderProfile as any).upsert({
     where: { userId },
     update: {
-      institutionName: financerName,
+      institutionName: financerName || undefined,
       institutionType: institutionType ? (institutionType as LenderType) : undefined,
-      registrationNumber,
-      loanCategories: Array.isArray(loanCategories) ? JSON.stringify(loanCategories) : loanCategories,
-      minLoanAmount: minLoanAmount ? parseFloat(minLoanAmount) : undefined,
-      maxLoanAmount: maxLoanAmount ? parseFloat(maxLoanAmount) : undefined,
-      minInterestRate: minInterestRate ? parseFloat(minInterestRate) : undefined,
-      address,
-      place,
-      city,
-      state,
-      country: country || 'India',
-      pincode,
+      registrationNumber: registrationNumber || undefined,
+      loanCategories: Array.isArray(loanCategories) ? JSON.stringify(loanCategories) : (loanCategories || undefined),
+      minLoanAmount: minLoanAmount !== undefined && minLoanAmount !== null ? parseFloat(String(minLoanAmount)) : undefined,
+      maxLoanAmount: maxLoanAmount !== undefined && maxLoanAmount !== null ? parseFloat(String(maxLoanAmount)) : undefined,
+      minInterestRate: minInterestRate !== undefined && minInterestRate !== null ? parseFloat(String(minInterestRate)) : undefined,
+      address: address || undefined,
+      place: place || undefined,
+      city: city || undefined,
+      state: state || undefined,
+      country: country || undefined,
+      pincode: pincode || undefined,
       latitude: parsedLat,
       longitude: parsedLng,
       lendingRadiusKm: parsedRadius,
-      contactPersonName,
-      avatarUrl: avatarUrl || logoUrl || undefined,
-      logoUrl: logoUrl || avatarUrl || undefined,
+      contactPersonName: contactPersonName || undefined,
+      avatarUrl: effectiveAvatar,
+      logoUrl: effectiveAvatar,
     },
     create: {
       userId: userId!,
@@ -105,9 +108,9 @@ export const updateLenderProfile = async (req: AuthenticatedRequest, res: Respon
       institutionType: (institutionType as LenderType) || 'NBFC',
       registrationNumber: registrationNumber || 'REG-1001',
       loanCategories: Array.isArray(loanCategories) ? JSON.stringify(loanCategories) : JSON.stringify(['Business Loan']),
-      minLoanAmount: minLoanAmount ? parseFloat(minLoanAmount) : 100000,
-      maxLoanAmount: maxLoanAmount ? parseFloat(maxLoanAmount) : 10000000,
-      minInterestRate: minInterestRate ? parseFloat(minInterestRate) : 9.5,
+      minLoanAmount: minLoanAmount !== undefined && minLoanAmount !== null ? parseFloat(String(minLoanAmount)) : 10000,
+      maxLoanAmount: maxLoanAmount !== undefined && maxLoanAmount !== null ? parseFloat(String(maxLoanAmount)) : 100000,
+      minInterestRate: minInterestRate !== undefined && minInterestRate !== null ? parseFloat(String(minInterestRate)) : 9.5,
       address: address || 'Default Address',
       place: place || 'Financial District',
       city: city || 'Hyderabad',
@@ -118,8 +121,8 @@ export const updateLenderProfile = async (req: AuthenticatedRequest, res: Respon
       longitude: parsedLng ?? 78.4867,
       lendingRadiusKm: parsedRadius ?? 50.0,
       contactPersonName: contactPersonName || 'Lending Officer',
-      avatarUrl: avatarUrl || logoUrl || undefined,
-      logoUrl: logoUrl || avatarUrl || undefined,
+      avatarUrl: effectiveAvatar,
+      logoUrl: effectiveAvatar,
     },
   });
 
@@ -127,10 +130,27 @@ export const updateLenderProfile = async (req: AuthenticatedRequest, res: Respon
 };
 
 export const getVendorProfiles = async (req: AuthenticatedRequest, res: Response) => {
-  const { city, category, turnover } = req.query;
+  const userId = req.user?.userId;
+  const { city, category } = req.query;
+
+  let lenderLat = 17.3850;
+  let lenderLng = 78.4867;
+  let lenderRadiusKm = 50.0;
+
+  if (userId) {
+    const lp = await prisma.lenderProfile.findUnique({
+      where: { userId },
+    });
+    if (lp) {
+      lenderLat = lp.latitude ?? 17.3850;
+      lenderLng = lp.longitude ?? 78.4867;
+      lenderRadiusKm = lp.lendingRadiusKm ?? 50.0;
+    }
+  }
 
   const vendors = await prisma.vendorProfile.findMany({
     where: {
+      isFraud: false,
       city: city ? { contains: String(city), mode: 'insensitive' } : undefined,
       category: category ? { contains: String(category), mode: 'insensitive' } : undefined,
     },
@@ -144,9 +164,60 @@ export const getVendorProfiles = async (req: AuthenticatedRequest, res: Response
         },
       },
     },
+    orderBy: { createdAt: 'desc' },
   });
 
-  res.json({ success: true, count: vendors.length, data: vendors });
+  const formatted = vendors.map((v) => {
+    const vLat = v.latitude ?? 17.3713;
+    const vLng = v.longitude ?? 78.5320;
+    const distanceKm = Math.round(calculateDistanceKm(lenderLat, lenderLng, vLat, vLng) * 10) / 10;
+    const isWithinRadius = distanceKm <= lenderRadiusKm;
+
+    // Resolve KYC documents
+    const kycDocs = v.user?.kycDocuments || [];
+    const panDoc = kycDocs.find((d) => d.docType === 'PAN');
+    const aadhaarDoc = kycDocs.find((d) => d.docType === 'AADHAAR');
+    const gstDoc = kycDocs.find((d) => d.docType === 'GST_CERTIFICATE');
+    const shopDoc = kycDocs.find((d) => d.docType === 'BUSINESS_PROOF');
+
+    return {
+      id: v.id,
+      vendorName: v.ownerName || 'Business Owner',
+      shopName: v.businessName || 'Business Enterprise',
+      category: v.category || 'Retail Shop',
+      annualTurnover: v.annualTurnover || '10-50 Lakhs',
+      monthlyIncome: '₹ 50,000 / month',
+      address: v.address,
+      place: v.place || 'Commercial Area',
+      city: v.city,
+      state: v.state,
+      country: v.country || 'India',
+      pincode: v.pincode,
+      latitude: vLat,
+      longitude: vLng,
+      distanceKm,
+      isWithinRadius,
+      lendingRadiusKm: lenderRadiusKm,
+      mobileNumber: v.user?.phone || 'Not provided',
+      emailId: v.user?.email || 'vendor@justpaisa.com',
+      panNumber: v.panNumber || panDoc?.documentNumber || 'ABCDE1234F',
+      aadhaarNumber: (v as any).aadhaarNumber || aadhaarDoc?.documentNumber || 'XXXX-XXXX-9012',
+      gstNumber: v.gstNumber || gstDoc?.documentNumber || '36ABCDE1234F1Z5',
+      kycStatus: v.kycStatus,
+      avatarUrl: v.avatarUrl || v.logoUrl || null,
+      panFileUrl: panDoc?.fileUrl || null,
+      aadhaarFileUrl: aadhaarDoc?.fileUrl || null,
+      shopLicensePdf: shopDoc?.fileUrl || null,
+      gstCertificatePdf: gstDoc?.fileUrl || null,
+      shopPhotoUrl: v.logoUrl || v.avatarUrl || null,
+      liveSelfieUrl: v.avatarUrl || null,
+      kycDocuments: kycDocs,
+    };
+  });
+
+  formatted.sort((a, b) => a.distanceKm - b.distanceKm);
+
+  res.json({ success: true, count: formatted.length, data: formatted });
 };
 
 export const verifyVendorKYC = async (req: AuthenticatedRequest, res: Response) => {

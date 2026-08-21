@@ -9,7 +9,7 @@ import {
   getBrowserLocation,
   reverseGeocodeMapbox,
 } from '../services/mapboxService';
-import { fetchLenders, updateVendorProfileApi } from '../services/api';
+import { fetchLenders, updateVendorProfileApi, getMyProfileApi } from '../services/api';
 import {
   Store,
   Building2,
@@ -163,6 +163,39 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
       window.removeEventListener('sbni_request_submitted', handleRequestsSync);
       window.removeEventListener('storage', handleRequestsSync);
     };
+  }, []);
+
+  // Fetch live vendor profile from backend on mount
+  useEffect(() => {
+    async function loadFreshVendorProfile() {
+      try {
+        const res = await getMyProfileApi();
+        if (res?.success && res?.data) {
+          const u = res.data;
+          const vp = u.vendorProfile;
+          if (vp) {
+            localStorage.setItem('sbni_vendor_profile', JSON.stringify(vp));
+            if (vp.avatarUrl || vp.logoUrl) {
+              setAvatarUrl(vp.avatarUrl || vp.logoUrl);
+              localStorage.setItem('sbni_vendor_avatar', vp.avatarUrl || vp.logoUrl);
+            }
+            if (vp.latitude && vp.longitude) {
+              setSearchLocation({
+                place: vp.place || 'Chaitanyapuri',
+                city: vp.city || 'Hyderabad',
+                state: vp.state || 'Telangana',
+                country: vp.country || 'India',
+                latitude: Number(vp.latitude),
+                longitude: Number(vp.longitude),
+              });
+            }
+          }
+        }
+      } catch (e) {
+        console.error('Failed to load fresh vendor profile:', e);
+      }
+    }
+    loadFreshVendorProfile();
   }, []);
 
   // Load Lenders based on current Search Coordinates (strictly radius matched by backend)

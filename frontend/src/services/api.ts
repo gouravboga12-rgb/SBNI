@@ -97,6 +97,15 @@ export async function loginUser(
           u.fullName = ownerName;
         }
         localStorage.setItem('sbni_vendor_profile', JSON.stringify(u.vendorProfile));
+        if (u.vendorProfile.avatarUrl || u.vendorProfile.logoUrl) {
+          localStorage.setItem('sbni_vendor_avatar', u.vendorProfile.avatarUrl || u.vendorProfile.logoUrl);
+        }
+      }
+      if (u?.lenderProfile) {
+        localStorage.setItem('sbni_lender_profile', JSON.stringify(u.lenderProfile));
+        if (u.lenderProfile.avatarUrl || u.lenderProfile.logoUrl) {
+          localStorage.setItem('sbni_lender_avatar', u.lenderProfile.avatarUrl || u.lenderProfile.logoUrl);
+        }
       }
       localStorage.setItem('sbni_token', data.data.accessToken);
       localStorage.setItem('sbni_user', JSON.stringify(u));

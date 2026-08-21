@@ -40,7 +40,7 @@ export const updateVendorProfile = async (req: AuthenticatedRequest, res: Respon
   }
 
   // Update user phone / email if provided
-  if (userId && (phone || email)) {
+  if (userId && (phone || email || ownerName)) {
     try {
       await prisma.user.update({
         where: { id: userId },
@@ -54,26 +54,29 @@ export const updateVendorProfile = async (req: AuthenticatedRequest, res: Respon
     }
   }
 
+  const effectiveAvatar = avatarUrl || logoUrl || undefined;
+
   const profile = await (prisma.vendorProfile as any).upsert({
     where: { userId },
     update: {
-      businessName,
-      ownerName,
-      gstNumber,
-      panNumber,
-      registrationType,
-      annualTurnover,
-      category,
-      address,
-      place,
-      city,
-      state,
-      country: country || 'India',
-      pincode,
+      businessName: businessName || undefined,
+      ownerName: ownerName || undefined,
+      gstNumber: gstNumber || undefined,
+      panNumber: panNumber || undefined,
+      aadhaarNumber: aadhaarNumber || undefined,
+      registrationType: registrationType || undefined,
+      annualTurnover: annualTurnover || undefined,
+      category: category || undefined,
+      address: address || undefined,
+      place: place || undefined,
+      city: city || undefined,
+      state: state || undefined,
+      country: country || undefined,
+      pincode: pincode || undefined,
       latitude: parsedLat,
       longitude: parsedLng,
-      avatarUrl: avatarUrl || logoUrl || undefined,
-      logoUrl: logoUrl || avatarUrl || undefined,
+      avatarUrl: effectiveAvatar,
+      logoUrl: effectiveAvatar,
     },
     create: {
       userId: userId!,
@@ -81,6 +84,7 @@ export const updateVendorProfile = async (req: AuthenticatedRequest, res: Respon
       ownerName: ownerName || 'Business Owner',
       gstNumber,
       panNumber,
+      aadhaarNumber,
       registrationType: registrationType || 'Proprietorship',
       annualTurnover: annualTurnover || '10-50 Lakhs',
       category: category || 'Retail',
@@ -92,8 +96,8 @@ export const updateVendorProfile = async (req: AuthenticatedRequest, res: Respon
       pincode: pincode || '500001',
       latitude: parsedLat ?? 17.3713,
       longitude: parsedLng ?? 78.5320,
-      avatarUrl: avatarUrl || logoUrl || undefined,
-      logoUrl: logoUrl || avatarUrl || undefined,
+      avatarUrl: effectiveAvatar,
+      logoUrl: effectiveAvatar,
     },
   });
 
@@ -222,12 +226,12 @@ export const searchLenders = async (req: AuthenticatedRequest, res: Response) =>
       id: lender.id,
       institutionName: formattedInstName,
       institutionType: lender.institutionType,
-      logoUrl: (lender as any).logoUrl || (lender as any).avatarUrl || 'https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=200',
-      avatarUrl: (lender as any).avatarUrl || (lender as any).logoUrl || 'https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=200',
+      logoUrl: (lender as any).logoUrl || (lender as any).avatarUrl || null,
+      avatarUrl: (lender as any).avatarUrl || (lender as any).logoUrl || null,
       registrationNumber: lender.registrationNumber,
       loanCategories: categoriesArray,
-      minLoanAmount: lender.minLoanAmount,
-      maxLoanAmount: lender.maxLoanAmount,
+      minLoanAmount: lender.minLoanAmount !== undefined && lender.minLoanAmount !== null ? lender.minLoanAmount : 10000,
+      maxLoanAmount: lender.maxLoanAmount !== undefined && lender.maxLoanAmount !== null ? lender.maxLoanAmount : 100000,
       minInterestRate: lender.minInterestRate,
       address: lender.address,
       place: lender.place || 'Financial District',
