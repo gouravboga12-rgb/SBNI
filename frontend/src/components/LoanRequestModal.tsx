@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Lender, VendorVerificationRequest } from '../types';
-import { ingestLeadApi } from '../services/api';
+import { ingestLeadApi, safeSetLocalStorage, getMyProfileApi, uploadFileToEc2Api } from '../services/api';
 import {
   X,
   Building2,
@@ -48,7 +48,16 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
   const [formError, setFormError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
 
-  // Auto-populate from logged-in vendor profile details and registered documents
+  const [panHostedUrl, setPanHostedUrl] = useState('');
+  const [aadhaarHostedUrl, setAadhaarHostedUrl] = useState('');
+  const [shopPhotoHostedUrl, setShopPhotoHostedUrl] = useState('');
+  const [liveSelfieHostedUrl, setLiveSelfieHostedUrl] = useState('');
+  const [businessLicenseHostedUrl, setBusinessLicenseHostedUrl] = useState('');
+  const [gstHostedUrl, setGstHostedUrl] = useState('');
+  const [cachedVp, setCachedVp] = useState<any>({});
+  const [isUploadingDoc, setIsUploadingDoc] = useState(false);
+
+  // Auto-populate from logged-in vendor profile details and registered documents from AWS RDS
   useEffect(() => {
     if (isOpen) {
       setSubmitted(false);
@@ -66,6 +75,7 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
         try { vp = JSON.parse(storedVpStr); } catch (e) {}
       }
 
+      setCachedVp(vp);
       const nameVal = vp.fullName || vp.ownerName || u.name || u.fullName || '';
       const phoneVal = vp.phone || u.phone || '';
       const emailVal = vp.email || u.email || '';
@@ -75,6 +85,46 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
       setEmail(emailVal);
       setMonthlyIncome(vp.monthlyIncome || u.monthlyIncome || '50000');
       setBankAccountDetails(vp.bankDetails || u.bankDetails || '');
+
+      setPanHostedUrl(vp.panFileUrl || '');
+      setAadhaarHostedUrl(vp.aadhaarFileUrl || '');
+      setBusinessLicenseHostedUrl(vp.businessLicenseUrl || '');
+      setGstHostedUrl(vp.gstFileUrl || '');
+      
+      let shopUrl = '';
+      if (Array.isArray(vp.shopPhotos) && vp.shopPhotos.length > 0) {
+        shopUrl = vp.shopPhotos[0];
+      } else if (typeof vp.shopPhotos === 'string' && vp.shopPhotos.startsWith('[')) {
+        try { const p = JSON.parse(vp.shopPhotos); shopUrl = p[0] || ''; } catch (e) {}
+      } else if (vp.shopPhotoUrl) {
+        shopUrl = vp.shopPhotoUrl;
+      }
+      setShopPhotoHostedUrl(shopUrl);
+      setLiveSelfieHostedUrl(vp.avatarUrl || vp.liveSelfieUrl || '');
+
+      // Load fresh profile asynchronously from AWS RDS
+      getMyProfileApi()
+        .then((res) => {
+          if (res && res.data && res.data.vendorProfile) {
+            const freshVp = res.data.vendorProfile;
+            setCachedVp(freshVp);
+            if (freshVp.ownerName) setFullName(freshVp.ownerName);
+            if (freshVp.phone || res.data.phone) setPhone(freshVp.phone || res.data.phone);
+            if (freshVp.email || res.data.email) setEmail(freshVp.email || res.data.email);
+            if (freshVp.panFileUrl) setPanHostedUrl(freshVp.panFileUrl);
+            if (freshVp.aadhaarFileUrl) setAadhaarHostedUrl(freshVp.aadhaarFileUrl);
+            if (freshVp.businessLicenseUrl) setBusinessLicenseHostedUrl(freshVp.businessLicenseUrl);
+            if (freshVp.gstFileUrl) setGstHostedUrl(freshVp.gstFileUrl);
+            if (freshVp.avatarUrl) setLiveSelfieHostedUrl(freshVp.avatarUrl);
+            if (freshVp.shopPhotos) {
+              try {
+                const photos = typeof freshVp.shopPhotos === 'string' ? JSON.parse(freshVp.shopPhotos) : freshVp.shopPhotos;
+                if (Array.isArray(photos) && photos.length > 0) setShopPhotoHostedUrl(photos[0]);
+              } catch (e) {}
+            }
+          }
+        })
+        .catch((err) => console.warn('Could not fetch fresh vendor profile for loan modal:', err));
 
       // Auto-attach registered verification documents so vendor doesn't have to re-upload manually every time
       const panName = vp.panFileName || 'PAN_Card_Verified.pdf';
@@ -90,6 +140,20 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
   }, [isOpen]);
 
   if (!isOpen || !lender) return null;
+
+  const handleFileUploadToEc2 = async (file: File, folder: 'avatars' | 'documents' | 'shops', docType: string) => {
+    setIsUploadingDoc(true);
+    try {
+      const res = await uploadFileToEc2Api(file, folder, file.name, docType);
+      const url = res.fileUrl || res.fullUrl;
+      return url;
+    } catch (e) {
+      console.error('Failed to upload file to AWS EC2:', e);
+      return '';
+    } finally {
+      setIsUploadingDoc(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -111,65 +175,25 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
       setFormError('Please enter your Monthly Income.');
       return;
     }
-    if (!panFile) {
-      setFormError('Please upload your PAN card document.');
-      return;
-    }
-    if (!aadhaarFile) {
-      setFormError('Please upload your Aadhaar card document.');
-      return;
-    }
-
-    const readFileDataUrl = (file: File): Promise<string> => {
-      return new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = () => resolve('');
-        reader.readAsDataURL(file);
-      });
-    };
-
-    let panUrl = '';
-    let aadhaarUrl = '';
-    let shopPhotoUrlVal = '';
-    let liveSelfieUrlVal = '';
-
-    if (panFile) {
-      try { panUrl = await readFileDataUrl(panFile); } catch (e) {}
-    }
-    if (aadhaarFile) {
-      try { aadhaarUrl = await readFileDataUrl(aadhaarFile); } catch (e) {}
-    }
-    if (shopPhotoFile) {
-      try { shopPhotoUrlVal = await readFileDataUrl(shopPhotoFile); } catch (e) {}
-    }
-    if (liveSelfieFile) {
-      try { liveSelfieUrlVal = await readFileDataUrl(liveSelfieFile); } catch (e) {}
-    }
 
     const today = new Date();
     const formattedDate = today.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
     const formattedTime = today.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
 
-    let vp: any = {};
-    const vendorProfileStr = localStorage.getItem('sbni_vendor_profile');
-    let vendorAvatar = '';
-    if (vendorProfileStr) {
-      try {
-        vp = JSON.parse(vendorProfileStr);
-        if (vp.avatarUrl) vendorAvatar = vp.avatarUrl;
-        else if (vp.liveSelfieDataUrl) vendorAvatar = vp.liveSelfieDataUrl;
-        else if (vp.shopPhotoDataUrl) vendorAvatar = vp.shopPhotoDataUrl;
-      } catch (e) {}
-    }
+    let finalPanUrl = panHostedUrl || cachedVp.panFileUrl || '';
+    let finalAadhaarUrl = aadhaarHostedUrl || cachedVp.aadhaarFileUrl || '';
+    let finalShopPhotoUrl = shopPhotoHostedUrl || (Array.isArray(cachedVp.shopPhotos) ? cachedVp.shopPhotos[0] : cachedVp.avatarUrl) || '';
+    let finalLiveSelfieUrl = liveSelfieHostedUrl || cachedVp.avatarUrl || '';
+    let finalLicenseUrl = businessLicenseHostedUrl || cachedVp.businessLicenseUrl || '';
+    let finalGstUrl = gstHostedUrl || cachedVp.gstFileUrl || '';
 
     const newRequest: VendorVerificationRequest = {
       id: 'req-' + Date.now(),
       vendorName: fullName,
-      shopName: vp.businessName || (fullName + ' Enterprise'),
-      shopAddress: vp.address || (lender.city ? `${lender.city}, ${lender.state || ''}` : 'Registered Location'),
-      city: lender.city || vp.city || 'Mumbai',
-      state: lender.state || vp.state || 'Maharashtra',
+      shopName: cachedVp.businessName || (fullName + ' Enterprise'),
+      shopAddress: cachedVp.address || (lender.city ? `${lender.city}, ${lender.state || ''}` : 'Registered Location'),
+      city: lender.city || cachedVp.city || 'Mumbai',
+      state: lender.state || cachedVp.state || 'Maharashtra',
       requestedDate: formattedDate,
       requestedTime: formattedTime,
       status: 'Pending',
@@ -177,20 +201,20 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
       inquiryMessage: '📝 Vendor submitted a Working Capital Loan application.',
       mobileNumber: phone,
       emailId: email,
-      panNumber: panFile?.name ? panFile.name.replace(/\.[^/.]+$/, '').toUpperCase() : (vp.panNumber || 'PAN Verified'),
-      aadhaarNumber: aadhaarFile?.name ? 'Aadhaar Verified' : (vp.aadhaarNumber || 'Aadhaar Verified'),
+      panNumber: cachedVp.panNumber || 'PAN Verified',
+      aadhaarNumber: cachedVp.aadhaarNumber || 'Aadhaar Verified',
       monthlyIncome: monthlyIncome,
       lenderId: lender.id,
       lenderName: lender.institutionName,
       bankAccountDetails: bankAccountDetails || undefined,
-      shopLicensePdf: vp.shopLicensePdf || vp.licenseDataUrl || undefined,
-      gstCertificatePdf: vp.gstCertificatePdf || vp.licenseDataUrl || undefined,
-      avatarUrl: vendorAvatar || liveSelfieUrlVal || undefined,
-      panFileUrl: panUrl || vp.panFileUrl || vp.panDataUrl || undefined,
-      aadhaarFileUrl: aadhaarUrl || vp.aadhaarFileUrl || vp.aadhaarDataUrl || undefined,
-      shopPhotoUrl: shopPhotoUrlVal || vp.shopPhotoUrl || vp.shopPhotoDataUrl || undefined,
-      liveSelfieUrl: liveSelfieUrlVal || vp.liveSelfieUrl || vp.liveSelfieDataUrl || vendorAvatar || undefined,
-      shopImages: [],
+      shopLicensePdf: finalLicenseUrl || undefined,
+      gstCertificatePdf: finalGstUrl || undefined,
+      avatarUrl: finalLiveSelfieUrl || undefined,
+      panFileUrl: finalPanUrl || undefined,
+      aadhaarFileUrl: finalAadhaarUrl || undefined,
+      shopPhotoUrl: finalShopPhotoUrl || undefined,
+      liveSelfieUrl: finalLiveSelfieUrl || undefined,
+      shopImages: finalShopPhotoUrl ? [finalShopPhotoUrl] : [],
     };
 
     // Save to localStorage so Lender Dashboard can read dynamic requests
@@ -202,10 +226,10 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
       } catch (e) {}
     }
     existingList.unshift(newRequest);
-    localStorage.setItem('sbni_vendor_requests', JSON.stringify(existingList));
+    safeSetLocalStorage('sbni_vendor_requests', JSON.stringify(existingList));
 
     // Also mark applied status for this specific lender card
-    localStorage.setItem(`sbni_applied_${lender.id}`, 'true');
+    safeSetLocalStorage(`sbni_applied_${lender.id}`, 'true');
     window.dispatchEvent(new Event('sbni_request_submitted'));
 
     // Asynchronously ingest lead into backend
@@ -387,13 +411,13 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
 
               {/* Document Uploads Grid (PAN & Aadhaar) */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                {/* PAN Card Upload */}
+                {/* PAN Card */}
                 <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200">
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs font-extrabold text-slate-800">PAN Card *</span>
-                    {panFile ? (
+                    {panHostedUrl || panFile ? (
                       <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded flex items-center gap-1">
-                        <CheckCircle2 className="w-3 h-3" /> Uploaded
+                        <CheckCircle2 className="w-3 h-3" /> Auto-Attached
                       </span>
                     ) : (
                       <span className="text-[10px] text-rose-600 font-bold">Required</span>
@@ -403,24 +427,32 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
                     <input
                       type="file"
                       accept="image/*,.pdf"
-                      onChange={(e) => e.target.files?.[0] && setPanFile(e.target.files[0])}
+                      onChange={async (e) => {
+                        if (e.target.files?.[0]) {
+                          const file = e.target.files[0];
+                          const url = await handleFileUploadToEc2(file, 'documents', 'PAN');
+                          if (url) setPanHostedUrl(url);
+                        }
+                      }}
                       className="hidden"
                     />
                     <UploadCloud className="w-5 h-5 text-[#003893] mx-auto mb-1" />
                     <div className="text-[11px] font-bold text-slate-700 truncate">
-                      {panFile ? panFile.name : 'Upload PAN Card'}
+                      {panHostedUrl ? (cachedVp.panNumber ? `PAN: ${cachedVp.panNumber}` : 'PAN Card Verified') : (panFile ? panFile.name : 'Upload PAN Card')}
                     </div>
-                    <div className="text-[9px] text-slate-400">PDF, JPG, PNG</div>
+                    <div className="text-[9px] text-slate-400">
+                      {panHostedUrl ? '✓ Verified on Account (Click to Change)' : 'PDF, JPG, PNG'}
+                    </div>
                   </label>
                 </div>
 
-                {/* Aadhaar Card Upload */}
+                {/* Aadhaar Card */}
                 <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200">
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs font-extrabold text-slate-800">Aadhaar Card *</span>
-                    {aadhaarFile ? (
+                    {aadhaarHostedUrl || aadhaarFile ? (
                       <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded flex items-center gap-1">
-                        <CheckCircle2 className="w-3 h-3" /> Uploaded
+                        <CheckCircle2 className="w-3 h-3" /> Auto-Attached
                       </span>
                     ) : (
                       <span className="text-[10px] text-rose-600 font-bold">Required</span>
@@ -430,14 +462,22 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
                     <input
                       type="file"
                       accept="image/*,.pdf"
-                      onChange={(e) => e.target.files?.[0] && setAadhaarFile(e.target.files[0])}
+                      onChange={async (e) => {
+                        if (e.target.files?.[0]) {
+                          const file = e.target.files[0];
+                          const url = await handleFileUploadToEc2(file, 'documents', 'AADHAAR');
+                          if (url) setAadhaarHostedUrl(url);
+                        }
+                      }}
                       className="hidden"
                     />
                     <UploadCloud className="w-5 h-5 text-[#003893] mx-auto mb-1" />
                     <div className="text-[11px] font-bold text-slate-700 truncate">
-                      {aadhaarFile ? aadhaarFile.name : 'Upload Aadhaar Card'}
+                      {aadhaarHostedUrl ? (cachedVp.aadhaarNumber ? `Aadhaar: ${cachedVp.aadhaarNumber}` : 'Aadhaar Verified') : (aadhaarFile ? aadhaarFile.name : 'Upload Aadhaar Card')}
                     </div>
-                    <div className="text-[9px] text-slate-400">PDF, JPG, PNG</div>
+                    <div className="text-[9px] text-slate-400">
+                      {aadhaarHostedUrl ? '✓ Verified on Account (Click to Change)' : 'PDF, JPG, PNG'}
+                    </div>
                   </label>
                 </div>
               </div>
@@ -451,9 +491,9 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
                       <Store className="w-3.5 h-3.5 text-[#003893]" />
                       Shop / Business Photo
                     </span>
-                    {shopPhotoFile ? (
+                    {shopPhotoHostedUrl || shopPhotoFile ? (
                       <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded flex items-center gap-1">
-                        <CheckCircle2 className="w-3 h-3" /> Uploaded
+                        <CheckCircle2 className="w-3 h-3" /> Auto-Attached
                       </span>
                     ) : (
                       <span className="text-[10px] font-semibold text-slate-500 bg-slate-200 px-1.5 py-0.5 rounded">Optional</span>
@@ -463,27 +503,35 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
                     <input
                       type="file"
                       accept="image/*"
-                      onChange={(e) => e.target.files?.[0] && setShopPhotoFile(e.target.files[0])}
+                      onChange={async (e) => {
+                        if (e.target.files?.[0]) {
+                          const file = e.target.files[0];
+                          const url = await handleFileUploadToEc2(file, 'shops', 'SHOP_PREMISES');
+                          if (url) setShopPhotoHostedUrl(url);
+                        }
+                      }}
                       className="hidden"
                     />
                     <Camera className="w-5 h-5 text-[#003893] mx-auto mb-1" />
                     <div className="text-[11px] font-bold text-slate-700 truncate">
-                      {shopPhotoFile ? shopPhotoFile.name : 'Upload Shop Photo (Optional)'}
+                      {shopPhotoHostedUrl ? 'Storefront Photo Attached' : (shopPhotoFile ? shopPhotoFile.name : 'Upload Shop Photo')}
                     </div>
-                    <div className="text-[9px] text-slate-400">Shop / Business Exterior</div>
+                    <div className="text-[9px] text-slate-400">
+                      {shopPhotoHostedUrl ? '✓ Stored on Account (Click to Change)' : 'Shop / Business Exterior'}
+                    </div>
                   </label>
                 </div>
 
-                {/* Live Photo with Person in front of Shop */}
+                {/* Live Photo / Selfie */}
                 <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200">
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs font-extrabold text-slate-800 flex items-center gap-1">
                       <UserCheck className="w-3.5 h-3.5 text-[#003893]" />
-                      Live Photo in Front
+                      Live Photo / Profile
                     </span>
-                    {liveSelfieFile ? (
+                    {liveSelfieHostedUrl || liveSelfieFile ? (
                       <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded flex items-center gap-1">
-                        <CheckCircle2 className="w-3 h-3" /> Uploaded
+                        <CheckCircle2 className="w-3 h-3" /> Auto-Attached
                       </span>
                     ) : (
                       <span className="text-[10px] font-semibold text-slate-500 bg-slate-200 px-1.5 py-0.5 rounded">Optional</span>
@@ -494,14 +542,22 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
                       type="file"
                       accept="image/*"
                       capture="user"
-                      onChange={(e) => e.target.files?.[0] && setLiveSelfieFile(e.target.files[0])}
+                      onChange={async (e) => {
+                        if (e.target.files?.[0]) {
+                          const file = e.target.files[0];
+                          const url = await handleFileUploadToEc2(file, 'avatars', 'SELFIE');
+                          if (url) setLiveSelfieHostedUrl(url);
+                        }
+                      }}
                       className="hidden"
                     />
                     <Camera className="w-5 h-5 text-[#003893] mx-auto mb-1" />
                     <div className="text-[11px] font-bold text-slate-700 truncate">
-                      {liveSelfieFile ? liveSelfieFile.name : 'Live Photo with Person in Front (Optional)'}
+                      {liveSelfieHostedUrl ? 'Live Profile Photo Attached' : (liveSelfieFile ? liveSelfieFile.name : 'Live Photo / Selfie')}
                     </div>
-                    <div className="text-[9px] text-slate-400">Person Standing in Front (Max 5MB)</div>
+                    <div className="text-[9px] text-slate-400">
+                      {liveSelfieHostedUrl ? '✓ Stored on Account (Click to Change)' : 'Person Standing in Front'}
+                    </div>
                   </label>
                 </div>
               </div>

@@ -337,18 +337,47 @@ export function generateGstCertDataUrl(shopName: string, vendorName: string, gst
 }
 
 /**
- * Trigger browser file download for any image/document data URL or link
+ * Trigger browser file download for any image/document URL or data link from AWS EC2 / RDS
  */
 export function downloadDocumentFile(fileUrl: string, fileName: string) {
   if (!fileUrl) return;
 
-  // If it is an SVG or data URL, download directly via <a> tag
-  const link = document.createElement('a');
-  link.href = fileUrl;
-  link.download = fileName.endsWith('.png') || fileName.endsWith('.jpg') || fileName.endsWith('.svg') || fileName.endsWith('.pdf')
+  const isPdf = fileUrl.toLowerCase().includes('.pdf');
+  const cleanName = fileName.endsWith('.png') || fileName.endsWith('.jpg') || fileName.endsWith('.svg') || fileName.endsWith('.pdf') || fileName.endsWith('.webp')
     ? fileName
-    : `${fileName}.png`;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+    : (isPdf ? `${fileName}.pdf` : `${fileName}.png`);
+
+  if (fileUrl.startsWith('data:') || fileUrl.startsWith('blob:')) {
+    const link = document.createElement('a');
+    link.href = fileUrl;
+    link.download = cleanName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    return;
+  }
+
+  // If HTTP URL from AWS EC2
+  fetch(fileUrl)
+    .then((res) => res.blob())
+    .then((blob) => {
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = cleanName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+    })
+    .catch(() => {
+      // Fallback direct link download
+      const link = document.createElement('a');
+      link.href = fileUrl;
+      link.target = '_blank';
+      link.download = cleanName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    });
 }

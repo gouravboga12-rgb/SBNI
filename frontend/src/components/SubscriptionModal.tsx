@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { SubscriptionPlan } from '../types';
-import { fetchSubscriptionPlans, purchaseSubscription } from '../services/api';
+import { fetchSubscriptionPlans, purchaseSubscription, safeSetLocalStorage } from '../services/api';
 import { Zap, Check, Lock, X, ShieldCheck, Ticket, Sparkles } from 'lucide-react';
 
 interface SubscriptionModalProps {
@@ -69,9 +69,9 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
     setLoading(true);
     try {
       const result = await purchaseSubscription(planToSubscribe.id, { method: 'OFFLINE' });
-      localStorage.setItem('sbni_subscribed', 'true');
-      localStorage.setItem('sbni_vendor_subscribed', 'true');
-      localStorage.setItem('sbni_lender_subscribed', 'true');
+      safeSetLocalStorage('sbni_subscribed', 'true');
+      safeSetLocalStorage('sbni_vendor_subscribed', 'true');
+      safeSetLocalStorage('sbni_lender_subscribed', 'true');
       window.dispatchEvent(new Event('sbni_subscription_updated'));
 
       if (result.success) {
@@ -90,9 +90,9 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
         }, 1400);
       }
     } catch {
-      localStorage.setItem('sbni_subscribed', 'true');
-      localStorage.setItem('sbni_vendor_subscribed', 'true');
-      localStorage.setItem('sbni_lender_subscribed', 'true');
+      safeSetLocalStorage('sbni_subscribed', 'true');
+      safeSetLocalStorage('sbni_vendor_subscribed', 'true');
+      safeSetLocalStorage('sbni_lender_subscribed', 'true');
       window.dispatchEvent(new Event('sbni_subscription_updated'));
 
       setSuccessMessage(`🎉 ${planToSubscribe.name} activated!`);

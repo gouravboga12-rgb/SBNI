@@ -39,6 +39,11 @@ app.get('/health', (req, res) => {
   });
 });
 
+import path from 'path';
+
+// Serve uploaded files statically from EC2 disk
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+
 // API v1 Routes
 app.use('/api/v1', apiRouter);
 

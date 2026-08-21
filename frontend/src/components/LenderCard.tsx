@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Lender } from '../types';
 import { Phone, MessageCircle, CheckCircle2, SendHorizontal, Lock, Zap, TrendingUp, Coins, MapPin } from 'lucide-react';
-import { ingestLeadApi } from '../services/api';
+import { ingestLeadApi, safeSetLocalStorage } from '../services/api';
 
 interface LenderCardProps {
   lender: Lender;
@@ -196,8 +196,8 @@ export const LenderCard: React.FC<LenderCardProps> = ({ lender, onOpenSubscripti
       const filtered = existingList.filter((r: any) => !(r.lenderId === lender.id && r.inquiryType === inquiryType && r.vendorName === v.name));
       filtered.unshift(newRequest);
 
-      localStorage.setItem('sbni_vendor_requests', JSON.stringify(filtered));
-      localStorage.setItem(`sbni_applied_${lender.id}`, 'true');
+      safeSetLocalStorage('sbni_vendor_requests', JSON.stringify(filtered));
+      safeSetLocalStorage(`sbni_applied_${lender.id}`, 'true');
       setHasApplied(true);
       window.dispatchEvent(new Event('sbni_request_submitted'));
 

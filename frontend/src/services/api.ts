@@ -22,6 +22,189 @@ export async function getMyProfileApi(): Promise<{ success: boolean; data?: any;
 // --------------- Config ---------------
 const API_BASE = (import.meta as any).env?.VITE_API_URL || 'http://18.61.36.65/api/v1';
 
+// --------------- Storage Protection Helpers (Zero Images/Files in Local Storage) ---------------
+const FILE_KEYS_TO_STRIP = new Set([
+  'panFileUrl',
+  'aadhaarFileUrl',
+  'businessLicenseUrl',
+  'gstFileUrl',
+  'shopPhotos',
+  'liveSelfieUrl',
+  'panDataUrl',
+  'aadhaarDataUrl',
+  'licenseDataUrl',
+  'shopPhotoDataUrl',
+  'liveSelfieDataUrl',
+  'photoFile',
+  'panFile',
+  'aadhaarFile',
+  'licenseFile',
+  'shopPhotoFile',
+  'liveSelfieFile',
+]);
+
+/**
+ * Recursively strips ALL base64 data URLs, image binaries, and file payloads before saving to localStorage.
+ * Ensures zero files or images touch client-side localStorage. All files are hosted on AWS EC2 & RDS.
+ */
+function pruneAllFilesAndImages(obj: any, depth = 0): any {
+  if (depth > 6 || !obj) return obj;
+  if (typeof obj === 'string') {
+    if (obj.startsWith('data:') || obj.length > 5000) {
+      return ''; // Strip base64 and large file data
+    }
+    return obj;
+  }
+  if (Array.isArray(obj)) {
+    return obj.map((item) => pruneAllFilesAndImages(item, depth + 1));
+  }
+  if (typeof obj === 'object') {
+    const result: any = {};
+    for (const [k, v] of Object.entries(obj)) {
+      if (FILE_KEYS_TO_STRIP.has(k)) {
+        // If it's a URL hosted on AWS (e.g. /uploads/...), keep the short path; otherwise strip
+        if (typeof v === 'string' && !v.startsWith('data:') && v.length < 255) {
+          result[k] = v;
+        } else {
+          result[k] = undefined;
+        }
+      } else if (typeof v === 'string' && (v.startsWith('data:') || v.length > 5000)) {
+        result[k] = '';
+      } else {
+        result[k] = pruneAllFilesAndImages(v, depth + 1);
+      }
+    }
+    return result;
+  }
+  return obj;
+}
+
+export function cleanStorageQuota() {
+  try {
+    // Explicitly delete all image and file caches from localStorage
+    localStorage.removeItem('sbni_vendor_avatar');
+    localStorage.removeItem('sbni_lender_avatar');
+
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (!key) continue;
+      const val = localStorage.getItem(key);
+      if (!val) continue;
+
+      if (val.startsWith('data:') || val.length > 10000) {
+        try {
+          const parsed = JSON.parse(val);
+          const pruned = pruneAllFilesAndImages(parsed);
+          localStorage.setItem(key, JSON.stringify(pruned));
+        } catch {
+          if (val.startsWith('data:')) {
+            localStorage.removeItem(key);
+          }
+        }
+      }
+    }
+  } catch (e) {
+    console.warn('Storage cleanup notice:', e);
+  }
+}
+
+// Automatically prune bloated keys upon module load
+cleanStorageQuota();
+
+export function safeSetLocalStorage(key: string, value: any) {
+  try {
+    // Never store avatar image keys
+    if (key === 'sbni_vendor_avatar' || key === 'sbni_lender_avatar') {
+      return;
+    }
+    let sanitizedObj = typeof value === 'string' ? (() => { try { return JSON.parse(value); } catch { return value; } })() : value;
+    if (typeof sanitizedObj === 'object' && sanitizedObj !== null) {
+      sanitizedObj = pruneAllFilesAndImages(sanitizedObj);
+    }
+    const strVal = typeof sanitizedObj === 'string' ? sanitizedObj : JSON.stringify(sanitizedObj);
+    localStorage.setItem(key, strVal);
+  } catch (e: any) {
+    console.warn(`localStorage quota exceeded while saving key "${key}". Cleaning cache...`, e);
+    try {
+      cleanStorageQuota();
+      const removableKeys = [
+        'justpaisa_admin_live_transactions',
+        'justpaisa_admin_live_referrals',
+        'sbni_admin_vendors',
+        'sbni_admin_lenders',
+        'sbni_vendor_requests',
+        'sbni_fraud_vendors',
+        'sbni_lender_reported_frauds',
+      ];
+      for (const k of removableKeys) {
+        if (k !== key) {
+          try { localStorage.removeItem(k); } catch {}
+        }
+      }
+      let sanitizedObj = typeof value === 'string' ? (() => { try { return JSON.parse(value); } catch { return value; } })() : value;
+      if (typeof sanitizedObj === 'object' && sanitizedObj !== null) {
+        sanitizedObj = pruneAllFilesAndImages(sanitizedObj);
+      }
+      const strVal = typeof sanitizedObj === 'string' ? sanitizedObj : JSON.stringify(sanitizedObj);
+      localStorage.setItem(key, strVal);
+    } catch (finalErr) {
+      console.error(`Unable to save "${key}" to localStorage:`, finalErr);
+    }
+  }
+}
+
+// --------------- EC2 File & Document Upload Service ---------------
+/**
+ * Uploads images and documents directly to the AWS EC2 server filesystem and RDS PostgreSQL.
+ * Returns the hosted HTTP URL so no files/images need to be stored locally.
+ */
+export async function uploadFileToEc2Api(
+  fileData: string | File,
+  folder: 'avatars' | 'documents' | 'shops' | 'kyc' = 'documents',
+  fileName?: string,
+  docType?: string
+): Promise<{ success: boolean; fileUrl?: string; fullUrl?: string; message?: string }> {
+  try {
+    let base64String = '';
+    let name = fileName || 'file.png';
+
+    if (typeof fileData === 'string') {
+      base64String = fileData;
+    } else {
+      name = fileData.name || fileName || 'file.png';
+      base64String = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(fileData);
+      });
+    }
+
+    const token = getToken();
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    };
+
+    const res = await fetch(`${API_BASE}/upload`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        fileData: base64String,
+        fileName: name,
+        folder,
+        docType,
+      }),
+    });
+
+    const data = await res.json();
+    return data;
+  } catch (err: any) {
+    console.error('Failed to upload file to AWS EC2:', err);
+    return { success: false, message: err.message || 'File upload failed' };
+  }
+}
+
 // --------------- Token Helpers ---------------
 export function getToken(): string | null {
   return localStorage.getItem('sbni_token');
@@ -96,21 +279,15 @@ export async function loginUser(
           u.name = ownerName;
           u.fullName = ownerName;
         }
-        localStorage.setItem('sbni_vendor_profile', JSON.stringify(u.vendorProfile));
-        if (u.vendorProfile.avatarUrl || u.vendorProfile.logoUrl) {
-          localStorage.setItem('sbni_vendor_avatar', u.vendorProfile.avatarUrl || u.vendorProfile.logoUrl);
-        }
+        safeSetLocalStorage('sbni_vendor_profile', JSON.stringify(u.vendorProfile));
       }
       if (u?.lenderProfile) {
-        localStorage.setItem('sbni_lender_profile', JSON.stringify(u.lenderProfile));
-        if (u.lenderProfile.avatarUrl || u.lenderProfile.logoUrl) {
-          localStorage.setItem('sbni_lender_avatar', u.lenderProfile.avatarUrl || u.lenderProfile.logoUrl);
-        }
+        safeSetLocalStorage('sbni_lender_profile', JSON.stringify(u.lenderProfile));
       }
-      localStorage.setItem('sbni_token', data.data.accessToken);
-      localStorage.setItem('sbni_user', JSON.stringify(u));
+      safeSetLocalStorage('sbni_token', data.data.accessToken);
+      safeSetLocalStorage('sbni_user', JSON.stringify(u));
       if (data.data.refreshToken) {
-        localStorage.setItem('sbni_refresh_token', data.data.refreshToken);
+        safeSetLocalStorage('sbni_refresh_token', data.data.refreshToken);
       }
       return { success: true, token: data.data.accessToken, user: u };
     }
@@ -135,8 +312,8 @@ export async function registerVendor(payload: {
       body: JSON.stringify({ ...payload, role: 'VENDOR' }),
     });
     if (data.success) {
-      localStorage.setItem('sbni_token', data.data.accessToken);
-      localStorage.setItem('sbni_user', JSON.stringify(data.data.user));
+      safeSetLocalStorage('sbni_token', data.data.accessToken);
+      safeSetLocalStorage('sbni_user', JSON.stringify(data.data.user));
       return { success: true, token: data.data.accessToken, user: data.data.user };
     }
     return { success: false, message: data.message || 'Registration failed' };
@@ -179,10 +356,10 @@ export async function registerLender(payload: {
           lendingRadiusKm: payload.lendingRadiusKm,
           successRate: payload.successRate || '80% - 90%',
         };
-        localStorage.setItem('sbni_lender_profile', JSON.stringify(storedProfile));
+        safeSetLocalStorage('sbni_lender_profile', JSON.stringify(storedProfile));
       }
-      localStorage.setItem('sbni_token', data.data.accessToken);
-      localStorage.setItem('sbni_user', JSON.stringify({ ...user, name: payload.name }));
+      safeSetLocalStorage('sbni_token', data.data.accessToken);
+      safeSetLocalStorage('sbni_user', JSON.stringify({ ...user, name: payload.name }));
       return { success: true, token: data.data.accessToken, user: { ...user, name: payload.name } };
     }
     return { success: false, message: data.message || 'Registration failed' };
@@ -287,6 +464,16 @@ export function logoutUser(): void {
   localStorage.removeItem('sbni_token');
   localStorage.removeItem('sbni_refresh_token');
   localStorage.removeItem('sbni_user');
+  localStorage.removeItem('sbni_vendor_profile');
+  localStorage.removeItem('sbni_lender_profile');
+  localStorage.removeItem('sbni_vendor_avatar');
+  localStorage.removeItem('sbni_lender_avatar');
+  localStorage.removeItem('sbni_subscribed');
+  localStorage.removeItem('sbni_vendor_subscribed');
+  localStorage.removeItem('sbni_lender_subscribed');
+  localStorage.removeItem('sbni_vendor_requests');
+  window.dispatchEvent(new Event('sbni_auth_changed'));
+  window.dispatchEvent(new Event('sbni_subscription_updated'));
 }
 
 // ================================================================
@@ -736,9 +923,9 @@ export async function checkSubscriptionStatus(): Promise<{
     });
     const isActive = Boolean(data.hasActiveSubscription || data.data?.isActive || isSubscribedLocally);
     if (isActive) {
-      localStorage.setItem('sbni_subscribed', 'true');
-      localStorage.setItem('sbni_vendor_subscribed', 'true');
-      localStorage.setItem('sbni_lender_subscribed', 'true');
+      safeSetLocalStorage('sbni_subscribed', 'true');
+      safeSetLocalStorage('sbni_vendor_subscribed', 'true');
+      safeSetLocalStorage('sbni_lender_subscribed', 'true');
     }
     return { isActive, subscription: data.data };
   } catch {
@@ -851,8 +1038,8 @@ export async function adminLoginApi(
       if (user.role !== 'SUPER_ADMIN') {
         return { success: false, message: 'Access denied: Admin credentials required.' };
       }
-      localStorage.setItem('sbni_admin_token', data.data.accessToken);
-      localStorage.setItem('sbni_admin_user', JSON.stringify(user));
+      safeSetLocalStorage('sbni_admin_token', data.data.accessToken);
+      safeSetLocalStorage('sbni_admin_user', JSON.stringify(user));
       return { success: true, token: data.data.accessToken, user };
     }
     return { success: false, message: data.message || 'Invalid credentials' };

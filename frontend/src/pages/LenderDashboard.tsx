@@ -8,6 +8,8 @@ import {
   submitFraudReportApi,
   updateLeadStatusApi,
   fetchLenderLeadsApi,
+  safeSetLocalStorage,
+  uploadFileToEc2Api,
 } from '../services/api';
 import { LocationPickerModal } from '../components/LocationPickerModal';
 import { getGoogleMapsNavigationUrl } from '../services/mapboxService';
@@ -49,6 +51,7 @@ import {
   Loader2,
   TrendingUp,
   Coins,
+  Lock,
 } from 'lucide-react';
 
 const LENDER_BANNER_SLIDES: BannerSlide[] = [
@@ -81,25 +84,33 @@ interface LenderDashboardProps {
   onLogout?: (roleTarget?: 'VENDOR' | 'LENDER') => void;
   activeTab?: 'home' | 'businesses' | 'reports' | 'profile';
   onTabChange?: (tab: 'home' | 'businesses' | 'reports' | 'profile') => void;
+  currentUser?: any | null;
+  onOpenAuth?: () => void;
 }
 
-function resolveInitialLenderDetails() {
+function resolveInitialLenderDetails(currentUser: any) {
+  if (!currentUser) return null;
   try {
-    const u = localStorage.getItem('sbni_user');
-    const p = localStorage.getItem('sbni_lender_profile');
-    const user = u ? JSON.parse(u) : null;
-    const profile = p ? JSON.parse(p) : null;
+    const u = currentUser;
+    const profile = u.lenderProfile || (() => {
+      try {
+        const p = localStorage.getItem('sbni_lender_profile');
+        return p ? JSON.parse(p) : null;
+      } catch {
+        return null;
+      }
+    })();
 
-    let officer = profile?.contactPersonName || user?.name || user?.fullName || '';
+    let officer = profile?.contactPersonName || u?.name || u?.fullName || '';
     if (!officer || officer.includes('@') || officer === 'Credit Officer' || officer === 'Business Money Financer') {
-      const email = user?.email || profile?.email || '';
+      const email = u?.email || profile?.email || '';
       if (email.toLowerCase().includes('gourav')) {
         officer = 'Gourav';
       } else if (email) {
         const handle = email.split('@')[0].replace(/[0-9_.-]/g, ' ').trim();
-        officer = handle ? handle.split(' ').map((s: string) => s.charAt(0).toUpperCase() + s.slice(1)).join(' ') : 'Gourav';
+        officer = handle ? handle.split(' ').map((s: string) => s.charAt(0).toUpperCase() + s.slice(1)).join(' ') : 'Credit Officer';
       } else {
-        officer = 'Gourav';
+        officer = 'Credit Officer';
       }
     }
 
@@ -113,8 +124,8 @@ function resolveInitialLenderDetails() {
     return {
       name: financerName,
       contactPerson: officer,
-      phone: user?.phone || profile?.phone || '+91 98200 11223',
-      email: user?.email || profile?.email || 'lender@justpaisa.com',
+      phone: u?.phone || profile?.phone || 'Not provided',
+      email: u?.email || profile?.email || 'lender@justpaisa.com',
       city: profile?.city || 'Hyderabad',
       state: profile?.state || 'Telangana',
       regNo: profile?.registrationNumber || 'REG-FIN-1001',
@@ -126,21 +137,7 @@ function resolveInitialLenderDetails() {
       successRate: profile?.successRate || '80% - 90%',
     };
   } catch (e) {
-    return {
-      name: 'Gourav Money Financer',
-      contactPerson: 'Gourav',
-      phone: '+91 98200 11223',
-      email: 'lender@justpaisa.com',
-      city: 'Hyderabad',
-      state: 'Telangana',
-      regNo: 'REG-FIN-1001',
-      institutionType: 'Money Financer',
-      minLoan: 5000,
-      maxLoan: 100000,
-      minRate: 9.5,
-      lendingRadius: 50,
-      successRate: '80% - 90%',
-    };
+    return null;
   }
 }
 
@@ -149,6 +146,8 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
   onLogout,
   activeTab: controlledActiveTab,
   onTabChange,
+  currentUser,
+  onOpenAuth,
 }) => {
   const [selectedVendor, setSelectedVendor] = useState<VendorVerificationRequest | null>(null);
   const [requests, setRequests] = useState<VendorVerificationRequest[]>([]);
@@ -201,7 +200,10 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
     );
   });
 
-  const [currentUserObj, setCurrentUserObj] = useState(resolveInitialLenderDetails);
+  const [currentUserObj, setCurrentUserObj] = useState<any>(() => resolveInitialLenderDetails(currentUser));
+  useEffect(() => {
+    setCurrentUserObj(resolveInitialLenderDetails(currentUser));
+  }, [currentUser]);
   const [lenderAvatarUrl, setLenderAvatarUrl] = useState<string>(() => {
     return localStorage.getItem('sbni_lender_avatar') || 'https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=200';
   });
@@ -225,6 +227,10 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
   // Fetch live profile from server on mount
   useEffect(() => {
     async function loadFreshProfile() {
+      if (!currentUser) {
+        setCurrentUserObj(null);
+        return;
+      }
       try {
         const res = await getMyProfileApi();
         if (res?.success && res?.data) {
@@ -236,8 +242,8 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
             if (u.email?.toLowerCase().includes('gourav')) officer = 'Gourav';
             else if (u.email) {
               const handle = u.email.split('@')[0].replace(/[0-9_.-]/g, ' ').trim();
-              officer = handle ? handle.split(' ').map((s: string) => s.charAt(0).toUpperCase() + s.slice(1)).join(' ') : 'Gourav';
-            } else officer = 'Gourav';
+              officer = handle ? handle.split(' ').map((s: string) => s.charAt(0).toUpperCase() + s.slice(1)).join(' ') : 'Credit Officer';
+            } else officer = 'Credit Officer';
           }
 
           let financer = lp?.institutionName || '';
@@ -249,13 +255,12 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
 
           if (lp?.avatarUrl || lp?.logoUrl) {
             setLenderAvatarUrl(lp.avatarUrl || lp.logoUrl);
-            localStorage.setItem('sbni_lender_avatar', lp.avatarUrl || lp.logoUrl);
           }
 
           const freshData = {
             name: financer,
             contactPerson: officer,
-            phone: u.phone || lp?.phone || '+91 98200 11223',
+            phone: u.phone || lp?.phone || 'Not provided',
             email: u.email || 'lender@justpaisa.com',
             city: lp?.city || 'Hyderabad',
             state: lp?.state || 'Telangana',
@@ -269,20 +274,26 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
           };
 
           setCurrentUserObj(freshData);
-          localStorage.setItem('sbni_user', JSON.stringify({ ...u, name: officer, fullName: officer }));
+          safeSetLocalStorage('sbni_user', JSON.stringify({ ...u, name: officer, fullName: officer }));
           if (lp) {
-            localStorage.setItem('sbni_lender_profile', JSON.stringify({ ...lp, institutionName: financer, contactPersonName: officer, successRate: lp?.successRate || '80% - 90%' }));
+            safeSetLocalStorage('sbni_lender_profile', JSON.stringify({ ...lp, institutionName: financer, contactPersonName: officer, successRate: lp?.successRate || '80% - 90%' }));
           }
         }
       } catch (err) {
         console.error('Failed to load fresh profile:', err);
       }
     }
-    loadFreshProfile();
+    if (currentUser) {
+      loadFreshProfile();
+    } else {
+      setCurrentUserObj(null);
+    }
     loadNearbyBusinessesList();
 
     const handleGlobalSync = () => {
-      loadFreshProfile();
+      if (currentUser) {
+        loadFreshProfile();
+      }
       loadNearbyBusinessesList();
     };
     window.addEventListener('sbni_vendor_profile_updated', handleGlobalSync);
@@ -291,41 +302,37 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
       window.removeEventListener('sbni_vendor_profile_updated', handleGlobalSync);
       window.removeEventListener('storage', handleGlobalSync);
     };
-  }, []);
+  }, [currentUser]);
 
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 5 * 1024 * 1024) {
       alert('Photo size must be less than 5MB.');
       return;
     }
-    const reader = new FileReader();
-    reader.onload = async () => {
-      const dataUrl = reader.result as string;
-      setLenderAvatarUrl(dataUrl);
-      localStorage.setItem('sbni_lender_avatar', dataUrl);
-
-      // Persist to backend lender profile so all vendors immediately see this brand avatar
-      try {
+    try {
+      const uploadRes = await uploadFileToEc2Api(file, 'avatars', file.name);
+      const hostedUrl = uploadRes.fileUrl || uploadRes.fullUrl;
+      if (hostedUrl) {
+        setLenderAvatarUrl(hostedUrl);
         await updateLenderProfileApi({
-          avatarUrl: dataUrl,
-          logoUrl: dataUrl,
-          institutionName: currentUserObj.name,
-          contactPersonName: currentUserObj.contactPerson,
-          minLoanAmount: currentUserObj.minLoan,
-          maxLoanAmount: currentUserObj.maxLoan,
-          lendingRadiusKm: currentUserObj.lendingRadius,
-          successRate: currentUserObj.successRate,
-          city: currentUserObj.city,
-          state: currentUserObj.state,
+          avatarUrl: hostedUrl,
+          logoUrl: hostedUrl,
+          institutionName: currentUserObj?.name || 'Business Money Financer',
+          contactPersonName: currentUserObj?.contactPerson || 'Credit Officer',
+          minLoanAmount: currentUserObj?.minLoan || 5000,
+          maxLoanAmount: currentUserObj?.maxLoan || 100000,
+          lendingRadiusKm: currentUserObj?.lendingRadius || 50,
+          successRate: currentUserObj?.successRate || '80% - 90%',
+          city: currentUserObj?.city || 'Hyderabad',
+          state: currentUserObj?.state || 'Telangana',
         } as any);
         window.dispatchEvent(new CustomEvent('sbni_lender_profile_updated'));
-      } catch (err) {
-        console.error('Failed to sync lender avatar to backend:', err);
       }
-    };
-    reader.readAsDataURL(file);
+    } catch (err) {
+      console.error('Failed to upload financer avatar to AWS EC2 / RDS:', err);
+    }
   };
 
   const [isEditingLenderProfile, setIsEditingLenderProfile] = useState(false);
@@ -349,6 +356,10 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
   const [lenderSaveSuccess, setLenderSaveSuccess] = useState<string | null>(null);
 
   const startEditingLender = () => {
+    if (!currentUserObj) {
+      if (onOpenAuth) onOpenAuth();
+      return;
+    }
     let pObj: any = {};
     try {
       pObj = JSON.parse(localStorage.getItem('sbni_lender_profile') || '{}');
@@ -397,11 +408,13 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
       };
       setCurrentUserObj(updatedUserObj);
 
-      // 1. Update local storage
-      const uStr = localStorage.getItem('sbni_user') || '{}';
-      const lpStr = localStorage.getItem('sbni_lender_profile') || '{}';
-      const u = JSON.parse(uStr);
-      const lp = JSON.parse(lpStr);
+      // 1. Save to localStorage
+      let u: any = {};
+      let lp: any = {};
+      try {
+        u = JSON.parse(localStorage.getItem('sbni_user') || '{}');
+        lp = JSON.parse(localStorage.getItem('sbni_lender_profile') || '{}');
+      } catch (e) {}
 
       const mergedUser = {
         ...u,
@@ -410,6 +423,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
         phone: lenderEditForm.phone,
         email: lenderEditForm.email,
       };
+
       const mergedLp = {
         ...lp,
         institutionName: instName,
@@ -421,7 +435,6 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
         city: lenderEditForm.city,
         state: lenderEditForm.state,
         pincode: lenderEditForm.pincode,
-        registrationNumber: lenderEditForm.regNo,
         minLoanAmount: Number(lenderEditForm.minLoan),
         maxLoanAmount: Number(lenderEditForm.maxLoan),
         lendingRadiusKm: Number(lenderEditForm.lendingRadius),
@@ -430,8 +443,8 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
         logoUrl: lenderAvatarUrl || undefined,
       };
 
-      localStorage.setItem('sbni_user', JSON.stringify(mergedUser));
-      localStorage.setItem('sbni_lender_profile', JSON.stringify(mergedLp));
+      safeSetLocalStorage('sbni_user', JSON.stringify(mergedUser));
+      safeSetLocalStorage('sbni_lender_profile', JSON.stringify(mergedLp));
 
       // 2. Call backend API to persist to PostgreSQL on AWS
       const apiRes = await updateLenderProfileApi({
@@ -534,7 +547,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
       const pStr = localStorage.getItem('sbni_lender_profile') || '{}';
       const parsed = JSON.parse(pStr);
       const merged = { ...parsed, ...updated };
-      localStorage.setItem('sbni_lender_profile', JSON.stringify(merged));
+      safeSetLocalStorage('sbni_lender_profile', JSON.stringify(merged));
     } catch (e) {}
 
     // Save to AWS Backend
@@ -550,6 +563,11 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const loadVendorRequests = async () => {
+    if (!currentUser || !currentUserObj) {
+      setRequests([]);
+      return;
+    }
+
     const deletedVendorIds: string[] = (() => {
       try {
         return JSON.parse(localStorage.getItem('sbni_deleted_vendors') || '[]');
@@ -585,7 +603,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
             return true;
           });
 
-          localStorage.setItem('sbni_vendor_requests', JSON.stringify(cleaned));
+          safeSetLocalStorage('sbni_vendor_requests', JSON.stringify(cleaned));
 
           localReqs = cleaned.filter((r) => {
             // Must match THIS lender
@@ -870,6 +888,10 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
   };
 
   const handleVendorSelect = (req: VendorVerificationRequest) => {
+    if (!currentUser) {
+      if (onOpenAuth) onOpenAuth();
+      return;
+    }
     if (checkLenderSubscribed()) {
       setSelectedVendor(req);
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -911,7 +933,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
         const list = JSON.parse(stored);
         if (Array.isArray(list)) {
           const updatedList = list.map((r: any) => (r.id === id ? { ...r, status: newStatus } : r));
-          localStorage.setItem('sbni_vendor_requests', JSON.stringify(updatedList));
+          safeSetLocalStorage('sbni_vendor_requests', JSON.stringify(updatedList));
         }
       }
     } catch (e) {}
@@ -958,7 +980,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
       const storedFraud = JSON.parse(localStorage.getItem('sbni_fraud_vendors') || '{}');
       storedFraud[reportingFraudVendor.id] = true;
       if (reportingFraudVendor.emailId) storedFraud[reportingFraudVendor.emailId] = true;
-      localStorage.setItem('sbni_fraud_vendors', JSON.stringify(storedFraud));
+      safeSetLocalStorage('sbni_fraud_vendors', JSON.stringify(storedFraud));
 
       const lenderReports = JSON.parse(localStorage.getItem('sbni_lender_reported_frauds') || '[]');
       const newReportEntry = {
@@ -972,7 +994,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
         date: new Date().toISOString(),
       };
       lenderReports.push(newReportEntry);
-      localStorage.setItem('sbni_lender_reported_frauds', JSON.stringify(lenderReports));
+      safeSetLocalStorage('sbni_lender_reported_frauds', JSON.stringify(lenderReports));
 
       // Asynchronously submit to AWS backend /api/v1/admin/fraud-reports
       submitFraudReportApi({
@@ -1055,37 +1077,58 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
               
-              <div className="card-blue-header p-5 md:p-6 shadow-lg relative overflow-hidden flex items-center justify-between lg:col-span-2 min-h-[160px]">
-                <div className="space-y-2 z-10">
-                  <div className="text-xs text-blue-200 font-medium">Welcome Back,</div>
-                  <h2 className="text-2xl md:text-3xl font-extrabold text-white font-heading">{currentUserObj.name}</h2>
-                  <div className="inline-flex px-3.5 py-1 rounded-full bg-emerald-500/25 text-emerald-200 text-xs font-bold border border-emerald-400/40 shadow-sm backdrop-blur-md">
-                    Business Money Financer Account
+              {currentUserObj ? (
+                <div className="card-blue-header p-5 md:p-6 shadow-lg relative overflow-hidden flex items-center justify-between lg:col-span-2 min-h-[160px]">
+                  <div className="space-y-2 z-10">
+                    <div className="text-xs text-blue-200 font-medium">Welcome Back,</div>
+                    <h2 className="text-2xl md:text-3xl font-extrabold text-white font-heading">{currentUserObj.name}</h2>
+                    <div className="inline-flex px-3.5 py-1 rounded-full bg-emerald-500/25 text-emerald-200 text-xs font-bold border border-emerald-400/40 shadow-sm backdrop-blur-md">
+                      Business Money Financer Account
+                    </div>
                   </div>
-                </div>
 
-                <div
-                  onClick={() => fileInputRef.current?.click()}
-                  className="relative w-16 h-16 md:w-20 md:h-20 rounded-full border-2 border-white/80 shadow-2xl z-10 shrink-0 cursor-pointer transition-transform hover:scale-105 overflow-hidden group"
-                  title="Click to change profile picture"
-                >
-                  <img
-                    src={lenderAvatarUrl || 'https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=200'}
-                    alt={currentUserObj.name}
-                    className="w-full h-full object-cover rounded-full"
-                  />
-                  <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-full">
-                    <Camera className="w-5 h-5 text-white" />
+                  <div
+                    onClick={() => fileInputRef.current?.click()}
+                    className="relative w-16 h-16 md:w-20 md:h-20 rounded-full border-2 border-white/80 shadow-2xl z-10 shrink-0 cursor-pointer transition-transform hover:scale-105 overflow-hidden group"
+                    title="Click to change profile picture"
+                  >
+                    <img
+                      src={lenderAvatarUrl || 'https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=200'}
+                      alt={currentUserObj.name}
+                      className="w-full h-full object-cover rounded-full"
+                    />
+                    <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-full">
+                      <Camera className="w-5 h-5 text-white" />
+                    </div>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleAvatarChange}
+                      className="hidden"
+                    />
                   </div>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleAvatarChange}
-                    className="hidden"
-                  />
                 </div>
-              </div>
+              ) : (
+                <div className="card-blue-header p-5 md:p-6 shadow-lg relative overflow-hidden flex flex-col justify-between lg:col-span-2 min-h-[160px]">
+                  <div className="space-y-2 z-10">
+                    <div className="text-xs text-blue-200 font-medium uppercase tracking-wider">Business Money Financer Portal</div>
+                    <h2 className="text-2xl md:text-3xl font-extrabold text-white font-heading">Local Business Lending CRM</h2>
+                    <p className="text-xs text-blue-100 max-w-lg leading-relaxed">
+                      Log in to inspect verified local shop applicants, review KYC documents, and approve working capital requests.
+                    </p>
+                  </div>
+                  <div className="pt-3 z-10">
+                    <button
+                      onClick={onOpenAuth}
+                      className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-white text-[#003893] hover:bg-blue-50 font-extrabold text-xs shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <User className="w-4 h-4" />
+                      <span>Financer Sign In / Register</span>
+                    </button>
+                  </div>
+                </div>
+              )}
 
               <div className="card-white splash-highlight-card p-5 md:p-6 space-y-4 relative overflow-hidden flex flex-col justify-between min-h-[160px] bg-gradient-to-br from-emerald-50/70 via-white to-emerald-50/40">
                 <div className="flex items-start justify-between">
@@ -1122,12 +1165,12 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                 <div className="card-white p-4 flex items-center justify-between hover:shadow-md transition-all">
                   <div>
                     <div className="text-xs text-slate-500 font-medium">Total Shop Businesses</div>
-                    <div className="text-2xl font-extrabold text-slate-900 font-heading mt-0.5">{requests.length}</div>
+                    <div className="text-2xl font-extrabold text-slate-900 font-heading mt-0.5">{currentUserObj ? requests.length : nearbyBusinesses.length}</div>
                     <button
-                      onClick={() => handleReportsClick('ALL')}
+                      onClick={() => currentUserObj ? handleReportsClick('ALL') : handleBusinessesClick()}
                       className="text-xs text-blue-600 font-bold mt-1 hover:underline flex items-center gap-0.5 cursor-pointer"
                     >
-                      View All <ChevronRight className="w-3 h-3" />
+                      <span>{currentUserObj ? 'View All' : 'Explore Registered'}</span> <ChevronRight className="w-3 h-3" />
                     </button>
                   </div>
                   <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 flex-shrink-0">
@@ -1137,13 +1180,13 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
 
                 <div className="card-white p-4 flex items-center justify-between hover:shadow-md transition-all">
                   <div>
-                    <div className="text-xs text-slate-500 font-medium">Accepted Requests</div>
-                    <div className="text-2xl font-extrabold text-emerald-700 font-heading mt-0.5">{acceptedCount}</div>
+                    <div className="text-xs text-slate-500 font-medium">{currentUserObj ? 'Accepted Requests' : 'KYC Verification'}</div>
+                    <div className="text-2xl font-extrabold text-emerald-700 font-heading mt-0.5">{currentUserObj ? acceptedCount : '6 Files'}</div>
                     <button
-                      onClick={() => handleReportsClick('ACCEPTED')}
+                      onClick={() => currentUserObj ? handleReportsClick('ACCEPTED') : handleBusinessesClick()}
                       className="text-xs text-emerald-600 font-bold mt-1 hover:underline flex items-center gap-0.5 cursor-pointer"
                     >
-                      View Reports <ChevronRight className="w-3 h-3" />
+                      <span>{currentUserObj ? 'View Reports' : 'Inspect KYC'}</span> <ChevronRight className="w-3 h-3" />
                     </button>
                   </div>
                   <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 flex-shrink-0">
@@ -1153,13 +1196,13 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
 
                 <div className="card-white p-4 flex items-center justify-between hover:shadow-md transition-all">
                   <div>
-                    <div className="text-xs text-slate-500 font-medium">Pending Requests</div>
-                    <div className="text-2xl font-extrabold text-amber-600 font-heading mt-0.5">{pendingCount}</div>
+                    <div className="text-xs text-slate-500 font-medium">{currentUserObj ? 'Pending Requests' : 'Service Radius'}</div>
+                    <div className="text-2xl font-extrabold text-amber-600 font-heading mt-0.5">{currentUserObj ? pendingCount : '50 KM'}</div>
                     <button
-                      onClick={() => handleReportsClick('PENDING')}
+                      onClick={() => currentUserObj ? handleReportsClick('PENDING') : handleBusinessesClick()}
                       className="text-xs text-amber-600 font-bold mt-1 hover:underline flex items-center gap-0.5 cursor-pointer"
                     >
-                      View Reports <ChevronRight className="w-3 h-3" />
+                      <span>{currentUserObj ? 'View Reports' : 'Local Commerce'}</span> <ChevronRight className="w-3 h-3" />
                     </button>
                   </div>
                   <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600 flex-shrink-0">
@@ -1178,12 +1221,32 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                   <h3 className="font-extrabold text-slate-900 text-base md:text-lg font-heading splash-text-effect">
                     Recent Verification Requests
                   </h3>
-                  <button onClick={() => handleReportsClick('ALL')} className="text-xs text-blue-600 font-bold hover:underline cursor-pointer">
-                    View All
-                  </button>
+                  {currentUserObj && (
+                    <button onClick={() => handleReportsClick('ALL')} className="text-xs text-blue-600 font-bold hover:underline cursor-pointer">
+                      View All
+                    </button>
+                  )}
                 </div>
 
-                {requests.length === 0 ? (
+                {!currentUserObj ? (
+                  <div className="card-white p-8 text-center rounded-3xl border border-slate-200 shadow-sm space-y-3">
+                    <div className="w-12 h-12 rounded-2xl bg-blue-50 border border-blue-200 flex items-center justify-center mx-auto text-[#003893]">
+                      <Lock className="w-6 h-6" />
+                    </div>
+                    <div className="space-y-1">
+                      <h4 className="text-base font-extrabold text-slate-900 font-heading">Financer Sign In Required</h4>
+                      <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                        Please log in to your Money Financer account to view recent applicant verification requests.
+                      </p>
+                    </div>
+                    <button
+                      onClick={onOpenAuth}
+                      className="btn-sbni-blue py-2.5 px-6 text-xs font-extrabold shadow-md mx-auto flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <span>Log In as Money Financer</span>
+                    </button>
+                  </div>
+                ) : requests.length === 0 ? (
                   <div className="card-white p-8 text-center space-y-3">
                     <Clock className="w-10 h-10 text-slate-400 mx-auto" />
                     <div className="font-bold text-slate-700 text-sm">No Recent Applied Requests</div>
@@ -1419,28 +1482,47 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
 
         {/* TAB 3: REPORTS TAB - FULL REQUESTS TRACKING & FRAUD AUDIT */}
         {!selectedVendor && activeTab === 'reports' && (
-          <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div>
-                <h2 className="text-2xl font-extrabold text-slate-900 font-heading">Financing Requests & Reports</h2>
-                <p className="text-xs text-slate-500 font-medium mt-0.5">
-                  Manage customer financing requests, approve or reject applications, and report fraudulent accounts
+          !currentUserObj ? (
+            <div className="card-white p-12 text-center rounded-3xl border border-slate-200 shadow-sm space-y-5 max-w-lg mx-auto my-12">
+              <div className="w-16 h-16 rounded-3xl bg-blue-50 border border-blue-200 flex items-center justify-center mx-auto text-[#003893] shadow-inner">
+                <FileText className="w-8 h-8" />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-xl font-extrabold text-slate-900 font-heading">Financer Login Required</h3>
+                <p className="text-xs text-slate-500 max-w-sm mx-auto leading-relaxed">
+                  Please log in to your Business Money Financer account to access your loan inspection history and applicant verification reports.
                 </p>
               </div>
+              <button
+                onClick={onOpenAuth}
+                className="btn-sbni-blue py-3 px-8 text-xs font-extrabold shadow-lg mx-auto flex items-center gap-2 cursor-pointer"
+              >
+                <span>Log In as Business Money Financer</span>
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h2 className="text-2xl font-extrabold text-slate-900 font-heading">Financing Requests & Reports</h2>
+                  <p className="text-xs text-slate-500 font-medium mt-0.5">
+                    Manage customer financing requests, approve or reject applications, and report fraudulent accounts
+                  </p>
+                </div>
 
-              {/* Status Filter Buttons */}
-              <div className="flex items-center bg-slate-200/80 p-1 rounded-2xl w-fit flex-wrap gap-1">
-                <button
-                  onClick={() => setReportsFilterStatus('PENDING')}
-                  className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 ${
-                    reportsFilterStatus === 'PENDING'
-                      ? 'bg-amber-500 text-white shadow-md'
-                      : 'text-slate-700 hover:text-slate-900 hover:bg-slate-300/60'
-                  }`}
-                >
-                  <Clock className="w-3.5 h-3.5" />
-                  <span>Pending Requests ({pendingCount})</span>
-                </button>
+                {/* Status Filter Buttons */}
+                <div className="flex items-center bg-slate-200/80 p-1 rounded-2xl w-fit flex-wrap gap-1">
+                  <button
+                    onClick={() => setReportsFilterStatus('PENDING')}
+                    className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 ${
+                      reportsFilterStatus === 'PENDING'
+                        ? 'bg-amber-500 text-white shadow-md'
+                        : 'text-slate-700 hover:text-slate-900 hover:bg-slate-300/60'
+                    }`}
+                  >
+                    <Clock className="w-3.5 h-3.5" />
+                    <span>Pending Requests ({pendingCount})</span>
+                  </button>
 
                 <button
                   onClick={() => setReportsFilterStatus('ACCEPTED')}
@@ -1683,7 +1765,8 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
               </div>
             )}
           </div>
-        )}
+        )
+      )}
 
         {/* VIEW: VENDOR VERIFICATION REVIEW PAGE */}
         {selectedVendor && (
@@ -2440,56 +2523,75 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
 
         {/* VIEW 3: LENDER PROFILE VIEW */}
         {!selectedVendor && activeTab === 'profile' && (
-          <div className="space-y-6 max-w-4xl mx-auto">
-            
-            {/* Header Title & Edit Mode Toggle */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div>
-                <h2 className="text-2xl font-extrabold text-slate-900 font-heading">Business Money Financer Profile & Security</h2>
-                <p className="text-xs text-slate-500 font-medium mt-0.5">
-                  Manage financer credentials, credit officer contact details, and session status
+          !currentUserObj ? (
+            <div className="card-white p-12 text-center rounded-3xl border border-slate-200 shadow-sm space-y-5 max-w-lg mx-auto my-12">
+              <div className="w-16 h-16 rounded-3xl bg-blue-50 border border-blue-200 flex items-center justify-center mx-auto text-[#003893] shadow-inner">
+                <Lock className="w-8 h-8" />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-xl font-extrabold text-slate-900 font-heading">Financer Login Required</h3>
+                <p className="text-xs text-slate-500 max-w-sm mx-auto leading-relaxed">
+                  Please log in to your Business Money Financer account to view or edit your lending institution details, interest rates, and service radius.
                 </p>
               </div>
-
-              {!isEditingLenderProfile ? (
-                <button
-                  type="button"
-                  onClick={startEditingLender}
-                  className="px-4 py-2.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-[#003893] border border-blue-200 font-extrabold text-xs flex items-center gap-2 transition-all shadow-xs active:scale-95 cursor-pointer w-fit"
-                >
-                  <Edit3 className="w-4 h-4 text-[#003893]" />
-                  <span>Edit Financer Profile</span>
-                </button>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setIsEditingLenderProfile(false)}
-                    className="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-bold text-xs hover:bg-slate-100 transition-colors cursor-pointer"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleSaveLenderProfile}
-                    disabled={isSavingLenderProfile}
-                    className="px-5 py-2.5 rounded-xl bg-[#003893] hover:bg-[#002366] text-white font-extrabold text-xs flex items-center gap-2 shadow-md transition-all active:scale-95 cursor-pointer"
-                  >
-                    {isSavingLenderProfile ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        <span>Saving...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Save className="w-4 h-4 text-emerald-400" />
-                        <span>Save Profile Changes</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-              )}
+              <button
+                onClick={onOpenAuth}
+                className="btn-sbni-blue py-3 px-8 text-xs font-extrabold shadow-lg mx-auto flex items-center gap-2 cursor-pointer"
+              >
+                <span>Log In as Business Money Financer</span>
+              </button>
             </div>
+          ) : (
+            <div className="space-y-6 max-w-4xl mx-auto">
+              
+              {/* Header Title & Edit Mode Toggle */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-2xl font-extrabold text-slate-900 font-heading">Business Money Financer Profile & Security</h2>
+                  <p className="text-xs text-slate-500 font-medium mt-0.5">
+                    Manage financer credentials, credit officer contact details, and session status
+                  </p>
+                </div>
+
+                {!isEditingLenderProfile ? (
+                  <button
+                    type="button"
+                    onClick={startEditingLender}
+                    className="px-4 py-2.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-[#003893] border border-blue-200 font-extrabold text-xs flex items-center gap-2 transition-all shadow-xs active:scale-95 cursor-pointer w-fit"
+                  >
+                    <Edit3 className="w-4 h-4 text-[#003893]" />
+                    <span>Edit Financer Profile</span>
+                  </button>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsEditingLenderProfile(false)}
+                      className="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-bold text-xs hover:bg-slate-100 transition-colors cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleSaveLenderProfile}
+                      disabled={isSavingLenderProfile}
+                      className="px-5 py-2.5 rounded-xl bg-[#003893] hover:bg-[#002366] text-white font-extrabold text-xs flex items-center gap-2 shadow-md transition-all active:scale-95 cursor-pointer"
+                    >
+                      {isSavingLenderProfile ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span>Saving...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Save className="w-4 h-4 text-emerald-400" />
+                          <span>Save Financer Details</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                )}
+              </div>
 
             {/* Save Success Banner */}
             {lenderSaveSuccess && (
@@ -2911,7 +3013,8 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
 
             </div>
           </div>
-        )}
+        )
+      )}
 
       </div>
 
@@ -2996,11 +3099,19 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
             </div>
 
             <div className="rounded-2xl border border-slate-200 overflow-hidden max-h-[70vh] flex items-center justify-center bg-slate-900 p-2">
-              <img
-                src={previewDocModal.url}
-                alt={previewDocModal.title}
-                className="max-h-[65vh] w-auto object-contain rounded-xl"
-              />
+              {previewDocModal.url.toLowerCase().includes('.pdf') ? (
+                <iframe
+                  src={previewDocModal.url}
+                  title={previewDocModal.title}
+                  className="w-full h-[65vh] rounded-xl bg-white"
+                />
+              ) : (
+                <img
+                  src={previewDocModal.url}
+                  alt={previewDocModal.title}
+                  className="max-h-[65vh] w-auto object-contain rounded-xl"
+                />
+              )}
             </div>
 
             <div className="flex items-center justify-between gap-3 pt-2 flex-wrap">

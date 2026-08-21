@@ -9,6 +9,10 @@ import {
   forgotPasswordRequestOtpApi,
   resetPasswordWithOtpApi,
   resendOtpApi,
+  safeSetLocalStorage,
+  uploadFileToEc2Api,
+  updateVendorProfileApi,
+  updateLenderProfileApi,
 } from '../services/api';
 import {
   X,
@@ -294,77 +298,90 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         if (result.success && result.user) {
           const fullUser = { ...result.user, name: pendingVendorData.name, fullName: pendingVendorData.name };
 
-          const readFileAsDataURL = (file: File): Promise<string> => {
-            return new Promise((resolve) => {
-              const reader = new FileReader();
-              reader.onload = () => resolve(reader.result as string);
-              reader.onerror = () => resolve('');
-              reader.readAsDataURL(file);
+          // 1. Upload all verification files & photos directly to AWS EC2 Server
+          let avatarEc2Url: string | undefined = undefined;
+          let panEc2Url: string | undefined = undefined;
+          let aadhaarEc2Url: string | undefined = undefined;
+          let licenseEc2Url: string | undefined = undefined;
+          let shopPhotoEc2Url: string | undefined = undefined;
+          let liveSelfieEc2Url: string | undefined = undefined;
+
+          try {
+            if (pendingVendorData.photoFile) {
+              const res = await uploadFileToEc2Api(pendingVendorData.photoFile, 'avatars', pendingVendorData.photoFile.name);
+              if (res.success && res.fileUrl) avatarEc2Url = res.fileUrl;
+            }
+            if (pendingVendorData.panFile) {
+              const res = await uploadFileToEc2Api(pendingVendorData.panFile, 'documents', pendingVendorData.panFile.name, 'PAN');
+              if (res.success && res.fileUrl) panEc2Url = res.fileUrl;
+            }
+            if (pendingVendorData.aadhaarFile) {
+              const res = await uploadFileToEc2Api(pendingVendorData.aadhaarFile, 'documents', pendingVendorData.aadhaarFile.name, 'AADHAAR');
+              if (res.success && res.fileUrl) aadhaarEc2Url = res.fileUrl;
+            }
+            if (pendingVendorData.licenseFile) {
+              const res = await uploadFileToEc2Api(pendingVendorData.licenseFile, 'documents', pendingVendorData.licenseFile.name, 'LICENSE');
+              if (res.success && res.fileUrl) licenseEc2Url = res.fileUrl;
+            }
+            if (pendingVendorData.shopPhotoFile) {
+              const res = await uploadFileToEc2Api(pendingVendorData.shopPhotoFile, 'shops', pendingVendorData.shopPhotoFile.name);
+              if (res.success && res.fileUrl) shopPhotoEc2Url = res.fileUrl;
+            }
+            if (pendingVendorData.liveSelfieFile) {
+              const res = await uploadFileToEc2Api(pendingVendorData.liveSelfieFile, 'avatars', pendingVendorData.liveSelfieFile.name, 'SELFIE');
+              if (res.success && res.fileUrl) liveSelfieEc2Url = res.fileUrl;
+            }
+          } catch (uploadErr) {
+            console.warn('File upload to AWS EC2 notice:', uploadErr);
+          }
+
+          // 2. Persist hosted AWS URLs into RDS PostgreSQL
+          try {
+            await updateVendorProfileApi({
+              ownerName: pendingVendorData.name,
+              businessName: pendingVendorData.businessName,
+              phone: pendingVendorData.phone,
+              email: pendingVendorData.email,
+              address: pendingVendorData.address,
+              city: pendingVendorData.city || 'Hyderabad',
+              state: pendingVendorData.state || 'Telangana',
+              pincode: pendingVendorData.pincode || '500001',
+              panNumber: pendingVendorData.panNumber || 'PAN Verified',
+              aadhaarNumber: pendingVendorData.aadhaarNumber || 'Aadhaar Verified',
+              avatarUrl: avatarEc2Url || liveSelfieEc2Url || shopPhotoEc2Url,
+              panFileUrl: panEc2Url,
+              aadhaarFileUrl: aadhaarEc2Url,
+              businessLicenseUrl: licenseEc2Url,
+              shopPhotos: shopPhotoEc2Url ? [shopPhotoEc2Url] : undefined,
             });
-          };
-
-          let avatarDataUrl = '';
-          let panDataUrl = '';
-          let aadhaarDataUrl = '';
-          let licenseDataUrl = '';
-          let shopPhotoDataUrl = '';
-          let liveSelfieDataUrl = '';
-
-          if (pendingVendorData.photoFile) {
-            try { avatarDataUrl = await readFileAsDataURL(pendingVendorData.photoFile); } catch (e) {}
-          }
-          if (pendingVendorData.panFile) {
-            try { panDataUrl = await readFileAsDataURL(pendingVendorData.panFile); } catch (e) {}
-          }
-          if (pendingVendorData.aadhaarFile) {
-            try { aadhaarDataUrl = await readFileAsDataURL(pendingVendorData.aadhaarFile); } catch (e) {}
-          }
-          if (pendingVendorData.licenseFile) {
-            try { licenseDataUrl = await readFileAsDataURL(pendingVendorData.licenseFile); } catch (e) {}
-          }
-          if (pendingVendorData.shopPhotoFile) {
-            try { shopPhotoDataUrl = await readFileAsDataURL(pendingVendorData.shopPhotoFile); } catch (e) {}
-          }
-          if (pendingVendorData.liveSelfieFile) {
-            try { liveSelfieDataUrl = await readFileAsDataURL(pendingVendorData.liveSelfieFile); } catch (e) {}
+          } catch (syncErr) {
+            console.warn('Failed to sync vendor profile to RDS:', syncErr);
           }
 
-          const vendorProfile = {
+          const cleanProfile = {
             fullName: pendingVendorData.name,
             ownerName: pendingVendorData.name,
             phone: pendingVendorData.phone,
             email: pendingVendorData.email,
             businessName: pendingVendorData.businessName,
             address: pendingVendorData.address,
-            city: pendingVendorData.city || 'Mumbai',
-            state: pendingVendorData.state || 'Maharashtra',
-            pincode: pendingVendorData.pincode || '400001',
+            city: pendingVendorData.city || 'Hyderabad',
+            state: pendingVendorData.state || 'Telangana',
+            pincode: pendingVendorData.pincode || '500001',
             panFileName: pendingVendorData.panFile?.name || 'PAN_Card_Verified.pdf',
-            panNumber: pendingVendorData.panNumber || 'PAN Card Verified',
-            panFileUrl: panDataUrl || undefined,
-            panDataUrl: panDataUrl || undefined,
+            panNumber: pendingVendorData.panNumber || 'PAN Verified',
             aadhaarFileName: pendingVendorData.aadhaarFile?.name || 'Aadhaar_Card_Verified.pdf',
-            aadhaarNumber: pendingVendorData.aadhaarNumber || 'Aadhaar Card Verified',
-            aadhaarFileUrl: aadhaarDataUrl || undefined,
-            aadhaarDataUrl: aadhaarDataUrl || undefined,
+            aadhaarNumber: pendingVendorData.aadhaarNumber || 'Aadhaar Verified',
             licenseFileName: pendingVendorData.licenseFile?.name || undefined,
-            shopLicensePdf: licenseDataUrl || pendingVendorData.licenseFile?.name || undefined,
-            licenseDataUrl: licenseDataUrl || undefined,
-            gstCertificatePdf: licenseDataUrl || undefined,
-            shopPhotoFileName: pendingVendorData.shopPhotoFile?.name || undefined,
-            shopPhotoUrl: shopPhotoDataUrl || undefined,
-            shopPhotoDataUrl: shopPhotoDataUrl || undefined,
-            liveSelfieFileName: pendingVendorData.liveSelfieFile?.name || undefined,
-            liveSelfieUrl: liveSelfieDataUrl || avatarDataUrl || undefined,
-            liveSelfieDataUrl: liveSelfieDataUrl || avatarDataUrl || undefined,
-            avatarUrl: avatarDataUrl || liveSelfieDataUrl || shopPhotoDataUrl || undefined,
+            avatarUrl: avatarEc2Url || liveSelfieEc2Url || shopPhotoEc2Url || undefined,
+            panFileUrl: panEc2Url || undefined,
+            aadhaarFileUrl: aadhaarEc2Url || undefined,
+            businessLicenseUrl: licenseEc2Url || undefined,
           };
 
-          localStorage.setItem('sbni_user', JSON.stringify(fullUser));
-          localStorage.setItem('sbni_vendor_profile', JSON.stringify(vendorProfile));
-          if (avatarDataUrl) {
-            localStorage.setItem('sbni_vendor_avatar', avatarDataUrl);
-          }
+          fullUser.vendorProfile = cleanProfile;
+          safeSetLocalStorage('sbni_user', JSON.stringify(fullUser));
+          safeSetLocalStorage('sbni_vendor_profile', JSON.stringify(cleanProfile));
 
           onAuthSuccess(fullUser);
           onClose();
@@ -386,9 +403,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         });
 
         if (result.success && result.user) {
-          if (pendingLenderData.avatarUrl) {
-            localStorage.setItem('sbni_lender_avatar', pendingLenderData.avatarUrl);
+          let lenderAvatarEc2Url: string | undefined = undefined;
+          if (pendingLenderData.avatarUrl && pendingLenderData.avatarUrl.startsWith('data:')) {
+            try {
+              const res = await uploadFileToEc2Api(pendingLenderData.avatarUrl, 'avatars', 'lender_avatar.png');
+              if (res.success && res.fileUrl) lenderAvatarEc2Url = res.fileUrl;
+            } catch (e) {}
           }
+
           const userWithProfile = {
             ...result.user,
             name: pendingLenderData.name,
@@ -404,10 +426,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               state: pendingLenderData.state,
               address: pendingLenderData.address,
               pincode: pendingLenderData.pincode,
+              avatarUrl: lenderAvatarEc2Url,
             },
           };
-          localStorage.setItem('sbni_user', JSON.stringify(userWithProfile));
-          localStorage.setItem('sbni_lender_profile', JSON.stringify(userWithProfile.lenderProfile));
+
+          if (lenderAvatarEc2Url) {
+            updateLenderProfileApi({
+              avatarUrl: lenderAvatarEc2Url,
+              logoUrl: lenderAvatarEc2Url,
+              institutionName: pendingLenderData.institutionName,
+            }).catch(() => {});
+          }
+
+          safeSetLocalStorage('sbni_user', JSON.stringify(userWithProfile));
+          safeSetLocalStorage('sbni_lender_profile', JSON.stringify(userWithProfile.lenderProfile));
           onAuthSuccess(userWithProfile);
           onClose();
         } else {

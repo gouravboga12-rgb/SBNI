@@ -58,6 +58,7 @@ import {
   adminFetchFraudReports,
   adminConfirmFraudReport,
   adminDismissFraudReport,
+  safeSetLocalStorage,
 } from '../services/api';
 import { SBNILogo } from '../components/SBNILogo';
 
@@ -259,7 +260,7 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
       const res = await adminFetchPayments();
       if (res.payments && Array.isArray(res.payments)) {
         setTransactions(res.payments);
-        localStorage.setItem('justpaisa_admin_live_transactions', JSON.stringify(res.payments));
+        safeSetLocalStorage('justpaisa_admin_live_transactions', JSON.stringify(res.payments));
       }
     } catch (e) {
       console.error('loadAdminPayments error:', e);
@@ -292,7 +293,7 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
           createdAt: v.createdAt ? String(v.createdAt).substring(0, 10) : '2026-08-13',
         }));
         setVendors(mappedVendors);
-        localStorage.setItem('sbni_admin_vendors', JSON.stringify(mappedVendors));
+        safeSetLocalStorage('sbni_admin_vendors', JSON.stringify(mappedVendors));
       }
 
       if (lRes.lenders && Array.isArray(lRes.lenders)) {
@@ -313,7 +314,7 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
           createdAt: l.createdAt ? String(l.createdAt).substring(0, 10) : '2026-08-13',
         }));
         setLenders(mappedLenders);
-        localStorage.setItem('sbni_admin_lenders', JSON.stringify(mappedLenders));
+        safeSetLocalStorage('sbni_admin_lenders', JSON.stringify(mappedLenders));
       }
     } catch (e) {
       console.error('loadAdminVendorsAndLenders error:', e);
@@ -604,11 +605,11 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
         const storedFraud = JSON.parse(localStorage.getItem('sbni_fraud_vendors') || '{}');
         if (report.vendorId) storedFraud[report.vendorId] = true;
         if (report.userEmail) storedFraud[report.userEmail] = true;
-        localStorage.setItem('sbni_fraud_vendors', JSON.stringify(storedFraud));
+        safeSetLocalStorage('sbni_fraud_vendors', JSON.stringify(storedFraud));
 
         const storedList = JSON.parse(localStorage.getItem('sbni_lender_reported_frauds') || '[]');
         const updatedList = storedList.map((r: any) => (r.id === report.id ? { ...r, status: 'CONFIRMED' } : r));
-        localStorage.setItem('sbni_lender_reported_frauds', JSON.stringify(updatedList));
+        safeSetLocalStorage('sbni_lender_reported_frauds', JSON.stringify(updatedList));
       } catch {}
 
       showToast(`🚨 Confirmed Fraud! Vendor "${report.vendorName}" is now blacklisted platform-wide.`);
@@ -628,7 +629,7 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
       try {
         const storedList = JSON.parse(localStorage.getItem('sbni_lender_reported_frauds') || '[]');
         const updatedList = storedList.map((r: any) => (r.id === report.id ? { ...r, status: 'DISMISSED' } : r));
-        localStorage.setItem('sbni_lender_reported_frauds', JSON.stringify(updatedList));
+        safeSetLocalStorage('sbni_lender_reported_frauds', JSON.stringify(updatedList));
       } catch {}
 
       showToast(`✓ Fraud report dismissed for "${report.vendorName}".`);
@@ -896,7 +897,7 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
     });
 
     setReferrals(updated);
-    localStorage.setItem('justpaisa_admin_live_referrals', JSON.stringify(updated));
+    safeSetLocalStorage('justpaisa_admin_live_referrals', JSON.stringify(updated));
 
     const item = referrals.find((r) => r.id === refId);
     showToast(`✅ Paid ₹${item?.rewardAmount || 200} reward to ${item?.referrerName || 'Partner'}!`);
@@ -1012,7 +1013,7 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
       const storedFraud = JSON.parse(localStorage.getItem('sbni_fraud_vendors') || '{}');
       storedFraud[vendorId] = newIsFraud;
       if (vendorObj?.userEmail) storedFraud[vendorObj.userEmail] = newIsFraud;
-      localStorage.setItem('sbni_fraud_vendors', JSON.stringify(storedFraud));
+      safeSetLocalStorage('sbni_fraud_vendors', JSON.stringify(storedFraud));
       await adminToggleVendorFraud(vendorId, newIsFraud);
     } catch {}
 
@@ -1045,7 +1046,7 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
       if (res.success) {
         const updated = vendors.filter((v) => v.id !== vendorId);
         setVendors(updated);
-        localStorage.setItem('sbni_admin_vendors', JSON.stringify(updated));
+        safeSetLocalStorage('sbni_admin_vendors', JSON.stringify(updated));
 
         // Add to deleted vendors blacklist
         try {
@@ -1060,7 +1061,7 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
             vendorName,
           ].filter(Boolean);
           const updatedDeleted = Array.from(new Set([...deleted, ...toAdd]));
-          localStorage.setItem('sbni_deleted_vendors', JSON.stringify(updatedDeleted));
+          safeSetLocalStorage('sbni_deleted_vendors', JSON.stringify(updatedDeleted));
         } catch (e) {}
 
         // Remove from local sbni_vendor_requests
@@ -1079,7 +1080,7 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
                 r.emailId !== vendorObj?.userEmail &&
                 r.mobileNumber !== vendorObj?.userPhone
               );
-              localStorage.setItem('sbni_vendor_requests', JSON.stringify(cleaned));
+              safeSetLocalStorage('sbni_vendor_requests', JSON.stringify(cleaned));
             }
           }
         } catch (e) {}
@@ -1140,7 +1141,7 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
       if (res.success) {
         const updated = lenders.filter((l) => l.id !== lenderId);
         setLenders(updated);
-        localStorage.setItem('sbni_admin_lenders', JSON.stringify(updated));
+        safeSetLocalStorage('sbni_admin_lenders', JSON.stringify(updated));
 
         setAuditLogs([
           {
@@ -1253,11 +1254,11 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
       if (planTargetRole === 'VENDOR') {
         const updated = vendorPlans.map((p) => (p.id === editingPlan.id ? updatedPlan : p));
         setVendorPlans(updated);
-        localStorage.setItem('sbni_admin_vendor_plans', JSON.stringify(updated));
+        safeSetLocalStorage('sbni_admin_vendor_plans', JSON.stringify(updated));
       } else {
         const updated = lenderPlans.map((p) => (p.id === editingPlan.id ? updatedPlan : p));
         setLenderPlans(updated);
-        localStorage.setItem('sbni_admin_lender_plans', JSON.stringify(updated));
+        safeSetLocalStorage('sbni_admin_lender_plans', JSON.stringify(updated));
       }
 
       try {
@@ -1286,11 +1287,11 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
       if (planTargetRole === 'VENDOR') {
         const updated = [...vendorPlans, newPlan];
         setVendorPlans(updated);
-        localStorage.setItem('sbni_admin_vendor_plans', JSON.stringify(updated));
+        safeSetLocalStorage('sbni_admin_vendor_plans', JSON.stringify(updated));
       } else {
         const updated = [...lenderPlans, newPlan];
         setLenderPlans(updated);
-        localStorage.setItem('sbni_admin_lender_plans', JSON.stringify(updated));
+        safeSetLocalStorage('sbni_admin_lender_plans', JSON.stringify(updated));
       }
 
       try {
@@ -1308,11 +1309,11 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
       if (targetRole === 'VENDOR') {
         const updated = vendorPlans.filter((p) => p.id !== planId);
         setVendorPlans(updated);
-        localStorage.setItem('sbni_admin_vendor_plans', JSON.stringify(updated));
+        safeSetLocalStorage('sbni_admin_vendor_plans', JSON.stringify(updated));
       } else {
         const updated = lenderPlans.filter((p) => p.id !== planId);
         setLenderPlans(updated);
-        localStorage.setItem('sbni_admin_lender_plans', JSON.stringify(updated));
+        safeSetLocalStorage('sbni_admin_lender_plans', JSON.stringify(updated));
       }
 
       try {

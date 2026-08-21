@@ -9,7 +9,13 @@ import {
   getBrowserLocation,
   reverseGeocodeMapbox,
 } from '../services/mapboxService';
-import { fetchLenders, updateVendorProfileApi, getMyProfileApi } from '../services/api';
+import {
+  fetchLenders,
+  updateVendorProfileApi,
+  getMyProfileApi,
+  safeSetLocalStorage,
+  uploadFileToEc2Api,
+} from '../services/api';
 import {
   Store,
   Building2,
@@ -75,6 +81,8 @@ interface VendorDashboardProps {
   activeTab?: 'home' | 'lenders' | 'requests' | 'profile';
   onTabChange?: (tab: 'home' | 'lenders' | 'requests' | 'profile') => void;
   onLogout?: (roleTarget?: 'VENDOR' | 'LENDER') => void;
+  currentUser?: any | null;
+  onOpenAuth?: () => void;
 }
 
 export const VendorDashboard: React.FC<VendorDashboardProps> = ({
@@ -83,6 +91,8 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
   activeTab: controlledActiveTab,
   onTabChange,
   onLogout,
+  currentUser,
+  onOpenAuth,
 }) => {
   const [internalActiveTab, setInternalActiveTab] = useState<'home' | 'lenders' | 'requests' | 'profile'>('home');
   const [searchQuery, setSearchQuery] = useState('');
@@ -176,10 +186,9 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
           const u = res.data;
           const vp = u.vendorProfile;
           if (vp) {
-            localStorage.setItem('sbni_vendor_profile', JSON.stringify(vp));
+            safeSetLocalStorage('sbni_vendor_profile', JSON.stringify(vp));
             if (vp.avatarUrl || vp.logoUrl) {
               setAvatarUrl(vp.avatarUrl || vp.logoUrl);
-              localStorage.setItem('sbni_vendor_avatar', vp.avatarUrl || vp.logoUrl);
             }
             if (vp.latitude && vp.longitude) {
               setSearchLocation({
@@ -286,7 +295,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
       const pStr = localStorage.getItem('sbni_vendor_profile') || '{}';
       const parsed = JSON.parse(pStr);
       const merged = { ...parsed, ...updated };
-      localStorage.setItem('sbni_vendor_profile', JSON.stringify(merged));
+      safeSetLocalStorage('sbni_vendor_profile', JSON.stringify(merged));
     } catch (e) {}
 
     // Save to AWS Backend
@@ -310,26 +319,31 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
   const [showPassword, setShowPassword] = useState(false);
 
   const currentVendorObj = (() => {
+    if (!currentUser) return null;
     try {
-      const u = localStorage.getItem('sbni_user');
-      const p = localStorage.getItem('sbni_vendor_profile');
-      const user = u ? JSON.parse(u) : null;
-      const profile = p ? JSON.parse(p) : null;
+      const u = currentUser;
+      const profile = u.vendorProfile || (() => {
+        try {
+          const p = localStorage.getItem('sbni_vendor_profile');
+          return p ? JSON.parse(p) : null;
+        } catch {
+          return null;
+        }
+      })();
 
-      let rawName = profile?.ownerName || profile?.fullName || user?.vendorProfile?.ownerName || user?.vendorProfile?.fullName || user?.name || user?.fullName;
+      let rawName = profile?.ownerName || profile?.fullName || u?.vendorProfile?.ownerName || u?.name || u?.fullName;
       if (!rawName || rawName === 'Registered Vendor' || rawName === 'Business Owner' || rawName === 'Owner Name') {
-        if (user?.email && user.email.includes('@')) {
-          const prefix = user.email.split('@')[0];
-          if (prefix.toLowerCase().includes('gourav')) rawName = 'Gourav';
-          else rawName = prefix.charAt(0).toUpperCase() + prefix.slice(1);
+        if (u?.email && u.email.includes('@')) {
+          const prefix = u.email.split('@')[0];
+          rawName = prefix.charAt(0).toUpperCase() + prefix.slice(1);
         } else {
-          rawName = 'Gourav';
+          rawName = 'Business Owner';
         }
       }
       const name = rawName;
-      const shopName = profile?.businessName || user?.vendorProfile?.businessName || (name ? `${name} Enterprise` : 'Business Enterprise');
-      const phone = user?.phone || profile?.phone || 'Not provided';
-      const email = user?.email || profile?.email || 'vendor@sbni.com';
+      const shopName = profile?.businessName || u?.vendorProfile?.businessName || (name ? `${name} Enterprise` : 'Business Enterprise');
+      const phone = u?.phone || profile?.phone || 'Not provided';
+      const email = u?.email || profile?.email || 'vendor@sbni.com';
 
       let addressParts = [];
       if (profile?.address) addressParts.push(profile.address);
@@ -339,12 +353,12 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
       if (profile?.pincode) addressParts.push(profile.pincode);
       const address = addressParts.length > 0 ? addressParts.join(', ') : 'Registered Location';
 
-      const panNumber = profile?.panNumber || user?.panNumber || null;
+      const panNumber = profile?.panNumber || u?.panNumber || null;
       const gstNumber = profile?.gstNumber || null;
       const aadhaarNumber = profile?.aadhaarNumber || null;
       const category = profile?.category || profile?.registrationType || 'Retail Shop Business';
-      const shopId = profile?.id ? `SHOP-${String(profile.id).substring(0, 5).toUpperCase()}` : 'SHOP-1001';
-      const isVerified = profile?.kycStatus === 'VERIFIED' || user?.isVerified || false;
+      const shopId = profile?.id ? `SHOP-${String(profile.id).substring(0, 5).toUpperCase()}` : (u?.id ? `SHOP-${String(u.id).substring(0, 5).toUpperCase()}` : 'SHOP-1001');
+      const isVerified = profile?.kycStatus === 'VERIFIED' || u?.isVerified || false;
       const panFileUrl = profile?.panFileUrl || null;
       const aadhaarFileUrl = profile?.aadhaarFileUrl || null;
       const businessLicenseUrl = profile?.businessLicenseUrl || profile?.shopLicensePdf || null;
@@ -375,24 +389,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
         shopPhotos,
       };
     } catch (e) {
-      return {
-        name: 'Registered Vendor',
-        shopName: 'Business Enterprise',
-        phone: 'Not provided',
-        email: 'vendor@sbni.com',
-        address: 'Registered Location',
-        panNumber: null,
-        gstNumber: null,
-        aadhaarNumber: null,
-        category: 'Retail Shop Business',
-        shopId: 'SHOP-1001',
-        isVerified: true,
-        panFileUrl: null,
-        aadhaarFileUrl: null,
-        businessLicenseUrl: null,
-        gstFileUrl: null,
-        shopPhotos: [],
-      };
+      return null;
     }
   })();
 
@@ -419,6 +416,10 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
   const [vendorSaveSuccess, setVendorSaveSuccess] = useState<string | null>(null);
 
   const startEditingVendor = () => {
+    if (!currentVendorObj) {
+      if (onOpenAuth) onOpenAuth();
+      return;
+    }
     setVendorEditForm({
       name: currentVendorObj.name,
       shopName: currentVendorObj.shopName,
@@ -513,8 +514,8 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
         shopPhotos: vendorEditForm.shopPhotos.length > 0 ? JSON.stringify(vendorEditForm.shopPhotos) : p.shopPhotos || undefined,
       };
 
-      localStorage.setItem('sbni_user', JSON.stringify(mergedUser));
-      localStorage.setItem('sbni_vendor_profile', JSON.stringify(mergedProfile));
+      safeSetLocalStorage('sbni_user', JSON.stringify(mergedUser));
+      safeSetLocalStorage('sbni_vendor_profile', JSON.stringify(mergedProfile));
 
       // 2. Call backend API
       const apiRes = await updateVendorProfileApi({
@@ -554,34 +555,33 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
     }
   };
 
-  const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      const reader = new FileReader();
-      reader.onload = async (event) => {
-        if (event.target?.result) {
-          const dataUrl = event.target.result as string;
-          setAvatarUrl(dataUrl);
-          localStorage.setItem('sbni_vendor_avatar', dataUrl);
-
-          try {
-            await updateVendorProfileApi({
-              avatarUrl: dataUrl,
-              logoUrl: dataUrl,
-              ownerName: currentVendorObj.name,
-              businessName: currentVendorObj.shopName,
-            });
-            window.dispatchEvent(new CustomEvent('sbni_vendor_profile_updated'));
-          } catch (err) {
-            console.error('Failed to sync vendor avatar:', err);
-          }
+      try {
+        const uploadRes = await uploadFileToEc2Api(file, 'avatars', file.name);
+        const hostedUrl = uploadRes.fileUrl || uploadRes.fullUrl;
+        if (hostedUrl) {
+          setAvatarUrl(hostedUrl);
+          await updateVendorProfileApi({
+            avatarUrl: hostedUrl,
+            logoUrl: hostedUrl,
+            ownerName: currentVendorObj?.name || 'Business Owner',
+            businessName: currentVendorObj?.shopName || 'Business Enterprise',
+          });
+          window.dispatchEvent(new CustomEvent('sbni_vendor_profile_updated'));
         }
-      };
-      reader.readAsDataURL(file);
+      } catch (err) {
+        console.error('Failed to upload vendor avatar to AWS EC2 / RDS:', err);
+      }
     }
   };
 
   const handleRequestLoan = (lender: Lender) => {
+    if (!currentUser) {
+      if (onOpenAuth) onOpenAuth();
+      return;
+    }
     const isSubscribed =
       localStorage.getItem('sbni_vendor_subscribed') === 'true' ||
       localStorage.getItem('sbni_subscribed') === 'true';
@@ -629,41 +629,63 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
             {/* Top Cards Hero Banner: Responsive Grid (1 col Mobile, 2 col Tab, 3 col Desktop) */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
               
-              {/* Card 1: Welcome Royal Blue Card */}
-              <div className="card-blue-header p-6 shadow-xl relative overflow-hidden flex items-center justify-between min-h-[170px] border border-blue-400/20 group">
-                {/* Glow Overlay */}
-                <div className="absolute top-0 right-0 w-40 h-40 bg-blue-400/20 rounded-full blur-3xl pointer-events-none group-hover:bg-blue-400/30 transition-colors" />
+              {/* Card 1: Welcome Royal Blue Card (Only when Logged In) OR Public Portal CTA (When Logged Out) */}
+              {currentVendorObj ? (
+                <div className="card-blue-header p-6 shadow-xl relative overflow-hidden flex items-center justify-between min-h-[170px] border border-blue-400/20 group">
+                  {/* Glow Overlay */}
+                  <div className="absolute top-0 right-0 w-40 h-40 bg-blue-400/20 rounded-full blur-3xl pointer-events-none group-hover:bg-blue-400/30 transition-colors" />
 
-                <div className="space-y-1.5 z-10">
-                  <div className="text-xs text-blue-200 font-semibold tracking-wide uppercase">Welcome back,</div>
-                  <h2 className="text-2xl sm:text-3xl font-extrabold text-white font-heading">{currentVendorObj.name}</h2>
-                  <div className="pt-2">
-                    <span className="badge-verified-green bg-emerald-500/25 text-emerald-200 border border-emerald-400/40 shadow-sm backdrop-blur-md">
-                      <CheckCircle2 className="w-3.5 h-3.5" /> Verified Shop Owner
-                    </span>
+                  <div className="space-y-1.5 z-10">
+                    <div className="text-xs text-blue-200 font-semibold tracking-wide uppercase">Welcome back,</div>
+                    <h2 className="text-2xl sm:text-3xl font-extrabold text-white font-heading">{currentVendorObj.name}</h2>
+                    <div className="pt-2">
+                      <span className="badge-verified-green bg-emerald-500/25 text-emerald-200 border border-emerald-400/40 shadow-sm backdrop-blur-md">
+                        <CheckCircle2 className="w-3.5 h-3.5" /> Verified Shop Owner
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Clean Vendor Profile Picture */}
+                  <div
+                    onClick={() => fileInputRef.current?.click()}
+                    className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-white/80 shadow-2xl z-10 shrink-0 cursor-pointer transition-transform hover:scale-105 overflow-hidden flex items-center justify-center bg-[#002669] text-white font-extrabold text-xl font-heading"
+                    title="Click to change or upload profile picture"
+                  >
+                    {avatarUrl ? (
+                      <img src={avatarUrl} alt={currentVendorObj.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <span>{currentVendorObj.name.charAt(0).toUpperCase()}</span>
+                    )}
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleAvatarUpload}
+                      className="hidden"
+                    />
                   </div>
                 </div>
-
-                {/* Clean Vendor Profile Picture */}
-                <div
-                  onClick={() => fileInputRef.current?.click()}
-                  className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-white/80 shadow-2xl z-10 shrink-0 cursor-pointer transition-transform hover:scale-105 overflow-hidden flex items-center justify-center bg-[#002669] text-white font-extrabold text-xl font-heading"
-                  title="Click to change or upload profile picture"
-                >
-                  {avatarUrl ? (
-                    <img src={avatarUrl} alt={currentVendorObj.name} className="w-full h-full object-cover" />
-                  ) : (
-                    <span>{currentVendorObj.name.charAt(0).toUpperCase()}</span>
-                  )}
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleAvatarUpload}
-                    className="hidden"
-                  />
+              ) : (
+                <div className="card-blue-header p-6 shadow-xl relative overflow-hidden flex flex-col justify-between min-h-[170px] border border-blue-400/20 group">
+                  <div className="absolute top-0 right-0 w-40 h-40 bg-blue-400/20 rounded-full blur-3xl pointer-events-none group-hover:bg-blue-400/30 transition-colors" />
+                  <div className="space-y-1.5 z-10">
+                    <div className="text-xs text-blue-200 font-semibold tracking-wide uppercase">Small Business Marketplace</div>
+                    <h2 className="text-xl sm:text-2xl font-extrabold text-white font-heading">Direct Capital for Local Shops</h2>
+                    <p className="text-xs text-blue-100/90 leading-relaxed max-w-sm">
+                      Connect directly with verified local money financers & NBFCs within 10 KM for fast working capital.
+                    </p>
+                  </div>
+                  <div className="pt-3 z-10">
+                    <button
+                      onClick={onOpenAuth}
+                      className="w-full sm:w-auto px-4 py-2 rounded-xl bg-white text-[#003893] hover:bg-blue-50 font-extrabold text-xs shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <User className="w-4 h-4" />
+                      <span>Sign In / Register Shop Account</span>
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Card 2: Find & Connect with Nearby Lenders (Unified Proximity Card - HIGHLIGHTED) */}
               <div className="card-white-hover splash-highlight-card p-6 flex flex-col justify-between min-h-[170px] relative group overflow-hidden bg-gradient-to-br from-emerald-50/60 via-white to-blue-50/30">
@@ -701,11 +723,17 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
               <div className="card-white-hover p-6 flex flex-col justify-between min-h-[170px] md:col-span-2 lg:col-span-1 relative group bg-gradient-to-br from-amber-50/40 via-white to-amber-50/20 border-amber-200/70">
                 <div className="flex items-start justify-between">
                   <div className="space-y-1">
-                    <div className="text-[11px] font-extrabold text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-md border border-emerald-200 w-fit flex items-center gap-1">
-                      <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Plan Active
+                    <div className="text-[11px] font-extrabold text-amber-800 bg-amber-100 px-2.5 py-0.5 rounded-md border border-amber-200 w-fit flex items-center gap-1">
+                      {currentVendorObj ? (
+                        <>
+                          <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Plan Active
+                        </>
+                      ) : (
+                        <span>⚡ JustPaisa Marketplace</span>
+                      )}
                     </div>
                     <h3 className="font-extrabold text-slate-900 text-lg font-heading pt-1">Small Shop & Local Startup Business Membership</h3>
-                    <p className="text-xs text-slate-500 font-medium font-medium">Direct financer contacts & priority application routing active.</p>
+                    <p className="text-xs text-slate-500 font-medium">Direct financer contacts & priority application routing active.</p>
                   </div>
                   <div className="w-12 h-12 rounded-2xl bg-amber-100/80 border border-amber-200 flex items-center justify-center text-amber-700 flex-shrink-0 shadow-sm group-hover:scale-105 transition-transform">
                     <Headphones className="w-6 h-6" />
@@ -716,7 +744,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                   onClick={onOpenSubscription}
                   className="btn-sbni-blue mt-4 text-xs justify-center py-2.5 shadow-md font-extrabold bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800"
                 >
-                  <span>Manage Subscription</span>
+                  <span>{currentVendorObj ? 'Manage Subscription' : 'View Membership Plans'}</span>
                 </button>
               </div>
 
@@ -1014,149 +1042,189 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
         )}
 
         {/* TAB 3: APPLICATIONS & NAVIGATION VIEW */}
+        {/* TAB 3: APPLICATIONS & NAVIGATION VIEW */}
         {activeTab === 'requests' && (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-2xl font-extrabold text-slate-900 font-heading">My Applications & Financer Connections</h2>
-                <p className="text-xs text-slate-500 font-medium">
-                  Track your loan submissions and navigate to financer offices once approved
+          !currentVendorObj ? (
+            <div className="card-white p-12 text-center rounded-3xl border border-slate-200 shadow-sm space-y-5 max-w-lg mx-auto my-12">
+              <div className="w-16 h-16 rounded-3xl bg-blue-50 border border-blue-200 flex items-center justify-center mx-auto text-[#003893] shadow-inner">
+                <FileText className="w-8 h-8" />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-xl font-extrabold text-slate-900 font-heading">Log In to View Applications</h3>
+                <p className="text-xs text-slate-500 max-w-sm mx-auto leading-relaxed">
+                  Sign in to track your loan verification requests, application status, and financer approvals in real-time.
                 </p>
               </div>
+              <button
+                onClick={onOpenAuth}
+                className="btn-sbni-blue py-3 px-8 text-xs font-extrabold shadow-lg mx-auto flex items-center gap-2 cursor-pointer"
+              >
+                <span>Log In to View Applications</span>
+              </button>
             </div>
-
-            {vendorApplications.length === 0 ? (
-              <div className="card-white p-12 text-center rounded-3xl border border-slate-200/90 shadow-sm space-y-4 max-w-xl mx-auto my-8">
-                <div className="w-16 h-16 rounded-2xl bg-blue-50 border border-blue-200 flex items-center justify-center mx-auto text-blue-600">
-                  <FileText className="w-8 h-8" />
-                </div>
+          ) : (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-lg font-extrabold text-slate-900 font-heading">No Applications Submitted Yet</h3>
-                  <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1.5 leading-relaxed">
-                    You haven't submitted any capital applications yet. Explore verified financers and click <strong>Apply for Loan</strong> to connect with lenders.
+                  <h2 className="text-2xl font-extrabold text-slate-900 font-heading">My Applications & Financer Connections</h2>
+                  <p className="text-xs text-slate-500 font-medium">
+                    Track your loan submissions and navigate to financer offices once approved
                   </p>
                 </div>
-                <div className="pt-2">
-                  <button
-                    onClick={() => handleTabChange('lenders')}
-                    className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs shadow-md transition-all active:scale-95 cursor-pointer inline-flex items-center gap-2"
-                  >
-                    <Search className="w-3.5 h-3.5" />
-                    <span>Explore Verified Financers</span>
-                  </button>
+              </div>
+
+              {vendorApplications.length === 0 ? (
+                <div className="card-white p-12 text-center rounded-3xl border border-slate-200/90 shadow-sm space-y-4 max-w-xl mx-auto my-8">
+                  <div className="w-16 h-16 rounded-2xl bg-blue-50 border border-blue-200 flex items-center justify-center mx-auto text-blue-600">
+                    <FileText className="w-8 h-8" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-extrabold text-slate-900 font-heading">No Applications Submitted Yet</h3>
+                    <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1.5 leading-relaxed">
+                      You haven't submitted any capital applications yet. Explore verified financers and click <strong>Apply for Loan</strong> to connect with lenders.
+                    </p>
+                  </div>
+                  <div className="pt-2">
+                    <button
+                      onClick={() => handleTabChange('lenders')}
+                      className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs shadow-md transition-all active:scale-95 cursor-pointer inline-flex items-center gap-2"
+                    >
+                      <Search className="w-3.5 h-3.5" />
+                      <span>Explore Verified Financers</span>
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {vendorApplications.map((app, idx) => {
-                  const isAccepted =
-                    app.status === 'Verified' ||
-                    app.status === 'Approved' ||
-                    app.status === 'Accepted' ||
-                    app.status === 'Completed';
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {vendorApplications.map((app, idx) => {
+                    const isAccepted =
+                      app.status === 'Verified' ||
+                      app.status === 'Approved' ||
+                      app.status === 'Accepted' ||
+                      app.status === 'Completed';
 
-                  return (
-                    <div key={app.id || idx} className="card-white p-5 space-y-4 shadow-sm border border-slate-200/90 rounded-2xl">
-                      <div className="flex items-center justify-between">
-                        <span className={isAccepted ? 'badge-verified-green' : 'badge-pending-amber'}>
-                          {isAccepted ? '✓ Request Accepted' : app.status || 'Under Review'}
-                        </span>
-                        <span className="text-xs text-slate-400 font-mono">App #{app.id}</span>
-                      </div>
+                    return (
+                      <div key={app.id || idx} className="card-white p-5 space-y-4 shadow-sm border border-slate-200/90 rounded-2xl">
+                        <div className="flex items-center justify-between">
+                          <span className={isAccepted ? 'badge-verified-green' : 'badge-pending-amber'}>
+                            {isAccepted ? '✓ Request Accepted' : app.status || 'Under Review'}
+                          </span>
+                          <span className="text-xs text-slate-400 font-mono">App #{app.id}</span>
+                        </div>
 
-                      <div>
-                        <h3 className="font-extrabold text-slate-900 text-base">{app.title || app.lenderName || 'Capital Application'}</h3>
-                        <p className="text-xs text-blue-900 font-bold mt-0.5">Financer: {app.lenderName}</p>
-                      </div>
+                        <div>
+                          <h3 className="font-extrabold text-slate-900 text-base">{app.title || app.lenderName || 'Capital Application'}</h3>
+                          <p className="text-xs text-blue-900 font-bold mt-0.5">Financer: {app.lenderName}</p>
+                        </div>
 
-                      <div className="text-xs text-slate-600 space-y-1 bg-slate-50 p-3 rounded-xl border border-slate-200">
-                        <div>Requested Amount: <span className="font-bold text-slate-900">{app.amount || '₹ 5,00,000'}</span></div>
-                        <div>Application Date: <span className="font-medium">{app.date || app.requestedDate || 'Recent'}</span></div>
-                      </div>
+                        <div className="text-xs text-slate-600 space-y-1 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                          <div>Requested Amount: <span className="font-bold text-slate-900">{app.amount || '₹ 5,00,000'}</span></div>
+                          <div>Application Date: <span className="font-medium">{app.date || app.requestedDate || 'Recent'}</span></div>
+                        </div>
 
-                      {/* Navigation Action: Enabled ONLY after acceptance as per requirement */}
-                      <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
-                        {isAccepted ? (
-                          <a
-                            href={getGoogleMapsNavigationUrl(
-                              app.lenderLatitude || 17.3688,
-                              app.lenderLongitude || 78.5247,
-                              `Financer: ${app.lenderName}`
-                            )}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="w-full py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-sm transition-all active:scale-95 cursor-pointer"
-                          >
-                            <Navigation className="w-4 h-4 text-white" />
-                            <span>🧭 Navigate to Financer Office (Google Maps)</span>
-                          </a>
-                        ) : (
-                          <div className="w-full py-2.5 px-4 rounded-xl bg-slate-100 text-slate-400 font-bold text-xs flex items-center justify-center gap-2 border border-slate-200 cursor-not-allowed">
-                            <Lock className="w-3.5 h-3.5 text-slate-400" />
-                            <span>Navigation unlocks once Financer accepts application</span>
-                          </div>
-                        )}
+                        {/* Navigation Action: Enabled ONLY after acceptance as per requirement */}
+                        <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
+                          {isAccepted ? (
+                            <a
+                              href={getGoogleMapsNavigationUrl(
+                                app.lenderLatitude || 17.3688,
+                                app.lenderLongitude || 78.5247,
+                                `Financer: ${app.lenderName}`
+                              )}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="w-full py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-sm transition-all active:scale-95 cursor-pointer"
+                            >
+                              <Navigation className="w-4 h-4 text-white" />
+                              <span>🧭 Navigate to Financer Office (Google Maps)</span>
+                            </a>
+                          ) : (
+                            <div className="w-full py-2.5 px-4 rounded-xl bg-slate-100 text-slate-400 font-bold text-xs flex items-center justify-center gap-2 border border-slate-200 cursor-not-allowed">
+                              <Lock className="w-3.5 h-3.5 text-slate-400" />
+                              <span>Navigation unlocks once Financer accepts application</span>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )
         )}
 
         {/* TAB 4: COMPREHENSIVE SMALL SHOP BUSINESS PROFILE VIEW */}
         {activeTab === 'profile' && (
-          <div className="space-y-6 max-w-4xl mx-auto">
-            
-            {/* Header Title & Action Buttons */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div>
-                <h2 className="text-2xl font-extrabold text-slate-900 font-heading">Small Shop & Local Startup Business Profile</h2>
-                <p className="text-xs text-slate-500 font-medium mt-0.5">
-                  Manage your registration details, verification documents, and profile photo
+          !currentVendorObj ? (
+            <div className="card-white p-12 text-center rounded-3xl border border-slate-200 shadow-sm space-y-5 max-w-lg mx-auto my-12">
+              <div className="w-16 h-16 rounded-3xl bg-blue-50 border border-blue-200 flex items-center justify-center mx-auto text-[#003893] shadow-inner">
+                <Lock className="w-8 h-8" />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-xl font-extrabold text-slate-900 font-heading">Authentication Required</h3>
+                <p className="text-xs text-slate-500 max-w-sm mx-auto leading-relaxed">
+                  Please log in to your Small Shop Business account to view your business profile, edit KYC documents, and inspect store credentials.
                 </p>
               </div>
-              
-              {!isEditingVendorProfile ? (
-                <button
-                  type="button"
-                  onClick={startEditingVendor}
-                  className="px-4 py-2.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-[#003893] border border-blue-200 font-extrabold text-xs flex items-center gap-2 transition-all shadow-xs active:scale-95 cursor-pointer w-fit"
-                >
-                  <Edit3 className="w-4 h-4 text-[#003893]" />
-                  <span>Edit Profile Details</span>
-                </button>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setIsEditingVendorProfile(false)}
-                    className="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-bold text-xs hover:bg-slate-100 transition-colors cursor-pointer"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleSaveVendorProfile}
-                    disabled={isSavingVendorProfile}
-                    className="px-5 py-2.5 rounded-xl bg-[#003893] hover:bg-[#002366] text-white font-extrabold text-xs flex items-center gap-2 shadow-md transition-all active:scale-95 cursor-pointer"
-                  >
-                    {isSavingVendorProfile ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        <span>Saving...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Save className="w-4 h-4 text-emerald-400" />
-                        <span>Save Profile Changes</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-              )}
+              <button
+                onClick={onOpenAuth}
+                className="btn-sbni-blue py-3 px-8 text-xs font-extrabold shadow-lg mx-auto flex items-center gap-2 cursor-pointer"
+              >
+                <span>Log In / Sign Up to View Profile</span>
+              </button>
             </div>
+          ) : (
+            <div className="space-y-6 max-w-4xl mx-auto">
+              
+              {/* Header Title & Action Buttons */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-2xl font-extrabold text-slate-900 font-heading">Small Shop & Local Startup Business Profile</h2>
+                  <p className="text-xs text-slate-500 font-medium mt-0.5">
+                    Manage your registration details, verification documents, and profile photo
+                  </p>
+                </div>
+                
+                {!isEditingVendorProfile ? (
+                  <button
+                    type="button"
+                    onClick={startEditingVendor}
+                    className="px-4 py-2.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-[#003893] border border-blue-200 font-extrabold text-xs flex items-center gap-2 transition-all shadow-xs active:scale-95 cursor-pointer w-fit"
+                  >
+                    <Edit3 className="w-4 h-4 text-[#003893]" />
+                    <span>Edit Profile Details</span>
+                  </button>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsEditingVendorProfile(false)}
+                      className="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-bold text-xs hover:bg-slate-100 transition-colors cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleSaveVendorProfile}
+                      disabled={isSavingVendorProfile}
+                      className="px-5 py-2.5 rounded-xl bg-[#003893] hover:bg-[#002366] text-white font-extrabold text-xs flex items-center gap-2 shadow-md transition-all active:scale-95 cursor-pointer"
+                    >
+                      {isSavingVendorProfile ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span>Saving...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Save className="w-4 h-4 text-emerald-400" />
+                          <span>Save Profile Changes</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                )}
+              </div>
 
             {/* Save Success Banner */}
             {vendorSaveSuccess && (
@@ -1924,9 +1992,9 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
               </div>
 
             </div>
-
           </div>
-        )}
+        )
+      )}
 
       </div>
 

@@ -5,6 +5,7 @@ import lenderRoutes from './lenderRoutes';
 import subscriptionRoutes from './subscriptionRoutes';
 import cmsRoutes from './cmsRoutes';
 import adminRoutes from './adminRoutes';
+import uploadRoutes from './uploadRoutes';
 
 const router = Router();
 
@@ -14,5 +15,6 @@ router.use('/lenders', lenderRoutes);
 router.use('/subscriptions', subscriptionRoutes);
 router.use('/cms', cmsRoutes);
 router.use('/admin', adminRoutes);
+router.use('/upload', uploadRoutes);
 
 export default router;

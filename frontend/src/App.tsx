@@ -15,6 +15,7 @@ import {
   checkSubscriptionStatus,
   logoutUser,
   getToken,
+  safeSetLocalStorage,
 } from './services/api';
 import { Lender } from './types';
 
@@ -68,9 +69,9 @@ export function App() {
 
           setHasActiveSubscription(isSub);
           if (isSub) {
-            localStorage.setItem('sbni_subscribed', 'true');
-            localStorage.setItem('sbni_vendor_subscribed', 'true');
-            localStorage.setItem('sbni_lender_subscribed', 'true');
+            safeSetLocalStorage('sbni_subscribed', 'true');
+            safeSetLocalStorage('sbni_vendor_subscribed', 'true');
+            safeSetLocalStorage('sbni_lender_subscribed', 'true');
             window.dispatchEvent(new Event('sbni_subscription_updated'));
           }
         } else {
@@ -147,9 +148,9 @@ export function App() {
 
     setHasActiveSubscription(isSub);
     if (isSub) {
-      localStorage.setItem('sbni_subscribed', 'true');
-      localStorage.setItem('sbni_vendor_subscribed', 'true');
-      localStorage.setItem('sbni_lender_subscribed', 'true');
+      safeSetLocalStorage('sbni_subscribed', 'true');
+      safeSetLocalStorage('sbni_vendor_subscribed', 'true');
+      safeSetLocalStorage('sbni_lender_subscribed', 'true');
       window.dispatchEvent(new Event('sbni_subscription_updated'));
     }
     loadLenders();
@@ -164,9 +165,9 @@ export function App() {
   const handleSubscriptionSuccess = async () => {
     setSubModalOpen(false);
     setHasActiveSubscription(true);
-    localStorage.setItem('sbni_subscribed', 'true');
-    localStorage.setItem('sbni_vendor_subscribed', 'true');
-    localStorage.setItem('sbni_lender_subscribed', 'true');
+    safeSetLocalStorage('sbni_subscribed', 'true');
+    safeSetLocalStorage('sbni_vendor_subscribed', 'true');
+    safeSetLocalStorage('sbni_lender_subscribed', 'true');
     window.dispatchEvent(new Event('sbni_subscription_updated'));
     loadLenders();
   };
@@ -267,6 +268,12 @@ export function App() {
             activeTab={vendorActiveTab}
             onTabChange={setVendorActiveTab}
             onLogout={handleLogout}
+            currentUser={currentUser}
+            onOpenAuth={() => {
+              setAuthSubscribeIntent(false);
+              setAuthRole('VENDOR');
+              setAuthModalOpen(true);
+            }}
           />
         ) : (
           <LenderDashboard
@@ -274,6 +281,12 @@ export function App() {
             activeTab={lenderActiveTab}
             onTabChange={setLenderActiveTab}
             onLogout={handleLogout}
+            currentUser={currentUser}
+            onOpenAuth={() => {
+              setAuthSubscribeIntent(false);
+              setAuthRole('LENDER');
+              setAuthModalOpen(true);
+            }}
           />
         )}
       </main>
