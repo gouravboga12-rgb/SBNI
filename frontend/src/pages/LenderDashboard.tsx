@@ -1828,7 +1828,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                   <div className="space-y-3">
                     {/* PAN Card Card */}
                     {(() => {
-                      const panUrl = selectedVendor.panFileUrl || generatePanCardDataUrl(selectedVendor.vendorName, selectedVendor.panNumber, selectedVendor.dateOfBirth);
+                      const hasPanFile = Boolean(selectedVendor.panFileUrl && selectedVendor.panFileUrl.trim().length > 10);
                       const isInspected = isDocInspected(selectedVendor.id, 'pan');
                       const panFileName = `PAN_Card_${(selectedVendor.panNumber || selectedVendor.vendorName).replace(/\s+/g, '_')}`;
 
@@ -1848,42 +1848,64 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                                 )}
                               </div>
                               <div className="text-slate-600 font-mono font-bold text-xs mt-0.5">
-                                {selectedVendor.panNumber || 'NSDL Verified Record'}
+                                {selectedVendor.panNumber || 'No PAN Number Provided'}
                               </div>
                             </div>
-                            <span className="badge-verified-green">PAN Verified</span>
+                            {hasPanFile ? (
+                              <span className="badge-verified-green">File Uploaded</span>
+                            ) : selectedVendor.panNumber ? (
+                              <span className="badge-pending-amber">Number Provided</span>
+                            ) : (
+                              <span className="text-[10px] font-bold text-slate-500 bg-slate-200 px-2 py-0.5 rounded-md">Not Provided</span>
+                            )}
                           </div>
 
                           <div className="flex items-center gap-2 pt-1 border-t border-slate-200/60">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                markDocInspected(selectedVendor.id, 'pan');
-                                setPreviewDocModal({
-                                  title: `PAN Card (${selectedVendor.panNumber || selectedVendor.vendorName})`,
-                                  url: panUrl,
-                                  type: 'doc',
-                                  fileName: panFileName,
-                                });
-                              }}
-                              className="flex-1 py-1.5 px-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-all active:scale-95 cursor-pointer"
-                            >
-                              <Eye className="w-3.5 h-3.5" />
-                              <span>View & Inspect</span>
-                            </button>
+                            {hasPanFile ? (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    markDocInspected(selectedVendor.id, 'pan');
+                                    setPreviewDocModal({
+                                      title: `PAN Card (${selectedVendor.panNumber || selectedVendor.vendorName})`,
+                                      url: selectedVendor.panFileUrl!,
+                                      type: 'doc',
+                                      fileName: panFileName,
+                                    });
+                                  }}
+                                  className="flex-1 py-1.5 px-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-all active:scale-95 cursor-pointer"
+                                >
+                                  <Eye className="w-3.5 h-3.5" />
+                                  <span>View & Inspect</span>
+                                </button>
 
-                            <button
-                              type="button"
-                              onClick={() => {
-                                markDocInspected(selectedVendor.id, 'pan');
-                                downloadDocumentFile(panUrl, panFileName);
-                              }}
-                              className="py-1.5 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-all active:scale-95 cursor-pointer"
-                              title="Download PAN Card"
-                            >
-                              <Download className="w-3.5 h-3.5" />
-                              <span>Download</span>
-                            </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    markDocInspected(selectedVendor.id, 'pan');
+                                    downloadDocumentFile(selectedVendor.panFileUrl!, panFileName);
+                                  }}
+                                  className="py-1.5 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-all active:scale-95 cursor-pointer"
+                                  title="Download PAN Card"
+                                >
+                                  <Download className="w-3.5 h-3.5" />
+                                  <span>Download</span>
+                                </button>
+                              </>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => markDocInspected(selectedVendor.id, 'pan')}
+                                className={`flex-1 py-1.5 px-3 rounded-lg font-extrabold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                                  isInspected
+                                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                                    : 'bg-slate-200 hover:bg-slate-300 text-slate-800'
+                                }`}
+                              >
+                                <span>{isInspected ? '✓ PAN Record Inspected' : '✓ Mark PAN Inspected'}</span>
+                              </button>
+                            )}
                           </div>
                         </div>
                       );
@@ -1891,7 +1913,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
 
                     {/* Aadhaar Card Card */}
                     {(() => {
-                      const aadhaarUrl = selectedVendor.aadhaarFileUrl || generateAadhaarCardDataUrl(selectedVendor.vendorName, selectedVendor.aadhaarNumber, selectedVendor.shopAddress);
+                      const hasAadhaarFile = Boolean(selectedVendor.aadhaarFileUrl && selectedVendor.aadhaarFileUrl.trim().length > 10);
                       const isInspected = isDocInspected(selectedVendor.id, 'aadhaar');
                       const aadhaarFileName = `Aadhaar_Card_${(selectedVendor.aadhaarNumber || selectedVendor.vendorName).replace(/\s+/g, '_')}`;
 
@@ -1911,42 +1933,64 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                                 )}
                               </div>
                               <div className="text-slate-600 font-mono font-bold text-xs mt-0.5">
-                                {selectedVendor.aadhaarNumber || 'UIDAI Verified Record'}
+                                {selectedVendor.aadhaarNumber || 'No Aadhaar Number Provided'}
                               </div>
                             </div>
-                            <span className="badge-verified-green">Aadhaar Verified</span>
+                            {hasAadhaarFile ? (
+                              <span className="badge-verified-green">File Uploaded</span>
+                            ) : selectedVendor.aadhaarNumber ? (
+                              <span className="badge-pending-amber">Number Provided</span>
+                            ) : (
+                              <span className="text-[10px] font-bold text-slate-500 bg-slate-200 px-2 py-0.5 rounded-md">Not Provided</span>
+                            )}
                           </div>
 
                           <div className="flex items-center gap-2 pt-1 border-t border-slate-200/60">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                markDocInspected(selectedVendor.id, 'aadhaar');
-                                setPreviewDocModal({
-                                  title: `Aadhaar Card (${selectedVendor.aadhaarNumber || selectedVendor.vendorName})`,
-                                  url: aadhaarUrl,
-                                  type: 'doc',
-                                  fileName: aadhaarFileName,
-                                });
-                              }}
-                              className="flex-1 py-1.5 px-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-all active:scale-95 cursor-pointer"
-                            >
-                              <Eye className="w-3.5 h-3.5" />
-                              <span>View & Inspect</span>
-                            </button>
+                            {hasAadhaarFile ? (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    markDocInspected(selectedVendor.id, 'aadhaar');
+                                    setPreviewDocModal({
+                                      title: `Aadhaar Card (${selectedVendor.aadhaarNumber || selectedVendor.vendorName})`,
+                                      url: selectedVendor.aadhaarFileUrl!,
+                                      type: 'doc',
+                                      fileName: aadhaarFileName,
+                                    });
+                                  }}
+                                  className="flex-1 py-1.5 px-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-all active:scale-95 cursor-pointer"
+                                >
+                                  <Eye className="w-3.5 h-3.5" />
+                                  <span>View & Inspect</span>
+                                </button>
 
-                            <button
-                              type="button"
-                              onClick={() => {
-                                markDocInspected(selectedVendor.id, 'aadhaar');
-                                downloadDocumentFile(aadhaarUrl, aadhaarFileName);
-                              }}
-                              className="py-1.5 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-all active:scale-95 cursor-pointer"
-                              title="Download Aadhaar Card"
-                            >
-                              <Download className="w-3.5 h-3.5" />
-                              <span>Download</span>
-                            </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    markDocInspected(selectedVendor.id, 'aadhaar');
+                                    downloadDocumentFile(selectedVendor.aadhaarFileUrl!, aadhaarFileName);
+                                  }}
+                                  className="py-1.5 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-all active:scale-95 cursor-pointer"
+                                  title="Download Aadhaar Card"
+                                >
+                                  <Download className="w-3.5 h-3.5" />
+                                  <span>Download</span>
+                                </button>
+                              </>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => markDocInspected(selectedVendor.id, 'aadhaar')}
+                                className={`flex-1 py-1.5 px-3 rounded-lg font-extrabold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                                  isInspected
+                                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                                    : 'bg-slate-200 hover:bg-slate-300 text-slate-800'
+                                }`}
+                              >
+                                <span>{isInspected ? '✓ Aadhaar Record Inspected' : '✓ Mark Aadhaar Inspected'}</span>
+                              </button>
+                            )}
                           </div>
                         </div>
                       );
@@ -2036,16 +2080,24 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                   </div>
                   {(() => {
                     const photos: { title: string; url: string }[] = [];
-                    if (selectedVendor.shopPhotoUrl) photos.push({ title: 'Shop / Startup Business Photo', url: selectedVendor.shopPhotoUrl });
-                    if (selectedVendor.liveSelfieUrl) photos.push({ title: 'Live Photo in Front of Shop / Business', url: selectedVendor.liveSelfieUrl });
-                    if (selectedVendor.avatarUrl && !photos.some(p => p.url === selectedVendor.avatarUrl)) photos.push({ title: 'Passport / Profile Photo', url: selectedVendor.avatarUrl });
-                    if (selectedVendor.shopImages && selectedVendor.shopImages.length > 0) {
-                      selectedVendor.shopImages.forEach((img, i) => photos.push({ title: `Shop Photo ${i + 1}`, url: img }));
-                    }
-                    if (selectedVendor.shopPhotos && Array.isArray(selectedVendor.shopPhotos) && selectedVendor.shopPhotos.length > 0) {
+                    if (Array.isArray(selectedVendor.shopPhotos) && selectedVendor.shopPhotos.length > 0) {
                       selectedVendor.shopPhotos.forEach((img: string, i: number) => {
-                        if (img && !photos.some(p => p.url === img)) photos.push({ title: `Storefront / Premises ${i + 1}`, url: img });
+                        if (img && img.trim().length > 10) photos.push({ title: `Storefront / Premises ${i + 1}`, url: img });
                       });
+                    }
+                    if (Array.isArray(selectedVendor.shopImages) && selectedVendor.shopImages.length > 0) {
+                      selectedVendor.shopImages.forEach((img, i) => {
+                        if (img && img.trim().length > 10 && !photos.some(p => p.url === img)) photos.push({ title: `Shop Photo ${i + 1}`, url: img });
+                      });
+                    }
+                    if (selectedVendor.shopPhotoUrl && selectedVendor.shopPhotoUrl.trim().length > 10 && !photos.some(p => p.url === selectedVendor.shopPhotoUrl)) {
+                      photos.push({ title: 'Shop / Startup Business Photo', url: selectedVendor.shopPhotoUrl });
+                    }
+                    if (selectedVendor.liveSelfieUrl && selectedVendor.liveSelfieUrl.trim().length > 10 && !photos.some(p => p.url === selectedVendor.liveSelfieUrl)) {
+                      photos.push({ title: 'Live Photo in Front of Shop', url: selectedVendor.liveSelfieUrl });
+                    }
+                    if (selectedVendor.avatarUrl && selectedVendor.avatarUrl.trim().length > 10 && !photos.some(p => p.url === selectedVendor.avatarUrl)) {
+                      photos.push({ title: 'Live Profile Photo', url: selectedVendor.avatarUrl });
                     }
 
                     if (photos.length > 0) {
@@ -2104,10 +2156,23 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                       );
                     }
                     return (
-                      <div className="p-6 rounded-2xl bg-slate-50 border border-slate-200 text-center space-y-1 text-slate-500 text-xs">
-                        <Camera className="w-8 h-8 text-slate-400 mx-auto mb-1" />
-                        <div className="font-bold text-slate-700">No Premises Photos Uploaded</div>
-                        <p className="text-slate-400 text-[11px]">Vendor has not attached shop photos to this verification request yet.</p>
+                      <div className="p-6 rounded-2xl bg-slate-50 border border-slate-200 text-center space-y-3 text-slate-500 text-xs">
+                        <Camera className="w-8 h-8 text-slate-400 mx-auto" />
+                        <div>
+                          <div className="font-bold text-slate-700">No Storefront Photos Uploaded</div>
+                          <p className="text-slate-400 text-[11px] mt-0.5">Vendor has not attached premises photos to this application yet.</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => markDocInspected(selectedVendor.id, 'shopPhotos')}
+                          className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                            isDocInspected(selectedVendor.id, 'shopPhotos')
+                              ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                              : 'bg-slate-200 hover:bg-slate-300 text-slate-700'
+                          }`}
+                        >
+                          {isDocInspected(selectedVendor.id, 'shopPhotos') ? '✓ Premises Acknowledged' : '✓ Acknowledge (No Photos)'}
+                        </button>
                       </div>
                     );
                   })()}
@@ -2119,7 +2184,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                   <div className="space-y-3">
                     {/* Business License */}
                     {(() => {
-                      const licenseUrl = selectedVendor.shopLicensePdf || generateShopLicenseDataUrl(selectedVendor.shopName, selectedVendor.vendorName, selectedVendor.shopType, selectedVendor.shopAddress);
+                      const hasLicenseFile = Boolean(selectedVendor.shopLicensePdf && selectedVendor.shopLicensePdf.trim().length > 10);
                       const licenseFileName = `Business_License_${selectedVendor.shopName.replace(/\s+/g, '_')}`;
 
                       return (
@@ -2129,38 +2194,46 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                             <div>
                               <div className="font-bold text-slate-900">Business License / Shop & Establishment</div>
                               <div className="text-xs text-slate-400 mt-0.5 truncate max-w-[200px] sm:max-w-xs">
-                                {selectedVendor.shopLicensePdf ? 'Uploaded Document' : 'Official Registered Record'}
+                                {hasLicenseFile ? 'Uploaded Document File' : 'Optional / Not Uploaded by vendor'}
                               </div>
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
-                            <span className="badge-verified-green text-[10px]">Verified</span>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                markDocInspected(selectedVendor.id, 'businessLicense');
-                                setPreviewDocModal({
-                                  title: `Business License (${selectedVendor.shopName})`,
-                                  url: licenseUrl,
-                                  type: 'doc',
-                                  fileName: licenseFileName,
-                                });
-                              }}
-                              className="p-1.5 px-2.5 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer border border-blue-200"
-                            >
-                              <Eye className="w-3.5 h-3.5" /> View
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                markDocInspected(selectedVendor.id, 'businessLicense');
-                                downloadDocumentFile(licenseUrl, licenseFileName);
-                              }}
-                              className="p-1.5 px-2.5 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer border border-emerald-200"
-                              title="Download License"
-                            >
-                              <Download className="w-3.5 h-3.5" />
-                            </button>
+                            {hasLicenseFile ? (
+                              <>
+                                <span className="badge-verified-green text-[10px]">Uploaded</span>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    markDocInspected(selectedVendor.id, 'businessLicense');
+                                    setPreviewDocModal({
+                                      title: `Business License (${selectedVendor.shopName})`,
+                                      url: selectedVendor.shopLicensePdf!,
+                                      type: 'doc',
+                                      fileName: licenseFileName,
+                                    });
+                                  }}
+                                  className="p-1.5 px-2.5 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer border border-blue-200"
+                                >
+                                  <Eye className="w-3.5 h-3.5" /> View
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    markDocInspected(selectedVendor.id, 'businessLicense');
+                                    downloadDocumentFile(selectedVendor.shopLicensePdf!, licenseFileName);
+                                  }}
+                                  className="p-1.5 px-2.5 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer border border-emerald-200"
+                                  title="Download License"
+                                >
+                                  <Download className="w-3.5 h-3.5" />
+                                </button>
+                              </>
+                            ) : (
+                              <span className="text-[10px] font-bold text-slate-400 bg-slate-200 px-2 py-0.5 rounded-md">
+                                Not Uploaded
+                              </span>
+                            )}
                           </div>
                         </div>
                       );
@@ -2168,7 +2241,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
 
                     {/* GST Certificate */}
                     {(() => {
-                      const gstUrl = selectedVendor.gstCertificatePdf || generateGstCertDataUrl(selectedVendor.shopName, selectedVendor.vendorName, (selectedVendor as any).gstNumber, selectedVendor.shopAddress);
+                      const hasGstFile = Boolean(selectedVendor.gstCertificatePdf && selectedVendor.gstCertificatePdf.trim().length > 10);
                       const gstFileName = `GST_Certificate_${selectedVendor.shopName.replace(/\s+/g, '_')}`;
 
                       return (
@@ -2178,38 +2251,48 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                             <div>
                               <div className="font-bold text-slate-900">GST Registration Certificate</div>
                               <div className="text-xs text-slate-400 mt-0.5 truncate max-w-[200px] sm:max-w-xs">
-                                {selectedVendor.gstCertificatePdf ? 'Uploaded Document' : 'Official Registered Record'}
+                                {hasGstFile ? 'Uploaded Document File' : selectedVendor.gstNumber ? `GSTIN: ${selectedVendor.gstNumber}` : 'Optional / Not Uploaded by vendor'}
                               </div>
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
-                            <span className="badge-verified-green text-[10px]">Verified</span>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                markDocInspected(selectedVendor.id, 'gst');
-                                setPreviewDocModal({
-                                  title: `GST Certificate (${selectedVendor.shopName})`,
-                                  url: gstUrl,
-                                  type: 'doc',
-                                  fileName: gstFileName,
-                                });
-                              }}
-                              className="p-1.5 px-2.5 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer border border-blue-200"
-                            >
-                              <Eye className="w-3.5 h-3.5" /> View
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                markDocInspected(selectedVendor.id, 'gst');
-                                downloadDocumentFile(gstUrl, gstFileName);
-                              }}
-                              className="p-1.5 px-2.5 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer border border-emerald-200"
-                              title="Download GST Certificate"
-                            >
-                              <Download className="w-3.5 h-3.5" />
-                            </button>
+                            {hasGstFile ? (
+                              <>
+                                <span className="badge-verified-green text-[10px]">Uploaded</span>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    markDocInspected(selectedVendor.id, 'gst');
+                                    setPreviewDocModal({
+                                      title: `GST Certificate (${selectedVendor.shopName})`,
+                                      url: selectedVendor.gstCertificatePdf!,
+                                      type: 'doc',
+                                      fileName: gstFileName,
+                                    });
+                                  }}
+                                  className="p-1.5 px-2.5 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer border border-blue-200"
+                                >
+                                  <Eye className="w-3.5 h-3.5" /> View
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    markDocInspected(selectedVendor.id, 'gst');
+                                    downloadDocumentFile(selectedVendor.gstCertificatePdf!, gstFileName);
+                                  }}
+                                  className="p-1.5 px-2.5 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer border border-emerald-200"
+                                  title="Download GST Certificate"
+                                >
+                                  <Download className="w-3.5 h-3.5" />
+                                </button>
+                              </>
+                            ) : selectedVendor.gstNumber ? (
+                              <span className="badge-pending-amber text-[10px]">GSTIN Added</span>
+                            ) : (
+                              <span className="text-[10px] font-bold text-slate-400 bg-slate-200 px-2 py-0.5 rounded-md">
+                                Not Uploaded
+                              </span>
+                            )}
                           </div>
                         </div>
                       );

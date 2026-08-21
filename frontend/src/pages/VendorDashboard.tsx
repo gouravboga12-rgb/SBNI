@@ -1482,136 +1482,168 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
                     
                     {/* PAN Card Document */}
-                    <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2.5">
-                      <div className="flex items-center justify-between">
-                        <span className="font-extrabold text-slate-800 text-xs flex items-center gap-1.5">
-                          <FileText className="w-3.5 h-3.5 text-blue-600" />
-                          PAN Card
-                        </span>
-                        {currentVendorObj.panFileUrl ? (
-                          <span className="text-[10px] font-extrabold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md flex items-center gap-1">
-                            <CheckCircle2 className="w-3 h-3" /> Uploaded
-                          </span>
-                        ) : currentVendorObj.panNumber ? (
-                          <span className="text-[10px] font-extrabold text-blue-700 bg-blue-100 px-2 py-0.5 rounded-md">
-                            Number Set
-                          </span>
-                        ) : (
-                          <span className="text-[10px] font-extrabold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-md">
-                            Pending
-                          </span>
-                        )}
-                      </div>
-                      <div className="font-mono font-bold text-slate-900 text-xs bg-white p-2 rounded-xl border border-slate-200 truncate">
-                        {currentVendorObj.panNumber || 'No PAN Provided'}
-                      </div>
-                      {currentVendorObj.panFileUrl && (
-                        <button
-                          type="button"
-                          onClick={() => setPreviewDocModal({ title: `PAN Card (${currentVendorObj.panNumber || currentVendorObj.name})`, url: currentVendorObj.panFileUrl!, type: 'doc' })}
-                          className="w-full py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-extrabold text-[11px] flex items-center justify-center gap-1.5 transition-colors cursor-pointer border border-blue-200"
-                        >
-                          <Eye className="w-3.5 h-3.5" /> View PAN Document
-                        </button>
-                      )}
-                    </div>
+                    {(() => {
+                      const hasPan = Boolean(currentVendorObj.panFileUrl && currentVendorObj.panFileUrl.trim().length > 10);
+                      return (
+                        <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2.5">
+                          <div className="flex items-center justify-between">
+                            <span className="font-extrabold text-slate-800 text-xs flex items-center gap-1.5">
+                              <FileText className="w-3.5 h-3.5 text-blue-600" />
+                              PAN Card
+                            </span>
+                            {hasPan ? (
+                              <span className="text-[10px] font-extrabold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md flex items-center gap-1">
+                                <CheckCircle2 className="w-3 h-3" /> Uploaded
+                              </span>
+                            ) : currentVendorObj.panNumber ? (
+                              <span className="text-[10px] font-extrabold text-blue-700 bg-blue-100 px-2 py-0.5 rounded-md">
+                                Number Added
+                              </span>
+                            ) : (
+                              <span className="text-[10px] font-extrabold text-slate-500 bg-slate-200 px-2 py-0.5 rounded-md">
+                                Not Uploaded
+                              </span>
+                            )}
+                          </div>
+                          <div className="font-mono font-bold text-slate-900 text-xs bg-white p-2 rounded-xl border border-slate-200 truncate">
+                            {currentVendorObj.panNumber || 'No PAN Provided'}
+                          </div>
+                          {hasPan ? (
+                            <button
+                              type="button"
+                              onClick={() => setPreviewDocModal({ title: `PAN Card (${currentVendorObj.panNumber || currentVendorObj.name})`, url: currentVendorObj.panFileUrl!, type: 'doc' })}
+                              className="w-full py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-extrabold text-[11px] flex items-center justify-center gap-1.5 transition-colors cursor-pointer border border-blue-200"
+                            >
+                              <Eye className="w-3.5 h-3.5" /> View PAN Document
+                            </button>
+                          ) : (
+                            <div className="text-[11px] text-slate-400 text-center py-1">No File Attached</div>
+                          )}
+                        </div>
+                      );
+                    })()}
 
                     {/* Aadhaar Card Document */}
-                    <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2.5">
-                      <div className="flex items-center justify-between">
-                        <span className="font-extrabold text-slate-800 text-xs flex items-center gap-1.5">
-                          <FileText className="w-3.5 h-3.5 text-blue-600" />
-                          Aadhaar Card
-                        </span>
-                        {currentVendorObj.aadhaarFileUrl ? (
-                          <span className="text-[10px] font-extrabold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md flex items-center gap-1">
-                            <CheckCircle2 className="w-3 h-3" /> Uploaded
-                          </span>
-                        ) : currentVendorObj.aadhaarNumber ? (
-                          <span className="text-[10px] font-extrabold text-blue-700 bg-blue-100 px-2 py-0.5 rounded-md">
-                            Number Set
-                          </span>
-                        ) : (
-                          <span className="text-[10px] font-extrabold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-md">
-                            Pending
-                          </span>
-                        )}
-                      </div>
-                      <div className="font-mono font-bold text-slate-900 text-xs bg-white p-2 rounded-xl border border-slate-200 truncate">
-                        {currentVendorObj.aadhaarNumber || 'No Aadhaar Provided'}
-                      </div>
-                      {currentVendorObj.aadhaarFileUrl && (
-                        <button
-                          type="button"
-                          onClick={() => setPreviewDocModal({ title: `Aadhaar Card (${currentVendorObj.aadhaarNumber || currentVendorObj.name})`, url: currentVendorObj.aadhaarFileUrl!, type: 'doc' })}
-                          className="w-full py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-extrabold text-[11px] flex items-center justify-center gap-1.5 transition-colors cursor-pointer border border-blue-200"
-                        >
-                          <Eye className="w-3.5 h-3.5" /> View Aadhaar Card
-                        </button>
-                      )}
-                    </div>
+                    {(() => {
+                      const hasAadhaar = Boolean(currentVendorObj.aadhaarFileUrl && currentVendorObj.aadhaarFileUrl.trim().length > 10);
+                      return (
+                        <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2.5">
+                          <div className="flex items-center justify-between">
+                            <span className="font-extrabold text-slate-800 text-xs flex items-center gap-1.5">
+                              <FileText className="w-3.5 h-3.5 text-blue-600" />
+                              Aadhaar Card
+                            </span>
+                            {hasAadhaar ? (
+                              <span className="text-[10px] font-extrabold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md flex items-center gap-1">
+                                <CheckCircle2 className="w-3 h-3" /> Uploaded
+                              </span>
+                            ) : currentVendorObj.aadhaarNumber ? (
+                              <span className="text-[10px] font-extrabold text-blue-700 bg-blue-100 px-2 py-0.5 rounded-md">
+                                Number Added
+                              </span>
+                            ) : (
+                              <span className="text-[10px] font-extrabold text-slate-500 bg-slate-200 px-2 py-0.5 rounded-md">
+                                Not Uploaded
+                              </span>
+                            )}
+                          </div>
+                          <div className="font-mono font-bold text-slate-900 text-xs bg-white p-2 rounded-xl border border-slate-200 truncate">
+                            {currentVendorObj.aadhaarNumber || 'No Aadhaar Provided'}
+                          </div>
+                          {hasAadhaar ? (
+                            <button
+                              type="button"
+                              onClick={() => setPreviewDocModal({ title: `Aadhaar Card (${currentVendorObj.aadhaarNumber || currentVendorObj.name})`, url: currentVendorObj.aadhaarFileUrl!, type: 'doc' })}
+                              className="w-full py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-extrabold text-[11px] flex items-center justify-center gap-1.5 transition-colors cursor-pointer border border-blue-200"
+                            >
+                              <Eye className="w-3.5 h-3.5" /> View Aadhaar Card
+                            </button>
+                          ) : (
+                            <div className="text-[11px] text-slate-400 text-center py-1">No File Attached</div>
+                          )}
+                        </div>
+                      );
+                    })()}
 
                     {/* Business License / Shop Proof */}
-                    <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2.5">
-                      <div className="flex items-center justify-between">
-                        <span className="font-extrabold text-slate-800 text-xs flex items-center gap-1.5">
-                          <FileText className="w-3.5 h-3.5 text-blue-600" />
-                          Business License
-                        </span>
-                        {currentVendorObj.businessLicenseUrl ? (
-                          <span className="text-[10px] font-extrabold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md flex items-center gap-1">
-                            <CheckCircle2 className="w-3 h-3" /> Uploaded
-                          </span>
-                        ) : (
-                          <span className="text-[10px] font-extrabold text-slate-500 bg-slate-200 px-2 py-0.5 rounded-md">
-                            Optional
-                          </span>
-                        )}
-                      </div>
-                      <div className="font-mono font-bold text-slate-700 text-xs bg-white p-2 rounded-xl border border-slate-200 truncate">
-                        {currentVendorObj.businessLicenseUrl ? 'Shop & Establishment Proof' : 'Not Uploaded'}
-                      </div>
-                      {currentVendorObj.businessLicenseUrl && (
-                        <button
-                          type="button"
-                          onClick={() => setPreviewDocModal({ title: `Business License (${currentVendorObj.shopName})`, url: currentVendorObj.businessLicenseUrl!, type: 'doc' })}
-                          className="w-full py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-extrabold text-[11px] flex items-center justify-center gap-1.5 transition-colors cursor-pointer border border-blue-200"
-                        >
-                          <Eye className="w-3.5 h-3.5" /> View License Document
-                        </button>
-                      )}
-                    </div>
+                    {(() => {
+                      const hasLicense = Boolean(currentVendorObj.businessLicenseUrl && currentVendorObj.businessLicenseUrl.trim().length > 10);
+                      return (
+                        <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2.5">
+                          <div className="flex items-center justify-between">
+                            <span className="font-extrabold text-slate-800 text-xs flex items-center gap-1.5">
+                              <FileText className="w-3.5 h-3.5 text-blue-600" />
+                              Business License
+                            </span>
+                            {hasLicense ? (
+                              <span className="text-[10px] font-extrabold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md flex items-center gap-1">
+                                <CheckCircle2 className="w-3 h-3" /> Uploaded
+                              </span>
+                            ) : (
+                              <span className="text-[10px] font-extrabold text-slate-500 bg-slate-200 px-2 py-0.5 rounded-md">
+                                Optional
+                              </span>
+                            )}
+                          </div>
+                          <div className="font-mono font-bold text-slate-700 text-xs bg-white p-2 rounded-xl border border-slate-200 truncate">
+                            {hasLicense ? 'Shop & Establishment Proof' : 'Not Uploaded'}
+                          </div>
+                          {hasLicense ? (
+                            <button
+                              type="button"
+                              onClick={() => setPreviewDocModal({ title: `Business License (${currentVendorObj.shopName})`, url: currentVendorObj.businessLicenseUrl!, type: 'doc' })}
+                              className="w-full py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-extrabold text-[11px] flex items-center justify-center gap-1.5 transition-colors cursor-pointer border border-blue-200"
+                            >
+                              <Eye className="w-3.5 h-3.5" /> View License Document
+                            </button>
+                          ) : (
+                            <div className="text-[11px] text-slate-400 text-center py-1">No File Attached</div>
+                          )}
+                        </div>
+                      );
+                    })()}
 
                     {/* GST Certificate */}
-                    <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2.5">
-                      <div className="flex items-center justify-between">
-                        <span className="font-extrabold text-slate-800 text-xs flex items-center gap-1.5">
-                          <FileText className="w-3.5 h-3.5 text-blue-600" />
-                          GST Certificate
-                        </span>
-                        {currentVendorObj.gstFileUrl ? (
-                          <span className="text-[10px] font-extrabold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md flex items-center gap-1">
-                            <CheckCircle2 className="w-3 h-3" /> Uploaded
-                          </span>
-                        ) : (
-                          <span className="text-[10px] font-extrabold text-slate-500 bg-slate-200 px-2 py-0.5 rounded-md">
-                            Optional
-                          </span>
-                        )}
-                      </div>
-                      <div className="font-mono font-bold text-slate-900 text-xs bg-white p-2 rounded-xl border border-slate-200 truncate">
-                        {currentVendorObj.gstNumber || 'Optional GST'}
-                      </div>
-                      {currentVendorObj.gstFileUrl && (
-                        <button
-                          type="button"
-                          onClick={() => setPreviewDocModal({ title: `GST Certificate (${currentVendorObj.shopName})`, url: currentVendorObj.gstFileUrl!, type: 'doc' })}
-                          className="w-full py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-extrabold text-[11px] flex items-center justify-center gap-1.5 transition-colors cursor-pointer border border-blue-200"
-                        >
-                          <Eye className="w-3.5 h-3.5" /> View GST Certificate
-                        </button>
-                      )}
-                    </div>
+                    {(() => {
+                      const hasGst = Boolean(currentVendorObj.gstFileUrl && currentVendorObj.gstFileUrl.trim().length > 10);
+                      return (
+                        <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2.5">
+                          <div className="flex items-center justify-between">
+                            <span className="font-extrabold text-slate-800 text-xs flex items-center gap-1.5">
+                              <FileText className="w-3.5 h-3.5 text-blue-600" />
+                              GST Certificate
+                            </span>
+                            {hasGst ? (
+                              <span className="text-[10px] font-extrabold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md flex items-center gap-1">
+                                <CheckCircle2 className="w-3 h-3" /> Uploaded
+                              </span>
+                            ) : currentVendorObj.gstNumber ? (
+                              <span className="text-[10px] font-extrabold text-blue-700 bg-blue-100 px-2 py-0.5 rounded-md">
+                                GSTIN Added
+                              </span>
+                            ) : (
+                              <span className="text-[10px] font-extrabold text-slate-500 bg-slate-200 px-2 py-0.5 rounded-md">
+                                Optional
+                              </span>
+                            )}
+                          </div>
+                          <div className="font-mono font-bold text-slate-900 text-xs bg-white p-2 rounded-xl border border-slate-200 truncate">
+                            {currentVendorObj.gstNumber || 'Optional GST'}
+                          </div>
+                          {hasGst ? (
+                            <button
+                              type="button"
+                              onClick={() => setPreviewDocModal({ title: `GST Certificate (${currentVendorObj.shopName})`, url: currentVendorObj.gstFileUrl!, type: 'doc' })}
+                              className="w-full py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-extrabold text-[11px] flex items-center justify-center gap-1.5 transition-colors cursor-pointer border border-blue-200"
+                            >
+                              <Eye className="w-3.5 h-3.5" /> View GST Certificate
+                            </button>
+                          ) : (
+                            <div className="text-[11px] text-slate-400 text-center py-1">No File Attached</div>
+                          )}
+                        </div>
+                      );
+                    })()}
 
                   </div>
                 ) : (

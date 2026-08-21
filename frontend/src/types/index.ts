@@ -64,11 +64,14 @@ export interface VendorVerificationRequest {
   dateOfBirth?: string;
   panNumber: string;
   aadhaarNumber: string;
+  gstNumber?: string;
   shopType?: string;
   yearsInBusiness?: string;
   shopImages?: string[];
   shopLicensePdf?: string;
   gstCertificatePdf?: string;
+  businessLicenseUrl?: string;
+  gstFileUrl?: string;
   requiredAmount?: string;
   monthlyIncome?: string;
   lenderId?: string;
