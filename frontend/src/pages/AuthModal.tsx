@@ -348,10 +348,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               pincode: pendingVendorData.pincode || '500001',
               panNumber: pendingVendorData.panNumber || 'PAN Verified',
               aadhaarNumber: pendingVendorData.aadhaarNumber || 'Aadhaar Verified',
+              gstNumber: pendingVendorData.gstNumber,
               avatarUrl: avatarEc2Url || liveSelfieEc2Url || shopPhotoEc2Url,
               panFileUrl: panEc2Url,
               aadhaarFileUrl: aadhaarEc2Url,
               businessLicenseUrl: licenseEc2Url,
+              gstFileUrl: licenseEc2Url,
               shopPhotos: shopPhotoEc2Url ? [shopPhotoEc2Url] : undefined,
             });
           } catch (syncErr) {
@@ -372,11 +374,18 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             panNumber: pendingVendorData.panNumber || 'PAN Verified',
             aadhaarFileName: pendingVendorData.aadhaarFile?.name || 'Aadhaar_Card_Verified.pdf',
             aadhaarNumber: pendingVendorData.aadhaarNumber || 'Aadhaar Verified',
+            gstNumber: pendingVendorData.gstNumber || undefined,
             licenseFileName: pendingVendorData.licenseFile?.name || undefined,
             avatarUrl: avatarEc2Url || liveSelfieEc2Url || shopPhotoEc2Url || undefined,
             panFileUrl: panEc2Url || undefined,
             aadhaarFileUrl: aadhaarEc2Url || undefined,
             businessLicenseUrl: licenseEc2Url || undefined,
+            gstFileUrl: licenseEc2Url || undefined,
+            shopLicensePdf: licenseEc2Url || undefined,
+            gstCertificatePdf: licenseEc2Url || undefined,
+            shopPhotoUrl: shopPhotoEc2Url || undefined,
+            shopPhotos: shopPhotoEc2Url ? [shopPhotoEc2Url] : [],
+            liveSelfieUrl: liveSelfieEc2Url || undefined,
           };
 
           fullUser.vendorProfile = cleanProfile;

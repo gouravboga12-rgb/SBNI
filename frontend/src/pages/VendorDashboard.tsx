@@ -440,7 +440,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
     setIsEditingVendorProfile(true);
   };
 
-  const handleDocFileUpload = (
+  const handleDocFileUpload = async (
     e: React.ChangeEvent<HTMLInputElement>,
     field: 'panFileUrl' | 'aadhaarFileUrl' | 'businessLicenseUrl' | 'gstFileUrl'
   ) => {
@@ -450,32 +450,38 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
       alert('File size must be under 10MB.');
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (reader.result) {
-        setVendorEditForm((prev) => ({ ...prev, [field]: reader.result as string }));
+    try {
+      const folder = field === 'panFileUrl' || field === 'aadhaarFileUrl' ? 'documents' : 'documents';
+      const docType = field === 'panFileUrl' ? 'PAN' : field === 'aadhaarFileUrl' ? 'AADHAAR' : field === 'gstFileUrl' ? 'GST_CERTIFICATE' : 'BUSINESS_PROOF';
+      const res = await uploadFileToEc2Api(file, folder, file.name, docType);
+      const fileUrl = res.fileUrl || res.fullUrl;
+      if (fileUrl) {
+        setVendorEditForm((prev) => ({ ...prev, [field]: fileUrl }));
       }
-    };
-    reader.readAsDataURL(file);
+    } catch (err) {
+      console.error('Failed to upload document to AWS EC2:', err);
+    }
   };
 
-  const handleAddShopPhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAddShopPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 10 * 1024 * 1024) {
       alert('Photo size must be under 10MB.');
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (reader.result) {
+    try {
+      const res = await uploadFileToEc2Api(file, 'shops', file.name, 'SHOP_PREMISES');
+      const fileUrl = res.fileUrl || res.fullUrl;
+      if (fileUrl) {
         setVendorEditForm((prev) => ({
           ...prev,
-          shopPhotos: [...(prev.shopPhotos || []), reader.result as string],
+          shopPhotos: [...(prev.shopPhotos || []), fileUrl],
         }));
       }
-    };
-    reader.readAsDataURL(file);
+    } catch (err) {
+      console.error('Failed to upload shop photo to AWS EC2:', err);
+    }
   };
 
   const handleSaveVendorProfile = async () => {
