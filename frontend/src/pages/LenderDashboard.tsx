@@ -272,7 +272,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
 
   const [nearbyBusinesses, setNearbyBusinesses] = useState<any[]>([]);
   const [nearbySearchQuery, setNearbySearchQuery] = useState('');
-  const [reportsFilterStatus, setReportsFilterStatus] = useState<'PENDING' | 'ACCEPTED' | 'REJECTED' | 'ALL'>('PENDING');
+  const [reportsFilterStatus, setReportsFilterStatus] = useState<'PENDING' | 'ACCEPTED' | 'REJECTED' | 'FRAUD' | 'ALL'>('PENDING');
   const [reportsSearchQuery, setReportsSearchQuery] = useState('');
 
   const startEditingLender = () => {
@@ -811,7 +811,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleReportsClick = (filter: 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'ALL' = 'PENDING') => {
+  const handleReportsClick = (filter: 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'FRAUD' | 'ALL' = 'PENDING') => {
     setSelectedVendor(null);
     setReportsFilterStatus(filter);
     setActiveTab('reports');
@@ -920,13 +920,15 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
     setTimeout(() => setActionFeedback(''), 3500);
   };
 
-  const pendingRequests = requests.filter((r) => r.status !== 'Accepted' && r.status !== 'Verified' && r.status !== 'Rejected');
-  const acceptedRequests = requests.filter((r) => r.status === 'Accepted' || r.status === 'Verified');
-  const rejectedRequests = requests.filter((r) => r.status === 'Rejected');
+  const pendingRequests = requests.filter((r) => !checkVendorIsFraud(r) && r.status !== 'Accepted' && r.status !== 'Verified' && r.status !== 'Rejected');
+  const acceptedRequests = requests.filter((r) => !checkVendorIsFraud(r) && (r.status === 'Accepted' || r.status === 'Verified'));
+  const rejectedRequests = requests.filter((r) => !checkVendorIsFraud(r) && r.status === 'Rejected');
+  const fraudRequests = requests.filter((r) => checkVendorIsFraud(r));
 
   const pendingCount = pendingRequests.length;
   const acceptedCount = acceptedRequests.length;
   const rejectedCount = rejectedRequests.length;
+  const fraudCount = fraudRequests.length;
 
   const filteredNearbyBusinesses = nearbyBusinesses.filter((b) => {
     if (!nearbySearchQuery.trim()) return true;
@@ -944,11 +946,13 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
   const filteredReports = requests.filter((r) => {
     let matchesStatus = true;
     if (reportsFilterStatus === 'PENDING') {
-      matchesStatus = r.status !== 'Accepted' && r.status !== 'Verified' && r.status !== 'Rejected';
+      matchesStatus = !checkVendorIsFraud(r) && r.status !== 'Accepted' && r.status !== 'Verified' && r.status !== 'Rejected';
     } else if (reportsFilterStatus === 'ACCEPTED') {
-      matchesStatus = r.status === 'Accepted' || r.status === 'Verified';
+      matchesStatus = !checkVendorIsFraud(r) && (r.status === 'Accepted' || r.status === 'Verified');
     } else if (reportsFilterStatus === 'REJECTED') {
-      matchesStatus = r.status === 'Rejected';
+      matchesStatus = !checkVendorIsFraud(r) && r.status === 'Rejected';
+    } else if (reportsFilterStatus === 'FRAUD') {
+      matchesStatus = checkVendorIsFraud(r);
     }
 
     if (!matchesStatus) return false;
@@ -1382,6 +1386,18 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                 </button>
 
                 <button
+                  onClick={() => setReportsFilterStatus('FRAUD')}
+                  className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 ${
+                    reportsFilterStatus === 'FRAUD'
+                      ? 'bg-rose-700 text-white shadow-md'
+                      : 'text-rose-700 hover:text-rose-900 hover:bg-rose-100/60'
+                  }`}
+                >
+                  <AlertTriangle className="w-3.5 h-3.5" />
+                  <span>Fraud Alert Reports ({fraudCount})</span>
+                </button>
+
+                <button
                   onClick={() => setReportsFilterStatus('ALL')}
                   className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                     reportsFilterStatus === 'ALL'
@@ -1424,12 +1440,14 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                     {reportsFilterStatus === 'PENDING' && 'No Pending Requests'}
                     {reportsFilterStatus === 'ACCEPTED' && 'No Accepted Requests Yet'}
                     {reportsFilterStatus === 'REJECTED' && 'No Rejected Requests'}
+                    {reportsFilterStatus === 'FRAUD' && 'No Fraud Alert Reports'}
                     {reportsFilterStatus === 'ALL' && 'No Requests Found'}
                   </h3>
                   <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1.5 leading-relaxed">
                     {reportsFilterStatus === 'PENDING' && 'When small shop businesses apply for financing, call you, or send WhatsApp inquiries, they will appear here.'}
                     {reportsFilterStatus === 'ACCEPTED' && 'Requests you accept will appear here. Accepted vendors can navigate directly to your office on Google Maps.'}
                     {reportsFilterStatus === 'REJECTED' && 'Requests you reject will be stored here for audit history.'}
+                    {reportsFilterStatus === 'FRAUD' && 'Vendors that are reported or flagged for fraudulent activity will be listed here.'}
                     {reportsFilterStatus === 'ALL' && 'No requests match your current search filters.'}
                   </p>
                 </div>
@@ -1583,112 +1601,6 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                 })}
               </div>
             )}
-          </div>
-        )}
-
-        {/* VIEW 3: REPORTS TAB - FULL REQUESTED VENDORS REPORTS WITH FRAUD REPORTING */}
-        {!selectedVendor && activeTab === 'reports' && (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between flex-wrap gap-3">
-              <div>
-                <h2 className="text-2xl font-extrabold text-slate-900 font-heading">Vendor Application Reports & Fraud Alert System</h2>
-                <p className="text-xs text-slate-500 font-medium">
-                  Detailed loan application records with option to report fraudulent vendor accounts to JustPaisa Admin
-                </p>
-              </div>
-            </div>
-
-            {actionFeedback && (
-              <div className="p-4 rounded-2xl bg-emerald-100 border border-emerald-300 text-emerald-900 text-sm font-bold text-center animate-bounce">
-                {actionFeedback}
-              </div>
-            )}
-
-            <div className="card-white overflow-hidden shadow-lg border border-slate-200/90 rounded-3xl">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs md:text-sm">
-                  <thead className="bg-slate-100 border-b border-slate-200 text-slate-700 font-bold uppercase tracking-wider text-[11px]">
-                    <tr>
-                      <th className="p-4">Vendor & Shop Name</th>
-                      <th className="p-4">Contact Details</th>
-                      <th className="p-4">PAN & Aadhaar</th>
-                      <th className="p-4">Monthly Income</th>
-                      <th className="p-4">Status</th>
-                      <th className="p-4 text-center">Action / Report Fraud</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 font-medium text-slate-800">
-                    {requests.length === 0 ? (
-                      <tr>
-                        <td colSpan={6} className="p-12 text-center text-slate-500">
-                          <div className="flex flex-col items-center justify-center space-y-2">
-                            <Clock className="w-8 h-8 text-slate-300" />
-                            <div className="font-bold text-slate-700 text-sm">No Applied Vendor Reports Yet</div>
-                            <p className="text-xs text-slate-400 max-w-sm">
-                              When small shops and businesses submit loan applications or inquiries to your office, their application reports and KYC verification data will appear here.
-                            </p>
-                          </div>
-                        </td>
-                      </tr>
-                    ) : (
-                      requests.map((vendor) => (
-                        <tr key={vendor.id} className="hover:bg-slate-50/80 transition-colors">
-                          <td className="p-4">
-                            <div className="font-extrabold text-slate-900">{vendor.vendorName}</div>
-                            <div className="text-xs text-slate-500">{vendor.shopName}</div>
-                            <div className="text-[10px] text-slate-400">{vendor.city}, {vendor.state}</div>
-                          </td>
-                          <td className="p-4">
-                            <div className="font-mono text-slate-900 font-bold">{vendor.mobileNumber}</div>
-                            <div className="text-xs text-slate-500">{vendor.emailId}</div>
-                          </td>
-                          <td className="p-4 font-mono text-xs">
-                            <div>PAN: <span className="font-bold text-slate-900">{vendor.panNumber || 'ABCDE1234F'}</span></div>
-                            <div>Aadhaar: <span className="font-bold text-slate-900">{vendor.aadhaarNumber || 'XXXX-XXXX-9012'}</span></div>
-                          </td>
-                          <td className="p-4 font-bold text-emerald-700">
-                            {vendor.monthlyIncome || '₹ 50,000'}
-                          </td>
-                          <td className="p-4">
-                            {checkVendorIsFraud(vendor) ? (
-                              <span className="px-2.5 py-1 rounded-full bg-rose-600 text-white font-extrabold text-[10px] uppercase shadow-md animate-pulse">
-                                🚨 FRAUD FLAGGED
-                              </span>
-                            ) : (
-                              <span className={vendor.status === 'Verified' ? 'badge-verified-green' : 'badge-pending-amber'}>
-                                {vendor.status}
-                              </span>
-                            )}
-                          </td>
-                          <td className="p-4 text-center">
-                            <div className="flex items-center justify-center gap-2">
-                              <button
-                                onClick={() => handleVendorSelect(vendor)}
-                                className="p-2 rounded-xl bg-blue-50 text-blue-700 hover:bg-blue-100 font-bold text-xs flex items-center gap-1 cursor-pointer"
-                              >
-                                <Eye className="w-4 h-4" /> View Details
-                              </button>
-                              <button
-                                onClick={() => setReportingFraudVendor(vendor)}
-                                disabled={checkVendorIsFraud(vendor)}
-                                className={`p-2 rounded-xl text-xs font-bold flex items-center gap-1 transition-all cursor-pointer ${
-                                  checkVendorIsFraud(vendor)
-                                    ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed'
-                                    : 'bg-rose-50 hover:bg-rose-600 hover:text-white text-rose-700 border border-rose-200'
-                                }`}
-                              >
-                                <AlertTriangle className="w-4 h-4" />
-                                <span>{checkVendorIsFraud(vendor) ? 'Reported' : 'Report Fraud'}</span>
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
           </div>
         )}
 
