@@ -191,7 +191,13 @@ export const getLenderLeads = async (req: AuthenticatedRequest, res: Response) =
     }
 
     const leads = await (prisma as any).financingLead.findMany({
-      where: { lenderId: lenderProfile.id },
+      where: {
+        OR: [
+          { lenderId: lenderProfile.id },
+          { lenderId: lenderProfile.registrationNumber },
+          { lenderId: lenderProfile.institutionName },
+        ],
+      },
       include: {
         vendor: {
           include: {

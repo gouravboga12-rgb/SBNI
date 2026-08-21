@@ -315,17 +315,50 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const loadVendorRequests = async () => {
+    // 1. Local requests submitted specifically to THIS lender
     let localReqs: VendorVerificationRequest[] = [];
     try {
       const dynamicStr = localStorage.getItem('sbni_vendor_requests');
-      if (dynamicStr) localReqs = JSON.parse(dynamicStr);
+      if (dynamicStr) {
+        const parsed = JSON.parse(dynamicStr);
+        if (Array.isArray(parsed)) {
+          localReqs = parsed.filter((r) => {
+            if (!r) return false;
+            // Filter out dummy static IDs or demo names
+            if (r.id === 'req-1' || r.id === 'req-2' || r.id === 'REQ-9842' || r.id === 'REQ-4410') return false;
+            if (r.vendorName === 'Rajesh Sharma' || r.vendorName === 'Priya Patel') return false;
+
+            // Must match THIS lender
+            const lenderReg = (currentUserObj as any).regNo || '';
+            const lenderId = (currentUserObj as any).id || '';
+            if (r.lenderId && (r.lenderId === lenderReg || r.lenderId === lenderId)) return true;
+            if (r.lenderName && currentUserObj.name) {
+              const reqLender = r.lenderName.toLowerCase().replace(/money financer/g, '').trim();
+              const currLender = currentUserObj.name.toLowerCase().replace(/money financer/g, '').trim();
+              const officer = (currentUserObj.contactPerson || '').toLowerCase().trim();
+              if (reqLender && currLender && (reqLender.includes(currLender) || currLender.includes(reqLender))) return true;
+              if (officer && reqLender && (reqLender.includes(officer) || officer.includes(reqLender))) return true;
+            }
+            return false;
+          });
+        }
+      }
     } catch (e) {}
 
+    // 2. Real AWS Backend leads submitted to this lender
     let awsReqs: VendorVerificationRequest[] = [];
     try {
-      const liveVendors = await fetchVendorProfilesForLender();
-      if (Array.isArray(liveVendors)) {
-        awsReqs = liveVendors.map((v: any, idx: number) => {
+      const leadsList = await fetchLenderLeadsApi();
+      if (Array.isArray(leadsList)) {
+        awsReqs = leadsList.map((lead: any) => {
+          const v = lead.vendor || {};
+          let snapshot: any = {};
+          try {
+            if (lead.vendorSnapshot) {
+              snapshot = typeof lead.vendorSnapshot === 'string' ? JSON.parse(lead.vendorSnapshot) : lead.vendorSnapshot;
+            }
+          } catch {}
+
           const kycDocs = v.user?.kycDocuments || [];
           const panDoc = kycDocs.find((d: any) => d.docType === 'PAN');
           const aadhaarDoc = kycDocs.find((d: any) => d.docType === 'AADHAAR');
@@ -333,37 +366,41 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
           const gstDoc = kycDocs.find((d: any) => d.docType === 'GST_CERTIFICATE');
 
           return {
-            id: v.id || `v-aws-${idx}`,
-            vendorName: v.ownerName || v.user?.name || 'Registered Vendor',
-            shopName: v.businessName || 'Business Enterprise',
-            shopAddress: v.address || (v.city ? `${v.city}, ${v.state || ''}` : 'Address pending'),
-            city: v.city || 'Mumbai',
-            state: v.state || 'Maharashtra',
-            requestedDate: v.createdAt ? String(v.createdAt).substring(0, 10) : 'Today',
-            requestedTime: '10:00 AM',
-            status: v.kycStatus === 'VERIFIED' ? 'Verified' : 'Pending',
-            mobileNumber: v.user?.phone || v.phone || 'Phone pending',
-            emailId: v.user?.email || v.email || 'Email pending',
-            dateOfBirth: v.dateOfBirth || v.dob || 'Not specified',
-            panNumber: v.panNumber || panDoc?.documentNumber || null,
-            aadhaarNumber: v.aadhaarNumber || aadhaarDoc?.documentNumber || null,
-            shopType: v.category || v.registrationType || 'Retail & Business',
-            yearsInBusiness: v.yearsInBusiness || 'Established',
-            requiredAmount: v.requiredAmount || '₹ 15,00,000',
-            monthlyIncome: v.annualTurnover ? `₹ ${v.annualTurnover}` : (v.monthlyIncome || '₹ 50,000 - 1 Lakh'),
+            id: lead.id,
+            vendorName: snapshot.vendorName || v.ownerName || v.user?.name || 'Applicant Vendor',
+            shopName: snapshot.shopName || v.businessName || 'Business Enterprise',
+            shopAddress: snapshot.shopAddress || v.address || (v.city ? `${v.city}, ${v.state || ''}` : 'Address pending'),
+            city: snapshot.city || v.city || 'Hyderabad',
+            state: snapshot.state || v.state || 'Telangana',
+            requestedDate: lead.createdAt ? String(lead.createdAt).substring(0, 10) : 'Today',
+            requestedTime: lead.createdAt ? new Date(lead.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '10:00 AM',
+            status: lead.status || 'Pending',
+            inquiryType: lead.type || 'LOAN_APPLICATION',
+            inquiryMessage: lead.notes || (lead.type === 'PHONE_CALL' ? '📞 Vendor initiated a Phone Call inquiry' : lead.type === 'WHATSAPP' ? '💬 Vendor sent a WhatsApp inquiry' : '📝 Loan Application submitted'),
+            mobileNumber: snapshot.mobileNumber || v.user?.phone || v.phone || 'Phone pending',
+            emailId: snapshot.emailId || v.user?.email || v.email || 'Email pending',
+            dateOfBirth: snapshot.dateOfBirth || v.dateOfBirth || 'Not specified',
+            panNumber: snapshot.panNumber || v.panNumber || panDoc?.documentNumber || null,
+            aadhaarNumber: snapshot.aadhaarNumber || v.aadhaarNumber || aadhaarDoc?.documentNumber || null,
+            shopType: snapshot.shopType || v.category || v.registrationType || 'Retail & Business',
+            yearsInBusiness: snapshot.yearsInBusiness || v.yearsInBusiness || 'Established',
+            requiredAmount: lead.amount ? `₹ ${lead.amount.toLocaleString('en-IN')}` : (snapshot.requiredAmount || '₹ 5,00,000'),
+            monthlyIncome: snapshot.monthlyIncome || (v.annualTurnover ? `₹ ${v.annualTurnover}` : '₹ 50,000 - 1 Lakh'),
             isFraud: !!v.isFraud,
-            avatarUrl: v.avatarUrl || v.liveSelfieUrl || null,
-            liveSelfieUrl: v.liveSelfieUrl || v.avatarUrl || null,
-            shopLicensePdf: licenseDoc?.fileUrl || v.shopLicensePdf || (v.gstNumber ? `GST_${v.gstNumber}` : null),
-            gstCertificatePdf: gstDoc?.fileUrl || v.gstCertificatePdf || (v.gstNumber ? `GST_${v.gstNumber}` : null),
-            panFileUrl: panDoc?.fileUrl || v.panFileUrl || null,
-            aadhaarFileUrl: aadhaarDoc?.fileUrl || v.aadhaarFileUrl || null,
-            shopImages: Array.isArray(v.shopImages) && v.shopImages.length > 0 ? v.shopImages : [],
+            avatarUrl: snapshot.avatarUrl || v.avatarUrl || null,
+            liveSelfieUrl: snapshot.liveSelfieUrl || v.liveSelfieUrl || null,
+            shopPhotoUrl: snapshot.shopPhotoUrl || v.shopPhotoUrl || null,
+            panFileUrl: snapshot.panFileUrl || panDoc?.fileUrl || v.panFileUrl || null,
+            aadhaarFileUrl: snapshot.aadhaarFileUrl || aadhaarDoc?.fileUrl || v.aadhaarFileUrl || null,
+            shopLicensePdf: snapshot.shopLicensePdf || licenseDoc?.fileUrl || null,
+            gstCertificatePdf: snapshot.gstCertificatePdf || gstDoc?.fileUrl || null,
+            shopImages: snapshot.shopImages || (Array.isArray(v.shopImages) ? v.shopImages : []),
+            lenderId: lead.lenderId,
           };
         });
       }
     } catch (e) {
-      console.error('loadVendorRequests API error:', e);
+      console.error('loadVendorRequests leads API error:', e);
     }
 
     const deletedVendorIds = (() => {
@@ -1114,59 +1151,73 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 font-medium text-slate-800">
-                    {requests.map((vendor) => (
-                      <tr key={vendor.id} className="hover:bg-slate-50/80 transition-colors">
-                        <td className="p-4">
-                          <div className="font-extrabold text-slate-900">{vendor.vendorName}</div>
-                          <div className="text-xs text-slate-500">{vendor.shopName}</div>
-                          <div className="text-[10px] text-slate-400">{vendor.city}, {vendor.state}</div>
-                        </td>
-                        <td className="p-4">
-                          <div className="font-mono text-slate-900 font-bold">{vendor.mobileNumber}</div>
-                          <div className="text-xs text-slate-500">{vendor.emailId}</div>
-                        </td>
-                        <td className="p-4 font-mono text-xs">
-                          <div>PAN: <span className="font-bold text-slate-900">{vendor.panNumber || 'ABCDE1234F'}</span></div>
-                          <div>Aadhaar: <span className="font-bold text-slate-900">{vendor.aadhaarNumber || 'XXXX-XXXX-9012'}</span></div>
-                        </td>
-                        <td className="p-4 font-bold text-emerald-700">
-                          {vendor.monthlyIncome || '₹ 50,000'}
-                        </td>
-                        <td className="p-4">
-                          {checkVendorIsFraud(vendor) ? (
-                            <span className="px-2.5 py-1 rounded-full bg-rose-600 text-white font-extrabold text-[10px] uppercase shadow-md animate-pulse">
-                              🚨 FRAUD FLAGGED
-                            </span>
-                          ) : (
-                            <span className={vendor.status === 'Verified' ? 'badge-verified-green' : 'badge-pending-amber'}>
-                              {vendor.status}
-                            </span>
-                          )}
-                        </td>
-                        <td className="p-4 text-center">
-                          <div className="flex items-center justify-center gap-2">
-                            <button
-                              onClick={() => handleVendorSelect(vendor)}
-                              className="p-2 rounded-xl bg-blue-50 text-blue-700 hover:bg-blue-100 font-bold text-xs flex items-center gap-1 cursor-pointer"
-                            >
-                              <Eye className="w-4 h-4" /> View Details
-                            </button>
-                            <button
-                              onClick={() => setReportingFraudVendor(vendor)}
-                              disabled={checkVendorIsFraud(vendor)}
-                              className={`p-2 rounded-xl text-xs font-bold flex items-center gap-1 transition-all cursor-pointer ${
-                                checkVendorIsFraud(vendor)
-                                  ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed'
-                                  : 'bg-rose-50 hover:bg-rose-600 hover:text-white text-rose-700 border border-rose-200'
-                              }`}
-                            >
-                              <AlertTriangle className="w-4 h-4" />
-                              <span>{checkVendorIsFraud(vendor) ? 'Reported' : 'Report Fraud'}</span>
-                            </button>
+                    {requests.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="p-12 text-center text-slate-500">
+                          <div className="flex flex-col items-center justify-center space-y-2">
+                            <Clock className="w-8 h-8 text-slate-300" />
+                            <div className="font-bold text-slate-700 text-sm">No Applied Vendor Reports Yet</div>
+                            <p className="text-xs text-slate-400 max-w-sm">
+                              When small shops and businesses submit loan applications or inquiries to your office, their application reports and KYC verification data will appear here.
+                            </p>
                           </div>
                         </td>
                       </tr>
-                    ))}
+                    ) : (
+                      requests.map((vendor) => (
+                        <tr key={vendor.id} className="hover:bg-slate-50/80 transition-colors">
+                          <td className="p-4">
+                            <div className="font-extrabold text-slate-900">{vendor.vendorName}</div>
+                            <div className="text-xs text-slate-500">{vendor.shopName}</div>
+                            <div className="text-[10px] text-slate-400">{vendor.city}, {vendor.state}</div>
+                          </td>
+                          <td className="p-4">
+                            <div className="font-mono text-slate-900 font-bold">{vendor.mobileNumber}</div>
+                            <div className="text-xs text-slate-500">{vendor.emailId}</div>
+                          </td>
+                          <td className="p-4 font-mono text-xs">
+                            <div>PAN: <span className="font-bold text-slate-900">{vendor.panNumber || 'ABCDE1234F'}</span></div>
+                            <div>Aadhaar: <span className="font-bold text-slate-900">{vendor.aadhaarNumber || 'XXXX-XXXX-9012'}</span></div>
+                          </td>
+                          <td className="p-4 font-bold text-emerald-700">
+                            {vendor.monthlyIncome || '₹ 50,000'}
+                          </td>
+                          <td className="p-4">
+                            {checkVendorIsFraud(vendor) ? (
+                              <span className="px-2.5 py-1 rounded-full bg-rose-600 text-white font-extrabold text-[10px] uppercase shadow-md animate-pulse">
+                                🚨 FRAUD FLAGGED
+                              </span>
+                            ) : (
+                              <span className={vendor.status === 'Verified' ? 'badge-verified-green' : 'badge-pending-amber'}>
+                                {vendor.status}
+                              </span>
+                            )}
+                          </td>
+                          <td className="p-4 text-center">
+                            <div className="flex items-center justify-center gap-2">
+                              <button
+                                onClick={() => handleVendorSelect(vendor)}
+                                className="p-2 rounded-xl bg-blue-50 text-blue-700 hover:bg-blue-100 font-bold text-xs flex items-center gap-1 cursor-pointer"
+                              >
+                                <Eye className="w-4 h-4" /> View Details
+                              </button>
+                              <button
+                                onClick={() => setReportingFraudVendor(vendor)}
+                                disabled={checkVendorIsFraud(vendor)}
+                                className={`p-2 rounded-xl text-xs font-bold flex items-center gap-1 transition-all cursor-pointer ${
+                                  checkVendorIsFraud(vendor)
+                                    ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed'
+                                    : 'bg-rose-50 hover:bg-rose-600 hover:text-white text-rose-700 border border-rose-200'
+                                }`}
+                              >
+                                <AlertTriangle className="w-4 h-4" />
+                                <span>{checkVendorIsFraud(vendor) ? 'Reported' : 'Report Fraud'}</span>
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
