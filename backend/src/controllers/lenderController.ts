@@ -26,6 +26,7 @@ export const updateLenderProfile = async (req: AuthenticatedRequest, res: Respon
     contactPersonName,
     phone,
     email,
+    successRate,
     avatarUrl,
     logoUrl,
   } = req.body;
@@ -99,6 +100,7 @@ export const updateLenderProfile = async (req: AuthenticatedRequest, res: Respon
       longitude: parsedLng,
       lendingRadiusKm: parsedRadius,
       contactPersonName: contactPersonName || undefined,
+      successRate: successRate || undefined,
       avatarUrl: effectiveAvatar,
       logoUrl: effectiveAvatar,
     },
@@ -121,6 +123,7 @@ export const updateLenderProfile = async (req: AuthenticatedRequest, res: Respon
       longitude: parsedLng ?? 78.4867,
       lendingRadiusKm: parsedRadius ?? 50.0,
       contactPersonName: contactPersonName || 'Lending Officer',
+      successRate: successRate || '80% - 90%',
       avatarUrl: effectiveAvatar,
       logoUrl: effectiveAvatar,
     },

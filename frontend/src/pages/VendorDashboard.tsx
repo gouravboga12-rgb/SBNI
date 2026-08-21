@@ -196,6 +196,17 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
       }
     }
     loadFreshVendorProfile();
+
+    const handleLenderSync = () => {
+      loadFreshVendorProfile();
+      loadNearbyLenders();
+    };
+    window.addEventListener('sbni_lender_profile_updated', handleLenderSync);
+    window.addEventListener('storage', handleLenderSync);
+    return () => {
+      window.removeEventListener('sbni_lender_profile_updated', handleLenderSync);
+      window.removeEventListener('storage', handleLenderSync);
+    };
   }, []);
 
   // Load Lenders based on current Search Coordinates (strictly radius matched by backend)
@@ -430,7 +441,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
       localStorage.setItem('sbni_vendor_profile', JSON.stringify(mergedProfile));
 
       // 2. Call backend API
-      await updateVendorProfileApi({
+      const apiRes = await updateVendorProfileApi({
         ownerName: vendorEditForm.name,
         businessName: vendorEditForm.shopName,
         phone: vendorEditForm.phone,
@@ -444,7 +455,14 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
         avatarUrl: avatarUrl || undefined,
       });
 
-      setVendorSaveSuccess('✅ Business profile updated and synced successfully!');
+      if (!apiRes.success) {
+        alert(apiRes.message || 'Failed to save profile changes on server.');
+        return;
+      }
+
+      window.dispatchEvent(new CustomEvent('sbni_vendor_profile_updated'));
+
+      setVendorSaveSuccess('✅ Business profile updated and synced globally!');
       setTimeout(() => setVendorSaveSuccess(null), 4000);
       setIsEditingVendorProfile(false);
     } catch (err: any) {
@@ -470,7 +488,9 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
               avatarUrl: dataUrl,
               logoUrl: dataUrl,
               ownerName: currentVendorObj.name,
+              businessName: currentVendorObj.shopName,
             });
+            window.dispatchEvent(new CustomEvent('sbni_vendor_profile_updated'));
           } catch (err) {
             console.error('Failed to sync vendor avatar:', err);
           }

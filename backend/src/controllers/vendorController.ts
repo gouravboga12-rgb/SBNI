@@ -245,6 +245,7 @@ export const searchLenders = async (req: AuthenticatedRequest, res: Response) =>
       contactPersonName: lender.contactPersonName,
       rating: lender.rating,
       reviewCount: lender.reviewCount,
+      successRate: (lender as any).successRate || '80% - 90%',
       distanceKm,
       isWithinRadius,
       // Locked/Unlocked status

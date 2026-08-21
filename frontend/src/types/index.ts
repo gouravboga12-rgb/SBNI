@@ -32,6 +32,7 @@ export interface Lender {
   distanceKm: number;
   rating: number;
   reviewCount: number;
+  successRate?: string;
   contactPersonName: string;
   contactUnlocked: boolean;
   phone: string;

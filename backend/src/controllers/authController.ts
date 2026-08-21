@@ -225,7 +225,7 @@ export const registerUser = async (req: Request, res: Response) => {
     if (req.body.latitude) lenderLat = parseFloat(String(req.body.latitude));
     if (req.body.longitude) lenderLng = parseFloat(String(req.body.longitude));
 
-    await prisma.lenderProfile.create({
+    await (prisma.lenderProfile as any).create({
       data: {
         userId: user.id,
         institutionName: financerName,
@@ -243,6 +243,7 @@ export const registerUser = async (req: Request, res: Response) => {
         latitude: lenderLat,
         longitude: lenderLng,
         contactPersonName: name || 'Lending Officer',
+        successRate: req.body.successRate || '80% - 90%',
         verificationStatus: 'VERIFIED',
       },
     });

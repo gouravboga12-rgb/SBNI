@@ -108,14 +108,15 @@ function resolveInitialLenderDetails() {
       contactPerson: officer,
       phone: user?.phone || profile?.phone || '+91 98200 11223',
       email: user?.email || profile?.email || 'lender@justpaisa.com',
-      city: profile?.city || 'Mumbai',
-      state: profile?.state || 'Maharashtra',
+      city: profile?.city || 'Hyderabad',
+      state: profile?.state || 'Telangana',
       regNo: profile?.registrationNumber || 'REG-FIN-1001',
       institutionType: 'Money Financer',
-      minLoan: profile?.minLoanAmount || 10000,
-      maxLoan: profile?.maxLoanAmount || 100000,
+      minLoan: profile?.minLoanAmount ?? 5000,
+      maxLoan: profile?.maxLoanAmount ?? 100000,
       minRate: profile?.minInterestRate || 9.5,
       lendingRadius: profile?.lendingRadiusKm || 50,
+      successRate: profile?.successRate || '80% - 90%',
     };
   } catch (e) {
     return {
@@ -123,14 +124,15 @@ function resolveInitialLenderDetails() {
       contactPerson: 'Gourav',
       phone: '+91 98200 11223',
       email: 'lender@justpaisa.com',
-      city: 'Mumbai',
-      state: 'Maharashtra',
+      city: 'Hyderabad',
+      state: 'Telangana',
       regNo: 'REG-FIN-1001',
       institutionType: 'Money Financer',
-      minLoan: 10000,
+      minLoan: 5000,
       maxLoan: 100000,
       minRate: 9.5,
       lendingRadius: 50,
+      successRate: '80% - 90%',
     };
   }
 }
@@ -230,12 +232,13 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
             maxLoan: lp?.maxLoanAmount ?? 100000,
             minRate: lp?.minInterestRate || 9.5,
             lendingRadius: lp?.lendingRadiusKm || 50,
+            successRate: lp?.successRate || '80% - 90%',
           };
 
           setCurrentUserObj(freshData);
           localStorage.setItem('sbni_user', JSON.stringify({ ...u, name: officer, fullName: officer }));
           if (lp) {
-            localStorage.setItem('sbni_lender_profile', JSON.stringify({ ...lp, institutionName: financer, contactPersonName: officer }));
+            localStorage.setItem('sbni_lender_profile', JSON.stringify({ ...lp, institutionName: financer, contactPersonName: officer, successRate: lp?.successRate || '80% - 90%' }));
           }
         }
       } catch (err) {
@@ -244,6 +247,17 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
     }
     loadFreshProfile();
     loadNearbyBusinessesList();
+
+    const handleGlobalSync = () => {
+      loadFreshProfile();
+      loadNearbyBusinessesList();
+    };
+    window.addEventListener('sbni_vendor_profile_updated', handleGlobalSync);
+    window.addEventListener('storage', handleGlobalSync);
+    return () => {
+      window.removeEventListener('sbni_vendor_profile_updated', handleGlobalSync);
+      window.removeEventListener('storage', handleGlobalSync);
+    };
   }, []);
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -269,9 +283,11 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
           minLoanAmount: currentUserObj.minLoan,
           maxLoanAmount: currentUserObj.maxLoan,
           lendingRadiusKm: currentUserObj.lendingRadius,
+          successRate: currentUserObj.successRate,
           city: currentUserObj.city,
           state: currentUserObj.state,
         } as any);
+        window.dispatchEvent(new CustomEvent('sbni_lender_profile_updated'));
       } catch (err) {
         console.error('Failed to sync lender avatar to backend:', err);
       }
@@ -294,6 +310,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
     minLoan: 5000,
     maxLoan: 100000,
     lendingRadius: 50,
+    successRate: '80% - 90%',
   });
   const [isSavingLenderProfile, setIsSavingLenderProfile] = useState(false);
   const [lenderSaveSuccess, setLenderSaveSuccess] = useState<string | null>(null);
@@ -315,9 +332,10 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
       state: currentUserObj.state || 'Telangana',
       pincode: pObj.pincode || '500060',
       regNo: currentUserObj.regNo,
-      minLoan: currentUserObj.minLoan || 100000,
-      maxLoan: currentUserObj.maxLoan || 50000000,
-      lendingRadius: pObj.lendingRadiusKm || 50,
+      minLoan: currentUserObj.minLoan || 5000,
+      maxLoan: currentUserObj.maxLoan || 100000,
+      lendingRadius: currentUserObj.lendingRadius || pObj.lendingRadiusKm || 50,
+      successRate: currentUserObj.successRate || pObj.successRate || '80% - 90%',
     });
     setIsEditingLenderProfile(true);
   };
@@ -342,6 +360,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
         minLoan: Number(lenderEditForm.minLoan),
         maxLoan: Number(lenderEditForm.maxLoan),
         lendingRadius: Number(lenderEditForm.lendingRadius),
+        successRate: lenderEditForm.successRate || '80% - 90%',
       };
       setCurrentUserObj(updatedUserObj);
 
@@ -373,6 +392,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
         minLoanAmount: Number(lenderEditForm.minLoan),
         maxLoanAmount: Number(lenderEditForm.maxLoan),
         lendingRadiusKm: Number(lenderEditForm.lendingRadius),
+        successRate: lenderEditForm.successRate || '80% - 90%',
         avatarUrl: lenderAvatarUrl || undefined,
         logoUrl: lenderAvatarUrl || undefined,
       };
@@ -381,7 +401,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
       localStorage.setItem('sbni_lender_profile', JSON.stringify(mergedLp));
 
       // 2. Call backend API to persist to PostgreSQL on AWS
-      await updateLenderProfileApi({
+      const apiRes = await updateLenderProfileApi({
         institutionName: instName,
         contactPersonName: lenderEditForm.contactPerson,
         phone: lenderEditForm.phone,
@@ -395,11 +415,19 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
         minLoanAmount: Number(lenderEditForm.minLoan),
         maxLoanAmount: Number(lenderEditForm.maxLoan),
         lendingRadiusKm: Number(lenderEditForm.lendingRadius),
+        successRate: lenderEditForm.successRate || '80% - 90%',
         avatarUrl: lenderAvatarUrl || undefined,
         logoUrl: lenderAvatarUrl || undefined,
       });
 
-      setLenderSaveSuccess('✅ Financer profile, portfolio ticket criteria & photo updated successfully!');
+      if (!apiRes.success) {
+        alert(apiRes.message || 'Failed to update profile on server.');
+        return;
+      }
+
+      window.dispatchEvent(new CustomEvent('sbni_lender_profile_updated'));
+
+      setLenderSaveSuccess('✅ Financer profile, portfolio criteria & success rate updated globally!');
       setTimeout(() => setLenderSaveSuccess(null), 4000);
       setIsEditingLenderProfile(false);
     } catch (err: any) {
@@ -2319,9 +2347,9 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
 
               </div>
 
-              {/* Lending Portfolio Limits Section */}
+              {/* Lending Portfolio Limits & Success Rate Section */}
               <div className="space-y-3 border-t border-slate-100 pt-4">
-                <h4 className="font-extrabold text-slate-900 text-sm font-heading">Lending Portfolio Ticket Size</h4>
+                <h4 className="font-extrabold text-slate-900 text-sm font-heading">Lending Portfolio Ticket Size & Success Rate</h4>
                 
                 {!isEditingLenderProfile ? (
                   /* View Mode */
@@ -2338,6 +2366,13 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                         ₹ {Number(currentUserObj.maxLoan).toLocaleString('en-IN')}
                       </span>
                     </div>
+                    <div className="p-3.5 rounded-2xl bg-emerald-50/70 border border-emerald-200/90 sm:col-span-2">
+                      <span className="text-slate-500 font-medium block">Lending Approval Success Rate</span>
+                      <span className="font-extrabold text-emerald-800 text-sm mt-1 flex items-center gap-1.5">
+                        <TrendingUp className="w-4 h-4 text-emerald-600" />
+                        <span>{currentUserObj.successRate || '80% - 90%'} Success Rate on Borrowing Money</span>
+                      </span>
+                    </div>
                   </div>
                 ) : (
                   /* Edit Mode Inputs */
@@ -2348,7 +2383,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                         type="number"
                         value={lenderEditForm.minLoan}
                         onChange={(e) => setLenderEditForm({ ...lenderEditForm, minLoan: Number(e.target.value) })}
-                        placeholder="100000"
+                        placeholder="5000"
                         className="w-full px-3 py-2 bg-white rounded-xl border border-slate-300 font-bold text-slate-900 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
                       />
                     </div>
@@ -2358,9 +2393,41 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                         type="number"
                         value={lenderEditForm.maxLoan}
                         onChange={(e) => setLenderEditForm({ ...lenderEditForm, maxLoan: Number(e.target.value) })}
-                        placeholder="50000000"
+                        placeholder="100000"
                         className="w-full px-3 py-2 bg-white rounded-xl border border-slate-300 font-bold text-slate-900 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
                       />
+                    </div>
+
+                    <div className="p-3.5 rounded-2xl bg-blue-50/40 border border-blue-200/80 space-y-1.5 sm:col-span-2">
+                      <label className="text-slate-600 font-bold uppercase text-[10px] tracking-wider block">Lending Approval Success Rate *</label>
+                      <select
+                        value={['80% - 90%', '85% - 95%', '90% - 98%', '75% - 85%', '95% - 100%'].includes(lenderEditForm.successRate) ? lenderEditForm.successRate : 'CUSTOM'}
+                        onChange={(e) => {
+                          if (e.target.value !== 'CUSTOM') {
+                            setLenderEditForm({ ...lenderEditForm, successRate: e.target.value });
+                          } else {
+                            setLenderEditForm({ ...lenderEditForm, successRate: 'Custom Rate' });
+                          }
+                        }}
+                        className="w-full px-3 py-2 bg-white rounded-xl border border-slate-300 font-bold text-slate-900 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                      >
+                        <option value="80% - 90%">80% - 90% Success Rate (Recommended)</option>
+                        <option value="85% - 95%">85% - 95% Success Rate</option>
+                        <option value="90% - 98%">90% - 98% Success Rate</option>
+                        <option value="75% - 85%">75% - 85% Success Rate</option>
+                        <option value="95% - 100%">95% - 100% Success Rate</option>
+                        <option value="CUSTOM">✏️ Custom Success Rate Percentage...</option>
+                      </select>
+                      {!['80% - 90%', '85% - 95%', '90% - 98%', '75% - 85%', '95% - 100%'].includes(lenderEditForm.successRate) && (
+                        <input
+                          type="text"
+                          placeholder="e.g. 88% or 80% - 90%"
+                          value={lenderEditForm.successRate === 'Custom Rate' ? '' : lenderEditForm.successRate}
+                          onChange={(e) => setLenderEditForm({ ...lenderEditForm, successRate: e.target.value })}
+                          className="w-full mt-1.5 px-3 py-2 bg-white rounded-xl border-2 border-[#003893] font-bold text-slate-900 text-xs focus:outline-none"
+                          autoFocus
+                        />
+                      )}
                     </div>
                   </div>
                 )}

@@ -150,6 +150,7 @@ model LenderProfile {
   rejectionReason    String?
   rating             Float      @default(4.8)
   reviewCount        Int        @default(12)
+  successRate        String?    @default("80% - 90%")
   avatarUrl          String?
   logoUrl            String?
   createdAt          DateTime   @default(now())

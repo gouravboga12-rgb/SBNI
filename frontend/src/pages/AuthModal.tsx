@@ -381,6 +381,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
         const result = await registerLender({
           ...pendingLenderData,
+          successRate: pendingLenderData.successRate || '80% - 90%',
           otpCode: signupOtp.trim(),
         });
 
@@ -398,6 +399,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               minLoanAmount: pendingLenderData.minLoanAmount,
               maxLoanAmount: pendingLenderData.maxLoanAmount,
               lendingRadiusKm: pendingLenderData.lendingRadiusKm,
+              successRate: pendingLenderData.successRate || '80% - 90%',
               city: pendingLenderData.city,
               state: pendingLenderData.state,
               address: pendingLenderData.address,
@@ -1755,6 +1757,9 @@ const LenderRegisterForm: React.FC<LenderRegisterFormProps> = ({
   const [isCustomMax, setIsCustomMax] = useState(false);
   const [customMaxInput, setCustomMaxInput] = useState('');
   const [lRadius, setLRadius] = useState('50');
+  const [lSuccessRate, setLSuccessRate] = useState('80% - 90%');
+  const [isCustomSuccessRate, setIsCustomSuccessRate] = useState(false);
+  const [customSuccessInput, setCustomSuccessInput] = useState('');
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -1834,6 +1839,7 @@ const LenderRegisterForm: React.FC<LenderRegisterFormProps> = ({
       minLoanAmount: parseFloat(lMinLoan) || 10000,
       maxLoanAmount: parseFloat(lMaxLoan) || 100000,
       lendingRadiusKm: parseFloat(lRadius) || 50,
+      successRate: isCustomSuccessRate ? (customSuccessInput || '80% - 90%') : lSuccessRate,
       avatarUrl: lAvatarPreview || undefined,
     });
   };
@@ -2074,6 +2080,61 @@ const LenderRegisterForm: React.FC<LenderRegisterFormProps> = ({
           ))}
         </div>
         <p className="text-[10px] text-slate-400 mt-1 pl-0.5">Area you can actively lend to shop owners</p>
+      </div>
+
+      {/* Success Rate of Lending */}
+      <div>
+        <label className="block text-xs font-bold text-slate-700 mb-1">Lending Approval Success Rate *</label>
+        {!isCustomSuccessRate ? (
+          <div className="relative">
+            <select
+              value={lSuccessRate}
+              onChange={(e) => {
+                if (e.target.value === 'CUSTOM') {
+                  setIsCustomSuccessRate(true);
+                  setCustomSuccessInput(lSuccessRate);
+                } else {
+                  setLSuccessRate(e.target.value);
+                }
+              }}
+              className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:border-[#007a33]"
+              required
+            >
+              <option value="80% - 90%">80% - 90% Success Rate (Recommended)</option>
+              <option value="85% - 95%">85% - 95% Success Rate</option>
+              <option value="90% - 98%">90% - 98% Success Rate</option>
+              <option value="75% - 85%">75% - 85% Success Rate</option>
+              <option value="95% - 100%">95% - 100% Success Rate</option>
+              <option value="CUSTOM">✏️ Custom Success Rate Percentage...</option>
+            </select>
+          </div>
+        ) : (
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="e.g. 80% - 90% or 88%"
+              value={customSuccessInput}
+              onChange={(e) => {
+                setCustomSuccessInput(e.target.value);
+                setLSuccessRate(e.target.value);
+              }}
+              className="w-full px-4 py-2.5 pr-16 bg-white border-2 border-[#007a33] rounded-xl text-xs font-bold text-slate-900 outline-none"
+              required
+              autoFocus
+            />
+            <button
+              type="button"
+              onClick={() => {
+                setIsCustomSuccessRate(false);
+                setLSuccessRate('80% - 90%');
+              }}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-extrabold text-[#007a33] hover:underline"
+            >
+              Presets
+            </button>
+          </div>
+        )}
+        <p className="text-[10px] text-slate-400 mt-1 pl-0.5">Displayed to small businesses on your financer card badge</p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

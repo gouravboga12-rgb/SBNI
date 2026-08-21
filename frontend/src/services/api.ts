@@ -159,6 +159,7 @@ export async function registerLender(payload: {
   minLoanAmount?: number;
   maxLoanAmount?: number;
   lendingRadiusKm?: number;
+  successRate?: string;
   otpCode?: string;
 }): Promise<{ success: boolean; token?: string; user?: any; message?: string }> {
   try {
@@ -170,7 +171,14 @@ export async function registerLender(payload: {
       const user = data.data?.user || {};
       // Persist institution name so profile page can show it correctly
       if (payload.institutionName) {
-        const storedProfile = { institutionName: payload.institutionName, institutionType: 'Money Financer', minLoanAmount: payload.minLoanAmount, maxLoanAmount: payload.maxLoanAmount, lendingRadiusKm: payload.lendingRadiusKm };
+        const storedProfile = {
+          institutionName: payload.institutionName,
+          institutionType: 'Money Financer',
+          minLoanAmount: payload.minLoanAmount,
+          maxLoanAmount: payload.maxLoanAmount,
+          lendingRadiusKm: payload.lendingRadiusKm,
+          successRate: payload.successRate || '80% - 90%',
+        };
         localStorage.setItem('sbni_lender_profile', JSON.stringify(storedProfile));
       }
       localStorage.setItem('sbni_token', data.data.accessToken);
@@ -394,6 +402,7 @@ export async function updateLenderProfileApi(payload: {
   contactPersonName?: string;
   phone?: string;
   email?: string;
+  successRate?: string;
   avatarUrl?: string;
   logoUrl?: string;
 }): Promise<{ success: boolean; data?: any; message?: string }> {
