@@ -35,9 +35,13 @@ import {
   Camera,
   AlertTriangle,
   Navigation,
-  Radio,
   Compass,
   MessageCircle,
+  Edit3,
+  Save,
+  Loader2,
+  TrendingUp,
+  Coins,
 } from 'lucide-react';
 
 const LENDER_BANNER_SLIDES: BannerSlide[] = [
@@ -245,6 +249,142 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
       }
     };
     reader.readAsDataURL(file);
+  };
+
+  const [isEditingLenderProfile, setIsEditingLenderProfile] = useState(false);
+  const [lenderEditForm, setLenderEditForm] = useState({
+    institutionName: '',
+    contactPerson: '',
+    phone: '',
+    email: '',
+    address: '',
+    place: '',
+    city: '',
+    state: '',
+    pincode: '',
+    regNo: '',
+    minLoan: 100000,
+    maxLoan: 50000000,
+    minRate: 8.5,
+    lendingRadius: 50,
+  });
+  const [isSavingLenderProfile, setIsSavingLenderProfile] = useState(false);
+  const [lenderSaveSuccess, setLenderSaveSuccess] = useState<string | null>(null);
+
+  const startEditingLender = () => {
+    let pObj: any = {};
+    try {
+      pObj = JSON.parse(localStorage.getItem('sbni_lender_profile') || '{}');
+    } catch (e) {}
+
+    setLenderEditForm({
+      institutionName: currentUserObj.name,
+      contactPerson: currentUserObj.contactPerson,
+      phone: currentUserObj.phone,
+      email: currentUserObj.email,
+      address: pObj.address || 'Office Suite 402, Financial Tower',
+      place: pObj.place || 'Dilsukhnagar',
+      city: currentUserObj.city || 'Hyderabad',
+      state: currentUserObj.state || 'Telangana',
+      pincode: pObj.pincode || '500060',
+      regNo: currentUserObj.regNo,
+      minLoan: currentUserObj.minLoan || 100000,
+      maxLoan: currentUserObj.maxLoan || 50000000,
+      minRate: currentUserObj.minRate || 8.5,
+      lendingRadius: pObj.lendingRadiusKm || 50,
+    });
+    setIsEditingLenderProfile(true);
+  };
+
+  const handleSaveLenderProfile = async () => {
+    setIsSavingLenderProfile(true);
+    try {
+      let instName = lenderEditForm.institutionName.trim();
+      if (!instName.toLowerCase().includes('money financer')) {
+        instName = `${instName} Money Financer`;
+      }
+
+      const updatedUserObj = {
+        ...currentUserObj,
+        name: instName,
+        contactPerson: lenderEditForm.contactPerson,
+        phone: lenderEditForm.phone,
+        email: lenderEditForm.email,
+        city: lenderEditForm.city,
+        state: lenderEditForm.state,
+        regNo: lenderEditForm.regNo,
+        minLoan: Number(lenderEditForm.minLoan),
+        maxLoan: Number(lenderEditForm.maxLoan),
+        minRate: Number(lenderEditForm.minRate),
+        lendingRadius: Number(lenderEditForm.lendingRadius),
+      };
+      setCurrentUserObj(updatedUserObj);
+
+      // 1. Update local storage
+      const uStr = localStorage.getItem('sbni_user') || '{}';
+      const lpStr = localStorage.getItem('sbni_lender_profile') || '{}';
+      const u = JSON.parse(uStr);
+      const lp = JSON.parse(lpStr);
+
+      const mergedUser = {
+        ...u,
+        name: lenderEditForm.contactPerson,
+        fullName: lenderEditForm.contactPerson,
+        phone: lenderEditForm.phone,
+        email: lenderEditForm.email,
+      };
+      const mergedLp = {
+        ...lp,
+        institutionName: instName,
+        contactPersonName: lenderEditForm.contactPerson,
+        phone: lenderEditForm.phone,
+        email: lenderEditForm.email,
+        address: lenderEditForm.address,
+        place: lenderEditForm.place,
+        city: lenderEditForm.city,
+        state: lenderEditForm.state,
+        pincode: lenderEditForm.pincode,
+        registrationNumber: lenderEditForm.regNo,
+        minLoanAmount: Number(lenderEditForm.minLoan),
+        maxLoanAmount: Number(lenderEditForm.maxLoan),
+        minInterestRate: Number(lenderEditForm.minRate),
+        lendingRadiusKm: Number(lenderEditForm.lendingRadius),
+        avatarUrl: lenderAvatarUrl || undefined,
+        logoUrl: lenderAvatarUrl || undefined,
+      };
+
+      localStorage.setItem('sbni_user', JSON.stringify(mergedUser));
+      localStorage.setItem('sbni_lender_profile', JSON.stringify(mergedLp));
+
+      // 2. Call backend API to persist to PostgreSQL on AWS
+      await updateLenderProfileApi({
+        institutionName: instName,
+        contactPersonName: lenderEditForm.contactPerson,
+        phone: lenderEditForm.phone,
+        email: lenderEditForm.email,
+        address: lenderEditForm.address,
+        place: lenderEditForm.place,
+        city: lenderEditForm.city,
+        state: lenderEditForm.state,
+        pincode: lenderEditForm.pincode,
+        registrationNumber: lenderEditForm.regNo,
+        minLoanAmount: Number(lenderEditForm.minLoan),
+        maxLoanAmount: Number(lenderEditForm.maxLoan),
+        minInterestRate: Number(lenderEditForm.minRate),
+        lendingRadiusKm: Number(lenderEditForm.lendingRadius),
+        avatarUrl: lenderAvatarUrl || undefined,
+        logoUrl: lenderAvatarUrl || undefined,
+      });
+
+      setLenderSaveSuccess('✅ Financer profile, portfolio criteria & photo updated successfully!');
+      setTimeout(() => setLenderSaveSuccess(null), 4000);
+      setIsEditingLenderProfile(false);
+    } catch (err: any) {
+      console.error('Failed to save lender profile:', err);
+      alert('Failed to save profile changes. Please try again.');
+    } finally {
+      setIsSavingLenderProfile(false);
+    }
   };
 
   const [lenderLocation, setLenderLocation] = useState<{
@@ -1667,12 +1807,63 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
         {/* VIEW 3: LENDER PROFILE VIEW */}
         {!selectedVendor && activeTab === 'profile' && (
           <div className="space-y-6 max-w-4xl mx-auto">
-            <div>
-              <h2 className="text-2xl font-extrabold text-slate-900 font-heading">Business Money Financer Profile & Security</h2>
-              <p className="text-xs text-slate-500 font-medium mt-0.5">
-                Manage financer credentials, credit officer contact details, and session status
-              </p>
+            
+            {/* Header Title & Edit Mode Toggle */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h2 className="text-2xl font-extrabold text-slate-900 font-heading">Business Money Financer Profile & Security</h2>
+                <p className="text-xs text-slate-500 font-medium mt-0.5">
+                  Manage financer credentials, credit officer contact details, and session status
+                </p>
+              </div>
+
+              {!isEditingLenderProfile ? (
+                <button
+                  type="button"
+                  onClick={startEditingLender}
+                  className="px-4 py-2.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-[#003893] border border-blue-200 font-extrabold text-xs flex items-center gap-2 transition-all shadow-xs active:scale-95 cursor-pointer w-fit"
+                >
+                  <Edit3 className="w-4 h-4 text-[#003893]" />
+                  <span>Edit Financer Profile</span>
+                </button>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsEditingLenderProfile(false)}
+                    className="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-bold text-xs hover:bg-slate-100 transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSaveLenderProfile}
+                    disabled={isSavingLenderProfile}
+                    className="px-5 py-2.5 rounded-xl bg-[#003893] hover:bg-[#002366] text-white font-extrabold text-xs flex items-center gap-2 shadow-md transition-all active:scale-95 cursor-pointer"
+                  >
+                    {isSavingLenderProfile ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>Saving...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Save className="w-4 h-4 text-emerald-400" />
+                        <span>Save Profile Changes</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
             </div>
+
+            {/* Save Success Banner */}
+            {lenderSaveSuccess && (
+              <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2 shadow-xs animate-in fade-in">
+                <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+                <span>{lenderSaveSuccess}</span>
+              </div>
+            )}
 
             <div className="card-white p-6 sm:p-8 space-y-6 shadow-md border border-slate-200/90 rounded-3xl">
               
@@ -1704,7 +1895,9 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
 
                 <div className="text-center sm:text-left space-y-1 flex-1">
                   <div className="flex flex-col sm:flex-row sm:items-center gap-2 justify-center sm:justify-start">
-                    <h3 className="text-2xl font-extrabold text-slate-900 font-heading">{currentUserObj.name}</h3>
+                    <h3 className="text-2xl font-extrabold text-slate-900 font-heading">
+                      {isEditingLenderProfile ? lenderEditForm.institutionName || currentUserObj.name : currentUserObj.name}
+                    </h3>
                     <span className="badge-verified-green w-fit mx-auto sm:mx-0">
                       <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Verified Business Financer
                     </span>
@@ -1712,62 +1905,225 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                   <div className="text-sm font-semibold text-slate-700 flex items-center justify-center sm:justify-start gap-1.5">
                     <Building2 className="w-4 h-4 text-emerald-600" />
                     <span>Money Financer</span>
+                    <span className="text-slate-300">•</span>
+                    <span className="text-xs text-slate-500 font-medium">
+                      Credit Officer: {isEditingLenderProfile ? lenderEditForm.contactPerson || currentUserObj.contactPerson : currentUserObj.contactPerson}
+                    </span>
                   </div>
                   <p className="text-xs text-slate-400 font-medium pt-1">
-                    Registration No: <span className="font-mono text-slate-700 font-bold">{currentUserObj.regNo}</span>
+                    Registration No: <span className="font-mono text-slate-700 font-bold">{isEditingLenderProfile ? lenderEditForm.regNo || currentUserObj.regNo : currentUserObj.regNo}</span>
                   </p>
+
+                  <div className="pt-2 flex items-center justify-center sm:justify-start gap-2">
+                    <label
+                      htmlFor="lender-profile-avatar-input"
+                      className="text-xs font-bold text-[#007a33] hover:text-emerald-900 cursor-pointer flex items-center gap-1 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-100 transition-colors"
+                    >
+                      <Camera className="w-3.5 h-3.5" />
+                      <span>{lenderAvatarUrl ? 'Change Profile Photo' : 'Upload Profile Photo'}</span>
+                    </label>
+                  </div>
                 </div>
               </div>
 
-              {/* Details */}
+              {/* Credit Officer Details Section */}
               <div className="space-y-4">
-                <h4 className="font-extrabold text-slate-900 text-sm font-heading">Credit Officer Account Information</h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                  <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
-                    <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Chief Credit Officer</span>
-                    <div className="font-extrabold text-slate-900 text-sm">{currentUserObj.contactPerson}</div>
-                  </div>
-                  <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
-                    <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Mobile / WhatsApp</span>
-                    <div className="font-extrabold text-slate-900 text-sm flex items-center gap-1.5">
-                      <Phone className="w-3.5 h-3.5 text-emerald-600" />
-                      <span>{currentUserObj.phone}</span>
-                    </div>
-                  </div>
-                  <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
-                    <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Email Address</span>
-                    <div className="font-extrabold text-slate-900 text-sm flex items-center gap-1.5">
-                      <Mail className="w-3.5 h-3.5 text-blue-600" />
-                      <span>{currentUserObj.email}</span>
-                    </div>
-                  </div>
-                  <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
-                    <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Office Location</span>
-                    <div className="font-extrabold text-slate-900 text-sm flex items-center gap-1.5">
-                      <MapPin className="w-3.5 h-3.5 text-rose-500" />
-                      <span>{currentUserObj.city}, {currentUserObj.state}</span>
-                    </div>
-                  </div>
+                <div className="flex items-center justify-between pb-1 border-b border-slate-100">
+                  <h4 className="font-extrabold text-slate-900 text-sm font-heading">Credit Officer Account Information</h4>
+                  {isEditingLenderProfile && (
+                    <span className="text-[11px] font-extrabold text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-md border border-blue-200">
+                      ✏️ Edit Mode Active
+                    </span>
+                  )}
                 </div>
+
+                {!isEditingLenderProfile ? (
+                  /* View Mode */
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                    <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
+                      <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Chief Credit Officer</span>
+                      <div className="font-extrabold text-slate-900 text-sm">{currentUserObj.contactPerson}</div>
+                    </div>
+                    <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
+                      <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Mobile / WhatsApp</span>
+                      <div className="font-extrabold text-slate-900 text-sm flex items-center gap-1.5">
+                        <Phone className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>{currentUserObj.phone}</span>
+                      </div>
+                    </div>
+                    <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
+                      <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Email Address</span>
+                      <div className="font-extrabold text-slate-900 text-sm flex items-center gap-1.5">
+                        <Mail className="w-3.5 h-3.5 text-blue-600" />
+                        <span>{currentUserObj.email}</span>
+                      </div>
+                    </div>
+                    <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
+                      <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Office Location</span>
+                      <div className="font-extrabold text-slate-900 text-sm flex items-center gap-1.5">
+                        <MapPin className="w-3.5 h-3.5 text-rose-500" />
+                        <span>{currentUserObj.city}, {currentUserObj.state}</span>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  /* Edit Mode Inputs */
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                    
+                    {/* Institution Name */}
+                    <div className="p-3.5 rounded-2xl bg-blue-50/40 border border-blue-200/80 space-y-1.5">
+                      <label className="text-slate-600 font-bold uppercase text-[10px] tracking-wider block">Financer Institution Name *</label>
+                      <input
+                        type="text"
+                        value={lenderEditForm.institutionName}
+                        onChange={(e) => setLenderEditForm({ ...lenderEditForm, institutionName: e.target.value })}
+                        placeholder="e.g. Gourav Money Financer"
+                        className="w-full px-3 py-2 bg-white rounded-xl border border-slate-300 font-bold text-slate-900 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                      />
+                    </div>
+
+                    {/* Chief Credit Officer */}
+                    <div className="p-3.5 rounded-2xl bg-blue-50/40 border border-blue-200/80 space-y-1.5">
+                      <label className="text-slate-600 font-bold uppercase text-[10px] tracking-wider block">Chief Credit Officer Name *</label>
+                      <input
+                        type="text"
+                        value={lenderEditForm.contactPerson}
+                        onChange={(e) => setLenderEditForm({ ...lenderEditForm, contactPerson: e.target.value })}
+                        placeholder="e.g. Gourav Boga"
+                        className="w-full px-3 py-2 bg-white rounded-xl border border-slate-300 font-bold text-slate-900 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                      />
+                    </div>
+
+                    {/* Mobile / WhatsApp */}
+                    <div className="p-3.5 rounded-2xl bg-blue-50/40 border border-blue-200/80 space-y-1.5">
+                      <label className="text-slate-600 font-bold uppercase text-[10px] tracking-wider block">Mobile / WhatsApp Number *</label>
+                      <input
+                        type="tel"
+                        value={lenderEditForm.phone}
+                        onChange={(e) => setLenderEditForm({ ...lenderEditForm, phone: e.target.value })}
+                        placeholder="e.g. 7337401590"
+                        className="w-full px-3 py-2 bg-white rounded-xl border border-slate-300 font-mono font-bold text-slate-900 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                      />
+                    </div>
+
+                    {/* Email */}
+                    <div className="p-3.5 rounded-2xl bg-blue-50/40 border border-blue-200/80 space-y-1.5">
+                      <label className="text-slate-600 font-bold uppercase text-[10px] tracking-wider block">Email Address *</label>
+                      <input
+                        type="email"
+                        value={lenderEditForm.email}
+                        onChange={(e) => setLenderEditForm({ ...lenderEditForm, email: e.target.value })}
+                        placeholder="e.g. financer@example.com"
+                        className="w-full px-3 py-2 bg-white rounded-xl border border-slate-300 font-bold text-slate-900 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                      />
+                    </div>
+
+                    {/* Registration No */}
+                    <div className="p-3.5 rounded-2xl bg-blue-50/40 border border-blue-200/80 space-y-1.5">
+                      <label className="text-slate-600 font-bold uppercase text-[10px] tracking-wider block">Registration Number</label>
+                      <input
+                        type="text"
+                        value={lenderEditForm.regNo}
+                        onChange={(e) => setLenderEditForm({ ...lenderEditForm, regNo: e.target.value })}
+                        placeholder="e.g. REG-572787"
+                        className="w-full px-3 py-2 bg-white rounded-xl border border-slate-300 font-mono font-bold text-slate-900 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                      />
+                    </div>
+
+                    {/* City & State */}
+                    <div className="p-3.5 rounded-2xl bg-blue-50/40 border border-blue-200/80 space-y-1.5">
+                      <label className="text-slate-600 font-bold uppercase text-[10px] tracking-wider block">City & State *</label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <input
+                          type="text"
+                          value={lenderEditForm.city}
+                          onChange={(e) => setLenderEditForm({ ...lenderEditForm, city: e.target.value })}
+                          placeholder="City"
+                          className="w-full px-3 py-2 bg-white rounded-xl border border-slate-300 font-bold text-slate-900 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                        />
+                        <input
+                          type="text"
+                          value={lenderEditForm.state}
+                          onChange={(e) => setLenderEditForm({ ...lenderEditForm, state: e.target.value })}
+                          placeholder="State"
+                          className="w-full px-3 py-2 bg-white rounded-xl border border-slate-300 font-bold text-slate-900 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Street Address */}
+                    <div className="p-3.5 rounded-2xl bg-blue-50/40 border border-blue-200/80 space-y-1.5 sm:col-span-2">
+                      <label className="text-slate-600 font-bold uppercase text-[10px] tracking-wider block">Full Office Address</label>
+                      <textarea
+                        rows={2}
+                        value={lenderEditForm.address}
+                        onChange={(e) => setLenderEditForm({ ...lenderEditForm, address: e.target.value })}
+                        placeholder="e.g. Suite 402, Financial Plaza, Main Road, Hyderabad, Telangana - 500060"
+                        className="w-full px-3 py-2 bg-white rounded-xl border border-slate-300 font-bold text-slate-900 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none"
+                      />
+                    </div>
+
+                  </div>
+                )}
+
               </div>
 
-              {/* Lending Portfolio Limits */}
+              {/* Lending Portfolio Limits Section */}
               <div className="space-y-3 border-t border-slate-100 pt-4">
                 <h4 className="font-extrabold text-slate-900 text-sm font-heading">Lending Portfolio Criteria</h4>
-                <div className="grid grid-cols-2 gap-3 text-xs">
-                  <div className="p-3 rounded-xl bg-emerald-50/60 border border-emerald-200">
-                    <span className="text-slate-500 font-medium block">Approved Ticket Size</span>
-                    <span className="font-extrabold text-emerald-900 text-sm mt-0.5 block">
-                      ₹ {(currentUserObj.minLoan / 100000).toFixed(1)}L - ₹ {(currentUserObj.maxLoan / 100000).toFixed(1)}L
-                    </span>
+                
+                {!isEditingLenderProfile ? (
+                  /* View Mode */
+                  <div className="grid grid-cols-2 gap-3 text-xs">
+                    <div className="p-3 rounded-xl bg-emerald-50/60 border border-emerald-200">
+                      <span className="text-slate-500 font-medium block">Approved Ticket Size</span>
+                      <span className="font-extrabold text-emerald-900 text-sm mt-0.5 block">
+                        ₹ {(currentUserObj.minLoan / 100000).toFixed(1)}L - ₹ {(currentUserObj.maxLoan / 100000).toFixed(1)}L
+                      </span>
+                    </div>
+                    <div className="p-3 rounded-xl bg-blue-50/60 border border-blue-200">
+                      <span className="text-slate-500 font-medium block">Starting Interest Rate</span>
+                      <span className="font-extrabold text-blue-900 text-sm mt-0.5 block">
+                        {currentUserObj.minRate}% p.a. onwards
+                      </span>
+                    </div>
                   </div>
-                  <div className="p-3 rounded-xl bg-blue-50/60 border border-blue-200">
-                    <span className="text-slate-500 font-medium block">Starting Interest Rate</span>
-                    <span className="font-extrabold text-blue-900 text-sm mt-0.5 block">
-                      {currentUserObj.minRate}% p.a. onwards
-                    </span>
+                ) : (
+                  /* Edit Mode Inputs */
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                    <div className="p-3.5 rounded-2xl bg-blue-50/40 border border-blue-200/80 space-y-1.5">
+                      <label className="text-slate-600 font-bold uppercase text-[10px] tracking-wider block">Min Ticket Size (₹)</label>
+                      <input
+                        type="number"
+                        value={lenderEditForm.minLoan}
+                        onChange={(e) => setLenderEditForm({ ...lenderEditForm, minLoan: Number(e.target.value) })}
+                        placeholder="100000"
+                        className="w-full px-3 py-2 bg-white rounded-xl border border-slate-300 font-bold text-slate-900 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                      />
+                    </div>
+                    <div className="p-3.5 rounded-2xl bg-blue-50/40 border border-blue-200/80 space-y-1.5">
+                      <label className="text-slate-600 font-bold uppercase text-[10px] tracking-wider block">Max Ticket Size (₹)</label>
+                      <input
+                        type="number"
+                        value={lenderEditForm.maxLoan}
+                        onChange={(e) => setLenderEditForm({ ...lenderEditForm, maxLoan: Number(e.target.value) })}
+                        placeholder="50000000"
+                        className="w-full px-3 py-2 bg-white rounded-xl border border-slate-300 font-bold text-slate-900 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                      />
+                    </div>
+                    <div className="p-3.5 rounded-2xl bg-blue-50/40 border border-blue-200/80 space-y-1.5">
+                      <label className="text-slate-600 font-bold uppercase text-[10px] tracking-wider block">Interest Rate (% p.a.)</label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        value={lenderEditForm.minRate}
+                        onChange={(e) => setLenderEditForm({ ...lenderEditForm, minRate: Number(e.target.value) })}
+                        placeholder="8.5"
+                        className="w-full px-3 py-2 bg-white rounded-xl border border-slate-300 font-bold text-slate-900 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                      />
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
 
               {/* Mapbox Lending Area & Service Radius Section */}
@@ -1831,6 +2187,43 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                   </div>
                 </div>
               </div>
+
+              {/* Bottom Sticky Save Action Bar in Edit Mode */}
+              {isEditingLenderProfile && (
+                <div className="p-4 rounded-2xl bg-gradient-to-r from-slate-900 to-blue-950 text-white flex items-center justify-between gap-3 shadow-lg">
+                  <div className="text-xs">
+                    <span className="font-bold text-white block">Ready to apply financer profile changes?</span>
+                    <span className="text-[11px] text-blue-200">Your profile, avatar photo, and ticket limits will instantly update across the platform.</span>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setIsEditingLenderProfile(false)}
+                      className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs transition-colors cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleSaveLenderProfile}
+                      disabled={isSavingLenderProfile}
+                      className="px-5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold text-xs shadow-md transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer"
+                    >
+                      {isSavingLenderProfile ? (
+                        <>
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          <span>Saving...</span>
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle2 className="w-3.5 h-3.5 text-white" />
+                          <span>Save & Apply</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {/* SECTION: Account Session & Logout */}
               <div className="pt-6 border-t border-slate-200 space-y-4">

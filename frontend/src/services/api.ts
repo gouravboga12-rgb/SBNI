@@ -383,6 +383,10 @@ export async function updateLenderProfileApi(payload: {
   longitude?: number;
   lendingRadiusKm?: number;
   contactPersonName?: string;
+  phone?: string;
+  email?: string;
+  avatarUrl?: string;
+  logoUrl?: string;
 }): Promise<{ success: boolean; data?: any; message?: string }> {
   try {
     const data = await apiFetch('/lenders/profile', {
@@ -399,8 +403,11 @@ export async function updateLenderProfileApi(payload: {
 export async function updateVendorProfileApi(payload: {
   businessName?: string;
   ownerName?: string;
+  phone?: string;
+  email?: string;
   gstNumber?: string;
   panNumber?: string;
+  aadhaarNumber?: string;
   registrationType?: string;
   annualTurnover?: string;
   category?: string;
@@ -412,6 +419,8 @@ export async function updateVendorProfileApi(payload: {
   pincode?: string;
   latitude?: number;
   longitude?: number;
+  avatarUrl?: string;
+  logoUrl?: string;
 }): Promise<{ success: boolean; data?: any; message?: string }> {
   try {
     const data = await apiFetch('/vendors/profile', {

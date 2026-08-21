@@ -8,8 +8,11 @@ export const updateVendorProfile = async (req: AuthenticatedRequest, res: Respon
   const {
     businessName,
     ownerName,
+    phone,
+    email,
     gstNumber,
     panNumber,
+    aadhaarNumber,
     registrationType,
     annualTurnover,
     category,
@@ -21,12 +24,37 @@ export const updateVendorProfile = async (req: AuthenticatedRequest, res: Respon
     pincode,
     latitude,
     longitude,
+    avatarUrl,
+    logoUrl,
   } = req.body;
 
-  const parsedLat = latitude !== undefined && latitude !== null ? parseFloat(String(latitude)) : undefined;
-  const parsedLng = longitude !== undefined && longitude !== null ? parseFloat(String(longitude)) : undefined;
+  let parsedLat = latitude !== undefined && latitude !== null ? parseFloat(String(latitude)) : undefined;
+  let parsedLng = longitude !== undefined && longitude !== null ? parseFloat(String(longitude)) : undefined;
 
-  const profile = await prisma.vendorProfile.upsert({
+  if (parsedLat === undefined || parsedLng === undefined) {
+    const combined = `${address || ''} ${place || ''} ${city || ''} ${state || ''}`.toLowerCase();
+    if (combined.includes('hyderabad') || combined.includes('telangana') || combined.includes('kothapet') || combined.includes('chaitanyapuri') || combined.includes('dilsukhnagar')) {
+      parsedLat = 17.3713;
+      parsedLng = 78.5320;
+    }
+  }
+
+  // Update user phone / email if provided
+  if (userId && (phone || email)) {
+    try {
+      await prisma.user.update({
+        where: { id: userId },
+        data: {
+          phone: phone || undefined,
+          email: email || undefined,
+        },
+      });
+    } catch (e) {
+      console.warn('Could not update user table phone/email (might already exist):', e);
+    }
+  }
+
+  const profile = await (prisma.vendorProfile as any).upsert({
     where: { userId },
     update: {
       businessName,
@@ -44,6 +72,8 @@ export const updateVendorProfile = async (req: AuthenticatedRequest, res: Respon
       pincode,
       latitude: parsedLat,
       longitude: parsedLng,
+      avatarUrl: avatarUrl || logoUrl || undefined,
+      logoUrl: logoUrl || avatarUrl || undefined,
     },
     create: {
       userId: userId!,
@@ -56,12 +86,14 @@ export const updateVendorProfile = async (req: AuthenticatedRequest, res: Respon
       category: category || 'Retail',
       address: address || 'Default Address',
       place: place || 'Commercial Center',
-      city: city || 'Mumbai',
-      state: state || 'Maharashtra',
+      city: city || 'Hyderabad',
+      state: state || 'Telangana',
       country: country || 'India',
-      pincode: pincode || '400001',
-      latitude: parsedLat ?? 19.0760,
-      longitude: parsedLng ?? 72.8777,
+      pincode: pincode || '500001',
+      latitude: parsedLat ?? 17.3713,
+      longitude: parsedLng ?? 78.5320,
+      avatarUrl: avatarUrl || logoUrl || undefined,
+      logoUrl: logoUrl || avatarUrl || undefined,
     },
   });
 

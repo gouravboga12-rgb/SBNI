@@ -39,6 +39,9 @@ import {
   Radio,
   Loader2,
   RefreshCw,
+  Edit3,
+  Save,
+  X,
 } from 'lucide-react';
 
 const VENDOR_BANNER_SLIDES: BannerSlide[] = [
@@ -327,15 +330,117 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
     }
   })();
 
+  const [isEditingVendorProfile, setIsEditingVendorProfile] = useState(false);
+  const [vendorEditForm, setVendorEditForm] = useState({
+    name: '',
+    shopName: '',
+    phone: '',
+    email: '',
+    address: '',
+    category: '',
+    annualTurnover: '10-50 Lakhs',
+    panNumber: '',
+    aadhaarNumber: '',
+    gstNumber: '',
+  });
+  const [isSavingVendorProfile, setIsSavingVendorProfile] = useState(false);
+  const [vendorSaveSuccess, setVendorSaveSuccess] = useState<string | null>(null);
+
+  const startEditingVendor = () => {
+    setVendorEditForm({
+      name: currentVendorObj.name,
+      shopName: currentVendorObj.shopName,
+      phone: currentVendorObj.phone,
+      email: currentVendorObj.email,
+      address: currentVendorObj.address,
+      category: currentVendorObj.category,
+      annualTurnover: '10-50 Lakhs',
+      panNumber: currentVendorObj.panNumber || '',
+      aadhaarNumber: currentVendorObj.aadhaarNumber || '',
+      gstNumber: currentVendorObj.gstNumber || '',
+    });
+    setIsEditingVendorProfile(true);
+  };
+
+  const handleSaveVendorProfile = async () => {
+    setIsSavingVendorProfile(true);
+    try {
+      // 1. Update local storage
+      const uStr = localStorage.getItem('sbni_user') || '{}';
+      const pStr = localStorage.getItem('sbni_vendor_profile') || '{}';
+      const u = JSON.parse(uStr);
+      const p = JSON.parse(pStr);
+
+      const mergedUser = {
+        ...u,
+        name: vendorEditForm.name,
+        fullName: vendorEditForm.name,
+        phone: vendorEditForm.phone,
+        email: vendorEditForm.email,
+      };
+      const mergedProfile = {
+        ...p,
+        ownerName: vendorEditForm.name,
+        businessName: vendorEditForm.shopName,
+        phone: vendorEditForm.phone,
+        email: vendorEditForm.email,
+        address: vendorEditForm.address,
+        category: vendorEditForm.category,
+        annualTurnover: vendorEditForm.annualTurnover,
+        panNumber: vendorEditForm.panNumber,
+        aadhaarNumber: vendorEditForm.aadhaarNumber,
+        gstNumber: vendorEditForm.gstNumber,
+        avatarUrl: avatarUrl || undefined,
+      };
+
+      localStorage.setItem('sbni_user', JSON.stringify(mergedUser));
+      localStorage.setItem('sbni_vendor_profile', JSON.stringify(mergedProfile));
+
+      // 2. Call backend API
+      await updateVendorProfileApi({
+        ownerName: vendorEditForm.name,
+        businessName: vendorEditForm.shopName,
+        phone: vendorEditForm.phone,
+        email: vendorEditForm.email,
+        address: vendorEditForm.address,
+        category: vendorEditForm.category,
+        annualTurnover: vendorEditForm.annualTurnover,
+        panNumber: vendorEditForm.panNumber,
+        aadhaarNumber: vendorEditForm.aadhaarNumber,
+        gstNumber: vendorEditForm.gstNumber,
+        avatarUrl: avatarUrl || undefined,
+      });
+
+      setVendorSaveSuccess('✅ Business profile updated and synced successfully!');
+      setTimeout(() => setVendorSaveSuccess(null), 4000);
+      setIsEditingVendorProfile(false);
+    } catch (err: any) {
+      console.error('Failed to save vendor profile:', err);
+      alert('Failed to save profile changes. Please try again.');
+    } finally {
+      setIsSavingVendorProfile(false);
+    }
+  };
+
   const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       const reader = new FileReader();
-      reader.onload = (event) => {
+      reader.onload = async (event) => {
         if (event.target?.result) {
           const dataUrl = event.target.result as string;
           setAvatarUrl(dataUrl);
           localStorage.setItem('sbni_vendor_avatar', dataUrl);
+
+          try {
+            await updateVendorProfileApi({
+              avatarUrl: dataUrl,
+              logoUrl: dataUrl,
+              ownerName: currentVendorObj.name,
+            });
+          } catch (err) {
+            console.error('Failed to sync vendor avatar:', err);
+          }
         }
       };
       reader.readAsDataURL(file);
@@ -870,13 +975,62 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
         {activeTab === 'profile' && (
           <div className="space-y-6 max-w-4xl mx-auto">
             
-            {/* Header Title */}
-            <div>
-              <h2 className="text-2xl font-extrabold text-slate-900 font-heading">Small Shop & Local Startup Business Profile</h2>
-              <p className="text-xs text-slate-500 font-medium mt-0.5">
-                Manage your registration details, verification documents, and profile photo
-              </p>
+            {/* Header Title & Action Buttons */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h2 className="text-2xl font-extrabold text-slate-900 font-heading">Small Shop & Local Startup Business Profile</h2>
+                <p className="text-xs text-slate-500 font-medium mt-0.5">
+                  Manage your registration details, verification documents, and profile photo
+                </p>
+              </div>
+              
+              {!isEditingVendorProfile ? (
+                <button
+                  type="button"
+                  onClick={startEditingVendor}
+                  className="px-4 py-2.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-[#003893] border border-blue-200 font-extrabold text-xs flex items-center gap-2 transition-all shadow-xs active:scale-95 cursor-pointer w-fit"
+                >
+                  <Edit3 className="w-4 h-4 text-[#003893]" />
+                  <span>Edit Profile Details</span>
+                </button>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsEditingVendorProfile(false)}
+                    className="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-bold text-xs hover:bg-slate-100 transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSaveVendorProfile}
+                    disabled={isSavingVendorProfile}
+                    className="px-5 py-2.5 rounded-xl bg-[#003893] hover:bg-[#002366] text-white font-extrabold text-xs flex items-center gap-2 shadow-md transition-all active:scale-95 cursor-pointer"
+                  >
+                    {isSavingVendorProfile ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>Saving...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Save className="w-4 h-4 text-emerald-400" />
+                        <span>Save Profile Changes</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
             </div>
+
+            {/* Save Success Banner */}
+            {vendorSaveSuccess && (
+              <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2 shadow-xs animate-in fade-in">
+                <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+                <span>{vendorSaveSuccess}</span>
+              </div>
+            )}
 
             {/* Profile Main Card */}
             <div className="card-white p-6 sm:p-8 space-y-6 shadow-md border border-slate-200/90 rounded-3xl">
@@ -885,7 +1039,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
               <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 pb-6 border-b border-slate-100 relative">
                 
                 {/* User Profile Avatar with Interactive Camera Overlay */}
-                <div className="relative group">
+                <div className="relative group shrink-0">
                   <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl bg-gradient-to-br from-[#003893] to-[#001f54] text-white flex items-center justify-center font-extrabold text-3xl shadow-lg overflow-hidden border-4 border-white ring-2 ring-blue-100">
                     {avatarUrl ? (
                       <img src={avatarUrl} alt="Shop Business Profile" className="w-full h-full object-cover" />
@@ -912,7 +1066,9 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                 {/* Vendor Identity Details */}
                 <div className="text-center sm:text-left space-y-1 flex-1">
                   <div className="flex flex-col sm:flex-row sm:items-center gap-2 justify-center sm:justify-start">
-                    <h3 className="text-2xl font-extrabold text-slate-900 font-heading">{currentVendorObj.name}</h3>
+                    <h3 className="text-2xl font-extrabold text-slate-900 font-heading">
+                      {isEditingVendorProfile ? vendorEditForm.name || currentVendorObj.name : currentVendorObj.name}
+                    </h3>
                     <span className="badge-verified-green w-fit mx-auto sm:mx-0">
                       <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Verified Shop Owner
                     </span>
@@ -920,13 +1076,15 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
 
                   <div className="text-sm font-semibold text-slate-700 flex items-center justify-center sm:justify-start gap-1.5">
                     <Store className="w-4 h-4 text-[#003893]" />
-                    <span>{currentVendorObj.shopName}</span>
+                    <span>{isEditingVendorProfile ? vendorEditForm.shopName || currentVendorObj.shopName : currentVendorObj.shopName}</span>
                     <span className="text-slate-300">•</span>
-                    <span className="text-xs text-slate-500 font-medium">{currentVendorObj.category}</span>
+                    <span className="text-xs text-slate-500 font-medium">
+                      {isEditingVendorProfile ? vendorEditForm.category || currentVendorObj.category : currentVendorObj.category}
+                    </span>
                   </div>
 
                   <p className="text-xs text-slate-400 font-medium pt-1">
-                    Member since April 2024 • ID: <span className="font-mono text-slate-700">{currentVendorObj.shopId}</span>
+                    Registration ID: <span className="font-mono text-slate-700 font-bold">{currentVendorObj.shopId}</span>
                   </p>
 
                   <div className="pt-2 flex items-center justify-center sm:justify-start gap-2">
@@ -947,56 +1105,178 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
 
               {/* SECTION 1: Personal & Business Registration Information */}
               <div className="space-y-4">
-                <div className="flex items-center gap-2 text-slate-900 font-extrabold text-base font-heading pb-1 border-b border-slate-100">
-                  <User className="w-4 h-4 text-[#003893]" />
-                  <span>Personal & Business Information</span>
+                <div className="flex items-center justify-between pb-1 border-b border-slate-100">
+                  <div className="flex items-center gap-2 text-slate-900 font-extrabold text-base font-heading">
+                    <User className="w-4 h-4 text-[#003893]" />
+                    <span>Personal & Business Information</span>
+                  </div>
+                  {isEditingVendorProfile && (
+                    <span className="text-[11px] font-extrabold text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-md border border-blue-200">
+                      ✏️ Edit Mode Active
+                    </span>
+                  )}
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                  
-                  {/* Full Name */}
-                  <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
-                    <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Full Name</span>
-                    <div className="font-extrabold text-slate-900 text-sm">{currentVendorObj.name}</div>
-                  </div>
-
-                  {/* Phone Number / Mobile */}
-                  <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
-                    <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Phone Number / Mobile</span>
-                    <div className="font-extrabold text-slate-900 text-sm flex items-center gap-1.5">
-                      <Phone className="w-3.5 h-3.5 text-emerald-600" />
-                      <span>{currentVendorObj.phone}</span>
+                {!isEditingVendorProfile ? (
+                  /* View Mode */
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                    
+                    {/* Full Name */}
+                    <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
+                      <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Owner / Full Name</span>
+                      <div className="font-extrabold text-slate-900 text-sm">{currentVendorObj.name}</div>
                     </div>
-                  </div>
 
-                  {/* Gmail / Email ID */}
-                  <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
-                    <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Gmail / Email ID</span>
-                    <div className="font-extrabold text-slate-900 text-sm flex items-center gap-1.5">
-                      <Mail className="w-3.5 h-3.5 text-blue-600" />
-                      <span>{currentVendorObj.email}</span>
+                    {/* Phone Number / Mobile */}
+                    <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
+                      <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Phone Number / Mobile</span>
+                      <div className="font-extrabold text-slate-900 text-sm flex items-center gap-1.5">
+                        <Phone className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>{currentVendorObj.phone}</span>
+                      </div>
                     </div>
-                  </div>
 
-                  {/* Shop / Business Name */}
-                  <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
-                    <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Shop / Business Name</span>
-                    <div className="font-extrabold text-slate-900 text-sm flex items-center gap-1.5">
-                      <Store className="w-3.5 h-3.5 text-amber-600" />
-                      <span>{currentVendorObj.shopName}</span>
+                    {/* Gmail / Email ID */}
+                    <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
+                      <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Gmail / Email ID</span>
+                      <div className="font-extrabold text-slate-900 text-sm flex items-center gap-1.5">
+                        <Mail className="w-3.5 h-3.5 text-blue-600" />
+                        <span>{currentVendorObj.email}</span>
+                      </div>
                     </div>
-                  </div>
 
-                  {/* Manual Address Text Box */}
-                  <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 sm:col-span-2">
-                    <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Full Shop / Business Address</span>
-                    <div className="font-bold text-slate-800 text-xs flex items-start gap-1.5">
-                      <MapPin className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
-                      <span>{currentVendorObj.address}</span>
+                    {/* Shop / Business Name */}
+                    <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
+                      <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Shop / Business Name</span>
+                      <div className="font-extrabold text-slate-900 text-sm flex items-center gap-1.5">
+                        <Store className="w-3.5 h-3.5 text-amber-600" />
+                        <span>{currentVendorObj.shopName}</span>
+                      </div>
                     </div>
-                  </div>
 
-                </div>
+                    {/* Category & Turnover */}
+                    <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
+                      <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Business Category</span>
+                      <div className="font-extrabold text-slate-900 text-sm">{currentVendorObj.category}</div>
+                    </div>
+
+                    <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
+                      <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Annual Turnover</span>
+                      <div className="font-extrabold text-slate-900 text-sm">10-50 Lakhs</div>
+                    </div>
+
+                    {/* Full Address */}
+                    <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 sm:col-span-2">
+                      <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Full Shop / Business Address</span>
+                      <div className="font-bold text-slate-800 text-xs flex items-start gap-1.5">
+                        <MapPin className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
+                        <span>{currentVendorObj.address}</span>
+                      </div>
+                    </div>
+
+                  </div>
+                ) : (
+                  /* Edit Mode Inputs */
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                    
+                    {/* Full Name */}
+                    <div className="p-3.5 rounded-2xl bg-blue-50/40 border border-blue-200/80 space-y-1.5">
+                      <label className="text-slate-600 font-bold uppercase text-[10px] tracking-wider block">Owner / Full Name *</label>
+                      <input
+                        type="text"
+                        value={vendorEditForm.name}
+                        onChange={(e) => setVendorEditForm({ ...vendorEditForm, name: e.target.value })}
+                        placeholder="e.g. Gourav Boga"
+                        className="w-full px-3 py-2 bg-white rounded-xl border border-slate-300 font-bold text-slate-900 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                      />
+                    </div>
+
+                    {/* Phone Number */}
+                    <div className="p-3.5 rounded-2xl bg-blue-50/40 border border-blue-200/80 space-y-1.5">
+                      <label className="text-slate-600 font-bold uppercase text-[10px] tracking-wider block">Phone Number / Mobile *</label>
+                      <input
+                        type="tel"
+                        value={vendorEditForm.phone}
+                        onChange={(e) => setVendorEditForm({ ...vendorEditForm, phone: e.target.value })}
+                        placeholder="e.g. 7337401590"
+                        className="w-full px-3 py-2 bg-white rounded-xl border border-slate-300 font-bold text-slate-900 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none font-mono"
+                      />
+                    </div>
+
+                    {/* Email */}
+                    <div className="p-3.5 rounded-2xl bg-blue-50/40 border border-blue-200/80 space-y-1.5">
+                      <label className="text-slate-600 font-bold uppercase text-[10px] tracking-wider block">Gmail / Email ID *</label>
+                      <input
+                        type="email"
+                        value={vendorEditForm.email}
+                        onChange={(e) => setVendorEditForm({ ...vendorEditForm, email: e.target.value })}
+                        placeholder="e.g. vendor@example.com"
+                        className="w-full px-3 py-2 bg-white rounded-xl border border-slate-300 font-bold text-slate-900 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                      />
+                    </div>
+
+                    {/* Shop Name */}
+                    <div className="p-3.5 rounded-2xl bg-blue-50/40 border border-blue-200/80 space-y-1.5">
+                      <label className="text-slate-600 font-bold uppercase text-[10px] tracking-wider block">Shop / Business Name *</label>
+                      <input
+                        type="text"
+                        value={vendorEditForm.shopName}
+                        onChange={(e) => setVendorEditForm({ ...vendorEditForm, shopName: e.target.value })}
+                        placeholder="e.g. Gourav Electronics & Enterprises"
+                        className="w-full px-3 py-2 bg-white rounded-xl border border-slate-300 font-bold text-slate-900 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                      />
+                    </div>
+
+                    {/* Business Category */}
+                    <div className="p-3.5 rounded-2xl bg-blue-50/40 border border-blue-200/80 space-y-1.5">
+                      <label className="text-slate-600 font-bold uppercase text-[10px] tracking-wider block">Business Category *</label>
+                      <select
+                        value={vendorEditForm.category}
+                        onChange={(e) => setVendorEditForm({ ...vendorEditForm, category: e.target.value })}
+                        className="w-full px-3 py-2 bg-white rounded-xl border border-slate-300 font-bold text-slate-900 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                      >
+                        <option value="Retail Shop Business">Retail Shop Business</option>
+                        <option value="Wholesale & Distribution">Wholesale & Distribution</option>
+                        <option value="Food & Grocery">Food & Grocery</option>
+                        <option value="Electronics & Mobile">Electronics & Mobile</option>
+                        <option value="Textiles & Garments">Textiles & Garments</option>
+                        <option value="Manufacturing & Workshop">Manufacturing & Workshop</option>
+                        <option value="Services & Consulting">Services & Consulting</option>
+                        <option value="Local Startup Enterprise">Local Startup Enterprise</option>
+                      </select>
+                    </div>
+
+                    {/* Annual Turnover */}
+                    <div className="p-3.5 rounded-2xl bg-blue-50/40 border border-blue-200/80 space-y-1.5">
+                      <label className="text-slate-600 font-bold uppercase text-[10px] tracking-wider block">Annual Business Turnover</label>
+                      <select
+                        value={vendorEditForm.annualTurnover}
+                        onChange={(e) => setVendorEditForm({ ...vendorEditForm, annualTurnover: e.target.value })}
+                        className="w-full px-3 py-2 bg-white rounded-xl border border-slate-300 font-bold text-slate-900 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                      >
+                        <option value="Under 10 Lakhs">Under 10 Lakhs</option>
+                        <option value="10-50 Lakhs">10 - 50 Lakhs</option>
+                        <option value="50 Lakhs - 1 Crore">50 Lakhs - 1 Crore</option>
+                        <option value="1 Crore - 5 Crores">1 Crore - 5 Crores</option>
+                        <option value="5 Crores+">5 Crores+</option>
+                      </select>
+                    </div>
+
+                    {/* Full Address */}
+                    <div className="p-3.5 rounded-2xl bg-blue-50/40 border border-blue-200/80 space-y-1.5 sm:col-span-2">
+                      <label className="text-slate-600 font-bold uppercase text-[10px] tracking-wider block">Full Shop / Business Address *</label>
+                      <textarea
+                        rows={2}
+                        value={vendorEditForm.address}
+                        onChange={(e) => setVendorEditForm({ ...vendorEditForm, address: e.target.value })}
+                        placeholder="e.g. Shop #12, Chaitanya Puri Main Road, Dilsukhnagar, Hyderabad, Telangana - 500060"
+                        className="w-full px-3 py-2 bg-white rounded-xl border border-slate-300 font-bold text-slate-900 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none"
+                      />
+                    </div>
+
+                  </div>
+                )}
+
               </div>
 
               {/* Mapbox Registered Shop Location & Coordinates Section */}
@@ -1063,61 +1343,143 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                   <span>KYC & Registration Documents</span>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-                  
-                  {/* PAN Card Document */}
-                  <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="font-extrabold text-slate-800 text-xs">PAN Card</span>
-                      {currentVendorObj.panNumber ? (
-                        <span className="text-[10px] font-extrabold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md flex items-center gap-1">
-                          <CheckCircle2 className="w-3 h-3" /> Verified
-                        </span>
-                      ) : (
-                        <span className="text-[10px] font-extrabold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-md">
-                          Pending
-                        </span>
-                      )}
+                {!isEditingVendorProfile ? (
+                  /* View Mode Documents */
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                    
+                    {/* PAN Card Document */}
+                    <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="font-extrabold text-slate-800 text-xs">PAN Card</span>
+                        {currentVendorObj.panNumber ? (
+                          <span className="text-[10px] font-extrabold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md flex items-center gap-1">
+                            <CheckCircle2 className="w-3 h-3" /> Verified
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-extrabold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-md">
+                            Pending
+                          </span>
+                        )}
+                      </div>
+                      <div className="font-mono font-bold text-slate-900 text-xs bg-white p-2 rounded-xl border border-slate-200">
+                        {currentVendorObj.panNumber || 'Pending Document Upload'}
+                      </div>
                     </div>
-                    <div className="font-mono font-bold text-slate-900 text-xs bg-white p-2 rounded-xl border border-slate-200">
-                      {currentVendorObj.panNumber || 'Pending Document Upload'}
-                    </div>
-                  </div>
 
-                  {/* Aadhaar Card Document */}
-                  <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="font-extrabold text-slate-800 text-xs">Aadhaar Card</span>
-                      {currentVendorObj.aadhaarNumber ? (
-                        <span className="text-[10px] font-extrabold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md flex items-center gap-1">
-                          <CheckCircle2 className="w-3 h-3" /> Verified
-                        </span>
-                      ) : (
-                        <span className="text-[10px] font-extrabold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-md">
-                          Pending
-                        </span>
-                      )}
+                    {/* Aadhaar Card Document */}
+                    <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="font-extrabold text-slate-800 text-xs">Aadhaar Card</span>
+                        {currentVendorObj.aadhaarNumber ? (
+                          <span className="text-[10px] font-extrabold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md flex items-center gap-1">
+                            <CheckCircle2 className="w-3 h-3" /> Verified
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-extrabold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-md">
+                            Pending
+                          </span>
+                        )}
+                      </div>
+                      <div className="font-mono font-bold text-slate-900 text-xs bg-white p-2 rounded-xl border border-slate-200">
+                        {currentVendorObj.aadhaarNumber || 'Pending Document Upload'}
+                      </div>
                     </div>
-                    <div className="font-mono font-bold text-slate-900 text-xs bg-white p-2 rounded-xl border border-slate-200">
-                      {currentVendorObj.aadhaarNumber || 'Pending Document Upload'}
-                    </div>
-                  </div>
 
-                  {/* Business License (Optional) */}
-                  <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="font-extrabold text-slate-800 text-xs">GST / Business License</span>
-                      <span className="text-[10px] font-extrabold text-blue-700 bg-blue-100 px-2 py-0.5 rounded-md">
-                        Optional
-                      </span>
+                    {/* Business License (Optional) */}
+                    <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="font-extrabold text-slate-800 text-xs">GST / Business License</span>
+                        <span className="text-[10px] font-extrabold text-blue-700 bg-blue-100 px-2 py-0.5 rounded-md">
+                          Optional
+                        </span>
+                      </div>
+                      <div className="font-mono font-bold text-slate-900 text-xs bg-white p-2 rounded-xl border border-slate-200">
+                        {currentVendorObj.gstNumber || 'Pending GST Upload'}
+                      </div>
                     </div>
-                    <div className="font-mono font-bold text-slate-900 text-xs bg-white p-2 rounded-xl border border-slate-200">
-                      {currentVendorObj.gstNumber || 'Pending GST Upload'}
-                    </div>
-                  </div>
 
-                </div>
+                  </div>
+                ) : (
+                  /* Edit Mode Documents */
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                    
+                    {/* PAN Card Input */}
+                    <div className="p-3.5 rounded-2xl bg-blue-50/40 border border-blue-200/80 space-y-1.5">
+                      <label className="font-extrabold text-slate-700 text-xs block">PAN Card Number</label>
+                      <input
+                        type="text"
+                        value={vendorEditForm.panNumber}
+                        onChange={(e) => setVendorEditForm({ ...vendorEditForm, panNumber: e.target.value.toUpperCase() })}
+                        placeholder="e.g. ABCDE1234F"
+                        className="w-full px-3 py-2 bg-white rounded-xl border border-slate-300 font-mono font-bold text-slate-900 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none uppercase"
+                      />
+                    </div>
+
+                    {/* Aadhaar Card Input */}
+                    <div className="p-3.5 rounded-2xl bg-blue-50/40 border border-blue-200/80 space-y-1.5">
+                      <label className="font-extrabold text-slate-700 text-xs block">Aadhaar Card Number</label>
+                      <input
+                        type="text"
+                        value={vendorEditForm.aadhaarNumber}
+                        onChange={(e) => setVendorEditForm({ ...vendorEditForm, aadhaarNumber: e.target.value })}
+                        placeholder="e.g. 1234 5678 9012"
+                        className="w-full px-3 py-2 bg-white rounded-xl border border-slate-300 font-mono font-bold text-slate-900 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                      />
+                    </div>
+
+                    {/* GST Number Input */}
+                    <div className="p-3.5 rounded-2xl bg-blue-50/40 border border-blue-200/80 space-y-1.5">
+                      <label className="font-extrabold text-slate-700 text-xs block">GST / Business License (Optional)</label>
+                      <input
+                        type="text"
+                        value={vendorEditForm.gstNumber}
+                        onChange={(e) => setVendorEditForm({ ...vendorEditForm, gstNumber: e.target.value.toUpperCase() })}
+                        placeholder="e.g. 36AAAPL1234C1Z5"
+                        className="w-full px-3 py-2 bg-white rounded-xl border border-slate-300 font-mono font-bold text-slate-900 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none uppercase"
+                      />
+                    </div>
+
+                  </div>
+                )}
+
               </div>
+
+              {/* Bottom Sticky Save Action Bar in Edit Mode */}
+              {isEditingVendorProfile && (
+                <div className="p-4 rounded-2xl bg-gradient-to-r from-blue-900 to-indigo-950 text-white flex items-center justify-between gap-3 shadow-lg">
+                  <div className="text-xs">
+                    <span className="font-bold text-white block">Ready to apply profile changes?</span>
+                    <span className="text-[11px] text-blue-200">Your profile will immediately update across all financer matching searches.</span>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setIsEditingVendorProfile(false)}
+                      className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs transition-colors cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleSaveVendorProfile}
+                      disabled={isSavingVendorProfile}
+                      className="px-5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold text-xs shadow-md transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer"
+                    >
+                      {isSavingVendorProfile ? (
+                        <>
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          <span>Saving...</span>
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle2 className="w-3.5 h-3.5 text-white" />
+                          <span>Save & Apply</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {/* SECTION 3: Account Session & Logout */}
               <div className="pt-6 border-t border-slate-200 space-y-4">

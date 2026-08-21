@@ -23,6 +23,8 @@ export const updateLenderProfile = async (req: AuthenticatedRequest, res: Respon
     longitude,
     lendingRadiusKm,
     contactPersonName,
+    phone,
+    email,
     avatarUrl,
     logoUrl,
   } = req.body;
@@ -34,6 +36,21 @@ export const updateLenderProfile = async (req: AuthenticatedRequest, res: Respon
   let financerName = institutionName;
   if (financerName && !financerName.toLowerCase().includes('money financer')) {
     financerName = `${financerName} Money Financer`;
+  }
+
+  // Update user phone / email if provided
+  if (userId && (phone || email)) {
+    try {
+      await prisma.user.update({
+        where: { id: userId },
+        data: {
+          phone: phone || undefined,
+          email: email || undefined,
+        },
+      });
+    } catch (e) {
+      console.warn('Could not update user table phone/email:', e);
+    }
   }
 
   if (parsedLat === undefined || parsedLng === undefined || (Math.abs(parsedLat - 19.076) < 0.01 && Math.abs(parsedLng - 72.8777) < 0.01)) {
