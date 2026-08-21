@@ -55,6 +55,9 @@ import {
   adminDeleteVendor,
   adminDeleteLender,
   adminFetchPayments,
+  adminFetchFraudReports,
+  adminConfirmFraudReport,
+  adminDismissFraudReport,
 } from '../services/api';
 import { SBNILogo } from '../components/SBNILogo';
 
@@ -145,6 +148,22 @@ export interface ReferralRecord {
   payoutTxnId?: string;
 }
 
+export interface FraudReportItem {
+  id: string;
+  vendorId: string;
+  vendorName: string;
+  shopName: string;
+  userEmail?: string;
+  userPhone?: string;
+  reportedBy: string;
+  reason: string;
+  evidenceUrl?: string;
+  adminNotes?: string;
+  status: 'PENDING' | 'CONFIRMED' | 'DISMISSED';
+  date: string;
+  createdAt?: string;
+}
+
 export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void }) {
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
   const [adminEmail, setAdminEmail] = useState('srinivaspolepalli10@gmail.com');
@@ -156,6 +175,7 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
     | 'overview'
     | 'vendors'
     | 'lenders'
+    | 'fraud_reports'
     | 'vendor_revenue'
     | 'lender_revenue'
     | 'vendor_subs'
@@ -167,6 +187,12 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
   // Search & Filters
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
+
+  // Fraud Reports State
+  const [fraudReports, setFraudReports] = useState<FraudReportItem[]>([]);
+  const [fraudReportsLoading, setFraudReportsLoading] = useState(false);
+  const [fraudFilterStatus, setFraudFilterStatus] = useState<'ALL' | 'PENDING' | 'CONFIRMED' | 'DISMISSED'>('ALL');
+  const [fraudSearchQuery, setFraudSearchQuery] = useState('');
 
   // Revenue Filters
   const [vendorRevenuePeriod, setVendorRevenuePeriod] = useState<'ALL' | 'DAY' | 'WEEK' | 'MONTH' | 'YEAR'>('ALL');
@@ -506,6 +532,112 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
     setTimeout(() => setToastMessage(''), 4000);
   };
 
+  const loadFraudReports = async () => {
+    setFraudReportsLoading(true);
+    try {
+      let apiReports: FraudReportItem[] = [];
+      const res = await adminFetchFraudReports();
+      if (res.success && Array.isArray(res.data)) {
+        apiReports = res.data.map((r: any) => ({
+          id: r.id,
+          vendorId: r.vendorId || r.vendor?.id,
+          vendorName: r.vendor?.ownerName || r.vendor?.businessName || 'Reported Vendor',
+          shopName: r.vendor?.businessName || 'Shop Enterprise',
+          userEmail: r.vendor?.user?.email || '',
+          userPhone: r.vendor?.user?.phone || '',
+          reportedBy: r.reportedBy || 'Business Money Financer',
+          reason: r.reason || 'Suspicious financial conduct or document discrepancy',
+          evidenceUrl: r.evidenceUrl,
+          adminNotes: r.adminNotes,
+          status: (r.status || 'PENDING').toUpperCase() as 'PENDING' | 'CONFIRMED' | 'DISMISSED',
+          date: r.createdAt ? new Date(r.createdAt).toISOString() : new Date().toISOString(),
+        }));
+      }
+
+      let localReports: FraudReportItem[] = [];
+      try {
+        const stored = localStorage.getItem('sbni_lender_reported_frauds');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed)) {
+            localReports = parsed.map((r: any) => ({
+              id: r.id || `fraud-local-${r.vendorId}`,
+              vendorId: r.vendorId,
+              vendorName: r.vendorName || 'Reported Vendor',
+              shopName: r.shopName || 'Shop Enterprise',
+              userEmail: r.emailId || r.userEmail || '',
+              userPhone: r.mobileNumber || r.userPhone || '',
+              reportedBy: r.reportedBy || 'Business Money Financer',
+              reason: r.reason || 'Suspicious activity reported by financer',
+              evidenceUrl: r.evidenceUrl,
+              adminNotes: r.adminNotes,
+              status: (r.status || 'PENDING').toUpperCase() as 'PENDING' | 'CONFIRMED' | 'DISMISSED',
+              date: r.date || new Date().toISOString(),
+            }));
+          }
+        }
+      } catch {}
+
+      const combined = [...localReports, ...apiReports];
+      const deduped = combined.filter(
+        (item, idx, arr) => idx === arr.findIndex((t) => t.id === item.id || (t.vendorId === item.vendorId && t.reason === item.reason))
+      );
+      setFraudReports(deduped);
+    } catch (e) {
+      console.error('Failed to load fraud reports:', e);
+    } finally {
+      setFraudReportsLoading(false);
+    }
+  };
+
+  const handleConfirmFraud = async (report: FraudReportItem) => {
+    try {
+      if (report.vendorId) {
+        await adminToggleVendorFraud(report.vendorId, true).catch(() => {});
+      }
+      await adminConfirmFraudReport(report.id).catch(() => {});
+
+      const updated = fraudReports.map((r) => (r.id === report.id ? { ...r, status: 'CONFIRMED' as const } : r));
+      setFraudReports(updated);
+
+      try {
+        const storedFraud = JSON.parse(localStorage.getItem('sbni_fraud_vendors') || '{}');
+        if (report.vendorId) storedFraud[report.vendorId] = true;
+        if (report.userEmail) storedFraud[report.userEmail] = true;
+        localStorage.setItem('sbni_fraud_vendors', JSON.stringify(storedFraud));
+
+        const storedList = JSON.parse(localStorage.getItem('sbni_lender_reported_frauds') || '[]');
+        const updatedList = storedList.map((r: any) => (r.id === report.id ? { ...r, status: 'CONFIRMED' } : r));
+        localStorage.setItem('sbni_lender_reported_frauds', JSON.stringify(updatedList));
+      } catch {}
+
+      showToast(`🚨 Confirmed Fraud! Vendor "${report.vendorName}" is now blacklisted platform-wide.`);
+      window.dispatchEvent(new Event('storage'));
+    } catch (err: any) {
+      alert(err.message || 'Failed to confirm fraud report.');
+    }
+  };
+
+  const handleDismissFraud = async (report: FraudReportItem) => {
+    try {
+      await adminDismissFraudReport(report.id).catch(() => {});
+
+      const updated = fraudReports.map((r) => (r.id === report.id ? { ...r, status: 'DISMISSED' as const } : r));
+      setFraudReports(updated);
+
+      try {
+        const storedList = JSON.parse(localStorage.getItem('sbni_lender_reported_frauds') || '[]');
+        const updatedList = storedList.map((r: any) => (r.id === report.id ? { ...r, status: 'DISMISSED' } : r));
+        localStorage.setItem('sbni_lender_reported_frauds', JSON.stringify(updatedList));
+      } catch {}
+
+      showToast(`✓ Fraud report dismissed for "${report.vendorName}".`);
+      window.dispatchEvent(new Event('storage'));
+    } catch (err: any) {
+      alert(err.message || 'Failed to dismiss fraud report.');
+    }
+  };
+
   useEffect(() => {
     // Clear any previous dummy cache
     localStorage.removeItem('justpaisa_admin_transactions');
@@ -517,16 +649,25 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
     };
     window.addEventListener('sbni_admin_auth_expired', handleAuthExpired);
 
+    const handleFraudSync = () => {
+      loadFraudReports();
+    };
+    window.addEventListener('sbni_fraud_reported', handleFraudSync);
+    window.addEventListener('storage', handleFraudSync);
+
     const adminToken = localStorage.getItem('sbni_admin_token');
     const adminUser = localStorage.getItem('sbni_admin_user');
     if (adminToken && adminUser) {
       setIsAdminAuthenticated(true);
       loadAdminVendorsAndLenders();
       loadAdminPayments();
+      loadFraudReports();
     }
 
     return () => {
       window.removeEventListener('sbni_admin_auth_expired', handleAuthExpired);
+      window.removeEventListener('sbni_fraud_reported', handleFraudSync);
+      window.removeEventListener('storage', handleFraudSync);
     };
   }, []);
 
@@ -542,6 +683,7 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
       setIsAdminAuthenticated(true);
       loadAdminVendorsAndLenders();
       loadAdminPayments();
+      loadFraudReports();
       showToast('Welcome Super Admin! Access granted.');
     } else {
       setLoginError(res.message || 'Invalid credentials');
@@ -1313,6 +1455,34 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
               </span>
             </button>
 
+            {/* 🚨 FRAUD REPORTS & BLACKLIST QUEUE */}
+            <button
+              onClick={() => setActiveTab('fraud_reports')}
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl transition-all ${
+                activeTab === 'fraud_reports'
+                  ? 'bg-rose-700 text-white shadow-md'
+                  : 'text-slate-700 hover:text-rose-700 hover:bg-rose-50/80'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0" />
+                <span>Fraud Reports</span>
+              </div>
+              {fraudReports.filter((r) => r.status === 'PENDING').length > 0 ? (
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-500 text-white shadow-xs animate-pulse">
+                  {fraudReports.filter((r) => r.status === 'PENDING').length} Pending
+                </span>
+              ) : (
+                <span
+                  className={`px-2 py-0.5 rounded-md text-[10px] font-extrabold ${
+                    activeTab === 'fraud_reports' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'
+                  }`}
+                >
+                  {fraudReports.length}
+                </span>
+              )}
+            </button>
+
             {/* 💰 REVENUE PAGE 1: VENDORS / SHOP BUSINESS REVENUE */}
             <button
               onClick={() => setActiveTab('vendor_revenue')}
@@ -1618,6 +1788,24 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
                   className="py-2.5 px-4 bg-purple-600 text-white hover:bg-purple-700 font-extrabold text-xs rounded-xl transition-all shadow-md active:scale-95 border border-purple-400"
                 >
                   Open Referrals Manager ➔
+                </button>
+              </div>
+
+              <div className="bg-gradient-to-br from-rose-900 via-rose-950 to-slate-900 text-white p-6 rounded-3xl shadow-lg space-y-3">
+                <div className="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center text-rose-300">
+                  <AlertTriangle className="w-5 h-5" />
+                </div>
+                <h3 className="text-lg font-extrabold font-heading text-white">
+                  Fraud Reports Queue
+                </h3>
+                <p className="text-xs text-rose-200 font-medium">
+                  Review fraud allegations submitted by financers and action platform-wide vendor blacklists.
+                </p>
+                <button
+                  onClick={() => setActiveTab('fraud_reports')}
+                  className="py-2.5 px-4 bg-rose-600 text-white hover:bg-rose-700 font-extrabold text-xs rounded-xl transition-all shadow-md active:scale-95 border border-rose-400"
+                >
+                  Open Fraud Queue ➔
                 </button>
               </div>
             </div>
@@ -2447,6 +2635,300 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
                 </table>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* ========================================================================= */}
+        {/* TAB: FRAUD REPORTS & BLACKLIST INVESTIGATION QUEUE                        */}
+        {/* ========================================================================= */}
+        {activeTab === 'fraud_reports' && (
+          <div className="space-y-6">
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200">
+              <div>
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center font-bold">
+                    <AlertTriangle className="w-5 h-5" />
+                  </div>
+                  <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-heading tracking-tight">
+                    Fraud Reports & Blacklist Investigation Queue
+                  </h1>
+                </div>
+                <p className="text-xs text-slate-500 font-medium mt-0.5">
+                  Review fraud allegations submitted by Business Financers. Confirmed accounts are instantly blacklisted across JustPaisa.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={loadFraudReports}
+                  disabled={fraudReportsLoading}
+                  className="px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center gap-2 cursor-pointer active:scale-95"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${fraudReportsLoading ? 'animate-spin' : ''}`} />
+                  <span>{fraudReportsLoading ? 'Refreshing...' : 'Refresh Fraud Queue'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Stat Cards Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-1">
+                <div className="text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">
+                  Total Fraud Reports
+                </div>
+                <div className="text-2xl font-extrabold text-slate-900 font-heading">
+                  {fraudReports.length}
+                </div>
+                <div className="text-[10px] text-slate-400 font-medium">Filed by Financers</div>
+              </div>
+
+              <div className="bg-white p-4 rounded-2xl border border-amber-200 shadow-xs space-y-1 bg-gradient-to-br from-amber-50/50 to-white">
+                <div className="text-[10px] text-amber-700 font-extrabold uppercase tracking-wider flex items-center gap-1">
+                  <Clock className="w-3 h-3" /> Pending Review
+                </div>
+                <div className="text-2xl font-extrabold text-amber-600 font-heading">
+                  {fraudReports.filter((r) => r.status === 'PENDING').length}
+                </div>
+                <div className="text-[10px] text-amber-600/80 font-medium">Awaiting Action</div>
+              </div>
+
+              <div className="bg-white p-4 rounded-2xl border border-rose-300 shadow-xs space-y-1 bg-gradient-to-br from-rose-50/50 to-white">
+                <div className="text-[10px] text-rose-700 font-extrabold uppercase tracking-wider flex items-center gap-1">
+                  <AlertTriangle className="w-3 h-3" /> Confirmed Blacklists
+                </div>
+                <div className="text-2xl font-extrabold text-rose-700 font-heading">
+                  {fraudReports.filter((r) => r.status === 'CONFIRMED').length}
+                </div>
+                <div className="text-[10px] text-rose-600/80 font-medium">Platform-Wide Fraud</div>
+              </div>
+
+              <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-1 bg-gradient-to-br from-slate-50/50 to-white">
+                <div className="text-[10px] text-slate-600 font-extrabold uppercase tracking-wider flex items-center gap-1">
+                  <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Dismissed / Cleared
+                </div>
+                <div className="text-2xl font-extrabold text-slate-700 font-heading">
+                  {fraudReports.filter((r) => r.status === 'DISMISSED').length}
+                </div>
+                <div className="text-[10px] text-slate-400 font-medium">Reports Rejected</div>
+              </div>
+            </div>
+
+            {/* Filter Toolbar */}
+            <div className="flex flex-col sm:flex-row gap-3 bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm">
+              <div className="relative flex-1">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                <input
+                  type="text"
+                  placeholder="Search vendor name, shop, reporting financer, reason..."
+                  value={fraudSearchQuery}
+                  onChange={(e) => setFraudSearchQuery(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl pl-10 pr-3 py-2 text-xs font-medium text-slate-900 focus:outline-none focus:border-rose-500"
+                />
+              </div>
+
+              <div className="flex gap-1.5 bg-slate-100 p-1 rounded-xl flex-wrap">
+                {(
+                  [
+                    { key: 'ALL', label: `All (${fraudReports.length})` },
+                    { key: 'PENDING', label: `⏳ Pending (${fraudReports.filter((r) => r.status === 'PENDING').length})` },
+                    { key: 'CONFIRMED', label: `🚨 Confirmed (${fraudReports.filter((r) => r.status === 'CONFIRMED').length})` },
+                    { key: 'DISMISSED', label: `✓ Dismissed (${fraudReports.filter((r) => r.status === 'DISMISSED').length})` },
+                  ] as const
+                ).map((f) => (
+                  <button
+                    key={f.key}
+                    onClick={() => setFraudFilterStatus(f.key)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${
+                      fraudFilterStatus === f.key
+                        ? f.key === 'CONFIRMED'
+                          ? 'bg-rose-600 text-white shadow-xs'
+                          : f.key === 'PENDING'
+                          ? 'bg-amber-500 text-white shadow-xs'
+                          : 'bg-[#003893] text-white shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200'
+                    }`}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Reports List */}
+            {(() => {
+              const filteredList = fraudReports.filter((r) => {
+                const matchesStatus = fraudFilterStatus === 'ALL' || r.status === fraudFilterStatus;
+                const matchesSearch =
+                  r.vendorName.toLowerCase().includes(fraudSearchQuery.toLowerCase()) ||
+                  r.shopName.toLowerCase().includes(fraudSearchQuery.toLowerCase()) ||
+                  r.reportedBy.toLowerCase().includes(fraudSearchQuery.toLowerCase()) ||
+                  r.reason.toLowerCase().includes(fraudSearchQuery.toLowerCase()) ||
+                  (r.userEmail && r.userEmail.toLowerCase().includes(fraudSearchQuery.toLowerCase())) ||
+                  (r.userPhone && r.userPhone.includes(fraudSearchQuery));
+                return matchesStatus && matchesSearch;
+              });
+
+              if (filteredList.length === 0) {
+                return (
+                  <div className="bg-white p-12 rounded-3xl border border-slate-200 text-center space-y-3">
+                    <div className="w-14 h-14 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center mx-auto">
+                      <ShieldCheck className="w-7 h-7" />
+                    </div>
+                    <h3 className="text-base font-extrabold text-slate-900 font-heading">
+                      {fraudFilterStatus === 'PENDING' ? 'No Pending Fraud Reports' : 'No Fraud Reports Found'}
+                    </h3>
+                    <p className="text-xs text-slate-500 max-w-md mx-auto">
+                      {fraudFilterStatus === 'PENDING'
+                        ? 'All reported vendor accounts have been verified or actioned.'
+                        : 'No reports match your current filter and search query.'}
+                    </p>
+                  </div>
+                );
+              }
+
+              return (
+                <div className="space-y-4">
+                  {filteredList.map((report) => {
+                    const isConfirmed = report.status === 'CONFIRMED';
+                    const isPending = report.status === 'PENDING';
+                    const isDismissed = report.status === 'DISMISSED';
+
+                    return (
+                      <div
+                        key={report.id}
+                        className={`bg-white rounded-3xl p-5 sm:p-6 border transition-all shadow-sm space-y-4 ${
+                          isConfirmed
+                            ? 'border-rose-300 bg-gradient-to-br from-rose-50/30 via-white to-rose-50/10 shadow-rose-100'
+                            : isPending
+                            ? 'border-amber-300 hover:border-amber-400'
+                            : 'border-slate-200 opacity-80'
+                        }`}
+                      >
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                          <div className="flex items-center gap-3">
+                            <div
+                              className={`w-11 h-11 rounded-2xl flex items-center justify-center font-extrabold text-sm shrink-0 ${
+                                isConfirmed
+                                  ? 'bg-rose-600 text-white shadow-md'
+                                  : isPending
+                                  ? 'bg-amber-500 text-white shadow-md'
+                                  : 'bg-slate-200 text-slate-700'
+                              }`}
+                            >
+                              {isConfirmed ? (
+                                <AlertTriangle className="w-5 h-5" />
+                              ) : (
+                                <span>{report.vendorName.charAt(0).toUpperCase()}</span>
+                              )}
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <h3 className="font-extrabold text-slate-900 text-base font-heading">
+                                  {report.vendorName}
+                                </h3>
+                                <span className="text-xs text-slate-500 font-semibold">({report.shopName})</span>
+                              </div>
+                              <div className="text-[11px] text-slate-400 flex items-center gap-2 mt-0.5">
+                                {report.userPhone && <span>📱 {report.userPhone}</span>}
+                                {report.userEmail && <span>✉️ {report.userEmail}</span>}
+                                <span>• Reported on {new Date(report.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2 shrink-0">
+                            {isConfirmed ? (
+                              <span className="px-3 py-1 rounded-full bg-rose-600 text-white font-extrabold text-[10px] uppercase shadow-sm tracking-wider flex items-center gap-1 animate-pulse">
+                                <AlertTriangle className="w-3 h-3" />
+                                🚨 CONFIRMED FRAUD (BLACKLISTED)
+                              </span>
+                            ) : isPending ? (
+                              <span className="px-3 py-1 rounded-full bg-amber-100 text-amber-900 font-extrabold text-[10px] uppercase tracking-wider border border-amber-300 flex items-center gap-1">
+                                <Clock className="w-3 h-3 text-amber-600" />
+                                ⏳ PENDING INVESTIGATION
+                              </span>
+                            ) : (
+                              <span className="px-3 py-1 rounded-full bg-slate-100 text-slate-600 font-extrabold text-[10px] uppercase tracking-wider border border-slate-200 flex items-center gap-1">
+                                <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                                ✓ REPORT DISMISSED
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Financer & Reason Box */}
+                        <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2">
+                          <div className="text-xs font-bold text-slate-600 flex items-center gap-1.5">
+                            <Building2 className="w-3.5 h-3.5 text-[#007a33]" />
+                            <span>Reported by Business Financer:</span>
+                            <span className="text-[#007a33] font-extrabold">{report.reportedBy}</span>
+                          </div>
+
+                          <div className="text-xs text-slate-800 bg-white p-3 rounded-xl border border-slate-200 font-medium leading-relaxed">
+                            <span className="font-bold text-rose-700 mr-1.5">Allegation / Reason:</span>
+                            {report.reason}
+                          </div>
+
+                          {report.adminNotes && (
+                            <div className="text-[11px] text-slate-600 pt-1">
+                              <span className="font-bold">Admin Note:</span> {report.adminNotes}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-1">
+                          <div className="text-[11px] text-slate-400 font-mono">
+                            Report ID: {report.id}
+                          </div>
+
+                          <div className="flex items-center gap-2 w-full sm:w-auto">
+                            {isPending && (
+                              <>
+                                <button
+                                  onClick={() => handleConfirmFraud(report)}
+                                  className="flex-1 sm:flex-initial py-2 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs shadow-md transition-all active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer"
+                                >
+                                  <AlertTriangle className="w-3.5 h-3.5" />
+                                  <span>🚨 Confirm Fraud (Blacklist Platform-Wide)</span>
+                                </button>
+
+                                <button
+                                  onClick={() => handleDismissFraud(report)}
+                                  className="flex-1 sm:flex-initial py-2 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 font-bold text-xs transition-all active:scale-95 cursor-pointer"
+                                >
+                                  <span>✓ Dismiss Report</span>
+                                </button>
+                              </>
+                            )}
+
+                            {isConfirmed && (
+                              <button
+                                onClick={() => handleDismissFraud(report)}
+                                className="py-2 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 font-bold text-xs transition-all active:scale-95 cursor-pointer"
+                              >
+                                <span>↺ Lift Blacklist & Dismiss Report</span>
+                              </button>
+                            )}
+
+                            {isDismissed && (
+                              <button
+                                onClick={() => handleConfirmFraud(report)}
+                                className="py-2 px-4 rounded-xl bg-rose-50 hover:bg-rose-600 hover:text-white text-rose-700 border border-rose-300 font-extrabold text-xs transition-all active:scale-95 cursor-pointer flex items-center gap-1"
+                              >
+                                <AlertTriangle className="w-3.5 h-3.5" />
+                                <span>Re-open & Confirm Fraud</span>
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
           </div>
         )}
 

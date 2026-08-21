@@ -1029,5 +1029,122 @@ export async function adminFetchPayments(): Promise<{ payments: any[] }> {
   }
 }
 
+// ================================================================
+// LEADS & INTERACTIONS (Vendor → Lender)
+// ================================================================
+
+export async function ingestLeadApi(payload: {
+  lenderId: string;
+  vendorId?: string;
+  type: 'LOAN_APPLICATION' | 'PHONE_CALL' | 'WHATSAPP';
+  amount?: number;
+  purpose?: string;
+  notes?: string;
+  vendorSnapshot?: any;
+}): Promise<{ success: boolean; data?: any; message?: string }> {
+  try {
+    const data = await apiFetch('/lenders/leads', {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify(payload),
+    });
+    return { success: data.success, data: data.data, message: data.message };
+  } catch (err: any) {
+    return { success: false, message: err.message };
+  }
+}
+
+export async function fetchLenderLeadsApi(): Promise<any[]> {
+  try {
+    const data = await apiFetch('/lenders/leads', {
+      headers: authHeaders(),
+    });
+    return data.data || [];
+  } catch {
+    return [];
+  }
+}
+
+export async function updateLeadStatusApi(
+  leadId: string,
+  status: 'Pending' | 'Accepted' | 'Rejected' | string
+): Promise<{ success: boolean; data?: any; message?: string }> {
+  try {
+    const data = await apiFetch(`/lenders/leads/${leadId}/status`, {
+      method: 'PUT',
+      headers: authHeaders(),
+      body: JSON.stringify({ status }),
+    });
+    return { success: data.success, data: data.data, message: data.message };
+  } catch (err: any) {
+    return { success: false, message: err.message };
+  }
+}
+
+// ================================================================
+// FRAUD REPORTS
+// ================================================================
+
+export async function submitFraudReportApi(payload: {
+  vendorId: string;
+  lenderId?: string;
+  reportedBy: string;
+  reason: string;
+  evidenceUrl?: string;
+}): Promise<{ success: boolean; data?: any; message?: string }> {
+  try {
+    const data = await apiFetch('/admin/fraud-reports', {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify(payload),
+    });
+    return { success: data.success, data: data.data, message: data.message };
+  } catch (err: any) {
+    return { success: false, message: err.message };
+  }
+}
+
+export async function adminFetchFraudReports(): Promise<{ success: boolean; data: any[]; count: number }> {
+  try {
+    const data = await adminFetch('/admin/fraud-reports');
+    const list = Array.isArray(data.data) ? data.data : [];
+    return { success: true, data: list, count: data.count || list.length };
+  } catch (err: any) {
+    console.error('adminFetchFraudReports error:', err.message);
+    return { success: false, data: [], count: 0 };
+  }
+}
+
+export async function adminConfirmFraudReport(
+  reportId: string,
+  adminNotes?: string
+): Promise<{ success: boolean; message?: string }> {
+  try {
+    const data = await adminFetch(`/admin/fraud-reports/${reportId}/confirm`, {
+      method: 'PUT',
+      body: JSON.stringify({ adminNotes }),
+    });
+    return { success: data.success, message: data.message };
+  } catch (err: any) {
+    return { success: false, message: err.message };
+  }
+}
+
+export async function adminDismissFraudReport(
+  reportId: string,
+  adminNotes?: string
+): Promise<{ success: boolean; message?: string }> {
+  try {
+    const data = await adminFetch(`/admin/fraud-reports/${reportId}/dismiss`, {
+      method: 'PUT',
+      body: JSON.stringify({ adminNotes }),
+    });
+    return { success: data.success, message: data.message };
+  } catch (err: any) {
+    return { success: false, message: err.message };
+  }
+}
+
 // Legacy export alias kept for compatibility
 export const mockLendersList: Lender[] = [];
+

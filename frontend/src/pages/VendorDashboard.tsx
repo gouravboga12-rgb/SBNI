@@ -776,7 +776,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                 </div>
                 <div className="pt-2">
                   <button
-                    onClick={() => setActiveTab('financers')}
+                    onClick={() => handleTabChange('lenders')}
                     className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs shadow-md transition-all active:scale-95 cursor-pointer inline-flex items-center gap-2"
                   >
                     <Search className="w-3.5 h-3.5" />

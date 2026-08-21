@@ -113,6 +113,9 @@ model VendorProfile {
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
+  fraudReports       FraudReport[]
+  financingLeads     FinancingLead[]
+
   @@index([city, state])
   @@index([kycStatus])
   @@index([category])
@@ -146,6 +149,9 @@ model LenderProfile {
   reviewCount        Int        @default(12)
   createdAt          DateTime   @default(now())
   updatedAt          DateTime   @updatedAt
+
+  reportedFrauds     FraudReport[]
+  financingLeads     FinancingLead[]
 
   @@index([city, state])
   @@index([institutionType])
@@ -363,4 +369,42 @@ model PlatformSetting {
   group       String   @default("General") // General, Payment, Contact, Features
   description String?
   updatedAt   DateTime @updatedAt
+}
+
+model FraudReport {
+  id          String         @id @default(uuid())
+  vendorId    String
+  vendor      VendorProfile  @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  lenderId    String?
+  lender      LenderProfile? @relation(fields: [lenderId], references: [id], onDelete: SetNull)
+  reportedBy  String         // Financer / Lender Name
+  reason      String
+  status      String         @default("PENDING") // PENDING, CONFIRMED, DISMISSED
+  evidenceUrl String?
+  adminNotes  String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@index([vendorId])
+  @@index([status])
+}
+
+model FinancingLead {
+  id             String         @id @default(uuid())
+  vendorId       String?
+  vendor         VendorProfile? @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  lenderId       String
+  lender         LenderProfile  @relation(fields: [lenderId], references: [id], onDelete: Cascade)
+  type           String         @default("LOAN_APPLICATION") // LOAN_APPLICATION, PHONE_CALL, WHATSAPP
+  status         String         @default("Pending") // Pending, Accepted, Rejected
+  amount         Float?
+  purpose        String?
+  notes          String?
+  vendorSnapshot String?        // JSON string of all 6 KYC files and details
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@index([lenderId])
+  @@index([vendorId])
+  @@index([status])
 }

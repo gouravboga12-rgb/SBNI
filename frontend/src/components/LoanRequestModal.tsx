@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Lender, VendorVerificationRequest } from '../types';
+import { ingestLeadApi } from '../services/api';
 import {
   X,
   Building2,
@@ -172,6 +173,8 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
       requestedDate: formattedDate,
       requestedTime: formattedTime,
       status: 'Pending',
+      inquiryType: 'LOAN_APPLICATION',
+      inquiryMessage: '📝 Vendor submitted a Working Capital Loan application.',
       mobileNumber: phone,
       emailId: email,
       panNumber: panFile?.name ? panFile.name.replace(/\.[^/.]+$/, '').toUpperCase() : (vp.panNumber || 'PAN Verified'),
@@ -204,6 +207,14 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
     // Also mark applied status for this specific lender card
     localStorage.setItem(`sbni_applied_${lender.id}`, 'true');
     window.dispatchEvent(new Event('sbni_request_submitted'));
+
+    // Asynchronously ingest lead into backend
+    ingestLeadApi({
+      lenderId: lender.id,
+      type: 'LOAN_APPLICATION',
+      notes: '📝 Vendor submitted a Working Capital Loan application.',
+      vendorSnapshot: newRequest,
+    }).catch((err) => console.error('Background ingestLeadApi error:', err));
 
     setSubmitted(true);
     if (onSuccess) {

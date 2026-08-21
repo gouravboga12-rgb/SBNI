@@ -1747,6 +1747,7 @@ const LenderRegisterForm: React.FC<LenderRegisterFormProps> = ({
   const [lState, setLState] = useState('');
   const [lPincode, setLPincode] = useState('');
   const [lPassword, setLPassword] = useState('');
+  const [lConfirmPassword, setLConfirmPassword] = useState('');
   const [lMinLoan, setLMinLoan] = useState('10000');
   const [isCustomMin, setIsCustomMin] = useState(false);
   const [customMinInput, setCustomMinInput] = useState('');

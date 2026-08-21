@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Lender } from '../types';
 import { Phone, MessageCircle, CheckCircle2, SendHorizontal, Lock, Zap, TrendingUp, Coins, MapPin } from 'lucide-react';
+import { ingestLeadApi } from '../services/api';
 
 interface LenderCardProps {
   lender: Lender;
@@ -199,6 +200,14 @@ export const LenderCard: React.FC<LenderCardProps> = ({ lender, onOpenSubscripti
       localStorage.setItem(`sbni_applied_${lender.id}`, 'true');
       setHasApplied(true);
       window.dispatchEvent(new Event('sbni_request_submitted'));
+
+      // Asynchronously ingest lead into backend
+      ingestLeadApi({
+        lenderId: lender.id,
+        type: inquiryType,
+        notes: inquiryMessage,
+        vendorSnapshot: newRequest,
+      }).catch((err) => console.error('Background ingestLeadApi error:', err));
     } catch (e) {
       console.error('Error recording lender request:', e);
     }

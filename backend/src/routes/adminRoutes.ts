@@ -22,14 +22,27 @@ import {
   getAuditLogs,
   updatePlatformSetting,
   getAllPayments,
+  getAllFraudReports,
+  createFraudReport,
+  confirmFraudReport,
+  dismissFraudReport,
 } from '../controllers/adminController';
 import { authenticateUser, authorizeRoles } from '../middlewares/auth';
 import { asyncHandler } from '../middlewares/errorHandler';
 
 const router = Router();
 
-// Protect all admin routes with authentication and SUPER_ADMIN role requirement
+// Allow LENDER and SUPER_ADMIN to submit a fraud report
+router.post('/fraud-reports', authenticateUser, authorizeRoles('LENDER', 'SUPER_ADMIN'), asyncHandler(createFraudReport));
+
+// Protect remaining admin routes with authentication and SUPER_ADMIN role requirement
 router.use(authenticateUser, authorizeRoles('SUPER_ADMIN'));
+
+// Fraud Reports Management
+router.get('/fraud-reports', asyncHandler(getAllFraudReports));
+router.put('/fraud-reports/:reportId/confirm', asyncHandler(confirmFraudReport));
+router.put('/fraud-reports/:reportId/dismiss', asyncHandler(dismissFraudReport));
+
 
 router.get('/dashboard-stats', asyncHandler(getAdminDashboardStats));
 router.get('/payments', asyncHandler(getAllPayments));

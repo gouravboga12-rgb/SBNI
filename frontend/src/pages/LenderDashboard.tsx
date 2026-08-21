@@ -1,7 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { VendorVerificationRequest } from '../types';
 import { BannerCarousel, BannerSlide } from '../components/BannerCarousel';
-import { fetchVendorProfilesForLender, updateLenderProfileApi, getMyProfileApi } from '../services/api';
+import {
+  fetchVendorProfilesForLender,
+  updateLenderProfileApi,
+  getMyProfileApi,
+  submitFraudReportApi,
+  updateLeadStatusApi,
+  fetchLenderLeadsApi,
+} from '../services/api';
 import { LocationPickerModal } from '../components/LocationPickerModal';
 import { getGoogleMapsNavigationUrl } from '../services/mapboxService';
 import {
@@ -30,6 +37,7 @@ import {
   Navigation,
   Radio,
   Compass,
+  MessageCircle,
 } from 'lucide-react';
 
 const LENDER_BANNER_SLIDES: BannerSlide[] = [
@@ -139,7 +147,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
     if (onTabChange) onTabChange(tab);
     if (tab === 'profile') setSelectedVendor(null);
   };
-  const [businessFilterStatus, setBusinessFilterStatus] = useState<'ALL' | 'Verified' | 'Pending'>('ALL');
+  const [businessFilterStatus, setBusinessFilterStatus] = useState<'PENDING' | 'ACCEPTED' | 'REJECTED' | 'ALL'>('PENDING');
   const [businessSearchQuery, setBusinessSearchQuery] = useState('');
   const [previewDocModal, setPreviewDocModal] = useState<{ title: string; url: string; type: 'image' | 'doc' } | null>(null);
 
@@ -449,7 +457,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleBusinessesClick = (filter: 'ALL' | 'Verified' | 'Pending' = 'ALL') => {
+  const handleBusinessesClick = (filter: 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'ALL' = 'PENDING') => {
     setSelectedVendor(null);
     setBusinessFilterStatus(filter);
     setActiveTab('businesses');
@@ -482,6 +490,9 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
         }
       }
     } catch (e) {}
+
+    // Synchronize to backend if backend lead
+    updateLeadStatusApi(id, newStatus).catch((err) => console.error('Failed to sync status to backend:', err));
 
     window.dispatchEvent(new Event('sbni_request_submitted'));
   };
@@ -516,7 +527,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
     }, 1500);
   };
 
-  const submitFraudReportToAdmin = () => {
+  const submitFraudReportToAdmin = async () => {
     if (!reportingFraudVendor) return;
     try {
       const storedFraud = JSON.parse(localStorage.getItem('sbni_fraud_vendors') || '{}');
@@ -525,16 +536,31 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
       localStorage.setItem('sbni_fraud_vendors', JSON.stringify(storedFraud));
 
       const lenderReports = JSON.parse(localStorage.getItem('sbni_lender_reported_frauds') || '[]');
-      lenderReports.push({
+      const newReportEntry = {
+        id: 'fraud-' + Date.now(),
         vendorId: reportingFraudVendor.id,
         vendorName: reportingFraudVendor.vendorName,
         shopName: reportingFraudVendor.shopName,
         reportedBy: currentUserObj.name,
         reason: fraudReason || 'Suspicious financial activity or fraudulent documents',
+        status: 'PENDING',
         date: new Date().toISOString(),
-      });
+      };
+      lenderReports.push(newReportEntry);
       localStorage.setItem('sbni_lender_reported_frauds', JSON.stringify(lenderReports));
-    } catch {}
+
+      // Asynchronously submit to AWS backend /api/v1/admin/fraud-reports
+      submitFraudReportApi({
+        vendorId: reportingFraudVendor.id,
+        lenderId: currentUserObj.regNo || undefined,
+        reportedBy: currentUserObj.name,
+        reason: fraudReason || 'Suspicious financial activity or fraudulent documents',
+      }).catch((err) => console.error('Failed to submit fraud report to backend:', err));
+
+      window.dispatchEvent(new Event('sbni_fraud_reported'));
+    } catch (e) {
+      console.error('Error submitting fraud report:', e);
+    }
 
     setRequests(
       requests.map((r) => (r.id === reportingFraudVendor.id ? { ...r, isFraud: true } : r))
@@ -783,7 +809,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                   </div>
 
                   <div
-                    onClick={() => handleBusinessesClick('Pending')}
+                    onClick={() => handleBusinessesClick('PENDING')}
                     className="card-white p-4 text-center flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-emerald-500 hover:shadow-md transition-all active:scale-95"
                   >
                     <div className="w-11 h-11 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">

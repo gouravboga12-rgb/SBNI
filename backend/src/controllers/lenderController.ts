@@ -116,3 +116,96 @@ export const verifyVendorKYC = async (req: AuthenticatedRequest, res: Response) 
 
   res.json({ success: true, message: `Vendor KYC Document status updated to ${status}.`, data: updatedDoc });
 };
+
+export const ingestLead = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { lenderId, vendorId, type, amount, purpose, notes, vendorSnapshot } = req.body;
+
+    if (!lenderId) {
+      return res.status(400).json({ success: false, message: 'Lender ID is required.' });
+    }
+
+    const leadType = type || 'LOAN_APPLICATION';
+    let leadNotes = notes;
+    if (!leadNotes) {
+      if (leadType === 'PHONE_CALL') leadNotes = '📞 Vendor initiated a Phone Call inquiry';
+      else if (leadType === 'WHATSAPP') leadNotes = '💬 Vendor initiated a WhatsApp Chat inquiry';
+      else leadNotes = '📝 Vendor submitted a loan application';
+    }
+
+    const lead = await (prisma as any).financingLead.create({
+      data: {
+        lenderId,
+        vendorId: vendorId || null,
+        type: leadType,
+        status: 'Pending',
+        amount: amount ? parseFloat(String(amount)) : null,
+        purpose: purpose || null,
+        notes: leadNotes,
+        vendorSnapshot: vendorSnapshot ? (typeof vendorSnapshot === 'string' ? vendorSnapshot : JSON.stringify(vendorSnapshot)) : null,
+      },
+    });
+
+    res.status(201).json({
+      success: true,
+      message: `Lead ingested successfully (${leadType}).`,
+      data: lead,
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message || 'Failed to ingest lead.' });
+  }
+};
+
+export const getLenderLeads = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const userId = req.user?.userId;
+    const lenderProfile = await prisma.lenderProfile.findUnique({
+      where: { userId },
+    });
+
+    if (!lenderProfile) {
+      return res.status(404).json({ success: false, message: 'Lender profile not found.' });
+    }
+
+    const leads = await (prisma as any).financingLead.findMany({
+      where: { lenderId: lenderProfile.id },
+      include: {
+        vendor: {
+          include: {
+            user: { select: { email: true, phone: true, isVerified: true, kycDocuments: true } },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    res.json({ success: true, count: leads.length, data: leads });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message || 'Failed to fetch lender leads.' });
+  }
+};
+
+export const updateLeadStatus = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { leadId } = req.params;
+    const { status } = req.body;
+
+    if (!status) {
+      return res.status(400).json({ success: false, message: 'Status is required.' });
+    }
+
+    const lead = await (prisma as any).financingLead.update({
+      where: { id: leadId },
+      data: { status },
+    });
+
+    res.json({
+      success: true,
+      message: `Lead status updated to ${status}.`,
+      data: lead,
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message || 'Failed to update lead status.' });
+  }
+};
+

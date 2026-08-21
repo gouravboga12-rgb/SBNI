@@ -609,5 +609,108 @@ export const getAllPayments = async (req: AuthenticatedRequest, res: Response) =
   }
 };
 
+// Fraud Reports Management
+export const getAllFraudReports = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const reports = await (prisma as any).fraudReport.findMany({
+      include: {
+        vendor: {
+          include: {
+            user: { select: { email: true, phone: true, isVerified: true } },
+          },
+        },
+        lender: {
+          include: {
+            user: { select: { email: true, phone: true } },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+    res.json({ success: true, count: reports.length, data: reports });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message || 'Failed to fetch fraud reports.' });
+  }
+};
 
+export const createFraudReport = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { vendorId, lenderId, reportedBy, reason, evidenceUrl } = req.body;
+    if (!vendorId || !reason) {
+      return res.status(400).json({ success: false, message: 'Vendor ID and Reason are required.' });
+    }
 
+    const report = await (prisma as any).fraudReport.create({
+      data: {
+        vendorId,
+        lenderId: lenderId || null,
+        reportedBy: reportedBy || (req.user as any)?.name || req.user?.email || 'Business Money Financer',
+        reason,
+        evidenceUrl: evidenceUrl || null,
+        status: 'PENDING',
+      },
+    });
+
+    res.status(201).json({
+      success: true,
+      message: '🚨 Fraud report successfully registered. Super Admin has been notified for investigation.',
+      data: report,
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message || 'Failed to create fraud report.' });
+  }
+};
+
+export const confirmFraudReport = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { reportId } = req.params;
+    const { adminNotes } = req.body;
+
+    const report = await (prisma as any).fraudReport.update({
+      where: { id: reportId },
+      data: {
+        status: 'CONFIRMED',
+        adminNotes: adminNotes || 'Confirmed by Super Admin after review.',
+      },
+      include: { vendor: true },
+    });
+
+    if (report.vendorId) {
+      await prisma.vendorProfile.update({
+        where: { id: report.vendorId },
+        data: { isFraud: true },
+      });
+    }
+
+    res.json({
+      success: true,
+      message: `Fraud report confirmed. Vendor "${report.vendor?.businessName || 'Vendor'}" is now blacklisted platform-wide as FRAUD.`,
+      data: report,
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message || 'Failed to confirm fraud report.' });
+  }
+};
+
+export const dismissFraudReport = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { reportId } = req.params;
+    const { adminNotes } = req.body;
+
+    const report = await (prisma as any).fraudReport.update({
+      where: { id: reportId },
+      data: {
+        status: 'DISMISSED',
+        adminNotes: adminNotes || 'Dismissed by Super Admin.',
+      },
+    });
+
+    res.json({
+      success: true,
+      message: 'Fraud report dismissed. Vendor account is clear of this report.',
+      data: report,
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message || 'Failed to dismiss fraud report.' });
+  }
+};

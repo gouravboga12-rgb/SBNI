@@ -82,7 +82,21 @@ export interface VendorVerificationRequest {
 
 export interface SubscriptionPlan {
   id: string;
-  code: 'WEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'HALF_YEARLY' | 'YEARLY';
+  code:
+    | 'WEEKLY'
+    | 'MONTHLY'
+    | 'QUARTERLY'
+    | 'HALF_YEARLY'
+    | 'YEARLY'
+    | 'VENDOR_WEEKLY'
+    | 'VENDOR_MONTHLY'
+    | 'VENDOR_QUARTERLY'
+    | 'VENDOR_YEARLY'
+    | 'LENDER_WEEKLY'
+    | 'LENDER_MONTHLY'
+    | 'LENDER_QUARTERLY'
+    | 'LENDER_ANNUAL'
+    | string;
   name: string;
   description: string;
   price: number;
