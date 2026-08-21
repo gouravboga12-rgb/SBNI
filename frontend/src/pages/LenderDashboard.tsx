@@ -608,16 +608,14 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
           safeSetLocalStorage('sbni_vendor_requests', JSON.stringify(cleaned));
 
           localReqs = cleaned.filter((r) => {
-            // Must match THIS lender
-            const lenderReg = (currentUserObj as any).regNo || '';
-            const lenderId = (currentUserObj as any).id || '';
+            // Must strictly match THIS specific lender account
+            const lenderReg = (currentUserObj as any)?.regNo || '';
+            const lenderId = (currentUserObj as any)?.id || (currentUser as any)?.id || (currentUser as any)?.userId || (currentUser as any)?.lenderProfile?.id || '';
+            const currLenderName = (currentUserObj?.name || '').toLowerCase().trim();
+
             if (r.lenderId && (r.lenderId === lenderReg || r.lenderId === lenderId)) return true;
-            if (r.lenderName && currentUserObj.name) {
-              const reqLender = r.lenderName.toLowerCase().replace(/money financer/g, '').trim();
-              const currLender = currentUserObj.name.toLowerCase().replace(/money financer/g, '').trim();
-              const officer = (currentUserObj.contactPerson || '').toLowerCase().trim();
-              if (reqLender && currLender && (reqLender.includes(currLender) || currLender.includes(reqLender))) return true;
-              if (officer && reqLender && (reqLender.includes(officer) || officer.includes(reqLender))) return true;
+            if (r.lenderName && currLenderName && r.lenderName.toLowerCase().trim() === currLenderName && currLenderName !== 'credit officer' && currLenderName !== 'money financer') {
+              return true;
             }
             return false;
           });
@@ -1167,12 +1165,12 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                 <div className="card-white p-4 flex items-center justify-between hover:shadow-md transition-all">
                   <div>
                     <div className="text-xs text-slate-500 font-medium">Total Shop Businesses</div>
-                    <div className="text-2xl font-extrabold text-slate-900 font-heading mt-0.5">{currentUserObj ? requests.length : nearbyBusinesses.length}</div>
+                    <div className="text-2xl font-extrabold text-slate-900 font-heading mt-0.5">{nearbyBusinesses.length}</div>
                     <button
-                      onClick={() => currentUserObj ? handleReportsClick('ALL') : handleBusinessesClick()}
+                      onClick={handleBusinessesClick}
                       className="text-xs text-blue-600 font-bold mt-1 hover:underline flex items-center gap-0.5 cursor-pointer"
                     >
-                      <span>{currentUserObj ? 'View All' : 'Explore Registered'}</span> <ChevronRight className="w-3 h-3" />
+                      <span>Explore Registered</span> <ChevronRight className="w-3 h-3" />
                     </button>
                   </div>
                   <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 flex-shrink-0">
