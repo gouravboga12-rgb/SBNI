@@ -170,35 +170,35 @@ export const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
   const isLenderMode = mode === 'LENDER_RADIUS';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-sm overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-sm">
       {/* Modal Card Container */}
-      <div className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col my-auto max-h-[92vh] animate-in fade-in zoom-in-95 duration-200">
+      <div className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col my-auto max-h-[85vh] sm:max-h-[88vh] animate-in fade-in zoom-in-95 duration-200">
         
         {/* Header */}
-        <div className="p-5 sm:p-6 border-b border-slate-100 bg-gradient-to-r from-slate-900 to-blue-950 text-white flex items-center justify-between">
+        <div className="flex-shrink-0 p-5 sm:p-6 border-b border-slate-100 bg-gradient-to-r from-slate-900 to-blue-950 text-white flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-blue-500/20 border border-blue-400/30 flex items-center justify-center text-blue-300">
               <Compass className="w-5 h-5" />
             </div>
             <div>
               <h3 className="text-base sm:text-lg font-extrabold font-heading">
-                {title || (isLenderMode ? 'Set Lending Service Area & Radius' : 'Select Search Location')}
+                {title || (isLenderMode ? 'Configure Lending Area & Service Radius' : 'Select Search Location')}
               </h3>
               <p className="text-[11px] text-blue-200 font-medium">
-                {subtitle || (isLenderMode ? 'Powered by Mapbox Location Services' : 'Discover nearby business financers')}
+                {subtitle || (isLenderMode ? 'Small businesses within this radius will discover your financer profile' : 'Discover nearby business financers')}
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-full hover:bg-white/10 text-slate-300 hover:text-white transition-colors"
+            className="p-2 rounded-full hover:bg-white/10 text-slate-300 hover:text-white transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Modal Body */}
-        <div className="p-5 sm:p-6 space-y-5 overflow-y-auto">
+        <div className="flex-1 min-h-0 p-5 sm:p-6 space-y-5 overflow-y-auto overscroll-contain">
           
           {/* Action: Use My Location Button */}
           <div className="flex items-center gap-2">
@@ -385,22 +385,22 @@ export const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
 
         </div>
 
-        {/* Modal Footer Actions */}
-        <div className="p-5 sm:p-6 border-t border-slate-100 bg-slate-50 flex items-center justify-end gap-3">
+        {/* Modal Footer Actions - Always Pinned & Prominently Visible */}
+        <div className="flex-shrink-0 sticky bottom-0 z-30 p-4 sm:p-5 border-t border-slate-200 bg-white flex items-center justify-between gap-3 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
           <button
             type="button"
             onClick={onClose}
-            className="px-5 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-bold text-xs hover:bg-slate-100 transition-colors"
+            className="px-4 sm:px-5 py-3 rounded-2xl border border-slate-300 text-slate-700 font-bold text-xs hover:bg-slate-100 transition-colors cursor-pointer"
           >
             Cancel
           </button>
           <button
             type="button"
             onClick={handleSave}
-            className="px-6 py-2.5 rounded-xl bg-[#003893] hover:bg-[#002669] text-white font-extrabold text-xs shadow-md transition-all active:scale-95 flex items-center gap-2 cursor-pointer"
+            className="flex-1 sm:flex-none px-6 py-3 rounded-2xl bg-[#003893] hover:bg-[#002669] text-white font-extrabold text-xs sm:text-sm shadow-md hover:shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
           >
-            <CheckCircle2 className="w-4 h-4" />
-            <span>Confirm & Save Location</span>
+            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+            <span>{isLenderMode ? 'Save & Apply Lending Area' : 'Confirm & Save Location'}</span>
           </button>
         </div>
 
