@@ -170,9 +170,9 @@ export const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
   const isLenderMode = mode === 'LENDER_RADIUS';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-sm">
       {/* Modal Card Container */}
-      <div className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col my-auto max-h-[85vh] sm:max-h-[88vh] animate-in fade-in zoom-in-95 duration-200">
+      <div className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col my-auto max-h-[82vh] sm:max-h-[85vh] animate-in fade-in zoom-in-95 duration-200">
         
         {/* Header */}
         <div className="flex-shrink-0 p-5 sm:p-6 border-b border-slate-100 bg-gradient-to-r from-slate-900 to-blue-950 text-white flex items-center justify-between">
