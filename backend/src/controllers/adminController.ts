@@ -271,6 +271,22 @@ export const deleteUser = async (req: AuthenticatedRequest, res: Response) => {
 
     // 2. Perform atomic deletion of all relations and the user in a transaction
     await prisma.$transaction(async (tx) => {
+      const vProfiles = await tx.vendorProfile.findMany({ where: { userId: resolvedUserId }, select: { id: true } });
+      const vIds = vProfiles.map((p) => p.id);
+
+      const lProfiles = await tx.lenderProfile.findMany({ where: { userId: resolvedUserId }, select: { id: true } });
+      const lIds = lProfiles.map((p) => p.id);
+
+      if (vIds.length > 0) {
+        await tx.financingLead.deleteMany({ where: { vendorId: { in: vIds } } });
+        await tx.fraudReport.deleteMany({ where: { vendorId: { in: vIds } } });
+      }
+
+      if (lIds.length > 0) {
+        await tx.financingLead.deleteMany({ where: { lenderId: { in: lIds } } });
+        await tx.fraudReport.deleteMany({ where: { lenderId: { in: lIds } } });
+      }
+
       // Delete user's payments
       await tx.payment.deleteMany({ where: { userId: resolvedUserId } });
 

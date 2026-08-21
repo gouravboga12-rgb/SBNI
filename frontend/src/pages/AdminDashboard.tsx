@@ -1047,6 +1047,48 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
         setVendors(updated);
         localStorage.setItem('sbni_admin_vendors', JSON.stringify(updated));
 
+        // Add to deleted vendors blacklist
+        try {
+          const deleted = JSON.parse(localStorage.getItem('sbni_deleted_vendors') || '[]');
+          const toAdd = [
+            vendorId,
+            vendorObj?.id,
+            vendorObj?.ownerName,
+            vendorObj?.businessName,
+            vendorObj?.userPhone,
+            vendorObj?.userEmail,
+            vendorName,
+          ].filter(Boolean);
+          const updatedDeleted = Array.from(new Set([...deleted, ...toAdd]));
+          localStorage.setItem('sbni_deleted_vendors', JSON.stringify(updatedDeleted));
+        } catch (e) {}
+
+        // Remove from local sbni_vendor_requests
+        try {
+          const storedReqs = localStorage.getItem('sbni_vendor_requests');
+          if (storedReqs) {
+            const reqs = JSON.parse(storedReqs);
+            if (Array.isArray(reqs)) {
+              const cleaned = reqs.filter((r: any) =>
+                r.id !== vendorId &&
+                r.vendorId !== vendorId &&
+                r.vendorName !== vendorObj?.ownerName &&
+                r.shopName !== vendorObj?.businessName &&
+                r.vendorName !== vendorName &&
+                r.shopName !== vendorName &&
+                r.emailId !== vendorObj?.userEmail &&
+                r.mobileNumber !== vendorObj?.userPhone
+              );
+              localStorage.setItem('sbni_vendor_requests', JSON.stringify(cleaned));
+            }
+          }
+        } catch (e) {}
+
+        // Broadcast global events so LenderDashboard immediately clears it
+        window.dispatchEvent(new CustomEvent('sbni_vendor_deleted', { detail: { vendorId, vendorName } }));
+        window.dispatchEvent(new Event('sbni_request_submitted'));
+        window.dispatchEvent(new Event('sbni_vendor_profile_updated'));
+
         setAuditLogs([
           {
             id: 'a-' + Date.now(),

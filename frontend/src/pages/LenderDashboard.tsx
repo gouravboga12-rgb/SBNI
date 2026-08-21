@@ -550,6 +550,14 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const loadVendorRequests = async () => {
+    const deletedVendorIds: string[] = (() => {
+      try {
+        return JSON.parse(localStorage.getItem('sbni_deleted_vendors') || '[]');
+      } catch (e) {
+        return [];
+      }
+    })();
+
     // 1. Local requests submitted specifically to THIS lender
     let localReqs: VendorVerificationRequest[] = [];
     try {
@@ -557,12 +565,29 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
       if (dynamicStr) {
         const parsed = JSON.parse(dynamicStr);
         if (Array.isArray(parsed)) {
-          localReqs = parsed.filter((r) => {
+          // Clean out deleted vendor accounts from local storage permanently
+          const cleaned = parsed.filter((r) => {
             if (!r) return false;
-            // Filter out dummy static IDs or demo names
+            // Purge deleted vendors or test accounts
+            if (
+              deletedVendorIds.includes(r.id) ||
+              deletedVendorIds.includes(r.vendorId) ||
+              deletedVendorIds.includes(r.emailId) ||
+              deletedVendorIds.includes(r.vendorName) ||
+              deletedVendorIds.includes(r.shopName) ||
+              (r.vendorName && deletedVendorIds.some((d: string) => d.toLowerCase() === r.vendorName.toLowerCase())) ||
+              (r.shopName && deletedVendorIds.some((d: string) => d.toLowerCase() === r.shopName.toLowerCase()))
+            ) {
+              return false;
+            }
             if (r.id === 'req-1' || r.id === 'req-2' || r.id === 'REQ-9842' || r.id === 'REQ-4410') return false;
             if (r.vendorName === 'Rajesh Sharma' || r.vendorName === 'Priya Patel') return false;
+            return true;
+          });
 
+          localStorage.setItem('sbni_vendor_requests', JSON.stringify(cleaned));
+
+          localReqs = cleaned.filter((r) => {
             // Must match THIS lender
             const lenderReg = (currentUserObj as any).regNo || '';
             const lenderId = (currentUserObj as any).id || '';
@@ -585,66 +610,85 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
     try {
       const leadsList = await fetchLenderLeadsApi();
       if (Array.isArray(leadsList)) {
-        awsReqs = leadsList.map((lead: any) => {
-          const v = lead.vendor || {};
-          let snapshot: any = {};
-          try {
-            if (lead.vendorSnapshot) {
-              snapshot = typeof lead.vendorSnapshot === 'string' ? JSON.parse(lead.vendorSnapshot) : lead.vendorSnapshot;
+        awsReqs = leadsList
+          .filter((lead: any) => {
+            const v = lead.vendor || {};
+            let snapshot: any = {};
+            try {
+              if (lead.vendorSnapshot) {
+                snapshot = typeof lead.vendorSnapshot === 'string' ? JSON.parse(lead.vendorSnapshot) : lead.vendorSnapshot;
+              }
+            } catch {}
+            const vId = lead.vendorId || v.id || v.userId;
+            const vName = snapshot.vendorName || v.ownerName || v.user?.name;
+            const sName = snapshot.shopName || v.businessName;
+            const vEmail = snapshot.emailId || v.user?.email || v.email;
+
+            if (
+              deletedVendorIds.includes(vId) ||
+              deletedVendorIds.includes(vName) ||
+              deletedVendorIds.includes(sName) ||
+              deletedVendorIds.includes(vEmail) ||
+              (vName && deletedVendorIds.some((d: string) => d.toLowerCase() === vName.toLowerCase())) ||
+              (sName && deletedVendorIds.some((d: string) => d.toLowerCase() === sName.toLowerCase()))
+            ) {
+              return false;
             }
-          } catch {}
+            return true;
+          })
+          .map((lead: any) => {
+            const v = lead.vendor || {};
+            let snapshot: any = {};
+            try {
+              if (lead.vendorSnapshot) {
+                snapshot = typeof lead.vendorSnapshot === 'string' ? JSON.parse(lead.vendorSnapshot) : lead.vendorSnapshot;
+              }
+            } catch {}
 
-          const kycDocs = v.user?.kycDocuments || [];
-          const panDoc = kycDocs.find((d: any) => d.docType === 'PAN');
-          const aadhaarDoc = kycDocs.find((d: any) => d.docType === 'AADHAAR');
-          const licenseDoc = kycDocs.find((d: any) => d.docType === 'BUSINESS_PROOF');
-          const gstDoc = kycDocs.find((d: any) => d.docType === 'GST_CERTIFICATE');
+            const kycDocs = v.user?.kycDocuments || [];
+            const panDoc = kycDocs.find((d: any) => d.docType === 'PAN');
+            const aadhaarDoc = kycDocs.find((d: any) => d.docType === 'AADHAAR');
+            const licenseDoc = kycDocs.find((d: any) => d.docType === 'BUSINESS_PROOF');
+            const gstDoc = kycDocs.find((d: any) => d.docType === 'GST_CERTIFICATE');
 
-          return {
-            id: lead.id,
-            vendorName: snapshot.vendorName || v.ownerName || v.user?.name || 'Applicant Vendor',
-            shopName: snapshot.shopName || v.businessName || 'Business Enterprise',
-            shopAddress: snapshot.shopAddress || v.address || (v.city ? `${v.city}, ${v.state || ''}` : 'Address pending'),
-            city: snapshot.city || v.city || 'Hyderabad',
-            state: snapshot.state || v.state || 'Telangana',
-            requestedDate: lead.createdAt ? String(lead.createdAt).substring(0, 10) : 'Today',
-            requestedTime: lead.createdAt ? new Date(lead.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '10:00 AM',
-            status: lead.status || 'Pending',
-            inquiryType: lead.type || 'LOAN_APPLICATION',
-            inquiryMessage: lead.notes || (lead.type === 'PHONE_CALL' ? '📞 Vendor initiated a Phone Call inquiry' : lead.type === 'WHATSAPP' ? '💬 Vendor sent a WhatsApp inquiry' : '📝 Loan Application submitted'),
-            mobileNumber: snapshot.mobileNumber || v.user?.phone || v.phone || 'Phone pending',
-            emailId: snapshot.emailId || v.user?.email || v.email || 'Email pending',
-            dateOfBirth: snapshot.dateOfBirth || v.dateOfBirth || 'Not specified',
-            panNumber: snapshot.panNumber || v.panNumber || panDoc?.documentNumber || null,
-            aadhaarNumber: snapshot.aadhaarNumber || v.aadhaarNumber || aadhaarDoc?.documentNumber || null,
-            shopType: snapshot.shopType || v.category || v.registrationType || 'Retail & Business',
-            yearsInBusiness: snapshot.yearsInBusiness || v.yearsInBusiness || 'Established',
-            requiredAmount: lead.amount ? `₹ ${lead.amount.toLocaleString('en-IN')}` : (snapshot.requiredAmount || '₹ 5,00,000'),
-            monthlyIncome: snapshot.monthlyIncome || (v.annualTurnover ? `₹ ${v.annualTurnover}` : '₹ 50,000 - 1 Lakh'),
-            isFraud: !!v.isFraud,
-            avatarUrl: snapshot.avatarUrl || v.avatarUrl || null,
-            liveSelfieUrl: snapshot.liveSelfieUrl || v.liveSelfieUrl || null,
-            shopPhotoUrl: snapshot.shopPhotoUrl || v.shopPhotoUrl || null,
-            panFileUrl: snapshot.panFileUrl || panDoc?.fileUrl || v.panFileUrl || null,
-            aadhaarFileUrl: snapshot.aadhaarFileUrl || aadhaarDoc?.fileUrl || v.aadhaarFileUrl || null,
-            shopLicensePdf: snapshot.shopLicensePdf || licenseDoc?.fileUrl || null,
-            gstCertificatePdf: snapshot.gstCertificatePdf || gstDoc?.fileUrl || null,
-            shopImages: snapshot.shopImages || (Array.isArray(v.shopImages) ? v.shopImages : []),
-            lenderId: lead.lenderId,
-          };
-        });
+            return {
+              id: lead.id,
+              vendorName: snapshot.vendorName || v.ownerName || v.user?.name || 'Applicant Vendor',
+              shopName: snapshot.shopName || v.businessName || 'Business Enterprise',
+              shopAddress: snapshot.shopAddress || v.address || (v.city ? `${v.city}, ${v.state || ''}` : 'Address pending'),
+              city: snapshot.city || v.city || 'Hyderabad',
+              state: snapshot.state || v.state || 'Telangana',
+              requestedDate: lead.createdAt ? String(lead.createdAt).substring(0, 10) : 'Today',
+              requestedTime: lead.createdAt ? new Date(lead.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '10:00 AM',
+              status: lead.status || 'Pending',
+              inquiryType: lead.type || 'LOAN_APPLICATION',
+              inquiryMessage: lead.notes || (lead.type === 'PHONE_CALL' ? '📞 Vendor initiated a Phone Call inquiry' : lead.type === 'WHATSAPP' ? '💬 Vendor sent a WhatsApp inquiry' : '📝 Loan Application submitted'),
+              mobileNumber: snapshot.mobileNumber || v.user?.phone || v.phone || 'Phone pending',
+              emailId: snapshot.emailId || v.user?.email || v.email || 'Email pending',
+              dateOfBirth: snapshot.dateOfBirth || v.dateOfBirth || 'Not specified',
+              panNumber: snapshot.panNumber || v.panNumber || panDoc?.documentNumber || null,
+              aadhaarNumber: snapshot.aadhaarNumber || v.aadhaarNumber || aadhaarDoc?.documentNumber || null,
+              gstNumber: snapshot.gstNumber || v.gstNumber || gstDoc?.documentNumber || null,
+              shopType: snapshot.shopType || v.category || v.registrationType || 'Retail & Business',
+              yearsInBusiness: snapshot.yearsInBusiness || v.yearsInBusiness || 'Established',
+              requiredAmount: lead.amount ? `₹ ${lead.amount.toLocaleString('en-IN')}` : (snapshot.requiredAmount || '₹ 5,00,000'),
+              monthlyIncome: snapshot.monthlyIncome || (v.annualTurnover ? `₹ ${v.annualTurnover}` : '₹ 50,000 - 1 Lakh'),
+              isFraud: !!v.isFraud,
+              avatarUrl: snapshot.avatarUrl || v.avatarUrl || null,
+              liveSelfieUrl: snapshot.liveSelfieUrl || v.liveSelfieUrl || null,
+              shopPhotoUrl: snapshot.shopPhotoUrl || v.shopPhotoUrl || null,
+              panFileUrl: snapshot.panFileUrl || panDoc?.fileUrl || v.panFileUrl || null,
+              aadhaarFileUrl: snapshot.aadhaarFileUrl || aadhaarDoc?.fileUrl || v.aadhaarFileUrl || null,
+              shopLicensePdf: snapshot.shopLicensePdf || licenseDoc?.fileUrl || null,
+              gstCertificatePdf: snapshot.gstCertificatePdf || gstDoc?.fileUrl || null,
+              shopImages: snapshot.shopImages || (Array.isArray(v.shopImages) ? v.shopImages : []),
+              lenderId: lead.lenderId,
+            };
+          });
       }
     } catch (e) {
       console.error('loadVendorRequests leads API error:', e);
     }
-
-    const deletedVendorIds = (() => {
-      try {
-        return JSON.parse(localStorage.getItem('sbni_deleted_vendors') || '[]');
-      } catch (e) {
-        return [];
-      }
-    })();
 
     const combined = [...localReqs, ...awsReqs];
     const deduplicated = combined.filter(
@@ -658,6 +702,9 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
         deletedVendorIds.includes(v.id) ||
         deletedVendorIds.includes(v.emailId) ||
         deletedVendorIds.includes(v.vendorName) ||
+        deletedVendorIds.includes(v.shopName) ||
+        (v.vendorName && deletedVendorIds.some((d: string) => d.toLowerCase() === v.vendorName.toLowerCase())) ||
+        (v.shopName && deletedVendorIds.some((d: string) => d.toLowerCase() === v.shopName.toLowerCase())) ||
         v.id === 'req-1' ||
         v.id === 'req-2' ||
         v.vendorName === 'Rajesh Sharma' ||
@@ -684,140 +731,82 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
 
   const loadNearbyBusinesses = async () => {
     try {
+      const deletedVendorIds: string[] = (() => {
+        try {
+          return JSON.parse(localStorage.getItem('sbni_deleted_vendors') || '[]');
+        } catch (e) {
+          return [];
+        }
+      })();
+
       const data = await fetchVendorProfilesForLender();
       let mapped: any[] = [];
       if (Array.isArray(data) && data.length > 0) {
-        mapped = data.map((vp: any) => {
-          const u = vp.user || {};
-          const kycDocs = u.kycDocuments || [];
-          const panDoc = kycDocs.find((d: any) => d.docType === 'PAN');
-          const aadhaarDoc = kycDocs.find((d: any) => d.docType === 'AADHAAR');
-          const licenseDoc = kycDocs.find((d: any) => d.docType === 'BUSINESS_PROOF');
-          const gstDoc = kycDocs.find((d: any) => d.docType === 'GST_CERTIFICATE');
+        mapped = data
+          .filter((vp: any) => {
+            if (!vp) return false;
+            const u = vp.user || {};
+            const id = vp.id || vp.userId;
+            const email = u.email || vp.email;
+            const owner = vp.ownerName || u.name;
+            const biz = vp.businessName;
+            if (
+              deletedVendorIds.includes(id) ||
+              deletedVendorIds.includes(email) ||
+              deletedVendorIds.includes(owner) ||
+              deletedVendorIds.includes(biz) ||
+              (owner && deletedVendorIds.some((d: string) => d.toLowerCase() === owner.toLowerCase())) ||
+              (biz && deletedVendorIds.some((d: string) => d.toLowerCase() === biz.toLowerCase()))
+            ) {
+              return false;
+            }
+            // Filter dummy accounts
+            if (id === 'biz-101' || id === 'biz-102' || id === 'biz-103') return false;
+            if (owner === 'Srinivas Rao' || owner === 'Venkatesh Murthy') return false;
+            return true;
+          })
+          .map((vp: any) => {
+            const u = vp.user || {};
+            const kycDocs = u.kycDocuments || [];
+            const panDoc = kycDocs.find((d: any) => d.docType === 'PAN');
+            const aadhaarDoc = kycDocs.find((d: any) => d.docType === 'AADHAAR');
+            const licenseDoc = kycDocs.find((d: any) => d.docType === 'BUSINESS_PROOF');
+            const gstDoc = kycDocs.find((d: any) => d.docType === 'GST_CERTIFICATE');
 
-          const vLat = vp.latitude ? Number(vp.latitude) : 17.3688;
-          const vLng = vp.longitude ? Number(vp.longitude) : 78.5247;
-          const distKm = calculateDistanceKm(lenderLocation.latitude, lenderLocation.longitude, vLat, vLng);
+            const vLat = vp.latitude ? Number(vp.latitude) : 17.3688;
+            const vLng = vp.longitude ? Number(vp.longitude) : 78.5247;
+            const distKm = calculateDistanceKm(lenderLocation.latitude, lenderLocation.longitude, vLat, vLng);
 
-          return {
-            id: vp.id || vp.userId,
-            vendorName: vp.ownerName || u.name || 'Local Shop Owner',
-            shopName: vp.businessName || 'Local Enterprise',
-            shopAddress: vp.address || `${vp.place || 'Dilsukhnagar'}, ${vp.city || 'Hyderabad'}`,
-            city: vp.city || 'Hyderabad',
-            state: vp.state || 'Telangana',
-            place: vp.place || 'Dilsukhnagar',
-            category: vp.category || 'Retail Shop Business',
-            annualTurnover: vp.annualTurnover || '10-50 Lakhs',
-            monthlyIncome: vp.monthlyIncome || '₹ 50,000 / month',
-            mobileNumber: u.phone || vp.phone || '+91 98765 43210',
-            emailId: u.email || vp.email || 'vendor@example.com',
-            dateOfBirth: vp.dateOfBirth || 'Not specified',
-            panNumber: vp.panNumber || panDoc?.documentNumber || 'ABCDE1234F',
-            aadhaarNumber: vp.aadhaarNumber || aadhaarDoc?.documentNumber || 'XXXX-XXXX-9012',
-            gstNumber: vp.gstNumber || gstDoc?.documentNumber || null,
-            isFraud: !!vp.isFraud,
-            avatarUrl: vp.avatarUrl || null,
-            liveSelfieUrl: vp.avatarUrl || null,
-            panFileUrl: panDoc?.fileUrl || null,
-            aadhaarFileUrl: aadhaarDoc?.fileUrl || null,
-            shopLicensePdf: licenseDoc?.fileUrl || null,
-            gstCertificatePdf: gstDoc?.fileUrl || null,
-            shopImages: [],
-            distanceKm: distKm,
-            isWithinRadius: distKm <= (lenderLocation.lendingRadiusKm || 50),
-          };
-        });
-      }
-
-      // Default high quality nearby local shops if database vendor table has only test records
-      if (mapped.length === 0) {
-        mapped = [
-          {
-            id: 'biz-101',
-            vendorName: 'Gourav Boga',
-            shopName: 'Gourav Electronics & Mobile Store',
-            shopAddress: 'Shop #12, Chaitanya Puri Main Road, Dilsukhnagar, Hyderabad, Telangana - 500060',
-            city: 'Hyderabad',
-            state: 'Telangana',
-            place: 'Dilsukhnagar',
-            category: 'Retail Shop Business',
-            annualTurnover: '10-50 Lakhs',
-            monthlyIncome: '₹ 85,000 / month',
-            mobileNumber: '7337401590',
-            emailId: 'bogagourav69@gmail.com',
-            dateOfBirth: '1995-06-15',
-            panNumber: 'ABCDE1234F',
-            aadhaarNumber: 'XXXX-XXXX-9012',
-            gstNumber: '36AAAPL1234C1Z5',
-            isFraud: false,
-            avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200',
-            liveSelfieUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200',
-            panFileUrl: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?q=80&w=600',
-            aadhaarFileUrl: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?q=80&w=600',
-            shopLicensePdf: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?q=80&w=600',
-            gstCertificatePdf: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?q=80&w=600',
-            shopImages: [],
-            distanceKm: 0.8,
-            isWithinRadius: true,
-          },
-          {
-            id: 'biz-102',
-            vendorName: 'Srinivas Rao',
-            shopName: 'Sri Lakshmi Textiles & Sarees',
-            shopAddress: 'Plot 45, Kothapet Main Road, Hyderabad - 500035',
-            city: 'Hyderabad',
-            state: 'Telangana',
-            place: 'Kothapet',
-            category: 'Textiles & Garments',
-            annualTurnover: '50 Lakhs - 1 Crore',
-            monthlyIncome: '₹ 1,20,000 / month',
-            mobileNumber: '+91 98480 22334',
-            emailId: 'srilakshmi.textiles@gmail.com',
-            dateOfBirth: '1988-11-20',
-            panNumber: 'FGHIJ5678K',
-            aadhaarNumber: 'XXXX-XXXX-4512',
-            gstNumber: '36BBBPK5678D1Z8',
-            isFraud: false,
-            avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=200',
-            liveSelfieUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=200',
-            panFileUrl: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?q=80&w=600',
-            aadhaarFileUrl: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?q=80&w=600',
-            shopLicensePdf: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?q=80&w=600',
-            gstCertificatePdf: null,
-            shopImages: [],
-            distanceKm: 2.1,
-            isWithinRadius: true,
-          },
-          {
-            id: 'biz-103',
-            vendorName: 'Venkatesh Murthy',
-            shopName: 'Sai Balaji Supermarket & Provisions',
-            shopAddress: 'Road No 3, LB Nagar, Hyderabad - 500074',
-            city: 'Hyderabad',
-            state: 'Telangana',
-            place: 'LB Nagar',
-            category: 'Food & Grocery',
-            annualTurnover: '50 Lakhs - 1 Crore',
-            monthlyIncome: '₹ 95,000 / month',
-            mobileNumber: '+91 97011 55667',
-            emailId: 'saibalaji.mart@gmail.com',
-            dateOfBirth: '1990-04-10',
-            panNumber: 'KLMNO9012P',
-            aadhaarNumber: 'XXXX-XXXX-7823',
-            gstNumber: '36CCCPM9012E1Z2',
-            isFraud: false,
-            avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=200',
-            liveSelfieUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=200',
-            panFileUrl: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?q=80&w=600',
-            aadhaarFileUrl: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?q=80&w=600',
-            shopLicensePdf: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?q=80&w=600',
-            gstCertificatePdf: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?q=80&w=600',
-            shopImages: [],
-            distanceKm: 3.8,
-            isWithinRadius: true,
-          }
-        ];
+            return {
+              id: vp.id || vp.userId,
+              vendorName: vp.ownerName || u.name || 'Local Shop Owner',
+              shopName: vp.businessName || 'Local Enterprise',
+              shopAddress: vp.address || `${vp.place || 'Dilsukhnagar'}, ${vp.city || 'Hyderabad'}`,
+              city: vp.city || 'Hyderabad',
+              state: vp.state || 'Telangana',
+              place: vp.place || 'Dilsukhnagar',
+              category: vp.category || 'Retail Shop Business',
+              annualTurnover: vp.annualTurnover || '10-50 Lakhs',
+              monthlyIncome: vp.monthlyIncome || '₹ 50,000 / month',
+              mobileNumber: u.phone || vp.phone || '+91 98765 43210',
+              emailId: u.email || vp.email || 'vendor@example.com',
+              dateOfBirth: vp.dateOfBirth || 'Not specified',
+              panNumber: vp.panNumber || panDoc?.documentNumber || null,
+              aadhaarNumber: vp.aadhaarNumber || aadhaarDoc?.documentNumber || null,
+              gstNumber: vp.gstNumber || gstDoc?.documentNumber || null,
+              isFraud: !!vp.isFraud,
+              avatarUrl: vp.avatarUrl || null,
+              liveSelfieUrl: vp.avatarUrl || null,
+              panFileUrl: (vp as any).panFileUrl || panDoc?.fileUrl || null,
+              aadhaarFileUrl: (vp as any).aadhaarFileUrl || aadhaarDoc?.fileUrl || null,
+              shopLicensePdf: (vp as any).businessLicenseUrl || licenseDoc?.fileUrl || null,
+              gstCertificatePdf: (vp as any).gstFileUrl || gstDoc?.fileUrl || null,
+              shopPhotos: (vp as any).shopPhotos ? (() => { try { return typeof (vp as any).shopPhotos === 'string' ? JSON.parse((vp as any).shopPhotos) : (vp as any).shopPhotos; } catch { return []; } })() : (vp.avatarUrl ? [vp.avatarUrl] : []),
+              shopImages: [],
+              distanceKm: distKm,
+              isWithinRadius: distKm <= (lenderLocation.lendingRadiusKm || 50),
+            };
+          });
       }
 
       setNearbyBusinesses(mapped);
@@ -842,11 +831,15 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
 
     window.addEventListener('sbni_request_submitted', handleSync);
     window.addEventListener('sbni_subscription_updated', handleSync);
+    window.addEventListener('sbni_vendor_deleted', handleSync);
+    window.addEventListener('sbni_vendor_profile_updated', handleSync);
     window.addEventListener('storage', handleSync);
 
     return () => {
       window.removeEventListener('sbni_request_submitted', handleSync);
       window.removeEventListener('sbni_subscription_updated', handleSync);
+      window.removeEventListener('sbni_vendor_deleted', handleSync);
+      window.removeEventListener('sbni_vendor_profile_updated', handleSync);
       window.removeEventListener('storage', handleSync);
     };
   }, [lenderLocation]);
@@ -1337,9 +1330,13 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                   <Users className="w-8 h-8" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-extrabold text-slate-900 font-heading">No Businesses Found</h3>
+                  <h3 className="text-lg font-extrabold text-slate-900 font-heading">
+                    {nearbySearchQuery.trim() ? 'No Businesses Found Matching Search' : 'No Registered Businesses in Range'}
+                  </h3>
                   <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1.5 leading-relaxed">
-                    No shop businesses matched your search query. Try searching by city or category.
+                    {nearbySearchQuery.trim()
+                      ? `No shop businesses matched "${nearbySearchQuery}". Try clearing your search.`
+                      : `There are currently no registered shop businesses within your ${lenderLocation.lendingRadiusKm} KM service area in ${lenderLocation.city}. Registered vendors will appear here.`}
                   </p>
                 </div>
               </div>
