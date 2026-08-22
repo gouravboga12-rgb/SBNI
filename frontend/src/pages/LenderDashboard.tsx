@@ -907,44 +907,65 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
     };
   }, [lenderLocation]);
 
+  // Clean up any stale request-id fraud keys on mount
+  useEffect(() => {
+    try {
+      const storedFraud = JSON.parse(localStorage.getItem('sbni_fraud_vendors') || '{}');
+      let changed = false;
+      for (const k of Object.keys(storedFraud)) {
+        if (k.startsWith('req-') || k.startsWith('REQ-') || k.startsWith('fraud-')) {
+          delete storedFraud[k];
+          changed = true;
+        }
+      }
+      if (changed) {
+        safeSetLocalStorage('sbni_fraud_vendors', JSON.stringify(storedFraud));
+      }
+    } catch {}
+  }, []);
+
   const checkVendorIsFraud = (vendor: VendorVerificationRequest | null | undefined): boolean => {
     if (!vendor) return false;
     try {
       const vId = vendor.id || (vendor as any).vendorId;
       const vEmail = (vendor.emailId || (vendor as any).userEmail || '').toLowerCase().trim();
 
-      // 1. Check if this lender reported this vendor and Super Admin DISMISSED it
+      // 1. If this lender reported this vendor and Super Admin DISMISSED it, it is NEVER fraud!
       const lenderReports = JSON.parse(localStorage.getItem('sbni_lender_reported_frauds') || '[]');
       const targetReport = lenderReports.find((r: any) =>
         (r.vendorId && (r.vendorId === vId || r.vendorId === (vendor as any).vendorId)) ||
         (r.emailId && vEmail && r.emailId.toLowerCase().trim() === vEmail) ||
         (r.userEmail && vEmail && r.userEmail.toLowerCase().trim() === vEmail)
       );
-      if (targetReport) {
-        if (targetReport.status === 'DISMISSED') return false;
-        if (targetReport.status === 'CONFIRMED' || targetReport.status === 'PENDING') return true;
+      if (targetReport?.status === 'DISMISSED') {
+        return false;
       }
 
       // 2. Check live admin vendors registry (from RDS)
       const adminVendors = JSON.parse(localStorage.getItem('sbni_admin_vendors') || '[]');
       const adminVendorMatch = adminVendors.find((v: any) =>
-        (vId && (v.id === vId || v.userId === vId)) ||
+        (vId && !String(vId).startsWith('req-') && !String(vId).startsWith('REQ-') && (v.id === vId || v.userId === vId)) ||
         (v.userEmail && vEmail && v.userEmail.toLowerCase().trim() === vEmail)
       );
       if (adminVendorMatch) {
         return !!adminVendorMatch.isFraud;
       }
 
-      // 3. Check global fraud map
+      // 3. Check global fraud map (ONLY for real vendor UUIDs or emails, NEVER request IDs)
       const storedFraud = JSON.parse(localStorage.getItem('sbni_fraud_vendors') || '{}');
-      if (vId && storedFraud[vId] !== undefined) {
-        return !!storedFraud[vId];
-      }
-      if ((vendor as any).vendorId && storedFraud[(vendor as any).vendorId] !== undefined) {
-        return !!storedFraud[(vendor as any).vendorId];
-      }
       if (vEmail && storedFraud[vEmail] !== undefined) {
-        return !!storedFraud[vEmail];
+        return storedFraud[vEmail] === true;
+      }
+      if (vId && !String(vId).startsWith('req-') && !String(vId).startsWith('REQ-') && storedFraud[vId] !== undefined) {
+        return storedFraud[vId] === true;
+      }
+      if ((vendor as any).vendorId && !String((vendor as any).vendorId).startsWith('req-') && storedFraud[(vendor as any).vendorId] !== undefined) {
+        return storedFraud[(vendor as any).vendorId] === true;
+      }
+
+      // 4. Only if report is explicitly confirmed by Super Admin
+      if (targetReport?.status === 'CONFIRMED') {
+        return true;
       }
     } catch {}
 
