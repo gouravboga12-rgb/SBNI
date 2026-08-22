@@ -254,6 +254,14 @@ export const ingestLead = async (req: AuthenticatedRequest, res: Response) => {
       return res.status(400).json({ success: false, message: 'Lender ID is required.' });
     }
 
+    let finalVendorId = vendorId;
+    if (!finalVendorId && req.user?.userId) {
+      const vp = await prisma.vendorProfile.findUnique({
+        where: { userId: req.user.userId },
+      });
+      if (vp) finalVendorId = vp.id;
+    }
+
     const leadType = type || 'LOAN_APPLICATION';
     let leadNotes = notes;
     if (!leadNotes) {
@@ -265,7 +273,7 @@ export const ingestLead = async (req: AuthenticatedRequest, res: Response) => {
     const lead = await (prisma as any).financingLead.create({
       data: {
         lenderId,
-        vendorId: vendorId || null,
+        vendorId: finalVendorId || null,
         type: leadType,
         status: 'Pending',
         amount: amount ? parseFloat(String(amount)) : null,
@@ -300,14 +308,27 @@ export const getLenderLeads = async (req: AuthenticatedRequest, res: Response) =
       where: {
         OR: [
           { lenderId: lenderProfile.id },
+          { lenderId: lenderProfile.userId },
           { lenderId: lenderProfile.registrationNumber },
           { lenderId: lenderProfile.institutionName },
+          { lenderId: { contains: lenderProfile.institutionName, mode: 'insensitive' } },
         ],
       },
       include: {
         vendor: {
-          include: {
-            user: { select: { email: true, phone: true, isVerified: true, kycDocuments: true } },
+          select: {
+            id: true,
+            userId: true,
+            businessName: true,
+            ownerName: true,
+            annualTurnover: true,
+            category: true,
+            city: true,
+            state: true,
+            address: true,
+            isFraud: true,
+            avatarUrl: true,
+            user: { select: { email: true, phone: true, isVerified: true } },
           },
         },
       },

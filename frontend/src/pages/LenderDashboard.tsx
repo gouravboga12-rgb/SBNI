@@ -600,7 +600,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
       try {
         const d1 = JSON.parse(localStorage.getItem('sbni_deleted_vendors') || '[]');
         const d2 = JSON.parse(localStorage.getItem('sbni_deleted_leads') || '[]');
-        return [...d1, ...d2];
+        return [...d1, ...d2].filter((id) => typeof id === 'string' && !id.includes('@') && !id.includes(' '));
       } catch (e) {
         return [];
       }
@@ -613,21 +613,10 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
       if (dynamicStr) {
         const parsed = JSON.parse(dynamicStr);
         if (Array.isArray(parsed)) {
-          // Clean out deleted vendor accounts from local storage permanently
+          // Clean out specific deleted request ids and dummy seed items
           const cleaned = parsed.filter((r) => {
             if (!r) return false;
-            // Purge deleted vendors or test accounts
-            if (
-              deletedVendorIds.includes(r.id) ||
-              deletedVendorIds.includes(r.vendorId) ||
-              deletedVendorIds.includes(r.emailId) ||
-              deletedVendorIds.includes(r.vendorName) ||
-              deletedVendorIds.includes(r.shopName) ||
-              (r.vendorName && deletedVendorIds.some((d: string) => d.toLowerCase() === r.vendorName.toLowerCase())) ||
-              (r.shopName && deletedVendorIds.some((d: string) => d.toLowerCase() === r.shopName.toLowerCase()))
-            ) {
-              return false;
-            }
+            if (deletedVendorIds.includes(r.id)) return false;
             if (r.id === 'req-1' || r.id === 'req-2' || r.id === 'REQ-9842' || r.id === 'REQ-4410') return false;
             if (r.vendorName === 'Rajesh Sharma' || r.vendorName === 'Priya Patel') return false;
             return true;
@@ -640,9 +629,15 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
             const lenderReg = (currentUserObj as any)?.regNo || '';
             const lenderId = (currentUserObj as any)?.id || (currentUser as any)?.id || (currentUser as any)?.userId || (currentUser as any)?.lenderProfile?.id || '';
             const currLenderName = (currentUserObj?.name || '').toLowerCase().trim();
+            const reqLenderName = (r.lenderName || '').toLowerCase().trim();
 
             if (r.lenderId && (r.lenderId === lenderReg || r.lenderId === lenderId)) return true;
-            if (r.lenderName && currLenderName && r.lenderName.toLowerCase().trim() === currLenderName && currLenderName !== 'credit officer' && currLenderName !== 'money financer') {
+            if (reqLenderName && currLenderName && (
+              reqLenderName === currLenderName ||
+              currLenderName.includes(reqLenderName) ||
+              reqLenderName.includes(currLenderName) ||
+              currLenderName.replace(/[^a-z0-9]/g, '') === reqLenderName.replace(/[^a-z0-9]/g, '')
+            )) {
               return true;
             }
             return false;
@@ -661,28 +656,8 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
       if (Array.isArray(leadsList)) {
         awsReqs = leadsList
           .filter((lead: any) => {
-            const v = lead.vendor || {};
-            let snapshot: any = {};
-            try {
-              if (lead.vendorSnapshot) {
-                snapshot = typeof lead.vendorSnapshot === 'string' ? JSON.parse(lead.vendorSnapshot) : lead.vendorSnapshot;
-              }
-            } catch {}
-            const vId = lead.vendorId || v.id || v.userId;
-            const vName = snapshot.vendorName || v.ownerName || v.user?.name;
-            const sName = snapshot.shopName || v.businessName;
-            const vEmail = snapshot.emailId || v.user?.email || v.email;
-
-            if (
-              deletedVendorIds.includes(vId) ||
-              deletedVendorIds.includes(vName) ||
-              deletedVendorIds.includes(sName) ||
-              deletedVendorIds.includes(vEmail) ||
-              (vName && deletedVendorIds.some((d: string) => d.toLowerCase() === vName.toLowerCase())) ||
-              (sName && deletedVendorIds.some((d: string) => d.toLowerCase() === sName.toLowerCase()))
-            ) {
-              return false;
-            }
+            if (!lead) return false;
+            if (deletedVendorIds.includes(lead.id)) return false;
             return true;
           })
           .map((lead: any) => {
@@ -762,18 +737,9 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
 
     const activeReqs = deduplicated.filter((v) => {
       if (!v) return false;
-      const isDeleted =
-        deletedVendorIds.includes(v.id) ||
-        deletedVendorIds.includes(v.emailId) ||
-        deletedVendorIds.includes(v.vendorName) ||
-        deletedVendorIds.includes(v.shopName) ||
-        (v.vendorName && deletedVendorIds.some((d: string) => d.toLowerCase() === v.vendorName.toLowerCase())) ||
-        (v.shopName && deletedVendorIds.some((d: string) => d.toLowerCase() === v.shopName.toLowerCase())) ||
-        v.id === 'req-1' ||
-        v.id === 'req-2' ||
-        v.vendorName === 'Rajesh Sharma' ||
-        v.vendorName === 'Priya Patel';
-      return !isDeleted;
+      if (deletedVendorIds.includes(v.id)) return false;
+      if (v.id === 'req-1' || v.id === 'req-2' || v.vendorName === 'Rajesh Sharma' || v.vendorName === 'Priya Patel') return false;
+      return true;
     });
 
     setRequests(activeReqs);

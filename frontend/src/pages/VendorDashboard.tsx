@@ -186,6 +186,11 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
 
           return {
             id: lead.id,
+            vendorName: snap.vendorName || lead.vendor?.ownerName || 'Applicant Vendor',
+            shopName: snap.shopName || lead.vendor?.businessName || 'Business Enterprise',
+            shopAddress: snap.shopAddress || lead.vendor?.address || 'Registered Location',
+            city: snap.city || lead.vendor?.city || 'Hyderabad',
+            state: snap.state || lead.vendor?.state || 'Telangana',
             title: snap.shopName || (lead.lender?.institutionName ? `Application to ${lead.lender.institutionName}` : 'Financing Application'),
             lenderName: lead.lender?.institutionName || snap.lenderName || 'Verified Financer Partner',
             lenderId: lead.lenderId,
@@ -197,6 +202,19 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
             status,
             isAccepted,
             isRejected,
+            inquiryType: lead.type || 'LOAN_APPLICATION',
+            inquiryMessage: lead.notes || (lead.type === 'PHONE_CALL' ? '📞 Vendor initiated a Phone Call inquiry' : lead.type === 'WHATSAPP' ? '💬 Vendor sent a WhatsApp inquiry' : '📝 Loan Application submitted'),
+            mobileNumber: snap.mobileNumber || lead.vendor?.user?.phone || '',
+            emailId: snap.emailId || lead.vendor?.user?.email || '',
+            avatarUrl: snap.avatarUrl || lead.vendor?.avatarUrl || null,
+            liveSelfieUrl: snap.liveSelfieUrl || snap.avatarUrl || null,
+            panFileUrl: snap.panFileUrl || null,
+            aadhaarFileUrl: snap.aadhaarFileUrl || null,
+            shopLicensePdf: snap.shopLicensePdf || null,
+            gstCertificatePdf: snap.gstCertificatePdf || null,
+            shopPhotoUrl: snap.shopPhotoUrl || null,
+            annualIncome: snap.annualIncome || lead.vendor?.annualTurnover || 'Under 2 Lakhs',
+            annualTurnover: snap.annualTurnover || lead.vendor?.annualTurnover || 'Under 2 Lakhs',
           };
         });
 
