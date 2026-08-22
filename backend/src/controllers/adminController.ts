@@ -898,3 +898,58 @@ export const dismissFraudReport = async (req: AuthenticatedRequest, res: Respons
     res.status(500).json({ success: false, message: err.message || 'Failed to dismiss fraud report.' });
   }
 };
+
+export const deleteFraudReport = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { reportId } = req.params;
+    const { vendorId } = req.body || {};
+
+    let report = await (prisma as any).fraudReport.findFirst({
+      where: {
+        OR: [
+          { id: reportId },
+          { vendorId: reportId },
+          { vendorId: vendorId || '' },
+        ],
+      },
+    });
+
+    const effectiveVendorId = report?.vendorId || vendorId || (reportId && reportId.length > 20 ? reportId : undefined);
+
+    if (report) {
+      await (prisma as any).fraudReport.delete({
+        where: { id: report.id },
+      });
+    } else if (reportId) {
+      await (prisma as any).fraudReport.deleteMany({
+        where: {
+          OR: [
+            { id: reportId },
+            { vendorId: reportId },
+          ],
+        },
+      });
+    }
+
+    if (effectiveVendorId) {
+      // Lift blacklist on the VendorProfile in database
+      await prisma.vendorProfile.updateMany({
+        where: { id: effectiveVendorId },
+        data: { isFraud: false },
+      });
+
+      // Also clean up any remaining reports for this vendor
+      await (prisma as any).fraudReport.deleteMany({
+        where: { vendorId: effectiveVendorId },
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Fraud report permanently deleted and vendor account restored as normal.',
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message || 'Failed to delete fraud report.' });
+  }
+};
+

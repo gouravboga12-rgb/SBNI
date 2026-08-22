@@ -60,6 +60,7 @@ import {
   adminFetchFraudReports,
   adminConfirmFraudReport,
   adminDismissFraudReport,
+  adminDeleteFraudReport,
   safeSetLocalStorage,
 } from '../services/api';
 import { SBNILogo } from '../components/SBNILogo';
@@ -778,6 +779,87 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
       window.dispatchEvent(new Event('sbni_vendor_profile_updated'));
     } catch (err: any) {
       alert(err.message || 'Failed to dismiss fraud report.');
+    }
+  };
+
+  const handleDeleteFraudReport = async (report: FraudReportItem) => {
+    if (!window.confirm(`Are you sure you want to permanently delete this fraud report for "${report.vendorName}"? The fraud status will be cleared and the account restored as a normal account.`)) {
+      return;
+    }
+
+    try {
+      // 1. Invoke Backend API to permanently delete report from RDS and clear VendorProfile.isFraud = false
+      await adminDeleteFraudReport(report.id, report.vendorId);
+
+      // 2. Remove report from local fraudReports state
+      setFraudReports((prev) => prev.filter((r) => r.id !== report.id && (!report.vendorId || r.vendorId !== report.vendorId)));
+
+      // 3. Set vendor isFraud = false in User Vendors state
+      const targetVendorId = report.vendorId;
+      const targetEmail = report.userEmail;
+      setVendors((prev) =>
+        prev.map((v) =>
+          (targetVendorId && v.id === targetVendorId) || (targetEmail && v.userEmail === targetEmail)
+            ? { ...v, isFraud: false }
+            : v
+        )
+      );
+
+      // 4. Clean all client localStorage caches
+      try {
+        const storedFraud = JSON.parse(localStorage.getItem('sbni_fraud_vendors') || '{}');
+        if (targetVendorId) delete storedFraud[targetVendorId];
+        if (targetEmail) delete storedFraud[targetEmail];
+        if (report.id) delete storedFraud[report.id];
+        safeSetLocalStorage('sbni_fraud_vendors', JSON.stringify(storedFraud));
+
+        const storedList = JSON.parse(localStorage.getItem('sbni_lender_reported_frauds') || '[]');
+        const updatedList = storedList.filter((r: any) =>
+          r.id !== report.id && (!targetVendorId || r.vendorId !== targetVendorId) && (!targetEmail || (r.emailId !== targetEmail && r.userEmail !== targetEmail))
+        );
+        safeSetLocalStorage('sbni_lender_reported_frauds', JSON.stringify(updatedList));
+
+        const reqs = JSON.parse(localStorage.getItem('sbni_vendor_requests') || '[]');
+        const updatedReqs = reqs.map((r: any) => {
+          if (
+            (targetVendorId && (r.id === targetVendorId || r.vendorId === targetVendorId)) ||
+            (targetEmail && (r.emailId === targetEmail || (r.emailId && r.emailId.toLowerCase() === targetEmail.toLowerCase())))
+          ) {
+            return { ...r, isFraud: false };
+          }
+          return r;
+        });
+        safeSetLocalStorage('sbni_vendor_requests', JSON.stringify(updatedReqs));
+
+        const pStr = localStorage.getItem('sbni_vendor_profile');
+        if (pStr) {
+          const p = JSON.parse(pStr);
+          if (
+            (targetVendorId && (p.id === targetVendorId || p.userId === targetVendorId)) ||
+            (targetEmail && p.email && p.email.toLowerCase() === targetEmail.toLowerCase())
+          ) {
+            p.isFraud = false;
+            safeSetLocalStorage('sbni_vendor_profile', JSON.stringify(p));
+          }
+        }
+      } catch {}
+
+      // 5. Audit Log & Toast & Broadcast
+      setAuditLogs((prev) => [
+        {
+          id: 'a-' + Date.now(),
+          time: new Date().toISOString().replace('T', ' ').substring(0, 19),
+          action: 'FRAUD_REPORT_DELETED',
+          detail: `Fraud report for vendor "${report.vendorName}" (${report.shopName}) was permanently deleted by Super Admin and restored as normal.`,
+        },
+        ...prev,
+      ]);
+
+      showToast(`✓ Fraud report permanently deleted & vendor account restored as normal.`);
+      window.dispatchEvent(new Event('sbni_fraud_updated'));
+      window.dispatchEvent(new Event('sbni_vendor_profile_updated'));
+    } catch (err: any) {
+      alert(err.message || 'Failed to delete fraud report.');
     }
   };
 
@@ -3373,6 +3455,16 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
                                 <span>Re-open & Confirm Fraud</span>
                               </button>
                             )}
+
+                            {/* Delete Fraud Report Button */}
+                            <button
+                              onClick={() => handleDeleteFraudReport(report)}
+                              className="py-2 px-3.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-extrabold text-xs transition-all active:scale-95 cursor-pointer flex items-center gap-1.5 shadow-xs"
+                              title="Permanently Delete Fraud Report & Restore Vendor as Normal Account"
+                            >
+                              <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                              <span>Delete Report</span>
+                            </button>
                           </div>
                         </div>
                       </div>

@@ -1401,6 +1401,22 @@ export async function adminDismissFraudReport(
   }
 }
 
+export async function adminDeleteFraudReport(
+  reportId: string,
+  vendorId?: string
+): Promise<{ success: boolean; message?: string }> {
+  try {
+    const data = await adminFetch(`/admin/fraud-reports/${reportId}`, {
+      method: 'DELETE',
+      body: JSON.stringify({ vendorId }),
+    });
+    return { success: data.success, message: data.message };
+  } catch (err: any) {
+    return { success: false, message: err.message };
+  }
+}
+
 // Legacy export alias kept for compatibility
 export const mockLendersList: Lender[] = [];
+
 

@@ -26,6 +26,7 @@ import {
   createFraudReport,
   confirmFraudReport,
   dismissFraudReport,
+  deleteFraudReport,
 } from '../controllers/adminController';
 import { authenticateUser, authorizeRoles, optionalAuth } from '../middlewares/auth';
 import { asyncHandler } from '../middlewares/errorHandler';
@@ -42,6 +43,7 @@ router.use(authenticateUser, authorizeRoles('SUPER_ADMIN'));
 router.get('/fraud-reports', asyncHandler(getAllFraudReports));
 router.put('/fraud-reports/:reportId/confirm', asyncHandler(confirmFraudReport));
 router.put('/fraud-reports/:reportId/dismiss', asyncHandler(dismissFraudReport));
+router.delete('/fraud-reports/:reportId', asyncHandler(deleteFraudReport));
 
 
 router.get('/dashboard-stats', asyncHandler(getAdminDashboardStats));
