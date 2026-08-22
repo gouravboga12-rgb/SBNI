@@ -41,6 +41,8 @@ import {
   FileCheck2,
   Sliders,
   FolderX,
+  Phone,
+  MessageSquare,
 } from 'lucide-react';
 import {
   adminLoginApi,
@@ -157,6 +159,9 @@ export interface FraudReportItem {
   userEmail?: string;
   userPhone?: string;
   reportedBy: string;
+  lenderPhone?: string;
+  lenderEmail?: string;
+  lenderContactPerson?: string;
   reason: string;
   evidenceUrl?: string;
   adminNotes?: string;
@@ -539,20 +544,32 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
       let apiReports: FraudReportItem[] = [];
       const res = await adminFetchFraudReports();
       if (res.success && Array.isArray(res.data)) {
-        apiReports = res.data.map((r: any) => ({
-          id: r.id,
-          vendorId: r.vendorId || r.vendor?.id,
-          vendorName: r.vendor?.ownerName || r.vendor?.businessName || 'Reported Vendor',
-          shopName: r.vendor?.businessName || 'Shop Enterprise',
-          userEmail: r.vendor?.user?.email || '',
-          userPhone: r.vendor?.user?.phone || '',
-          reportedBy: r.reportedBy || 'Business Money Financer',
-          reason: r.reason || 'Suspicious financial conduct or document discrepancy',
-          evidenceUrl: r.evidenceUrl,
-          adminNotes: r.adminNotes,
-          status: (r.status || 'PENDING').toUpperCase() as 'PENDING' | 'CONFIRMED' | 'DISMISSED',
-          date: r.createdAt ? new Date(r.createdAt).toISOString() : new Date().toISOString(),
-        }));
+        apiReports = res.data.map((r: any) => {
+          const matchedLender = lenders.find(
+            (l) => l.id === r.lenderId || l.institutionName?.toLowerCase() === r.reportedBy?.toLowerCase() || (l as any).registrationNumber === r.lenderId
+          );
+          const lenderPhone = r.lender?.user?.phone || matchedLender?.userPhone || '';
+          const lenderEmail = r.lender?.user?.email || matchedLender?.userEmail || '';
+          const lenderContactPerson = r.lender?.contactPersonName || matchedLender?.contactPersonName || '';
+
+          return {
+            id: r.id,
+            vendorId: r.vendorId || r.vendor?.id,
+            vendorName: r.vendor?.ownerName || r.vendor?.businessName || 'Reported Vendor',
+            shopName: r.vendor?.businessName || 'Shop Enterprise',
+            userEmail: r.vendor?.user?.email || '',
+            userPhone: r.vendor?.user?.phone || '',
+            reportedBy: r.reportedBy || 'Business Money Financer',
+            lenderPhone,
+            lenderEmail,
+            lenderContactPerson,
+            reason: r.reason || 'Suspicious financial conduct or document discrepancy',
+            evidenceUrl: r.evidenceUrl,
+            adminNotes: r.adminNotes,
+            status: (r.status || 'PENDING').toUpperCase() as 'PENDING' | 'CONFIRMED' | 'DISMISSED',
+            date: r.createdAt ? new Date(r.createdAt).toISOString() : new Date().toISOString(),
+          };
+        });
       }
 
       let localReports: FraudReportItem[] = [];
@@ -561,20 +578,32 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
         if (stored) {
           const parsed = JSON.parse(stored);
           if (Array.isArray(parsed)) {
-            localReports = parsed.map((r: any) => ({
-              id: r.id || `fraud-local-${r.vendorId}`,
-              vendorId: r.vendorId,
-              vendorName: r.vendorName || 'Reported Vendor',
-              shopName: r.shopName || 'Shop Enterprise',
-              userEmail: r.emailId || r.userEmail || '',
-              userPhone: r.mobileNumber || r.userPhone || '',
-              reportedBy: r.reportedBy || 'Business Money Financer',
-              reason: r.reason || 'Suspicious activity reported by financer',
-              evidenceUrl: r.evidenceUrl,
-              adminNotes: r.adminNotes,
-              status: (r.status || 'PENDING').toUpperCase() as 'PENDING' | 'CONFIRMED' | 'DISMISSED',
-              date: r.date || new Date().toISOString(),
-            }));
+            localReports = parsed.map((r: any) => {
+              const matchedLender = lenders.find(
+                (l) => l.institutionName?.toLowerCase() === r.reportedBy?.toLowerCase() || l.id === r.lenderId
+              );
+              const lenderPhone = r.lenderPhone || matchedLender?.userPhone || '';
+              const lenderEmail = r.lenderEmail || matchedLender?.userEmail || '';
+              const lenderContactPerson = r.lenderContactPerson || matchedLender?.contactPersonName || '';
+
+              return {
+                id: r.id || `fraud-local-${r.vendorId}`,
+                vendorId: r.vendorId,
+                vendorName: r.vendorName || 'Reported Vendor',
+                shopName: r.shopName || 'Shop Enterprise',
+                userEmail: r.emailId || r.userEmail || '',
+                userPhone: r.mobileNumber || r.userPhone || '',
+                reportedBy: r.reportedBy || 'Business Money Financer',
+                lenderPhone,
+                lenderEmail,
+                lenderContactPerson,
+                reason: r.reason || 'Suspicious activity reported by financer',
+                evidenceUrl: r.evidenceUrl,
+                adminNotes: r.adminNotes,
+                status: (r.status || 'PENDING').toUpperCase() as 'PENDING' | 'CONFIRMED' | 'DISMISSED',
+                date: r.date || new Date().toISOString(),
+              };
+            });
           }
         }
       } catch {}
@@ -637,6 +666,34 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
     } catch (err: any) {
       alert(err.message || 'Failed to dismiss fraud report.');
     }
+  };
+
+  const getFinancerPhone = (report: FraudReportItem): string => {
+    if (report.lenderPhone && report.lenderPhone.trim().length > 5) return report.lenderPhone;
+    const match = lenders.find(
+      (l) =>
+        l.institutionName?.toLowerCase() === report.reportedBy?.toLowerCase() ||
+        (l as any).registrationNumber === report.reportedBy ||
+        l.id === report.reportedBy
+    );
+    if (match?.userPhone) return match.userPhone;
+    if (lenders.length > 0 && lenders[0].userPhone) return lenders[0].userPhone;
+    return '9553921237';
+  };
+
+  const handleCallFinancer = (report: FraudReportItem) => {
+    const phone = getFinancerPhone(report);
+    window.location.href = `tel:${phone}`;
+  };
+
+  const handleWhatsAppFinancer = (report: FraudReportItem) => {
+    const rawPhone = getFinancerPhone(report);
+    const phone = rawPhone.replace(/\D/g, '');
+    const cleanPhone = phone.length === 10 ? `91${phone}` : phone;
+    const msg = encodeURIComponent(
+      `Hello ${report.reportedBy}, this is JustPaisa Super Admin regarding the Fraud Report filed for vendor "${report.vendorName}" (${report.shopName}). We are contacting you directly to confirm and verify the allegation details.`
+    );
+    window.open(`https://wa.me/${cleanPhone}?text=${msg}`, '_blank');
   };
 
   useEffect(() => {
@@ -2947,14 +3004,44 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
                         </div>
 
                         {/* Financer & Reason Box */}
-                        <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2">
-                          <div className="text-xs font-bold text-slate-600 flex items-center gap-1.5">
-                            <Building2 className="w-3.5 h-3.5 text-[#007a33]" />
-                            <span>Reported by Business Financer:</span>
-                            <span className="text-[#007a33] font-extrabold">{report.reportedBy}</span>
+                        <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-3">
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2.5 border-b border-slate-200/70">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700">
+                                <Building2 className="w-4 h-4 text-[#007a33]" />
+                                <span>Reported by Business Financer:</span>
+                                <span className="text-[#007a33] font-extrabold text-sm bg-emerald-50 px-2.5 py-0.5 rounded-lg border border-emerald-200">
+                                  {report.reportedBy}
+                                </span>
+                              </div>
+                              <span className="text-xs text-slate-500 font-semibold flex items-center gap-1">
+                                📱 {getFinancerPhone(report)}
+                              </span>
+                            </div>
+
+                            {/* Direct Financer Communication Actions */}
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => handleCallFinancer(report)}
+                                className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs flex items-center gap-1.5 shadow-xs transition-all active:scale-95 cursor-pointer"
+                                title={`Call Financer ${report.reportedBy} for confirmation`}
+                              >
+                                <Phone className="w-3.5 h-3.5" />
+                                <span>Call Financer</span>
+                              </button>
+
+                              <button
+                                onClick={() => handleWhatsAppFinancer(report)}
+                                className="px-3 py-1.5 rounded-xl bg-[#25D366] hover:bg-[#20bd5a] text-white font-extrabold text-xs flex items-center gap-1.5 shadow-xs transition-all active:scale-95 cursor-pointer"
+                                title={`Chat with Financer ${report.reportedBy} on WhatsApp`}
+                              >
+                                <MessageSquare className="w-3.5 h-3.5" />
+                                <span>WhatsApp Financer</span>
+                              </button>
+                            </div>
                           </div>
 
-                          <div className="text-xs text-slate-800 bg-white p-3 rounded-xl border border-slate-200 font-medium leading-relaxed">
+                          <div className="text-xs text-slate-800 bg-white p-3.5 rounded-xl border border-slate-200 font-medium leading-relaxed shadow-xs">
                             <span className="font-bold text-rose-700 mr-1.5">Allegation / Reason:</span>
                             {report.reason}
                           </div>
@@ -2972,7 +3059,26 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
                             Report ID: {report.id}
                           </div>
 
-                          <div className="flex items-center gap-2 w-full sm:w-auto">
+                          <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto justify-end">
+                            {/* Contact Financer Buttons */}
+                            <button
+                              onClick={() => handleCallFinancer(report)}
+                              className="py-2 px-3 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 font-extrabold text-xs flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
+                              title="Direct Phone Call to Reporting Financer"
+                            >
+                              <Phone className="w-3.5 h-3.5 text-emerald-700" />
+                              <span>Call Financer</span>
+                            </button>
+
+                            <button
+                              onClick={() => handleWhatsAppFinancer(report)}
+                              className="py-2 px-3 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-[#007a33] border border-emerald-300 font-extrabold text-xs flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
+                              title="Open WhatsApp Chat with Reporting Financer"
+                            >
+                              <MessageSquare className="w-3.5 h-3.5 text-[#25D366]" />
+                              <span>WhatsApp Financer</span>
+                            </button>
+
                             {isPending && (
                               <>
                                 <button
