@@ -3230,16 +3230,16 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
 
               {/* Bottom Sticky Save Action Bar in Edit Mode */}
               {isEditingLenderProfile && (
-                <div className="p-4 rounded-2xl bg-gradient-to-r from-slate-900 to-blue-950 text-white flex items-center justify-between gap-3 shadow-lg">
+                <div className="p-4 rounded-2xl bg-gradient-to-r from-slate-900 to-blue-950 text-white flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shadow-lg">
                   <div className="text-xs">
                     <span className="font-bold text-white block">Ready to apply financer profile changes?</span>
                     <span className="text-[11px] text-blue-200">Your profile, avatar photo, and ticket limits will instantly update across the platform.</span>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
+                  <div className="flex items-center gap-2 w-full sm:w-auto">
                     <button
                       type="button"
                       onClick={() => setIsEditingLenderProfile(false)}
-                      className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs transition-colors cursor-pointer"
+                      className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs transition-colors cursor-pointer text-center"
                     >
                       Cancel
                     </button>
@@ -3247,7 +3247,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                       type="button"
                       onClick={handleSaveLenderProfile}
                       disabled={isSavingLenderProfile}
-                      className="px-5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold text-xs shadow-md transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer"
+                      className="flex-1 sm:flex-none px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold text-xs shadow-md transition-all active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer"
                     >
                       {isSavingLenderProfile ? (
                         <>

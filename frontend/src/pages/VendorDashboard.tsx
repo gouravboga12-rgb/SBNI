@@ -1855,7 +1855,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                           <span>Uploading PAN to AWS EC2...</span>
                         </div>
                       ) : (
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                           <label className="flex-1 py-2 px-3 rounded-xl bg-white border border-dashed border-blue-400 hover:bg-blue-50/80 text-blue-700 font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-2xs">
                             <Camera className="w-4 h-4 text-blue-600" />
                             <span>{vendorEditForm.panFileUrl ? 'Change PAN Card' : 'Upload PAN Card Photo / PDF'}</span>
@@ -1871,7 +1871,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                             <button
                               type="button"
                               onClick={() => setPreviewDocModal({ title: `PAN Card (${vendorEditForm.panNumber || 'Verified'})`, url: vendorEditForm.panFileUrl, type: 'doc' })}
-                              className="px-3 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs border border-blue-200 flex items-center gap-1 shrink-0 cursor-pointer"
+                              className="px-3 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs border border-blue-200 flex items-center justify-center gap-1 shrink-0 cursor-pointer"
                               title="Preview PAN Document"
                             >
                               <Eye className="w-3.5 h-3.5" />
@@ -1883,7 +1883,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                     </div>
 
                     {/* Aadhaar Card Input & File Upload */}
-                    <div className="p-4 rounded-2xl bg-blue-50/40 border border-blue-200/80 space-y-2.5">
+                    <div className="p-3.5 sm:p-4 rounded-2xl bg-blue-50/40 border border-blue-200/80 space-y-2.5">
                       <div className="flex items-center justify-between">
                         <label className="font-extrabold text-slate-800 text-xs block">2. Aadhaar Card Details *</label>
                         {vendorEditForm.aadhaarFileUrl ? (
@@ -1911,7 +1911,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                           <span>Uploading Aadhaar to AWS EC2...</span>
                         </div>
                       ) : (
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                           <label className="flex-1 py-2 px-3 rounded-xl bg-white border border-dashed border-blue-400 hover:bg-blue-50/80 text-blue-700 font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-2xs">
                             <Camera className="w-4 h-4 text-blue-600" />
                             <span>{vendorEditForm.aadhaarFileUrl ? 'Change Aadhaar Card' : 'Upload Aadhaar Card Photo / PDF'}</span>
@@ -1927,7 +1927,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                             <button
                               type="button"
                               onClick={() => setPreviewDocModal({ title: `Aadhaar Card (${vendorEditForm.aadhaarNumber || 'Verified'})`, url: vendorEditForm.aadhaarFileUrl, type: 'doc' })}
-                              className="px-3 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs border border-blue-200 flex items-center gap-1 shrink-0 cursor-pointer"
+                              className="px-3 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs border border-blue-200 flex items-center justify-center gap-1 shrink-0 cursor-pointer"
                               title="Preview Aadhaar Document"
                             >
                               <Eye className="w-3.5 h-3.5" />
@@ -1939,7 +1939,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                     </div>
 
                     {/* Business License / Shop Proof */}
-                    <div className="p-4 rounded-2xl bg-blue-50/40 border border-blue-200/80 space-y-2.5">
+                    <div className="p-3.5 sm:p-4 rounded-2xl bg-blue-50/40 border border-blue-200/80 space-y-2.5">
                       <div className="flex items-center justify-between">
                         <label className="font-extrabold text-slate-800 text-xs block">3. Business License / Shop Act (Optional)</label>
                         {vendorEditForm.businessLicenseUrl ? (
@@ -1959,7 +1959,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                           <span>Uploading License to AWS EC2...</span>
                         </div>
                       ) : (
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                           <label className="flex-1 py-2 px-3 rounded-xl bg-white border border-dashed border-blue-400 hover:bg-blue-50/80 text-blue-700 font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-2xs">
                             <FileText className="w-4 h-4 text-blue-600" />
                             <span>{vendorEditForm.businessLicenseUrl ? 'Change License Document' : 'Upload Business License Proof'}</span>
@@ -1975,7 +1975,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                             <button
                               type="button"
                               onClick={() => setPreviewDocModal({ title: `Business License (${vendorEditForm.shopName})`, url: vendorEditForm.businessLicenseUrl, type: 'doc' })}
-                              className="px-3 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs border border-blue-200 flex items-center gap-1 shrink-0 cursor-pointer"
+                              className="px-3 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs border border-blue-200 flex items-center justify-center gap-1 shrink-0 cursor-pointer"
                               title="Preview Business License"
                             >
                               <Eye className="w-3.5 h-3.5" />
@@ -1987,7 +1987,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                     </div>
 
                     {/* GST Certificate */}
-                    <div className="p-4 rounded-2xl bg-blue-50/40 border border-blue-200/80 space-y-2.5">
+                    <div className="p-3.5 sm:p-4 rounded-2xl bg-blue-50/40 border border-blue-200/80 space-y-2.5">
                       <div className="flex items-center justify-between">
                         <label className="font-extrabold text-slate-800 text-xs block">4. GST Certificate (Optional)</label>
                         {vendorEditForm.gstFileUrl ? (
@@ -2013,7 +2013,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                           <span>Uploading GST Certificate to AWS EC2...</span>
                         </div>
                       ) : (
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                           <label className="flex-1 py-2 px-3 rounded-xl bg-white border border-dashed border-blue-400 hover:bg-blue-50/80 text-blue-700 font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-2xs">
                             <FileText className="w-4 h-4 text-blue-600" />
                             <span>{vendorEditForm.gstFileUrl ? 'Change GST Certificate' : 'Upload GST Certificate (PDF / Image)'}</span>
@@ -2029,7 +2029,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                             <button
                               type="button"
                               onClick={() => setPreviewDocModal({ title: `GST Certificate (${vendorEditForm.gstNumber || vendorEditForm.shopName})`, url: vendorEditForm.gstFileUrl, type: 'doc' })}
-                              className="px-3 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs border border-blue-200 flex items-center gap-1 shrink-0 cursor-pointer"
+                              className="px-3 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs border border-blue-200 flex items-center justify-center gap-1 shrink-0 cursor-pointer"
                               title="Preview GST Certificate"
                             >
                               <Eye className="w-3.5 h-3.5" />
@@ -2151,16 +2151,16 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
 
               {/* Bottom Sticky Save Action Bar in Edit Mode */}
               {isEditingVendorProfile && (
-                <div className="p-4 rounded-2xl bg-gradient-to-r from-blue-900 to-indigo-950 text-white flex items-center justify-between gap-3 shadow-lg">
+                <div className="p-4 rounded-2xl bg-gradient-to-r from-blue-900 to-indigo-950 text-white flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shadow-lg">
                   <div className="text-xs">
                     <span className="font-bold text-white block">Ready to apply profile changes?</span>
                     <span className="text-[11px] text-blue-200">Your profile will immediately update across all financer matching searches.</span>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
+                  <div className="flex items-center gap-2 w-full sm:w-auto">
                     <button
                       type="button"
                       onClick={() => setIsEditingVendorProfile(false)}
-                      className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs transition-colors cursor-pointer"
+                      className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs transition-colors cursor-pointer text-center"
                     >
                       Cancel
                     </button>
@@ -2168,7 +2168,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                       type="button"
                       onClick={handleSaveVendorProfile}
                       disabled={isSavingVendorProfile}
-                      className="px-5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold text-xs shadow-md transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer"
+                      className="flex-1 sm:flex-none px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold text-xs shadow-md transition-all active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer"
                     >
                       {isSavingVendorProfile ? (
                         <>
