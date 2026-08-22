@@ -255,11 +255,63 @@ export const ingestLead = async (req: AuthenticatedRequest, res: Response) => {
     }
 
     let finalVendorId = vendorId;
-    if (!finalVendorId && req.user?.userId) {
-      const vp = await prisma.vendorProfile.findUnique({
+    let dbVendorProfile: any = null;
+
+    // 1. Resolve vendor profile from authenticated user session
+    if (req.user?.userId) {
+      dbVendorProfile = await prisma.vendorProfile.findUnique({
         where: { userId: req.user.userId },
+        include: { user: true },
       });
-      if (vp) finalVendorId = vp.id;
+      if (dbVendorProfile) finalVendorId = dbVendorProfile.id;
+    }
+
+    // 2. Resolve vendor profile by email if not found
+    let snap: any = {};
+    try {
+      if (vendorSnapshot) {
+        snap = typeof vendorSnapshot === 'string' ? JSON.parse(vendorSnapshot) : vendorSnapshot;
+      }
+    } catch {}
+
+    if (!dbVendorProfile && snap.emailId) {
+      const u = await prisma.user.findUnique({
+        where: { email: snap.emailId },
+        include: { vendorProfile: true },
+      });
+      if (u?.vendorProfile) {
+        dbVendorProfile = u.vendorProfile;
+        finalVendorId = dbVendorProfile.id;
+      }
+    }
+
+    // 3. Merge verified cloud-hosted document URLs from database into snapshot so all documents are complete
+    if (dbVendorProfile) {
+      snap.vendorName = snap.vendorName || dbVendorProfile.ownerName;
+      snap.shopName = snap.shopName || dbVendorProfile.businessName;
+      snap.shopAddress = snap.shopAddress || dbVendorProfile.address;
+      snap.city = snap.city || dbVendorProfile.city;
+      snap.state = snap.state || dbVendorProfile.state;
+      snap.panNumber = snap.panNumber || dbVendorProfile.panNumber;
+      snap.aadhaarNumber = snap.aadhaarNumber || dbVendorProfile.aadhaarNumber;
+      snap.gstNumber = snap.gstNumber || dbVendorProfile.gstNumber;
+      snap.panFileUrl = snap.panFileUrl || dbVendorProfile.panFileUrl || null;
+      snap.aadhaarFileUrl = snap.aadhaarFileUrl || dbVendorProfile.aadhaarFileUrl || null;
+      snap.shopLicensePdf = snap.shopLicensePdf || dbVendorProfile.businessLicenseUrl || null;
+      snap.gstCertificatePdf = snap.gstCertificatePdf || dbVendorProfile.gstFileUrl || null;
+      snap.avatarUrl = snap.avatarUrl || dbVendorProfile.avatarUrl || null;
+      snap.annualIncome = snap.annualIncome || dbVendorProfile.annualTurnover;
+      snap.annualTurnover = snap.annualTurnover || dbVendorProfile.annualTurnover;
+
+      if (!snap.shopPhotoUrl && dbVendorProfile.shopPhotos) {
+        try {
+          const arr = typeof dbVendorProfile.shopPhotos === 'string' ? JSON.parse(dbVendorProfile.shopPhotos) : dbVendorProfile.shopPhotos;
+          if (Array.isArray(arr) && arr.length > 0) {
+            snap.shopPhotoUrl = arr[0];
+            snap.shopImages = arr;
+          }
+        } catch {}
+      }
     }
 
     const leadType = type || 'LOAN_APPLICATION';
@@ -279,7 +331,7 @@ export const ingestLead = async (req: AuthenticatedRequest, res: Response) => {
         amount: amount ? parseFloat(String(amount)) : null,
         purpose: purpose || null,
         notes: leadNotes,
-        vendorSnapshot: vendorSnapshot ? (typeof vendorSnapshot === 'string' ? vendorSnapshot : JSON.stringify(vendorSnapshot)) : null,
+        vendorSnapshot: JSON.stringify(snap),
       },
     });
 
@@ -328,6 +380,11 @@ export const getLenderLeads = async (req: AuthenticatedRequest, res: Response) =
             address: true,
             isFraud: true,
             avatarUrl: true,
+            panFileUrl: true,
+            aadhaarFileUrl: true,
+            businessLicenseUrl: true,
+            gstFileUrl: true,
+            shopPhotos: true,
             user: { select: { email: true, phone: true, isVerified: true } },
           },
         },
@@ -370,10 +427,7 @@ export const deleteLead = async (req: AuthenticatedRequest, res: Response) => {
     const { leadId } = req.params;
     await (prisma as any).financingLead.deleteMany({
       where: {
-        OR: [
-          { id: leadId },
-          { vendorId: leadId },
-        ],
+        id: leadId,
       },
     });
     res.json({

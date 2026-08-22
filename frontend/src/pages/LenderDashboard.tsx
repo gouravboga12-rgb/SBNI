@@ -690,6 +690,18 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
               } catch {}
             }
 
+            let shopPhotoUrl: string | null = snapshot.shopPhotoUrl || null;
+            let shopImages: string[] = Array.isArray(snapshot.shopImages) ? snapshot.shopImages : [];
+            if (!shopPhotoUrl && v.shopPhotos) {
+              try {
+                const spArr = typeof v.shopPhotos === 'string' ? JSON.parse(v.shopPhotos) : v.shopPhotos;
+                if (Array.isArray(spArr) && spArr.length > 0) {
+                  shopPhotoUrl = spArr[0];
+                  if (shopImages.length === 0) shopImages = spArr;
+                }
+              } catch {}
+            }
+
             return {
               id: lead.id,
               vendorName: snapshot.vendorName || v.ownerName || v.user?.name || 'Applicant Vendor',
@@ -713,14 +725,14 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
               requiredAmount: lead.amount ? `₹ ${lead.amount.toLocaleString('en-IN')}` : (snapshot.requiredAmount || '₹ 5,00,000'),
               monthlyIncome: snapshot.monthlyIncome || (v.annualTurnover ? `₹ ${v.annualTurnover}` : '₹ 50,000 - 1 Lakh'),
               isFraud: isFraudStatus,
-              avatarUrl: snapshot.avatarUrl || v.avatarUrl || null,
-              liveSelfieUrl: snapshot.liveSelfieUrl || v.liveSelfieUrl || null,
-              shopPhotoUrl: snapshot.shopPhotoUrl || v.shopPhotoUrl || null,
-              panFileUrl: snapshot.panFileUrl || panDoc?.fileUrl || v.panFileUrl || null,
-              aadhaarFileUrl: snapshot.aadhaarFileUrl || aadhaarDoc?.fileUrl || v.aadhaarFileUrl || null,
-              shopLicensePdf: snapshot.shopLicensePdf || licenseDoc?.fileUrl || null,
-              gstCertificatePdf: snapshot.gstCertificatePdf || gstDoc?.fileUrl || null,
-              shopImages: snapshot.shopImages || (Array.isArray(v.shopImages) ? v.shopImages : []),
+              avatarUrl: snapshot.avatarUrl || v.avatarUrl || undefined,
+              liveSelfieUrl: snapshot.liveSelfieUrl || snapshot.avatarUrl || v.avatarUrl || undefined,
+              shopPhotoUrl: shopPhotoUrl || undefined,
+              panFileUrl: snapshot.panFileUrl || v.panFileUrl || panDoc?.fileUrl || undefined,
+              aadhaarFileUrl: snapshot.aadhaarFileUrl || v.aadhaarFileUrl || aadhaarDoc?.fileUrl || undefined,
+              shopLicensePdf: snapshot.shopLicensePdf || v.businessLicenseUrl || licenseDoc?.fileUrl || undefined,
+              gstCertificatePdf: snapshot.gstCertificatePdf || v.gstFileUrl || gstDoc?.fileUrl || undefined,
+              shopImages: shopImages.length > 0 ? shopImages : (shopPhotoUrl ? [shopPhotoUrl] : []),
               lenderId: lead.lenderId,
             };
           });
@@ -731,8 +743,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
 
     const combined = [...localReqs, ...awsReqs];
     const deduplicated = combined.filter(
-      (item, idx, arr) =>
-        idx === arr.findIndex((t) => t.id === item.id || (t.vendorName === item.vendorName && t.shopName === item.shopName))
+      (item, idx, arr) => idx === arr.findIndex((t) => t.id === item.id)
     );
 
     const activeReqs = deduplicated.filter((v) => {
@@ -2404,22 +2415,16 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                     const photos: { title: string; url: string }[] = [];
                     if (Array.isArray(selectedVendor.shopPhotos) && selectedVendor.shopPhotos.length > 0) {
                       selectedVendor.shopPhotos.forEach((img: string, i: number) => {
-                        if (img && img.trim().length > 10) photos.push({ title: `Storefront / Premises ${i + 1}`, url: img });
+                        if (img && img.trim().length > 10 && !img.includes('/avatars/')) photos.push({ title: `Storefront / Premises ${i + 1}`, url: img });
                       });
                     }
                     if (Array.isArray(selectedVendor.shopImages) && selectedVendor.shopImages.length > 0) {
                       selectedVendor.shopImages.forEach((img, i) => {
-                        if (img && img.trim().length > 10 && !photos.some(p => p.url === img)) photos.push({ title: `Shop Photo ${i + 1}`, url: img });
+                        if (img && img.trim().length > 10 && !img.includes('/avatars/') && !photos.some(p => p.url === img)) photos.push({ title: `Shop Photo ${i + 1}`, url: img });
                       });
                     }
-                    if (selectedVendor.shopPhotoUrl && selectedVendor.shopPhotoUrl.trim().length > 10 && !photos.some(p => p.url === selectedVendor.shopPhotoUrl)) {
+                    if (selectedVendor.shopPhotoUrl && selectedVendor.shopPhotoUrl.trim().length > 10 && !selectedVendor.shopPhotoUrl.includes('/avatars/') && !photos.some(p => p.url === selectedVendor.shopPhotoUrl)) {
                       photos.push({ title: 'Shop / Startup Business Photo', url: selectedVendor.shopPhotoUrl });
-                    }
-                    if (selectedVendor.liveSelfieUrl && selectedVendor.liveSelfieUrl.trim().length > 10 && !photos.some(p => p.url === selectedVendor.liveSelfieUrl)) {
-                      photos.push({ title: 'Live Photo in Front of Shop', url: selectedVendor.liveSelfieUrl });
-                    }
-                    if (selectedVendor.avatarUrl && selectedVendor.avatarUrl.trim().length > 10 && !photos.some(p => p.url === selectedVendor.avatarUrl)) {
-                      photos.push({ title: 'Live Profile Photo', url: selectedVendor.avatarUrl });
                     }
 
                     if (photos.length > 0) {

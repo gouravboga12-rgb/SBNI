@@ -141,6 +141,7 @@ export const LenderCard: React.FC<LenderCardProps> = ({ lender, onOpenSubscripti
     let shopLicensePdf = undefined;
     let gstCertificatePdf = undefined;
     let shopPhotoUrl = undefined;
+    let shopList: string[] = [];
     let liveSelfieUrl = undefined;
 
     try {
@@ -159,13 +160,25 @@ export const LenderCard: React.FC<LenderCardProps> = ({ lender, onOpenSubscripti
       panNumber = vp?.panNumber || u?.panNumber;
       aadhaarNumber = vp?.aadhaarNumber;
       annualIncome = vp?.annualIncome || vp?.annualTurnover || u?.annualTurnover || 'Under 2 Lakhs';
-      avatarUrl = vp?.avatarUrl || vp?.photoDataUrl || localStorage.getItem('sbni_vendor_avatar') || undefined;
+      avatarUrl = vp?.avatarUrl || vp?.photoDataUrl || (u?.email ? localStorage.getItem(`sbni_vendor_avatar_${u.email}`) : null) || undefined;
       panFileUrl = vp?.panFileUrl || vp?.panDataUrl || undefined;
       aadhaarFileUrl = vp?.aadhaarFileUrl || vp?.aadhaarDataUrl || undefined;
-      shopLicensePdf = vp?.shopLicensePdf || vp?.licenseDataUrl || undefined;
-      gstCertificatePdf = vp?.gstCertificatePdf || vp?.gstDataUrl || vp?.licenseDataUrl || undefined;
-      shopPhotoUrl = vp?.shopPhotoUrl || vp?.shopPhotoDataUrl || undefined;
-      liveSelfieUrl = vp?.liveSelfieUrl || vp?.liveSelfieDataUrl || avatarUrl || undefined;
+      shopLicensePdf = vp?.businessLicenseUrl || vp?.shopLicensePdf || vp?.licenseDataUrl || undefined;
+      gstCertificatePdf = vp?.gstFileUrl || vp?.gstCertificatePdf || vp?.gstDataUrl || undefined;
+      
+      let shopUrl = vp?.shopPhotoUrl;
+      if (vp?.shopPhotos) {
+        try {
+          const parsedPhotos = typeof vp.shopPhotos === 'string' ? JSON.parse(vp.shopPhotos) : vp.shopPhotos;
+          if (Array.isArray(parsedPhotos) && parsedPhotos.length > 0) {
+            shopList = parsedPhotos;
+            shopUrl = parsedPhotos[0];
+          }
+        } catch {}
+      }
+      if (!shopUrl && vp?.shopPhotoDataUrl) shopUrl = vp.shopPhotoDataUrl;
+      shopPhotoUrl = shopUrl || undefined;
+      liveSelfieUrl = vp?.liveSelfieUrl || vp?.liveSelfieDataUrl || undefined;
     } catch (e) {}
 
     return {
@@ -186,6 +199,7 @@ export const LenderCard: React.FC<LenderCardProps> = ({ lender, onOpenSubscripti
       shopLicensePdf,
       gstCertificatePdf,
       shopPhotoUrl,
+      shopImages: shopList.length > 0 ? shopList : (shopPhotoUrl ? [shopPhotoUrl] : []),
       liveSelfieUrl,
     };
   };
@@ -228,14 +242,14 @@ export const LenderCard: React.FC<LenderCardProps> = ({ lender, onOpenSubscripti
         monthlyIncome: v.annualIncome,
         lenderId: lender.id,
         lenderName: lender.institutionName,
-        avatarUrl: v.avatarUrl || v.liveSelfieUrl,
+        avatarUrl: v.avatarUrl,
         panFileUrl: v.panFileUrl,
         aadhaarFileUrl: v.aadhaarFileUrl,
         shopLicensePdf: v.shopLicensePdf,
         gstCertificatePdf: v.gstCertificatePdf,
         shopPhotoUrl: v.shopPhotoUrl,
-        liveSelfieUrl: v.liveSelfieUrl,
-        shopImages: v.shopPhotoUrl ? [v.shopPhotoUrl] : [],
+        liveSelfieUrl: v.liveSelfieUrl || v.avatarUrl,
+        shopImages: v.shopImages && v.shopImages.length > 0 ? v.shopImages : (v.shopPhotoUrl ? [v.shopPhotoUrl] : []),
       };
 
       const existingStr = localStorage.getItem('sbni_vendor_requests');

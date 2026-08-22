@@ -183,8 +183,21 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
 
     let finalPanUrl = panHostedUrl || cachedVp.panFileUrl || '';
     let finalAadhaarUrl = aadhaarHostedUrl || cachedVp.aadhaarFileUrl || '';
-    let finalShopPhotoUrl = shopPhotoHostedUrl || (Array.isArray(cachedVp.shopPhotos) ? cachedVp.shopPhotos[0] : cachedVp.avatarUrl) || '';
-    let finalLiveSelfieUrl = liveSelfieHostedUrl || cachedVp.avatarUrl || '';
+    let finalShopPhotoUrl = shopPhotoHostedUrl || '';
+    let finalShopImages: string[] = [];
+    if (cachedVp.shopPhotos) {
+      try {
+        const arr = typeof cachedVp.shopPhotos === 'string' ? JSON.parse(cachedVp.shopPhotos) : cachedVp.shopPhotos;
+        if (Array.isArray(arr) && arr.length > 0) {
+          finalShopImages = arr;
+          if (!finalShopPhotoUrl) finalShopPhotoUrl = arr[0];
+        }
+      } catch {}
+    }
+    if (!finalShopPhotoUrl && cachedVp.shopPhotoUrl) finalShopPhotoUrl = cachedVp.shopPhotoUrl;
+
+    let finalLiveSelfieUrl = liveSelfieHostedUrl || cachedVp.liveSelfieUrl || '';
+    let finalAvatarUrl = cachedVp.avatarUrl || finalLiveSelfieUrl || '';
     let finalLicenseUrl = businessLicenseHostedUrl || cachedVp.businessLicenseUrl || '';
     let finalGstUrl = gstHostedUrl || cachedVp.gstFileUrl || '';
 
@@ -212,12 +225,12 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
       bankAccountDetails: bankAccountDetails || undefined,
       shopLicensePdf: finalLicenseUrl || undefined,
       gstCertificatePdf: finalGstUrl || undefined,
-      avatarUrl: finalLiveSelfieUrl || undefined,
+      avatarUrl: finalAvatarUrl || undefined,
+      liveSelfieUrl: finalLiveSelfieUrl || finalAvatarUrl || undefined,
       panFileUrl: finalPanUrl || undefined,
       aadhaarFileUrl: finalAadhaarUrl || undefined,
       shopPhotoUrl: finalShopPhotoUrl || undefined,
-      liveSelfieUrl: finalLiveSelfieUrl || undefined,
-      shopImages: finalShopPhotoUrl ? [finalShopPhotoUrl] : [],
+      shopImages: finalShopImages.length > 0 ? finalShopImages : (finalShopPhotoUrl ? [finalShopPhotoUrl] : []),
     };
 
     // Save to localStorage so Lender Dashboard can read dynamic requests
