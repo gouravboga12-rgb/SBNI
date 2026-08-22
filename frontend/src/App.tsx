@@ -231,6 +231,10 @@ export function App() {
       setAuthModalOpen(true);
       return;
     }
+    if (!hasActiveSubscription) {
+      setSubModalOpen(true);
+      return;
+    }
     setVendorActiveTab('lenders');
     setLenderActiveTab('businesses');
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -317,6 +321,7 @@ export function App() {
           <VendorDashboard
             lenders={lenders}
             onOpenSubscription={handleOpenSubscription}
+            hasActiveSubscription={hasActiveSubscription}
             activeTab={vendorActiveTab}
             onTabChange={setVendorActiveTab}
             onLogout={handleLogout}

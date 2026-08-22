@@ -86,6 +86,7 @@ const VENDOR_BANNER_SLIDES: BannerSlide[] = [
 interface VendorDashboardProps {
   lenders: Lender[];
   onOpenSubscription: () => void;
+  hasActiveSubscription?: boolean;
   activeTab?: 'home' | 'lenders' | 'requests' | 'profile';
   onTabChange?: (tab: 'home' | 'lenders' | 'requests' | 'profile') => void;
   onLogout?: (roleTarget?: 'VENDOR' | 'LENDER') => void;
@@ -96,6 +97,7 @@ interface VendorDashboardProps {
 export const VendorDashboard: React.FC<VendorDashboardProps> = ({
   lenders,
   onOpenSubscription,
+  hasActiveSubscription = false,
   activeTab: controlledActiveTab,
   onTabChange,
   onLogout,
@@ -794,6 +796,11 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
     // Gate: Financers tab requires login
     if (tab === 'lenders' && !currentUser) {
       if (onOpenAuth) onOpenAuth();
+      return;
+    }
+    // Gate: Financers tab requires active subscription
+    if (tab === 'lenders' && currentUser && !hasActiveSubscription) {
+      if (onOpenSubscription) onOpenSubscription();
       return;
     }
     if (onTabChange) {
