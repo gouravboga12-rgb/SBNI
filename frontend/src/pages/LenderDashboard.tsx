@@ -1751,67 +1751,69 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                   </p>
                 </div>
 
-                {/* Status Filter Buttons */}
-                <div className="flex items-center bg-slate-200/80 p-1 rounded-2xl w-fit flex-wrap gap-1">
-                  <button
-                    onClick={() => setReportsFilterStatus('ALL')}
-                    className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 ${
-                      reportsFilterStatus === 'ALL'
-                        ? 'bg-slate-900 text-white shadow-md'
-                        : 'text-slate-700 hover:text-slate-900 hover:bg-slate-300/60'
-                    }`}
-                  >
-                    <FileText className="w-3.5 h-3.5" />
-                    <span>All ({requests.length})</span>
-                  </button>
+                {/* Status Filter Buttons - Single line with horizontal scrolling on mobile */}
+                <div className="w-full sm:w-auto overflow-x-auto no-scrollbar pb-1 sm:pb-0 -mx-1 px-1">
+                  <div className="flex items-center bg-slate-200/80 p-1 rounded-2xl w-max flex-nowrap gap-1">
+                    <button
+                      onClick={() => setReportsFilterStatus('ALL')}
+                      className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
+                        reportsFilterStatus === 'ALL'
+                          ? 'bg-slate-900 text-white shadow-md'
+                          : 'text-slate-700 hover:text-slate-900 hover:bg-slate-300/60'
+                      }`}
+                    >
+                      <FileText className="w-3.5 h-3.5" />
+                      <span>All ({requests.length})</span>
+                    </button>
 
-                  <button
-                    onClick={() => setReportsFilterStatus('PENDING')}
-                    className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 ${
-                      reportsFilterStatus === 'PENDING'
-                        ? 'bg-amber-500 text-white shadow-md'
-                        : 'text-slate-700 hover:text-slate-900 hover:bg-slate-300/60'
-                    }`}
-                  >
-                    <Clock className="w-3.5 h-3.5" />
-                    <span>Pending Requests ({pendingCount})</span>
-                  </button>
+                    <button
+                      onClick={() => setReportsFilterStatus('PENDING')}
+                      className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
+                        reportsFilterStatus === 'PENDING'
+                          ? 'bg-amber-500 text-white shadow-md'
+                          : 'text-slate-700 hover:text-slate-900 hover:bg-slate-300/60'
+                      }`}
+                    >
+                      <Clock className="w-3.5 h-3.5" />
+                      <span>Pending Requests ({pendingCount})</span>
+                    </button>
 
-                  <button
-                    onClick={() => setReportsFilterStatus('ACCEPTED')}
-                    className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 ${
-                      reportsFilterStatus === 'ACCEPTED'
-                        ? 'bg-emerald-600 text-white shadow-md'
-                        : 'text-slate-700 hover:text-slate-900 hover:bg-slate-300/60'
-                    }`}
-                  >
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    <span>Accepted Requests ({acceptedCount})</span>
-                  </button>
+                    <button
+                      onClick={() => setReportsFilterStatus('ACCEPTED')}
+                      className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
+                        reportsFilterStatus === 'ACCEPTED'
+                          ? 'bg-emerald-600 text-white shadow-md'
+                          : 'text-slate-700 hover:text-slate-900 hover:bg-slate-300/60'
+                      }`}
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      <span>Accepted Requests ({acceptedCount})</span>
+                    </button>
 
-                  <button
-                    onClick={() => setReportsFilterStatus('REJECTED')}
-                    className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 ${
-                      reportsFilterStatus === 'REJECTED'
-                        ? 'bg-rose-600 text-white shadow-md'
-                        : 'text-slate-700 hover:text-slate-900 hover:bg-slate-300/60'
-                    }`}
-                  >
-                    <XCircle className="w-3.5 h-3.5" />
-                    <span>Rejected ({rejectedCount})</span>
-                  </button>
+                    <button
+                      onClick={() => setReportsFilterStatus('REJECTED')}
+                      className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
+                        reportsFilterStatus === 'REJECTED'
+                          ? 'bg-rose-600 text-white shadow-md'
+                          : 'text-slate-700 hover:text-slate-900 hover:bg-slate-300/60'
+                      }`}
+                    >
+                      <XCircle className="w-3.5 h-3.5" />
+                      <span>Rejected ({rejectedCount})</span>
+                    </button>
 
-                  <button
-                    onClick={() => setReportsFilterStatus('FRAUD')}
-                    className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 ${
-                      reportsFilterStatus === 'FRAUD'
-                        ? 'bg-rose-700 text-white shadow-md'
-                        : 'text-rose-700 hover:text-rose-900 hover:bg-rose-100/60'
-                    }`}
-                  >
-                    <AlertTriangle className="w-3.5 h-3.5" />
-                    <span>Fraud Alert Reports ({fraudCount})</span>
-                  </button>
+                    <button
+                      onClick={() => setReportsFilterStatus('FRAUD')}
+                      className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
+                        reportsFilterStatus === 'FRAUD'
+                          ? 'bg-rose-700 text-white shadow-md'
+                          : 'text-rose-700 hover:text-rose-900 hover:bg-rose-100/60'
+                      }`}
+                    >
+                      <AlertTriangle className="w-3.5 h-3.5" />
+                      <span>Fraud Alert Reports ({fraudCount})</span>
+                    </button>
+                  </div>
                 </div>
             </div>
 
