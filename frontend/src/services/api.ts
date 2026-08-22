@@ -313,6 +313,12 @@ export const registerVendor = async (payload: {
   password: string;
   businessName: string;
   address: string;
+  city?: string;
+  state?: string;
+  pincode?: string;
+  place?: string;
+  latitude?: number;
+  longitude?: number;
   otpCode?: string;
 }): Promise<{ success: boolean; token?: string; user?: any; message?: string }> => {
   try {
@@ -347,6 +353,9 @@ export async function registerLender(payload: {
   city: string;
   state: string;
   pincode: string;
+  place?: string;
+  latitude?: number;
+  longitude?: number;
   minLoanAmount?: number;
   maxLoanAmount?: number;
   lendingRadiusKm?: number;
@@ -372,7 +381,10 @@ export async function registerLender(payload: {
         city: payload.city,
         state: payload.state,
         address: payload.address,
+        place: payload.place || payload.city,
         pincode: payload.pincode,
+        latitude: payload.latitude,
+        longitude: payload.longitude,
         avatarUrl: payload.avatarUrl,
         email: payload.email,
       };

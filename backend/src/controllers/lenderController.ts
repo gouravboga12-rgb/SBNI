@@ -40,9 +40,9 @@ export const updateLenderProfile = async (req: AuthenticatedRequest, res: Respon
     logoUrl,
   } = req.body;
 
-  let parsedLat = latitude !== undefined && latitude !== null ? parseFloat(String(latitude)) : undefined;
-  let parsedLng = longitude !== undefined && longitude !== null ? parseFloat(String(longitude)) : undefined;
-  const parsedRadius = lendingRadiusKm !== undefined && lendingRadiusKm !== null ? parseFloat(String(lendingRadiusKm)) : undefined;
+  let parsedLat = latitude !== undefined && latitude !== null && !isNaN(Number(latitude)) ? parseFloat(String(latitude)) : undefined;
+  let parsedLng = longitude !== undefined && longitude !== null && !isNaN(Number(longitude)) ? parseFloat(String(longitude)) : undefined;
+  const parsedRadius = lendingRadiusKm !== undefined && lendingRadiusKm !== null && !isNaN(Number(lendingRadiusKm)) ? parseFloat(String(lendingRadiusKm)) : undefined;
 
   let financerName = institutionName;
   if (financerName && !financerName.toLowerCase().includes('money financer')) {
@@ -64,7 +64,7 @@ export const updateLenderProfile = async (req: AuthenticatedRequest, res: Respon
     }
   }
 
-  if (parsedLat === undefined || parsedLng === undefined || (Math.abs(parsedLat - 19.076) < 0.01 && Math.abs(parsedLng - 72.8777) < 0.01)) {
+  if (parsedLat === undefined || parsedLng === undefined) {
     const combined = `${address || ''} ${place || ''} ${city || ''} ${state || ''}`.toLowerCase();
     if (combined.includes('hyderabad') || combined.includes('telangana') || combined.includes('kothapet') || combined.includes('chaitanyapuri') || combined.includes('secunderabad') || combined.includes('dilsukhnagar')) {
       parsedLat = 17.3850;

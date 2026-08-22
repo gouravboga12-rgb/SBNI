@@ -308,6 +308,18 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
             setLenderAvatarUrl(lp.avatarUrl || lp.logoUrl);
           }
 
+          if (lp?.latitude && lp?.longitude) {
+            setLenderLocation({
+              place: lp.place || lp.city || 'Office Area',
+              city: lp.city || 'Hyderabad',
+              state: lp.state || 'Telangana',
+              country: lp.country || 'India',
+              latitude: Number(lp.latitude),
+              longitude: Number(lp.longitude),
+              lendingRadiusKm: lp.lendingRadiusKm ? Number(lp.lendingRadiusKm) : 50,
+            });
+          }
+
           const freshData = {
             name: financer,
             contactPerson: officer,
@@ -546,28 +558,42 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
     longitude: number;
     lendingRadiusKm: number;
   }>(() => {
+    const lp = currentUser?.lenderProfile;
+    if (lp && lp.latitude && lp.longitude) {
+      return {
+        place: lp.place || lp.city || 'Office Area',
+        city: lp.city || 'Hyderabad',
+        state: lp.state || 'Telangana',
+        country: lp.country || 'India',
+        latitude: Number(lp.latitude),
+        longitude: Number(lp.longitude),
+        lendingRadiusKm: lp.lendingRadiusKm ? Number(lp.lendingRadiusKm) : 50,
+      };
+    }
     try {
       const p = localStorage.getItem('sbni_lender_profile');
       if (p) {
         const parsed = JSON.parse(p);
-        return {
-          place: parsed.place || 'Dilsukhnagar',
-          city: parsed.city || 'Hyderabad',
-          state: parsed.state || 'Telangana',
-          country: parsed.country || 'India',
-          latitude: parsed.latitude ? Number(parsed.latitude) : 17.3688,
-          longitude: parsed.longitude ? Number(parsed.longitude) : 78.5247,
-          lendingRadiusKm: parsed.lendingRadiusKm ? Number(parsed.lendingRadiusKm) : 50,
-        };
+        if (parsed.latitude && parsed.longitude) {
+          return {
+            place: parsed.place || parsed.city || 'Office Area',
+            city: parsed.city || 'Hyderabad',
+            state: parsed.state || 'Telangana',
+            country: parsed.country || 'India',
+            latitude: Number(parsed.latitude),
+            longitude: Number(parsed.longitude),
+            lendingRadiusKm: parsed.lendingRadiusKm ? Number(parsed.lendingRadiusKm) : 50,
+          };
+        }
       }
     } catch (e) {}
     return {
-      place: 'Dilsukhnagar',
+      place: 'Office Area',
       city: 'Hyderabad',
       state: 'Telangana',
       country: 'India',
-      latitude: 17.3688,
-      longitude: 78.5247,
+      latitude: 17.3850,
+      longitude: 78.4867,
       lendingRadiusKm: 50,
     };
   });
@@ -585,7 +611,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
     lendingRadiusKm?: number;
   }) => {
     const updated = {
-      place: loc.place,
+      place: loc.place || loc.city,
       city: loc.city,
       state: loc.state,
       country: loc.country,
@@ -606,8 +632,9 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
     // Save to AWS Backend
     try {
       await updateLenderProfileApi(updated);
-      setLocationSuccessMsg(`✅ Lending area updated to ${loc.place}, ${loc.city} (${updated.lendingRadiusKm} KM radius)`);
+      setLocationSuccessMsg(`✅ Lending area updated to ${loc.place || loc.city}, ${loc.city} (${updated.lendingRadiusKm} KM radius)`);
       setTimeout(() => setLocationSuccessMsg(null), 4000);
+      loadNearbyBusinessesList();
     } catch (e) {
       console.error('Failed to sync lender profile location to backend:', e);
     }

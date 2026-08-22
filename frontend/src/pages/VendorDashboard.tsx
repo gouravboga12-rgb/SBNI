@@ -116,27 +116,40 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
     latitude: number;
     longitude: number;
   }>(() => {
+    const vpObj = currentUser?.vendorProfile;
+    if (vpObj && vpObj.latitude && vpObj.longitude) {
+      return {
+        place: vpObj.place || vpObj.city || 'Shop Location',
+        city: vpObj.city || 'Hyderabad',
+        state: vpObj.state || 'Telangana',
+        country: vpObj.country || 'India',
+        latitude: Number(vpObj.latitude),
+        longitude: Number(vpObj.longitude),
+      };
+    }
     try {
       const vp = localStorage.getItem('sbni_vendor_profile');
       if (vp) {
         const parsed = JSON.parse(vp);
-        return {
-          place: parsed.place || 'Chaitanyapuri',
-          city: parsed.city || 'Hyderabad',
-          state: parsed.state || 'Telangana',
-          country: parsed.country || 'India',
-          latitude: parsed.latitude ? Number(parsed.latitude) : 17.3688,
-          longitude: parsed.longitude ? Number(parsed.longitude) : 78.5247,
-        };
+        if (parsed.latitude && parsed.longitude) {
+          return {
+            place: parsed.place || parsed.city || 'Shop Location',
+            city: parsed.city || 'Hyderabad',
+            state: parsed.state || 'Telangana',
+            country: parsed.country || 'India',
+            latitude: Number(parsed.latitude),
+            longitude: Number(parsed.longitude),
+          };
+        }
       }
     } catch (e) {}
     return {
-      place: 'Chaitanyapuri',
+      place: 'Shop Location',
       city: 'Hyderabad',
       state: 'Telangana',
       country: 'India',
-      latitude: 17.3688,
-      longitude: 78.5247,
+      latitude: 17.3850,
+      longitude: 78.4867,
     };
   });
 
@@ -288,7 +301,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
             }
             if (vp.latitude && vp.longitude) {
               setSearchLocation({
-                place: vp.place || 'Chaitanyapuri',
+                place: vp.place || vp.city || 'Shop Location',
                 city: vp.city || 'Hyderabad',
                 state: vp.state || 'Telangana',
                 country: vp.country || 'India',

@@ -45,7 +45,7 @@ import {
   Edit3,
   Loader2,
 } from 'lucide-react';
-import { getBrowserLocation, reverseGeocodeMapbox } from '../services/mapboxService';
+import { getBrowserLocation, reverseGeocodeMapbox, searchPlacesMapbox } from '../services/mapboxService';
 import { Role } from '../types';
 
 interface AuthModalProps {
@@ -278,6 +278,19 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
     setIsSubmitting(true);
     try {
+      // If manual address entered and GPS not fetched, forward geocode via Mapbox API!
+      let resolvedLoc = detectedLocationData;
+      if (!resolvedLoc && address.trim()) {
+        try {
+          const mapboxMatches = await searchPlacesMapbox(address.trim());
+          if (mapboxMatches && mapboxMatches.length > 0) {
+            resolvedLoc = mapboxMatches[0];
+          }
+        } catch (geoErr) {
+          console.warn('Mapbox geocoding notice for vendor:', geoErr);
+        }
+      }
+
       // Send JustPaisa Sign Up OTP via SMTP
       const otpRes = await sendSignupOtpApi(email, 'VENDOR', fullName);
       if (otpRes.success) {
@@ -289,12 +302,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           businessName,
           address,
           annualIncome,
-          latitude: detectedLocationData?.latitude,
-          longitude: detectedLocationData?.longitude,
-          city: detectedLocationData?.city,
-          state: detectedLocationData?.state,
-          pincode: detectedLocationData?.pincode,
-          place: detectedLocationData?.place,
+          latitude: resolvedLoc?.latitude || 17.3713,
+          longitude: resolvedLoc?.longitude || 78.5320,
+          city: resolvedLoc?.city || 'Hyderabad',
+          state: resolvedLoc?.state || 'Telangana',
+          pincode: resolvedLoc?.pincode || '500001',
+          place: resolvedLoc?.place || 'Commercial Belt',
           photoFile,
           panFile,
           aadhaarFile,
@@ -344,6 +357,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           password: pendingVendorData.password,
           businessName: pendingVendorData.businessName,
           address: pendingVendorData.address,
+          city: pendingVendorData.city,
+          state: pendingVendorData.state,
+          pincode: pendingVendorData.pincode,
+          place: pendingVendorData.place,
+          latitude: pendingVendorData.latitude,
+          longitude: pendingVendorData.longitude,
           otpCode: signupOtp.trim(),
         });
 
@@ -395,10 +414,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               phone: pendingVendorData.phone,
               email: pendingVendorData.email,
               address: pendingVendorData.address,
+              place: pendingVendorData.place || pendingVendorData.city || 'Commercial Belt',
               annualTurnover: pendingVendorData.annualIncome || 'Under 2 Lakhs',
               city: pendingVendorData.city || 'Hyderabad',
               state: pendingVendorData.state || 'Telangana',
               pincode: pendingVendorData.pincode || '500001',
+              latitude: pendingVendorData.latitude,
+              longitude: pendingVendorData.longitude,
               panNumber: pendingVendorData.panNumber || 'PAN Verified',
               aadhaarNumber: pendingVendorData.aadhaarNumber || 'Aadhaar Verified',
               gstNumber: pendingVendorData.gstNumber,
@@ -420,9 +442,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             email: pendingVendorData.email,
             businessName: pendingVendorData.businessName,
             address: pendingVendorData.address,
+            place: pendingVendorData.place || pendingVendorData.city || 'Commercial Belt',
             city: pendingVendorData.city || 'Hyderabad',
             state: pendingVendorData.state || 'Telangana',
             pincode: pendingVendorData.pincode || '500001',
+            latitude: pendingVendorData.latitude,
+            longitude: pendingVendorData.longitude,
             panFileName: pendingVendorData.panFile?.name || 'PAN_Card_Verified.pdf',
             panNumber: pendingVendorData.panNumber || 'PAN Verified',
             aadhaarFileName: pendingVendorData.aadhaarFile?.name || 'Aadhaar_Card_Verified.pdf',
@@ -1947,6 +1972,16 @@ const LenderRegisterForm: React.FC<LenderRegisterFormProps> = ({
   const [lCity, setLCity] = useState('');
   const [lState, setLState] = useState('');
   const [lPincode, setLPincode] = useState('');
+  const [isDetectingLocation, setIsDetectingLocation] = useState(false);
+  const [lDetectedLocation, setLDetectedLocation] = useState<{
+    latitude: number;
+    longitude: number;
+    place?: string;
+    city?: string;
+    state?: string;
+    pincode?: string;
+    fullAddress?: string;
+  } | null>(null);
   const [lPassword, setLPassword] = useState('');
   const [lConfirmPassword, setLConfirmPassword] = useState('');
   const [lMinLoan, setLMinLoan] = useState('10000');
@@ -1974,6 +2009,34 @@ const LenderRegisterForm: React.FC<LenderRegisterFormProps> = ({
     reader.readAsDataURL(file);
   };
 
+  const handleDetectLenderLocation = async () => {
+    setIsDetectingLocation(true);
+    try {
+      const coords = await getBrowserLocation();
+      const reverse = await reverseGeocodeMapbox(coords.latitude, coords.longitude);
+      if (reverse) {
+        setLDetectedLocation(reverse);
+        if (reverse.fullAddress) setLAddress(reverse.fullAddress);
+        else if (reverse.place) setLAddress(reverse.place);
+        if (reverse.city) setLCity(reverse.city);
+        if (reverse.state) setLState(reverse.state);
+        if (reverse.pincode) setLPincode(reverse.pincode);
+      } else {
+        setLDetectedLocation({
+          latitude: coords.latitude,
+          longitude: coords.longitude,
+          city: 'Hyderabad',
+          state: 'Telangana',
+        });
+        setLAddress(`Office GPS (${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)})`);
+      }
+    } catch {
+      onError('Could not auto-fetch GPS location. You can enter your address manually.');
+    } finally {
+      setIsDetectingLocation(false);
+    }
+  };
+
   // Auto-sync Contact Officer Name to "Name Money Financer" (e.g. Gourav -> Gourav Money Financer)
   const handleNameChange = (nameVal: string) => {
     setLName(nameVal);
@@ -1997,7 +2060,7 @@ const LenderRegisterForm: React.FC<LenderRegisterFormProps> = ({
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (lPassword !== lConfirmPassword) {
       onError('Passwords do not match.');
@@ -2012,15 +2075,32 @@ const LenderRegisterForm: React.FC<LenderRegisterFormProps> = ({
       finalFinancerName = `${lName.trim()} Money Financer`;
     }
 
-    let lat = 17.3850;
-    let lng = 78.4867;
-    const combined = `${lAddress} ${lCity} ${lState}`.toLowerCase();
-    if (combined.includes('mumbai')) { lat = 19.0760; lng = 72.8777; }
-    else if (combined.includes('delhi')) { lat = 28.6139; lng = 77.2090; }
-    else if (combined.includes('bangalore') || combined.includes('bengaluru')) { lat = 12.9716; lng = 77.5946; }
-    else if (combined.includes('chennai')) { lat = 13.0827; lng = 80.2707; }
-    else if (combined.includes('pune')) { lat = 18.5204; lng = 73.8567; }
-    else if (combined.includes('hyderabad') || combined.includes('telangana') || combined.includes('kothapet') || combined.includes('chaitanyapuri')) { lat = 17.3713; lng = 78.5320; }
+    let lat = lDetectedLocation?.latitude || 17.3850;
+    let lng = lDetectedLocation?.longitude || 78.4867;
+    let placeName = lDetectedLocation?.place || lCity || 'Financial District';
+
+    // Auto forward geocode full address via Mapbox Geocoding API if not GPS detected
+    const searchAddr = `${lAddress}, ${lCity}, ${lState} ${lPincode}`.trim();
+    if (!lDetectedLocation && searchAddr.length > 3) {
+      try {
+        const geoResults = await searchPlacesMapbox(searchAddr);
+        if (geoResults && geoResults.length > 0) {
+          const top = geoResults[0];
+          lat = top.latitude;
+          lng = top.longitude;
+          if (top.place) placeName = top.place;
+        } else if (lCity.trim()) {
+          const cityResults = await searchPlacesMapbox(`${lCity}, ${lState || ''}`.trim());
+          if (cityResults && cityResults.length > 0) {
+            lat = cityResults[0].latitude;
+            lng = cityResults[0].longitude;
+            if (cityResults[0].place) placeName = cityResults[0].place;
+          }
+        }
+      } catch (geoErr) {
+        console.warn('Mapbox forward geocoding notice:', geoErr);
+      }
+    }
 
     onFormReady({
       name: lName,
@@ -2030,6 +2110,7 @@ const LenderRegisterForm: React.FC<LenderRegisterFormProps> = ({
       institutionName: finalFinancerName,
       institutionType: lType || 'Money Financer',
       address: lAddress,
+      place: placeName,
       city: lCity,
       state: lState,
       pincode: lPincode,
@@ -2128,7 +2209,43 @@ const LenderRegisterForm: React.FC<LenderRegisterFormProps> = ({
         {field('Official Email ID (For OTP Verification)', 'financer@gmail.com', lEmail, setLEmail, 'email')}
       </div>
 
-      {field('Address', 'Plot/Office No., Street, Area', lAddress, setLAddress)}
+      {/* Office Address & Mapbox GPS Option */}
+      <div className="space-y-1.5 pt-1">
+        <div className="flex items-center justify-between">
+          <label className="block text-xs font-bold text-slate-700">Office / Business Address *</label>
+          <button
+            type="button"
+            onClick={handleDetectLenderLocation}
+            disabled={isDetectingLocation}
+            className="text-[11px] font-extrabold text-[#007a33] hover:text-[#005e27] flex items-center gap-1 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1 rounded-lg border border-emerald-200 transition-all cursor-pointer active:scale-95"
+          >
+            {isDetectingLocation ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                <span>Detecting GPS...</span>
+              </>
+            ) : (
+              <>
+                <Navigation className="w-3.5 h-3.5" />
+                <span>Auto-Detect Office GPS</span>
+              </>
+            )}
+          </button>
+        </div>
+        <input
+          type="text"
+          placeholder="Plot/Office No., Building, Street, Area"
+          value={lAddress}
+          onChange={(e) => setLAddress(e.target.value)}
+          required
+          className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-medium text-slate-900 outline-none focus:border-[#007a33] transition-colors"
+        />
+        {lDetectedLocation && (
+          <p className="text-[10px] text-emerald-700 font-bold flex items-center gap-1">
+            <CheckCircle2 className="w-3 h-3" /> Mapbox GPS: {lDetectedLocation.latitude.toFixed(4)}, {lDetectedLocation.longitude.toFixed(4)}
+          </p>
+        )}
+      </div>
 
       <div className="grid grid-cols-3 gap-3">
         {field('City', 'Mumbai', lCity, setLCity)}
