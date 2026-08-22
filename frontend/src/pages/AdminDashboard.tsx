@@ -3190,25 +3190,6 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
                           </div>
 
                           <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto justify-end">
-                            {/* Contact Financer Buttons */}
-                            <button
-                              onClick={() => handleCallFinancer(report)}
-                              className="py-2 px-3 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 font-extrabold text-xs flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
-                              title="Direct Phone Call to Reporting Financer"
-                            >
-                              <Phone className="w-3.5 h-3.5 text-emerald-700" />
-                              <span>Call Financer</span>
-                            </button>
-
-                            <button
-                              onClick={() => handleWhatsAppFinancer(report)}
-                              className="py-2 px-3 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-[#007a33] border border-emerald-300 font-extrabold text-xs flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
-                              title="Open WhatsApp Chat with Reporting Financer"
-                            >
-                              <MessageSquare className="w-3.5 h-3.5 text-[#25D366]" />
-                              <span>WhatsApp Financer</span>
-                            </button>
-
                             {isPending && (
                               <>
                                 <button
