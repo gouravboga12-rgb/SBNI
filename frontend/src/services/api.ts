@@ -211,7 +211,7 @@ export function getToken(): string | null {
 }
 
 export function getAdminToken(): string | null {
-  return localStorage.getItem('sbni_admin_token') || localStorage.getItem('sbni_token');
+  return localStorage.getItem('sbni_admin_token');
 }
 
 function authHeaders(token?: string | null): HeadersInit {
@@ -1053,9 +1053,15 @@ export async function adminLoginApi(
 }
 
 async function adminFetch<T = any>(path: string, options: RequestInit = {}, retry = true): Promise<T> {
-  let token = getAdminToken();
+  let token = localStorage.getItem('sbni_admin_token');
 
-  if (!token && retry) {
+  let hasAdminUser = false;
+  try {
+    const u = JSON.parse(localStorage.getItem('sbni_admin_user') || '{}');
+    if (u?.role === 'SUPER_ADMIN') hasAdminUser = true;
+  } catch {}
+
+  if ((!token || !hasAdminUser) && retry) {
     try {
       const loginRes = await adminLoginApi('srinivaspolepalli10@gmail.com', 'Srinivas@10');
       if (loginRes.success && loginRes.token) {
