@@ -672,6 +672,12 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
     };
   }, []);
 
+  useEffect(() => {
+    if (activeTab === 'fraud_reports' && isAdminAuthenticated) {
+      loadFraudReports();
+    }
+  }, [activeTab, isAdminAuthenticated]);
+
   const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError('');

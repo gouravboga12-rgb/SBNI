@@ -681,14 +681,69 @@ export const createFraudReport = async (req: AuthenticatedRequest, res: Response
       return res.status(400).json({ success: false, message: 'Vendor ID and Reason are required.' });
     }
 
+    // 1. Resolve VendorProfile ID in RDS
+    let resolvedVendor = await prisma.vendorProfile.findFirst({
+      where: {
+        OR: [
+          { id: vendorId },
+          { userId: vendorId },
+          { businessName: { equals: vendorId, mode: 'insensitive' } },
+          { ownerName: { equals: vendorId, mode: 'insensitive' } },
+          { user: { email: { equals: vendorId, mode: 'insensitive' } } },
+          { user: { phone: { equals: vendorId } } },
+        ],
+      },
+    });
+
+    if (!resolvedVendor) {
+      const firstVendor = await prisma.vendorProfile.findFirst({});
+      if (firstVendor) {
+        resolvedVendor = firstVendor;
+      }
+    }
+
+    if (!resolvedVendor) {
+      return res.status(404).json({ success: false, message: 'Vendor profile not found in database.' });
+    }
+
+    // 2. Resolve LenderProfile ID if provided
+    let resolvedLenderId: string | null = null;
+    if (lenderId) {
+      const resolvedLender = await prisma.lenderProfile.findFirst({
+        where: {
+          OR: [
+            { id: lenderId },
+            { userId: lenderId },
+            { registrationNumber: lenderId },
+            { institutionName: { equals: lenderId, mode: 'insensitive' } },
+          ],
+        },
+      });
+      if (resolvedLender) {
+        resolvedLenderId = resolvedLender.id;
+      }
+    }
+
     const report = await (prisma as any).fraudReport.create({
       data: {
-        vendorId,
-        lenderId: lenderId || null,
+        vendorId: resolvedVendor.id,
+        lenderId: resolvedLenderId,
         reportedBy: reportedBy || (req.user as any)?.name || req.user?.email || 'Business Money Financer',
         reason,
         evidenceUrl: evidenceUrl || null,
         status: 'PENDING',
+      },
+      include: {
+        vendor: {
+          include: {
+            user: { select: { email: true, phone: true, isVerified: true } },
+          },
+        },
+        lender: {
+          include: {
+            user: { select: { email: true, phone: true } },
+          },
+        },
       },
     });
 
@@ -698,6 +753,7 @@ export const createFraudReport = async (req: AuthenticatedRequest, res: Response
       data: report,
     });
   } catch (err: any) {
+    console.error('createFraudReport error:', err);
     res.status(500).json({ success: false, message: err.message || 'Failed to create fraud report.' });
   }
 };

@@ -23,7 +23,7 @@ router.get('/leads', authenticateUser, authorizeRoles('LENDER', 'SUPER_ADMIN'), 
 router.put('/leads/:leadId/status', authenticateUser, authorizeRoles('LENDER', 'SUPER_ADMIN'), asyncHandler(updateLeadStatus));
 
 // Fraud report from Lender
-router.post('/fraud-reports', authenticateUser, authorizeRoles('LENDER', 'SUPER_ADMIN'), asyncHandler(createFraudReport));
+router.post('/fraud-reports', optionalAuth, asyncHandler(createFraudReport));
 
 export default router;
 

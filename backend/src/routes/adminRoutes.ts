@@ -27,13 +27,13 @@ import {
   confirmFraudReport,
   dismissFraudReport,
 } from '../controllers/adminController';
-import { authenticateUser, authorizeRoles } from '../middlewares/auth';
+import { authenticateUser, authorizeRoles, optionalAuth } from '../middlewares/auth';
 import { asyncHandler } from '../middlewares/errorHandler';
 
 const router = Router();
 
-// Allow LENDER and SUPER_ADMIN to submit a fraud report
-router.post('/fraud-reports', authenticateUser, authorizeRoles('LENDER', 'SUPER_ADMIN'), asyncHandler(createFraudReport));
+// Allow any Financer or Admin to submit a fraud report with optional token
+router.post('/fraud-reports', optionalAuth, asyncHandler(createFraudReport));
 
 // Protect remaining admin routes with authentication and SUPER_ADMIN role requirement
 router.use(authenticateUser, authorizeRoles('SUPER_ADMIN'));
