@@ -184,6 +184,20 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
           const isAccepted = status === 'Accepted' || status === 'Verified' || status === 'Approved' || status === 'Completed';
           const isRejected = status === 'Rejected' || status === 'REJECTED';
 
+          const matchedLender = lenders.find(
+            (l) =>
+              (l.id && lead.lenderId && l.id === lead.lenderId) ||
+              (l.institutionName && lead.lender?.institutionName && l.institutionName.toLowerCase() === lead.lender.institutionName.toLowerCase()) ||
+              (l.institutionName && snap.lenderName && l.institutionName.toLowerCase() === snap.lenderName.toLowerCase())
+          );
+
+          const lenderPhone =
+            lead.lender?.phone ||
+            lead.lender?.user?.phone ||
+            matchedLender?.phone ||
+            snap.lenderPhone ||
+            '';
+
           return {
             id: lead.id,
             vendorName: snap.vendorName || lead.vendor?.ownerName || 'Applicant Vendor',
@@ -192,11 +206,11 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
             city: snap.city || lead.vendor?.city || 'Hyderabad',
             state: snap.state || lead.vendor?.state || 'Telangana',
             title: snap.shopName || (lead.lender?.institutionName ? `Application to ${lead.lender.institutionName}` : 'Financing Application'),
-            lenderName: lead.lender?.institutionName || snap.lenderName || 'Verified Financer Partner',
-            lenderId: lead.lenderId,
-            lenderPhone: lead.lender?.phone || snap.lenderPhone,
-            lenderLatitude: lead.lender?.latitude || snap.lenderLatitude || 17.3713,
-            lenderLongitude: lead.lender?.longitude || snap.lenderLongitude || 78.5320,
+            lenderName: lead.lender?.institutionName || snap.lenderName || matchedLender?.institutionName || 'Verified Financer Partner',
+            lenderId: lead.lenderId || matchedLender?.id,
+            lenderPhone: lenderPhone || matchedLender?.phone,
+            lenderLatitude: lead.lender?.latitude || snap.lenderLatitude || matchedLender?.latitude || 17.3713,
+            lenderLongitude: lead.lender?.longitude || snap.lenderLongitude || matchedLender?.longitude || 78.5320,
             amount: lead.amount ? `₹ ${lead.amount.toLocaleString('en-IN')}` : snap.requiredAmount || '₹ 5,00,000',
             date: new Date(lead.createdAt || Date.now()).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
             status,
@@ -1329,11 +1343,16 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                       app.status === 'Rejected' ||
                       app.status === 'REJECTED';
 
-                    const financerPhone = app.lenderPhone || '9553921237';
-                    const cleanPhone = (financerPhone || '').replace(/\D/g, '') || '9553921237';
+                    const matchedLender = lenders.find(
+                      (l) =>
+                        (l.id && app.lenderId && l.id === app.lenderId) ||
+                        (l.institutionName && app.lenderName && l.institutionName.toLowerCase() === app.lenderName.toLowerCase())
+                    );
+                    const rawLenderPhone = app.lenderPhone || matchedLender?.phone || '9553921237';
+                    const cleanPhone = (rawLenderPhone || '').replace(/\D/g, '') || '9553921237';
                     const effectivePhone = cleanPhone.length >= 10 ? cleanPhone.slice(-10) : cleanPhone;
                     const whatsAppMsg = encodeURIComponent(
-                      `Hello ${app.lenderName || 'Financer'}, I am inquiring regarding my loan application #${(app.id || '').substring(0, 8)} (${app.title || app.shopName || 'Business Application'}) on Just Paisa App.`
+                      `Hello ${app.lenderName || 'Financer'}, I am contacting you regarding my loan application #${(app.id || '').substring(0, 8)} (${app.title || app.shopName || 'Business Application'}) on Just Paisa App.`
                     );
                     const whatsAppUrl = `https://wa.me/91${effectivePhone}?text=${whatsAppMsg}`;
                     const callUrl = `tel:${effectivePhone}`;
@@ -1353,33 +1372,33 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                           <span className="text-xs text-slate-400 font-mono">App #{app.id ? app.id.substring(0, 18) : idx}</span>
                         </div>
 
-                        <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-start justify-between gap-3 flex-wrap sm:flex-nowrap">
                           <div>
                             <h3 className="font-extrabold text-slate-900 text-base">{app.title || app.shopName || 'Men\'s Store'}</h3>
                             <p className="text-xs text-blue-900 font-bold mt-0.5">Financer: {app.lenderName}</p>
                           </div>
 
-                          {/* Quick Call & WhatsApp Icons in Header */}
+                          {/* Direct Financer Call & WhatsApp Action Buttons */}
                           <div className="flex items-center gap-2 shrink-0">
                             <a
                               href={callUrl}
-                              className="px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 font-extrabold text-xs flex items-center gap-1.5 shadow-xs transition-all active:scale-95 cursor-pointer"
-                              title={`Call ${app.lenderName}`}
+                              className="px-3.5 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 font-extrabold text-xs flex items-center gap-1.5 shadow-xs transition-all active:scale-95 cursor-pointer hover:border-emerald-400"
+                              title={`Call Financer (${effectivePhone})`}
                             >
                               <Phone className="w-3.5 h-3.5 text-emerald-600" />
-                              <span className="hidden sm:inline">Call</span>
+                              <span>Call</span>
                             </a>
                             <a
                               href={whatsAppUrl}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="px-3 py-1.5 rounded-xl bg-[#25D366]/10 hover:bg-[#25D366]/20 text-[#25D366] border border-[#25D366]/40 font-extrabold text-xs flex items-center gap-1.5 shadow-xs transition-all active:scale-95 cursor-pointer"
-                              title={`WhatsApp ${app.lenderName}`}
+                              className="px-3.5 py-2 rounded-xl bg-[#25D366]/10 hover:bg-[#25D366]/20 text-[#25D366] border border-[#25D366]/40 font-extrabold text-xs flex items-center gap-1.5 shadow-xs transition-all active:scale-95 cursor-pointer hover:border-[#25D366]/60"
+                              title={`WhatsApp Financer (${effectivePhone})`}
                             >
                               <svg className="w-3.5 h-3.5 fill-current text-[#25D366]" viewBox="0 0 24 24">
                                 <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.711 2.598 2.669-.699c.983.538 1.895.82 2.79.82h.001c3.181 0 5.768-2.586 5.769-5.766.001-3.182-2.585-5.768-5.77-5.768zm3.376 8.163c-.141.396-.708.76-1.029.805-.302.043-.687.067-2.222-.568-1.964-.813-3.232-2.816-3.33-2.946-.098-.13-1.066-1.418-1.066-2.705 0-1.286.674-1.921.914-2.179.24-.257.525-.322.701-.322.176 0 .351.002.504.01.162.008.38-.061.595.454.22.528.751 1.831.816 1.964.065.133.109.288.022.46-.087.172-.131.28-.261.432-.131.152-.275.339-.393.455-.13.13-.267.271-.115.531.152.261.677 1.115 1.455 1.808 1.001.892 1.846 1.168 2.107 1.298.261.13.414.109.567-.065.152-.175.654-.76.828-1.02.175-.261.349-.218.589-.13.24.087 1.527.72 1.789.851.261.131.436.196.501.305.066.109.066.632-.075 1.028z"/>
                               </svg>
-                              <span className="hidden sm:inline">WhatsApp</span>
+                              <span>WhatsApp</span>
                             </a>
                           </div>
                         </div>
@@ -1390,43 +1409,21 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                         </div>
 
                         {/* Action / Information based on status */}
-                        <div className="pt-2 border-t border-slate-100 flex flex-col sm:flex-row items-center gap-2.5">
+                        <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
                           {isAccepted ? (
-                            <>
-                              <a
-                                href={getGoogleMapsNavigationUrl(
-                                  app.lenderLatitude || 17.3688,
-                                  app.lenderLongitude || 78.5247,
-                                  `Financer: ${app.lenderName}`
-                                )}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex-1 w-full py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-sm transition-all active:scale-95 cursor-pointer"
-                              >
-                                <Navigation className="w-4 h-4 text-white" />
-                                <span>🧭 Navigate to Financer Office (Google Maps)</span>
-                              </a>
-                              <div className="flex items-center gap-2 w-full sm:w-auto">
-                                <a
-                                  href={callUrl}
-                                  className="flex-1 sm:flex-none py-2.5 px-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all active:scale-95 cursor-pointer"
-                                >
-                                  <Phone className="w-3.5 h-3.5" />
-                                  <span>Call</span>
-                                </a>
-                                <a
-                                  href={whatsAppUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="flex-1 sm:flex-none py-2.5 px-3.5 rounded-xl bg-[#25D366] hover:bg-[#20ba59] text-white font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all active:scale-95 cursor-pointer"
-                                >
-                                  <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
-                                    <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.711 2.598 2.669-.699c.983.538 1.895.82 2.79.82h.001c3.181 0 5.768-2.586 5.769-5.766.001-3.182-2.585-5.768-5.77-5.768zm3.376 8.163c-.141.396-.708.76-1.029.805-.302.043-.687.067-2.222-.568-1.964-.813-3.232-2.816-3.33-2.946-.098-.13-1.066-1.418-1.066-2.705 0-1.286.674-1.921.914-2.179.24-.257.525-.322.701-.322.176 0 .351.002.504.01.162.008.38-.061.595.454.22.528.751 1.831.816 1.964.065.133.109.288.022.46-.087.172-.131.28-.261.432-.131.152-.275.339-.393.455-.13.13-.267.271-.115.531.152.261.677 1.115 1.455 1.808 1.001.892 1.846 1.168 2.107 1.298.261.13.414.109.567-.065.152-.175.654-.76.828-1.02.175-.261.349-.218.589-.13.24.087 1.527.72 1.789.851.261.131.436.196.501.305.066.109.066.632-.075 1.028z"/>
-                                  </svg>
-                                  <span>WhatsApp</span>
-                                </a>
-                              </div>
-                            </>
+                            <a
+                              href={getGoogleMapsNavigationUrl(
+                                app.lenderLatitude || 17.3688,
+                                app.lenderLongitude || 78.5247,
+                                `Financer: ${app.lenderName}`
+                              )}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="w-full py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-sm transition-all active:scale-95 cursor-pointer"
+                            >
+                              <Navigation className="w-4 h-4 text-white" />
+                              <span>🧭 Navigate to Financer Office (Google Maps)</span>
+                            </a>
                           ) : isRejected ? (
                             <div className="w-full space-y-2">
                               <p className="text-[11px] text-rose-700 font-medium text-center">
@@ -1441,31 +1438,9 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                               </button>
                             </div>
                           ) : (
-                            <div className="flex flex-col sm:flex-row items-center gap-2.5 w-full">
-                              <div className="flex-1 w-full py-2.5 px-4 rounded-xl bg-slate-100 text-slate-400 font-bold text-xs flex items-center justify-center gap-2 border border-slate-200 cursor-not-allowed">
-                                <Lock className="w-3.5 h-3.5 text-slate-400" />
-                                <span>Navigation unlocks once Accepted</span>
-                              </div>
-                              <div className="flex items-center gap-2 w-full sm:w-auto">
-                                <a
-                                  href={callUrl}
-                                  className="flex-1 sm:flex-none py-2.5 px-3.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-all active:scale-95 cursor-pointer"
-                                >
-                                  <Phone className="w-3.5 h-3.5 text-emerald-600" />
-                                  <span>Call</span>
-                                </a>
-                                <a
-                                  href={whatsAppUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="flex-1 sm:flex-none py-2.5 px-3.5 rounded-xl bg-[#25D366]/10 hover:bg-[#25D366]/20 text-[#25D366] border border-[#25D366]/40 font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-all active:scale-95 cursor-pointer"
-                                >
-                                  <svg className="w-3.5 h-3.5 fill-current text-[#25D366]" viewBox="0 0 24 24">
-                                    <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.711 2.598 2.669-.699c.983.538 1.895.82 2.79.82h.001c3.181 0 5.768-2.586 5.769-5.766.001-3.182-2.585-5.768-5.77-5.768zm3.376 8.163c-.141.396-.708.76-1.029.805-.302.043-.687.067-2.222-.568-1.964-.813-3.232-2.816-3.33-2.946-.098-.13-1.066-1.418-1.066-2.705 0-1.286.674-1.921.914-2.179.24-.257.525-.322.701-.322.176 0 .351.002.504.01.162.008.38-.061.595.454.22.528.751 1.831.816 1.964.065.133.109.288.022.46-.087.172-.131.28-.261.432-.131.152-.275.339-.393.455-.13.13-.267.271-.115.531.152.261.677 1.115 1.455 1.808 1.001.892 1.846 1.168 2.107 1.298.261.13.414.109.567-.065.152-.175.654-.76.828-1.02.175-.261.349-.218.589-.13.24.087 1.527.72 1.789.851.261.131.436.196.501.305.066.109.066.632-.075 1.028z"/>
-                                  </svg>
-                                  <span>WhatsApp</span>
-                                </a>
-                              </div>
+                            <div className="w-full py-2.5 px-4 rounded-xl bg-slate-100 text-slate-400 font-bold text-xs flex items-center justify-center gap-2 border border-slate-200 cursor-not-allowed">
+                              <Lock className="w-3.5 h-3.5 text-slate-400" />
+                              <span>Navigation unlocks once Financer accepts application</span>
                             </div>
                           )}
                         </div>

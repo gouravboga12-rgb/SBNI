@@ -364,6 +364,25 @@ export const getVendorMyLeads = async (req: AuthenticatedRequest, res: Response)
     const userEmail = user?.email?.toLowerCase();
     const userPhone = user?.phone;
 
+    const allLenders = await prisma.lenderProfile.findMany({
+      include: {
+        user: {
+          select: {
+            phone: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    const lenderMap = new Map<string, any>();
+    allLenders.forEach((lp) => {
+      lenderMap.set(lp.id, lp);
+      lenderMap.set(lp.userId, lp);
+      if (lp.registrationNumber) lenderMap.set(lp.registrationNumber, lp);
+      if (lp.institutionName) lenderMap.set(lp.institutionName.toLowerCase(), lp);
+    });
+
     const allLeads = await (prisma as any).financingLead.findMany({
       include: {
         lender: {
@@ -405,7 +424,31 @@ export const getVendorMyLeads = async (req: AuthenticatedRequest, res: Response)
       return false;
     });
 
-    res.json({ success: true, count: matchedLeads.length, data: matchedLeads });
+    const formattedLeads = matchedLeads.map((lead: any) => {
+      let snap: any = {};
+      try {
+        if (lead.vendorSnapshot) {
+          snap = typeof lead.vendorSnapshot === 'string' ? JSON.parse(lead.vendorSnapshot) : lead.vendorSnapshot;
+        }
+      } catch {}
+
+      const lender = lead.lender || lenderMap.get(lead.lenderId) || (snap.lenderName ? lenderMap.get(snap.lenderName.toLowerCase()) : null);
+      const lenderPhone = lender?.user?.phone || lender?.phone || snap.lenderPhone || null;
+
+      return {
+        ...lead,
+        lender: lender ? {
+          ...lender,
+          phone: lenderPhone,
+          institutionName: lender.institutionName || snap.lenderName || 'Financer',
+        } : (snap.lenderName ? {
+          institutionName: snap.lenderName,
+          phone: snap.lenderPhone || null,
+        } : null),
+      };
+    });
+
+    res.json({ success: true, count: formattedLeads.length, data: formattedLeads });
   } catch (err: any) {
     res.status(500).json({ success: false, message: err.message || 'Failed to fetch vendor leads.' });
   }
