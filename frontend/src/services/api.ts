@@ -717,35 +717,8 @@ export async function fetchSubscriptionPlans(
   role?: 'VENDOR' | 'LENDER'
 ): Promise<SubscriptionPlan[]> {
   const targetRole = role || 'VENDOR';
-  const adminKey = targetRole === 'LENDER' ? 'sbni_admin_lender_plans' : 'sbni_admin_vendor_plans';
 
-  // 1. Check if admin configured customized plans in localStorage
-  try {
-    const adminSaved = localStorage.getItem(adminKey);
-    if (adminSaved) {
-      const parsed = JSON.parse(adminSaved);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed.map((p: any) => ({
-          id: p.id,
-          code: p.code || p.id,
-          name: p.name,
-          description: p.description || '',
-          price: Number(p.price) || 0,
-          originalPrice: Number(p.originalPrice) || Number(p.price) || 0,
-          durationDays: Number(p.durationDays) || 30,
-          durationLabel: p.durationLabel || `${p.durationDays || 30} Days`,
-          features: Array.isArray(p.features)
-            ? p.features
-            : (typeof p.features === 'string' ? JSON.parse(p.features || '[]') : []),
-          isPopular: !!p.isPopular,
-          isBestValue: !!p.isBestValue,
-          roleTarget: p.roleTarget || targetRole,
-        }));
-      }
-    }
-  } catch (e) {}
-
-  // 2. Fetch from live AWS backend
+  // Always fetch from live backend DB so admin plan changes are reflected globally
   try {
     const qs = `?role=${targetRole}`;
     const data = await apiFetch(`/subscriptions/plans${qs}`);
@@ -772,6 +745,7 @@ export async function fetchSubscriptionPlans(
     return getDefaultPlans(targetRole);
   }
 }
+
 
 function getDefaultPlans(role: 'VENDOR' | 'LENDER'): SubscriptionPlan[] {
   if (role === 'VENDOR') {
@@ -1268,6 +1242,16 @@ export async function adminUpdatePlatformSetting(key: string, value: string): Pr
     return { success: data.success };
   } catch {
     return { success: false };
+  }
+}
+
+export async function adminFetchSubscriptionPlans(role?: string): Promise<{ success: boolean; data?: any[] }> {
+  try {
+    const qs = role ? `?role=${role}` : '';
+    const data = await adminFetch(`/admin/subscription-plans${qs}`);
+    return { success: data.success, data: data.data };
+  } catch (err: any) {
+    return { success: false, data: [] };
   }
 }
 

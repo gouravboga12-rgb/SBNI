@@ -51,6 +51,7 @@ import {
   adminCreateSubscriptionPlan,
   adminUpdateSubscriptionPlan,
   adminDeleteSubscriptionPlan,
+  adminFetchSubscriptionPlans,
   adminToggleVendorFraud,
   adminFetchVendors,
   adminFetchLenders,
@@ -966,7 +967,44 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
       ]);
     };
 
+    // Load subscription plans from live DB
+    const loadPlansFromDB = async () => {
+      try {
+        const [vendorRes, lenderRes] = await Promise.all([
+          adminFetchSubscriptionPlans('VENDOR'),
+          adminFetchSubscriptionPlans('LENDER'),
+        ]);
+        if (vendorRes.success && Array.isArray(vendorRes.data) && vendorRes.data.length > 0) {
+          const mapped = vendorRes.data.map((p: any) => ({
+            id: p.id, name: p.name, code: p.code, description: p.description || '',
+            price: Number(p.price), originalPrice: Number(p.originalPrice || p.price),
+            durationDays: Number(p.durationDays), durationNumber: Number(p.durationDays),
+            durationUnit: 'Days', roleTarget: 'VENDOR', isActive: !!p.isActive,
+            isPopular: !!p.isPopular, isBestValue: !!p.isBestValue,
+            features: Array.isArray(p.features) ? p.features : [],
+          }));
+          setVendorPlans(mapped);
+          safeSetLocalStorage('sbni_admin_vendor_plans', JSON.stringify(mapped));
+        }
+        if (lenderRes.success && Array.isArray(lenderRes.data) && lenderRes.data.length > 0) {
+          const mapped = lenderRes.data.map((p: any) => ({
+            id: p.id, name: p.name, code: p.code, description: p.description || '',
+            price: Number(p.price), originalPrice: Number(p.originalPrice || p.price),
+            durationDays: Number(p.durationDays), durationNumber: Number(p.durationDays),
+            durationUnit: 'Days', roleTarget: 'LENDER', isActive: !!p.isActive,
+            isPopular: !!p.isPopular, isBestValue: !!p.isBestValue,
+            features: Array.isArray(p.features) ? p.features : [],
+          }));
+          setLenderPlans(mapped);
+          safeSetLocalStorage('sbni_admin_lender_plans', JSON.stringify(mapped));
+        }
+      } catch (e) {
+        console.error('loadPlansFromDB error:', e);
+      }
+    };
+
     ensureAdminSession();
+    loadPlansFromDB();
 
     // Auto-poll live database every 8 seconds for real-time live sync
     const pollInterval = setInterval(() => {

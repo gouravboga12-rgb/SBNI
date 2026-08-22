@@ -10,6 +10,7 @@ import {
   updateLenderDetails,
   deleteUser,
   grantManualSubscription,
+  listSubscriptionPlansAdmin,
   createSubscriptionPlanAdmin,
   updateSubscriptionPlanAdmin,
   deleteSubscriptionPlanAdmin,
@@ -56,6 +57,7 @@ router.delete('/users/:userId', asyncHandler(deleteUser));
 router.post('/grant-subscription', asyncHandler(grantManualSubscription));
 
 // Subscription Plans CRUD
+router.get('/subscription-plans', asyncHandler(listSubscriptionPlansAdmin));
 router.post('/subscription-plans', asyncHandler(createSubscriptionPlanAdmin));
 router.put('/subscription-plans/:planId', asyncHandler(updateSubscriptionPlanAdmin));
 router.delete('/subscription-plans/:planId', asyncHandler(deleteSubscriptionPlanAdmin));

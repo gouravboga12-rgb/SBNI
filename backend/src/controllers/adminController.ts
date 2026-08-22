@@ -539,6 +539,27 @@ export const grantManualSubscription = async (req: AuthenticatedRequest, res: Re
 };
 
 // Subscription Plans CRUD
+export const listSubscriptionPlansAdmin = async (req: AuthenticatedRequest, res: Response) => {
+  const { role } = req.query;
+  const where: any = {};
+  if (role) where.roleTarget = String(role).toUpperCase();
+
+  const plans = await prisma.subscriptionPlan.findMany({
+    where,
+    orderBy: [{ roleTarget: 'asc' }, { price: 'asc' }],
+  });
+
+  const formatted = plans.map((p) => {
+    let parsedFeatures: string[] = [];
+    try {
+      parsedFeatures = Array.isArray(p.features) ? p.features as string[] : JSON.parse(p.features as any || '[]');
+    } catch { parsedFeatures = []; }
+    return { ...p, features: parsedFeatures };
+  });
+
+  res.json({ success: true, data: formatted });
+};
+
 export const createSubscriptionPlanAdmin = async (req: AuthenticatedRequest, res: Response) => {
   const { name, code, description, price, originalPrice, durationDays, features, isPopular, isBestValue, roleTarget } = req.body;
 
