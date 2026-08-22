@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Lender } from '../types';
 import { Phone, MessageCircle, CheckCircle2, SendHorizontal, Lock, Zap, TrendingUp, Coins, MapPin } from 'lucide-react';
-import { ingestLeadApi, safeSetLocalStorage } from '../services/api';
+import { ingestLeadApi, safeSetLocalStorage, fetchVendorMyLeadsApi } from '../services/api';
 
 interface LenderCardProps {
   lender: Lender;
@@ -17,7 +17,6 @@ export const LenderCard: React.FC<LenderCardProps> = ({ lender, onOpenSubscripti
       const deletedLeads = JSON.parse(localStorage.getItem('sbni_deleted_leads') || '[]');
       const reqsStr = localStorage.getItem('sbni_vendor_requests');
 
-      // Check if there is an active non-deleted request in sbni_vendor_requests
       if (reqsStr) {
         const reqs = JSON.parse(reqsStr);
         if (Array.isArray(reqs)) {
@@ -25,27 +24,21 @@ export const LenderCard: React.FC<LenderCardProps> = ({ lender, onOpenSubscripti
             (r: any) =>
               !deletedLeads.includes(r.id) &&
               (r.lenderId === id ||
-                (r.lenderId && (lender.registrationNumber === r.lenderId || lender.institutionName === r.lenderName)))
+                (r.lenderId && (lender.registrationNumber === r.lenderId || lender.institutionName === r.lenderName || (lender as any).name === r.lenderName)))
           );
+
           if (hasActive) return true;
 
-          // If requests array exists but contains no request for this lender, clear leftover applied key
-          if (localStorage.getItem(`sbni_applied_${id}`)) {
-            localStorage.removeItem(`sbni_applied_${id}`);
-          }
-          if (lender.registrationNumber && localStorage.getItem(`sbni_applied_${lender.registrationNumber}`)) {
-            localStorage.removeItem(`sbni_applied_${lender.registrationNumber}`);
-          }
+          // Clear any stale applied markers
+          localStorage.removeItem(`sbni_applied_${id}`);
+          if (lender.registrationNumber) localStorage.removeItem(`sbni_applied_${lender.registrationNumber}`);
           return false;
         }
       }
 
-      // Check direct flag only if not marked deleted
-      if (localStorage.getItem(`sbni_applied_${id}`) === 'true') {
-        if (!deletedLeads.includes(id)) {
-          return true;
-        }
-      }
+      // If no active requests array, ensure flag is cleaned up
+      localStorage.removeItem(`sbni_applied_${id}`);
+      if (lender.registrationNumber) localStorage.removeItem(`sbni_applied_${lender.registrationNumber}`);
     } catch (e) {}
     return false;
   };
@@ -73,6 +66,36 @@ export const LenderCard: React.FC<LenderCardProps> = ({ lender, onOpenSubscripti
       setHasApplied(checkHasApplied(lender.id));
       setIsSubscribedState(checkSubscription());
     };
+
+    // Live sync with RDS to check if lead was deleted by financer
+    fetchVendorMyLeadsApi()
+      .then((res) => {
+        if (res && res.success) {
+          const activeLeads = Array.isArray(res.data) ? res.data : [];
+          if (activeLeads.length === 0) {
+            // No active leads in database -> reset all local applied flags
+            localStorage.removeItem(`sbni_applied_${lender.id}`);
+            if (lender.registrationNumber) localStorage.removeItem(`sbni_applied_${lender.registrationNumber}`);
+            localStorage.setItem('sbni_vendor_requests', JSON.stringify([]));
+            setHasApplied(false);
+          } else {
+            const matchesLender = activeLeads.some(
+              (lead: any) =>
+                lead.lenderId === lender.id ||
+                (lead.lender && (lead.lender.id === lender.id || lead.lender.registrationNumber === lender.registrationNumber || lead.lender.institutionName === lender.institutionName))
+            );
+            if (!matchesLender) {
+              localStorage.removeItem(`sbni_applied_${lender.id}`);
+              if (lender.registrationNumber) localStorage.removeItem(`sbni_applied_${lender.registrationNumber}`);
+              setHasApplied(false);
+            } else {
+              setHasApplied(true);
+            }
+          }
+        }
+      })
+      .catch(() => {});
+
     window.addEventListener('sbni_request_submitted', handleUpdate);
     window.addEventListener('sbni_vendor_deleted', handleUpdate);
     window.addEventListener('sbni_subscription_updated', handleUpdate);

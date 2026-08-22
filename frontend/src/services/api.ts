@@ -1430,7 +1430,20 @@ export async function adminDeleteFraudReport(
   }
 }
 
+export async function fetchVendorMyLeadsApi(): Promise<{ success: boolean; data: any[]; count: number }> {
+  try {
+    const data = await apiFetch('/vendors/my-leads', {
+      headers: authHeaders(),
+    });
+    const list = Array.isArray(data.data) ? data.data : [];
+    return { success: true, data: list, count: data.count || list.length };
+  } catch (err: any) {
+    return { success: false, data: [], count: 0 };
+  }
+}
+
 // Legacy export alias kept for compatibility
 export const mockLendersList: Lender[] = [];
+
 
 

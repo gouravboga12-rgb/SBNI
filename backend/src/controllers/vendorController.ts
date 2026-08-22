@@ -347,3 +347,43 @@ export const searchLenders = async (req: AuthenticatedRequest, res: Response) =>
     data: formattedLenders,
   });
 };
+
+export const getVendorMyLeads = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) {
+      return res.json({ success: true, count: 0, data: [] });
+    }
+
+    const vendorProfile = await prisma.vendorProfile.findUnique({
+      where: { userId },
+    });
+
+    const vId = vendorProfile?.id;
+
+    const leads = await (prisma as any).financingLead.findMany({
+      where: {
+        OR: [
+          ...(vId ? [{ vendorId: vId }] : []),
+          { vendorId: userId },
+        ],
+      },
+      include: {
+        lender: {
+          select: {
+            id: true,
+            institutionName: true,
+            registrationNumber: true,
+            contactPersonName: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    res.json({ success: true, count: leads.length, data: leads });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message || 'Failed to fetch vendor leads.' });
+  }
+};
+
