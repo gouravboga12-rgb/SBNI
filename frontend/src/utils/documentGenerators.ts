@@ -346,10 +346,7 @@ export function resolveDocumentUrl(url: string | null | undefined): string {
     return trimmed;
   }
   if (trimmed.startsWith('/uploads/')) {
-    if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '18.61.36.65') {
-      return trimmed;
-    }
-    return `http://18.61.36.65${trimmed}`;
+    return trimmed;
   }
   return trimmed;
 }
