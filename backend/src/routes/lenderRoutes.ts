@@ -6,6 +6,7 @@ import {
   ingestLead,
   getLenderLeads,
   updateLeadStatus,
+  deleteLead,
 } from '../controllers/lenderController';
 import { createFraudReport } from '../controllers/adminController';
 import { authenticateUser, authorizeRoles, optionalAuth } from '../middlewares/auth';
@@ -21,6 +22,7 @@ router.post('/kyc/verify', authenticateUser, authorizeRoles('LENDER', 'SUPER_ADM
 router.post('/leads', optionalAuth, asyncHandler(ingestLead));
 router.get('/leads', authenticateUser, authorizeRoles('LENDER', 'SUPER_ADMIN'), asyncHandler(getLenderLeads));
 router.put('/leads/:leadId/status', authenticateUser, authorizeRoles('LENDER', 'SUPER_ADMIN'), asyncHandler(updateLeadStatus));
+router.delete('/leads/:leadId', authenticateUser, authorizeRoles('LENDER', 'SUPER_ADMIN'), asyncHandler(deleteLead));
 
 // Fraud report from Lender
 router.post('/fraud-reports', optionalAuth, asyncHandler(createFraudReport));

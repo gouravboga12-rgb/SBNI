@@ -341,3 +341,19 @@ export const updateLeadStatus = async (req: AuthenticatedRequest, res: Response)
   }
 };
 
+export const deleteLead = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { leadId } = req.params;
+    await (prisma as any).financingLead.deleteMany({
+      where: { id: leadId },
+    });
+    res.json({
+      success: true,
+      message: 'Financing request deleted successfully.',
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message || 'Failed to delete financing request.' });
+  }
+};
+
+

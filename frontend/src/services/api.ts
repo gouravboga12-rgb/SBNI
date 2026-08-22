@@ -1335,6 +1335,20 @@ export async function updateLeadStatusApi(
   }
 }
 
+export async function deleteLenderLeadApi(
+  leadId: string
+): Promise<{ success: boolean; message?: string }> {
+  try {
+    const data = await apiFetch(`/lenders/leads/${leadId}`, {
+      method: 'DELETE',
+      headers: authHeaders(),
+    });
+    return { success: data.success, message: data.message };
+  } catch (err: any) {
+    return { success: false, message: err.message };
+  }
+}
+
 // ================================================================
 // FRAUD REPORTS
 // ================================================================

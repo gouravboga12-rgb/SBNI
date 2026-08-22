@@ -7,6 +7,7 @@ import {
   getMyProfileApi,
   submitFraudReportApi,
   updateLeadStatusApi,
+  deleteLenderLeadApi,
   fetchLenderLeadsApi,
   safeSetLocalStorage,
   uploadFileToEc2Api,
@@ -56,10 +57,10 @@ import {
   Lock,
   Info,
   MessageSquare,
-  Store,
   X,
   ExternalLink,
   Shield,
+  Trash2,
 } from 'lucide-react';
 
 const LENDER_BANNER_SLIDES: BannerSlide[] = [
@@ -581,7 +582,9 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
 
     const deletedVendorIds: string[] = (() => {
       try {
-        return JSON.parse(localStorage.getItem('sbni_deleted_vendors') || '[]');
+        const d1 = JSON.parse(localStorage.getItem('sbni_deleted_vendors') || '[]');
+        const d2 = JSON.parse(localStorage.getItem('sbni_deleted_leads') || '[]');
+        return [...d1, ...d2];
       } catch (e) {
         return [];
       }
@@ -1062,6 +1065,54 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
       setActionFeedback('');
       setSelectedVendor(null);
     }, 1500);
+  };
+
+  const handleDeleteRequest = async (id: string, vendorName?: string) => {
+    if (!window.confirm(`Are you sure you want to delete this financing request${vendorName ? ` from "${vendorName}"` : ''}? This action will permanently remove it from your dashboard.`)) {
+      return;
+    }
+
+    try {
+      // 1. Call backend API to delete lead from RDS
+      await deleteLenderLeadApi(id).catch(() => {});
+
+      // 2. Update local requests state
+      const updated = requests.filter((r) => r.id !== id);
+      setRequests(updated);
+
+      // 3. Update localStorage sbni_vendor_requests
+      try {
+        const stored = localStorage.getItem('sbni_vendor_requests');
+        if (stored) {
+          const list = JSON.parse(stored);
+          if (Array.isArray(list)) {
+            const updatedList = list.filter((r: any) => r.id !== id);
+            safeSetLocalStorage('sbni_vendor_requests', JSON.stringify(updatedList));
+          }
+        }
+      } catch (e) {}
+
+      // 4. Update deleted ids list so it never re-appears across reloads
+      try {
+        const delList = JSON.parse(localStorage.getItem('sbni_deleted_leads') || '[]');
+        if (!delList.includes(id)) {
+          delList.push(id);
+          safeSetLocalStorage('sbni_deleted_leads', JSON.stringify(delList));
+        }
+      } catch (e) {}
+
+      // 5. If selectedVendor is this request, close the view
+      if (selectedVendor && selectedVendor.id === id) {
+        setSelectedVendor(null);
+      }
+
+      setActionFeedback('✓ Financing request deleted successfully.');
+      setTimeout(() => setActionFeedback(''), 2500);
+
+      window.dispatchEvent(new Event('sbni_request_submitted'));
+    } catch (err: any) {
+      alert(err.message || 'Failed to delete financing request.');
+    }
   };
 
   const submitFraudReportToAdmin = async () => {
@@ -1783,7 +1834,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                             </div>
                           </div>
 
-                          <div className="shrink-0 flex flex-col items-end gap-1">
+                          <div className="shrink-0 flex items-center gap-1.5">
                             {checkVendorIsFraud(vendor) ? (
                               <span className="px-2 py-0.5 rounded-full bg-rose-600 text-white font-extrabold text-[9px] uppercase shadow-sm animate-pulse">
                                 🚨 FRAUD
@@ -1797,6 +1848,18 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                             ) : (
                               <span className="badge-pending-amber">⏳ Pending</span>
                             )}
+
+                            {/* Delete Request Button */}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteRequest(vendor.id, vendor.vendorName);
+                              }}
+                              className="p-1.5 rounded-xl bg-slate-100 hover:bg-rose-50 text-slate-400 hover:text-rose-600 border border-slate-200 hover:border-rose-200 transition-all cursor-pointer shadow-xs active:scale-90"
+                              title="Delete Financing Request"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
                           </div>
                         </div>
 
@@ -1909,17 +1972,28 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
         {/* VIEW: VENDOR VERIFICATION REVIEW PAGE */}
         {selectedVendor && (
           <div className="space-y-6">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => setSelectedVendor(null)}
-                className="p-2.5 rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 shadow-sm"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </button>
-              <div>
-                <h2 className="text-2xl font-extrabold text-slate-900 font-heading">Shop Business Verification</h2>
-                <div className="text-xs text-slate-500">Review shop business details and documents for approval</div>
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={() => setSelectedVendor(null)}
+                  className="p-2.5 rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 shadow-sm cursor-pointer"
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                </button>
+                <div>
+                  <h2 className="text-2xl font-extrabold text-slate-900 font-heading">Shop Business Verification</h2>
+                  <div className="text-xs text-slate-500">Review shop business details and documents for approval</div>
+                </div>
               </div>
+
+              <button
+                onClick={() => handleDeleteRequest(selectedVendor.id, selectedVendor.vendorName)}
+                className="py-2 px-3.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-extrabold text-xs transition-all active:scale-95 cursor-pointer flex items-center gap-1.5 shadow-xs"
+                title="Delete Financing Request"
+              >
+                <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                <span className="hidden sm:inline">Delete Request</span>
+              </button>
             </div>
 
             {/* FRAUD WARNING ALERT BANNER FOR BUSINESS FINANCERS */}
