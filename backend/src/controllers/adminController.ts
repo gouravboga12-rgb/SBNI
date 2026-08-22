@@ -686,6 +686,23 @@ export const getAllPayments = async (req: AuthenticatedRequest, res: Response) =
   }
 };
 
+// Delete a specific payment record
+export const deletePayment = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { paymentId } = req.params;
+    const existing = await prisma.payment.findUnique({ where: { id: paymentId } });
+    if (!existing) {
+      return res.status(404).json({ success: false, message: 'Payment record not found.' });
+    }
+    await prisma.payment.delete({ where: { id: paymentId } });
+    res.json({ success: true, message: 'Payment record deleted successfully.' });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message || 'Failed to delete payment record.' });
+  }
+};
+
+
+
 // Fraud Reports Management
 export const getAllFraudReports = async (req: AuthenticatedRequest, res: Response) => {
   try {

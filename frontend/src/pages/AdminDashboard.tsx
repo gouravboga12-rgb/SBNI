@@ -61,6 +61,7 @@ import {
   adminConfirmFraudReport,
   adminDismissFraudReport,
   adminDeleteFraudReport,
+  adminDeletePaymentApi,
   safeSetLocalStorage,
 } from '../services/api';
 import { SBNILogo } from '../components/SBNILogo';
@@ -278,6 +279,23 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
       console.error('loadAdminPayments error:', e);
     }
   };
+
+  const handleDeletePayment = async (paymentId: string) => {
+    if (!window.confirm('Delete this payment record? This cannot be undone.')) return;
+    try {
+      const res = await adminDeletePaymentApi(paymentId);
+      if (res.success) {
+        const updated = transactions.filter((t) => t.id !== paymentId);
+        setTransactions(updated);
+        safeSetLocalStorage('justpaisa_admin_live_transactions', JSON.stringify(updated));
+      } else {
+        alert(res.message || 'Failed to delete payment.');
+      }
+    } catch (e) {
+      alert('Error deleting payment record.');
+    }
+  };
+
 
   const loadAdminVendorsAndLenders = async () => {
     setIsLoadingData(true);
@@ -2510,12 +2528,13 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
                       <th className="p-4">Payment Method</th>
                       <th className="p-4">Invoice / Transaction ID</th>
                       <th className="p-4">Status</th>
+                      <th className="p-4">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {filteredVendorTransactions.length === 0 ? (
                       <tr>
-                        <td colSpan={7} className="p-12 text-center text-slate-400 font-medium">
+                        <td colSpan={8} className="p-12 text-center text-slate-400 font-medium">
                           <div className="flex flex-col items-center justify-center space-y-2">
                             <div className="w-12 h-12 rounded-2xl bg-blue-50 text-[#003893] flex items-center justify-center font-bold">
                               <Receipt className="w-6 h-6" />
@@ -2579,6 +2598,16 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
                               <CheckCircle2 className="w-3 h-3 text-emerald-600" />
                               PAID
                             </span>
+                          </td>
+                          <td className="p-4">
+                            <button
+                              onClick={() => handleDeletePayment(tx.id)}
+                              title="Delete payment record"
+                              className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 transition-all active:scale-95 flex items-center gap-1 text-[10px] font-extrabold"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                              Delete
+                            </button>
                           </td>
                         </tr>
                       ))
@@ -2784,12 +2813,13 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
                       <th className="p-4">Payment Method</th>
                       <th className="p-4">Invoice / Transaction ID</th>
                       <th className="p-4">Status</th>
+                      <th className="p-4">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {filteredLenderTransactions.length === 0 ? (
                       <tr>
-                        <td colSpan={7} className="p-12 text-center text-slate-400 font-medium">
+                        <td colSpan={8} className="p-12 text-center text-slate-400 font-medium">
                           <div className="flex flex-col items-center justify-center space-y-2">
                             <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-[#007a33] flex items-center justify-center font-bold">
                               <Wallet className="w-6 h-6" />
@@ -2853,6 +2883,16 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
                               <CheckCircle2 className="w-3 h-3 text-emerald-600" />
                               PAID
                             </span>
+                          </td>
+                          <td className="p-4">
+                            <button
+                              onClick={() => handleDeletePayment(tx.id)}
+                              title="Delete payment record"
+                              className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 transition-all active:scale-95 flex items-center gap-1 text-[10px] font-extrabold"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                              Delete
+                            </button>
                           </td>
                         </tr>
                       ))

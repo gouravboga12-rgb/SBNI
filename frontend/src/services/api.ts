@@ -1445,5 +1445,20 @@ export async function fetchVendorMyLeadsApi(): Promise<{ success: boolean; data:
 // Legacy export alias kept for compatibility
 export const mockLendersList: Lender[] = [];
 
+export async function adminDeletePaymentApi(paymentId: string): Promise<{ success: boolean; message?: string }> {
+  try {
+    const data = await apiFetch(`/admin/payments/${paymentId}`, {
+      method: 'DELETE',
+      headers: authHeaders(),
+    });
+    return { success: data.success, message: data.message };
+  } catch (err: any) {
+    return { success: false, message: err.message || 'Failed to delete payment.' };
+  }
+}
+
+
+
+
 
 

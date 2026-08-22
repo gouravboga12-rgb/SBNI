@@ -27,6 +27,7 @@ import {
   confirmFraudReport,
   dismissFraudReport,
   deleteFraudReport,
+  deletePayment,
 } from '../controllers/adminController';
 import { authenticateUser, authorizeRoles, optionalAuth } from '../middlewares/auth';
 import { asyncHandler } from '../middlewares/errorHandler';
@@ -48,6 +49,7 @@ router.delete('/fraud-reports/:reportId', asyncHandler(deleteFraudReport));
 
 router.get('/dashboard-stats', asyncHandler(getAdminDashboardStats));
 router.get('/payments', asyncHandler(getAllPayments));
+router.delete('/payments/:paymentId', asyncHandler(deletePayment));
 
 // Account Management
 router.delete('/users/:userId', asyncHandler(deleteUser));
