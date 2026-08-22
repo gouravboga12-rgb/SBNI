@@ -193,7 +193,8 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
     let count = 0;
     if (record.pan) count++;
     if (record.aadhaar) count++;
-    const total = 2;
+    if (record.shopPhotos) count++;
+    const total = 3;
     const isComplete = count >= total;
     return { count, total, isComplete };
   };
@@ -2651,62 +2652,6 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                   </div>
                 </div>
 
-                {/* Mandatory Financer Document Verification Compliance Card */}
-                {(() => {
-                  const progress = getInspectionProgress(selectedVendor.id);
-                  return (
-                    <div className={`p-4 rounded-2xl border transition-all ${
-                      progress.isComplete
-                        ? 'bg-emerald-50/90 border-emerald-300 text-emerald-950 shadow-xs'
-                        : 'bg-amber-50/90 border-amber-300 text-amber-950 shadow-xs'
-                    }`}>
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                        <div className="flex items-start sm:items-center gap-3">
-                          {progress.isComplete ? (
-                            <div className="w-9 h-9 rounded-full bg-emerald-600 text-white flex items-center justify-center font-black text-sm shrink-0 shadow-sm">
-                              ✓
-                            </div>
-                          ) : (
-                            <div className="w-9 h-9 rounded-full bg-amber-500 text-white flex items-center justify-center font-extrabold text-xs shrink-0 shadow-sm animate-pulse">
-                              {progress.count}/2
-                            </div>
-                          )}
-                          <div>
-                            <div className="font-extrabold text-xs sm:text-sm">
-                              {progress.isComplete
-                                ? '✅ Mandatory Document Inspection Complete (2/2 Verified)'
-                                : `⚠️ Mandatory Inspection Required: ${progress.count}/2 Documents Inspected`}
-                            </div>
-                            <div className="text-[11px] opacity-80 mt-0.5">
-                              {progress.isComplete
-                                ? 'All KYC identity cards (PAN & Aadhaar) have been reviewed. Financer is authorized to approve.'
-                                : 'You must click "View & Inspect" or "Download" on PAN Card and Aadhaar Card before approving.'}
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Document Inspection Checklist */}
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className={`px-2.5 py-1 rounded-lg text-[10px] font-extrabold flex items-center gap-1 ${
-                            isDocInspected(selectedVendor.id, 'pan')
-                              ? 'bg-emerald-200 text-emerald-900 border border-emerald-300'
-                              : 'bg-amber-200 text-amber-900 border border-amber-300 animate-pulse'
-                          }`}>
-                            {isDocInspected(selectedVendor.id, 'pan') ? '✓ PAN Card' : '○ PAN Card'}
-                          </span>
-                          <span className={`px-2.5 py-1 rounded-lg text-[10px] font-extrabold flex items-center gap-1 ${
-                            isDocInspected(selectedVendor.id, 'aadhaar')
-                              ? 'bg-emerald-200 text-emerald-900 border border-emerald-300'
-                              : 'bg-amber-200 text-amber-900 border border-amber-300 animate-pulse'
-                          }`}>
-                            {isDocInspected(selectedVendor.id, 'aadhaar') ? '✓ Aadhaar' : '○ Aadhaar'}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })()}
-
                 {/* Bottom Action Buttons */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
                   {(selectedVendor.status === 'Accepted' || selectedVendor.status === 'Verified') ? (
@@ -2735,13 +2680,6 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                         return;
                       }
 
-                      const progress = getInspectionProgress(selectedVendor.id);
-                      if (!progress.isComplete && selectedVendor.status !== 'Accepted' && selectedVendor.status !== 'Verified') {
-                        setActionFeedback('🔒 Compliance Check: Please open & inspect all required documents (PAN Card and Aadhaar Card) before approving.');
-                        setTimeout(() => setActionFeedback(''), 4000);
-                        return;
-                      }
-
                       handleApprove(selectedVendor.id);
                     }}
                     disabled={checkVendorIsFraud(selectedVendor)}
@@ -2750,9 +2688,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                         ? 'bg-rose-900/40 text-rose-300 border border-rose-800 cursor-not-allowed opacity-60'
                         : (selectedVendor.status === 'Accepted' || selectedVendor.status === 'Verified')
                         ? 'bg-emerald-600 text-white shadow-md'
-                        : getInspectionProgress(selectedVendor.id).isComplete
-                        ? 'btn-sbni-green shadow-lg animate-pulse'
-                        : 'bg-slate-200 text-slate-500 border border-slate-300 hover:bg-slate-300'
+                        : 'btn-sbni-green shadow-lg'
                     }`}
                   >
                     <CheckCircle2 className="w-4 h-4" />
@@ -2761,9 +2697,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                         ? 'Disabled (Fraud Account)'
                         : (selectedVendor.status === 'Accepted' || selectedVendor.status === 'Verified')
                         ? '✓ Request Accepted'
-                        : getInspectionProgress(selectedVendor.id).isComplete
-                        ? 'Accept & Unlock Navigation'
-                        : `🔒 Inspect Docs to Approve (${getInspectionProgress(selectedVendor.id).count}/2)`}
+                        : 'Accept & Approve Request'}
                     </span>
                   </button>
                 </div>
