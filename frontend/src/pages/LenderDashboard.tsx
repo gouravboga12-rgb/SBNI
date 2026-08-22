@@ -1068,11 +1068,16 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
   };
 
   const handleDeleteRequest = async (id: string, vendorName?: string) => {
-    if (!window.confirm(`Are you sure you want to delete this financing request${vendorName ? ` from "${vendorName}"` : ''}? This action will permanently remove it from your dashboard.`)) {
+    if (!window.confirm(`Are you sure you want to delete this financing request${vendorName ? ` from "${vendorName}"` : ''}? This action will permanently remove it from your dashboard and reset the vendor's status so they can apply again.`)) {
       return;
     }
 
     try {
+      // Find request details before removing
+      const targetReq = requests.find((r) => r.id === id);
+      const targetLenderId = targetReq?.lenderId || (currentUserObj as any)?.id || (currentUserObj as any)?.regNo;
+      const targetEmail = targetReq?.emailId;
+
       // 1. Call backend API to delete lead from RDS
       await deleteLenderLeadApi(id).catch(() => {});
 
@@ -1086,13 +1091,44 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
         if (stored) {
           const list = JSON.parse(stored);
           if (Array.isArray(list)) {
-            const updatedList = list.filter((r: any) => r.id !== id);
+            const updatedList = list.filter((r: any) => r.id !== id && (!targetEmail || r.emailId !== targetEmail));
             safeSetLocalStorage('sbni_vendor_requests', JSON.stringify(updatedList));
           }
         }
       } catch (e) {}
 
-      // 4. Update deleted ids list so it never re-appears across reloads
+      // 4. Clear vendor applied markers for this lender
+      try {
+        if (targetLenderId) {
+          localStorage.removeItem(`sbni_applied_${targetLenderId}`);
+        }
+        if ((currentUserObj as any)?.id) {
+          localStorage.removeItem(`sbni_applied_${(currentUserObj as any).id}`);
+        }
+        if ((currentUserObj as any)?.regNo) {
+          localStorage.removeItem(`sbni_applied_${(currentUserObj as any).regNo}`);
+        }
+        localStorage.removeItem(`sbni_applied_${id}`);
+
+        // Scan localStorage and remove any sbni_applied_ keys that match this lender
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && key.startsWith('sbni_applied_')) {
+            const lenderPart = key.replace('sbni_applied_', '');
+            if (
+              lenderPart === id ||
+              lenderPart === targetLenderId ||
+              lenderPart === (currentUserObj as any)?.id ||
+              lenderPart === (currentUserObj as any)?.regNo ||
+              lenderPart.toLowerCase() === (currentUserObj?.name || '').toLowerCase()
+            ) {
+              localStorage.removeItem(key);
+            }
+          }
+        }
+      } catch (e) {}
+
+      // 5. Update deleted ids list so it never re-appears across reloads
       try {
         const delList = JSON.parse(localStorage.getItem('sbni_deleted_leads') || '[]');
         if (!delList.includes(id)) {
@@ -1101,15 +1137,17 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
         }
       } catch (e) {}
 
-      // 5. If selectedVendor is this request, close the view
+      // 6. If selectedVendor is this request, close the view
       if (selectedVendor && selectedVendor.id === id) {
         setSelectedVendor(null);
       }
 
-      setActionFeedback('✓ Financing request deleted successfully.');
+      setActionFeedback('✓ Financing request deleted. Vendor can now re-apply.');
       setTimeout(() => setActionFeedback(''), 2500);
 
       window.dispatchEvent(new Event('sbni_request_submitted'));
+      window.dispatchEvent(new Event('sbni_vendor_deleted'));
+      window.dispatchEvent(new Event('storage'));
     } catch (err: any) {
       alert(err.message || 'Failed to delete financing request.');
     }

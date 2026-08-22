@@ -14,11 +14,35 @@ export const LenderCard: React.FC<LenderCardProps> = ({ lender, onOpenSubscripti
 
   const checkHasApplied = (id: string) => {
     try {
-      if (localStorage.getItem(`sbni_applied_${id}`) === 'true') return true;
+      const deletedLeads = JSON.parse(localStorage.getItem('sbni_deleted_leads') || '[]');
       const reqsStr = localStorage.getItem('sbni_vendor_requests');
+
+      // Check if there is an active non-deleted request in sbni_vendor_requests
       if (reqsStr) {
         const reqs = JSON.parse(reqsStr);
-        if (Array.isArray(reqs) && reqs.some((r: any) => r.lenderId === id)) {
+        if (Array.isArray(reqs)) {
+          const hasActive = reqs.some(
+            (r: any) =>
+              !deletedLeads.includes(r.id) &&
+              (r.lenderId === id ||
+                (r.lenderId && (lender.registrationNumber === r.lenderId || lender.institutionName === r.lenderName)))
+          );
+          if (hasActive) return true;
+
+          // If requests array exists but contains no request for this lender, clear leftover applied key
+          if (localStorage.getItem(`sbni_applied_${id}`)) {
+            localStorage.removeItem(`sbni_applied_${id}`);
+          }
+          if (lender.registrationNumber && localStorage.getItem(`sbni_applied_${lender.registrationNumber}`)) {
+            localStorage.removeItem(`sbni_applied_${lender.registrationNumber}`);
+          }
+          return false;
+        }
+      }
+
+      // Check direct flag only if not marked deleted
+      if (localStorage.getItem(`sbni_applied_${id}`) === 'true') {
+        if (!deletedLeads.includes(id)) {
           return true;
         }
       }
@@ -50,10 +74,12 @@ export const LenderCard: React.FC<LenderCardProps> = ({ lender, onOpenSubscripti
       setIsSubscribedState(checkSubscription());
     };
     window.addEventListener('sbni_request_submitted', handleUpdate);
+    window.addEventListener('sbni_vendor_deleted', handleUpdate);
     window.addEventListener('sbni_subscription_updated', handleUpdate);
     window.addEventListener('storage', handleUpdate);
     return () => {
       window.removeEventListener('sbni_request_submitted', handleUpdate);
+      window.removeEventListener('sbni_vendor_deleted', handleUpdate);
       window.removeEventListener('sbni_subscription_updated', handleUpdate);
       window.removeEventListener('storage', handleUpdate);
     };
