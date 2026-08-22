@@ -1,6 +1,6 @@
 const http = require('http');
 
-const loginData = JSON.stringify({ email: 'srinivaspolepalli10@gmail.com', password: 'adminpassword123' });
+const loginData = JSON.stringify({ email: 'srinivaspolepalli10@gmail.com', password: 'Srinivas@10' });
 
 const req = http.request({
   hostname: 'localhost',
@@ -15,22 +15,34 @@ const req = http.request({
   let body = '';
   res.on('data', d => body += d);
   res.on('end', () => {
+    console.log('LOGIN STATUS:', res.statusCode);
+    console.log('LOGIN BODY:', body);
     const parsed = JSON.parse(body);
     const token = parsed.data?.accessToken;
     console.log('ADMIN LOGIN SUCCESS, TOKEN PRESENT:', !!token);
 
     if (token) {
-      http.get({
-        hostname: 'localhost',
-        port: 5000,
-        path: '/api/v1/admin/fraud-reports',
-        headers: { Authorization: `Bearer ${token}` }
-      }, res2 => {
-        let body2 = '';
-        res2.on('data', d => body2 += d);
-        res2.on('end', () => {
-          console.log('GET /admin/fraud-reports STATUS:', res2.statusCode);
-          console.log('FRAUD REPORTS DATA:', body2);
+      const endpoints = [
+        '/api/v1/admin/dashboard-stats',
+        '/api/v1/admin/vendors',
+        '/api/v1/admin/lenders',
+        '/api/v1/admin/payments',
+        '/api/v1/admin/fraud-reports',
+      ];
+
+      endpoints.forEach(ep => {
+        http.get({
+          hostname: 'localhost',
+          port: 5000,
+          path: ep,
+          headers: { Authorization: `Bearer ${token}` }
+        }, res2 => {
+          let body2 = '';
+          res2.on('data', d => body2 += d);
+          res2.on('end', () => {
+            console.log(`\n=== GET ${ep} (Status: ${res2.statusCode}) ===`);
+            console.log(body2);
+          });
         });
       });
     }

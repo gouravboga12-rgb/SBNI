@@ -171,8 +171,24 @@ export interface FraudReportItem {
 }
 
 export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void }) {
-  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
-  const [adminEmail, setAdminEmail] = useState('srinivaspolepalli10@gmail.com');
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(() => {
+    try {
+      const token = localStorage.getItem('sbni_admin_token') || localStorage.getItem('sbni_token');
+      const user = localStorage.getItem('sbni_admin_user') || localStorage.getItem('sbni_user');
+      if (token && user) {
+        const u = JSON.parse(user);
+        return u.role === 'SUPER_ADMIN';
+      }
+    } catch {}
+    return false;
+  });
+  const [adminEmail, setAdminEmail] = useState(() => {
+    try {
+      const u = JSON.parse(localStorage.getItem('sbni_admin_user') || localStorage.getItem('sbni_user') || '{}');
+      if (u?.email) return u.email;
+    } catch {}
+    return 'srinivaspolepalli10@gmail.com';
+  });
   const [adminPassword, setAdminPassword] = useState('Srinivas@10');
   const [loginError, setLoginError] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
@@ -779,6 +795,17 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
     window.open(`https://wa.me/${cleanPhone}?text=${msg}`, '_blank');
   };
 
+  const refreshAllAdminData = async () => {
+    setIsLoadingData(true);
+    await Promise.allSettled([
+      loadAdminVendorsAndLenders(),
+      loadAdminPayments(),
+      loadFraudReports(),
+    ]);
+    setIsLoadingData(false);
+    showToast('✓ Live database synchronized with RDS.');
+  };
+
   useEffect(() => {
     // Clear any previous dummy cache
     localStorage.removeItem('justpaisa_admin_transactions');
@@ -790,16 +817,29 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
     };
     window.addEventListener('sbni_admin_auth_expired', handleAuthExpired);
 
-    const handleFraudSync = () => {
+    const handleDataSync = () => {
+      loadAdminVendorsAndLenders();
+      loadAdminPayments();
       loadFraudReports();
     };
-    window.addEventListener('sbni_fraud_reported', handleFraudSync);
-    window.addEventListener('storage', handleFraudSync);
+    window.addEventListener('sbni_fraud_reported', handleDataSync);
+    window.addEventListener('sbni_fraud_updated', handleDataSync);
+    window.addEventListener('sbni_vendor_profile_updated', handleDataSync);
+    window.addEventListener('sbni_lender_profile_updated', handleDataSync);
+    window.addEventListener('sbni_request_submitted', handleDataSync);
+    window.addEventListener('storage', handleDataSync);
 
-    const adminToken = localStorage.getItem('sbni_admin_token');
-    const adminUser = localStorage.getItem('sbni_admin_user');
+    const adminToken = localStorage.getItem('sbni_admin_token') || localStorage.getItem('sbni_token');
+    const adminUser = localStorage.getItem('sbni_admin_user') || localStorage.getItem('sbni_user');
     if (adminToken && adminUser) {
-      setIsAdminAuthenticated(true);
+      try {
+        const parsed = JSON.parse(adminUser);
+        if (parsed.role === 'SUPER_ADMIN') {
+          safeSetLocalStorage('sbni_admin_token', adminToken);
+          safeSetLocalStorage('sbni_admin_user', adminUser);
+          setIsAdminAuthenticated(true);
+        }
+      } catch {}
       loadAdminVendorsAndLenders();
       loadAdminPayments();
       loadFraudReports();
@@ -807,13 +847,19 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
 
     return () => {
       window.removeEventListener('sbni_admin_auth_expired', handleAuthExpired);
-      window.removeEventListener('sbni_fraud_reported', handleFraudSync);
-      window.removeEventListener('storage', handleFraudSync);
+      window.removeEventListener('sbni_fraud_reported', handleDataSync);
+      window.removeEventListener('sbni_fraud_updated', handleDataSync);
+      window.removeEventListener('sbni_vendor_profile_updated', handleDataSync);
+      window.removeEventListener('sbni_lender_profile_updated', handleDataSync);
+      window.removeEventListener('sbni_request_submitted', handleDataSync);
+      window.removeEventListener('storage', handleDataSync);
     };
   }, []);
 
   useEffect(() => {
-    if (activeTab === 'fraud_reports' && isAdminAuthenticated) {
+    if (isAdminAuthenticated) {
+      loadAdminVendorsAndLenders();
+      loadAdminPayments();
       loadFraudReports();
     }
   }, [activeTab, isAdminAuthenticated]);
@@ -1918,9 +1964,20 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
                   Live revenue analytics, user moderation, and marketplace controls
                 </p>
               </div>
-              <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-800 px-3.5 py-1.5 rounded-xl text-xs font-bold w-fit shadow-2xs">
-                <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse"></span>
-                <span>AWS Live Database Connected</span>
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  onClick={refreshAllAdminData}
+                  disabled={isLoadingData}
+                  className="flex items-center gap-1.5 bg-white hover:bg-slate-100 border border-slate-300 text-slate-700 px-3.5 py-1.5 rounded-xl text-xs font-bold shadow-2xs transition-all active:scale-95 cursor-pointer disabled:opacity-60"
+                  title="Force re-fetch all users, vendors, financers, and revenue from live PostgreSQL DB"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 text-[#003893] ${isLoadingData ? 'animate-spin' : ''}`} />
+                  <span>{isLoadingData ? 'Syncing...' : 'Refresh Live DB'}</span>
+                </button>
+                <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-800 px-3.5 py-1.5 rounded-xl text-xs font-bold w-fit shadow-2xs">
+                  <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse"></span>
+                  <span>AWS Live Database Connected</span>
+                </div>
               </div>
             </div>
 

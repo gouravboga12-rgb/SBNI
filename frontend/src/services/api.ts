@@ -211,7 +211,7 @@ export function getToken(): string | null {
 }
 
 export function getAdminToken(): string | null {
-  return localStorage.getItem('sbni_admin_token');
+  return localStorage.getItem('sbni_admin_token') || localStorage.getItem('sbni_token');
 }
 
 function authHeaders(token?: string | null): HeadersInit {
@@ -286,6 +286,10 @@ export async function loginUser(
       }
       safeSetLocalStorage('sbni_token', data.data.accessToken);
       safeSetLocalStorage('sbni_user', JSON.stringify(u));
+      if (u.role === 'SUPER_ADMIN') {
+        safeSetLocalStorage('sbni_admin_token', data.data.accessToken);
+        safeSetLocalStorage('sbni_admin_user', JSON.stringify(u));
+      }
       if (data.data.refreshToken) {
         safeSetLocalStorage('sbni_refresh_token', data.data.refreshToken);
       }
