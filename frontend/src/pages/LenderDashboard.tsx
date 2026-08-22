@@ -1456,8 +1456,8 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                       {/* Business Summary Info */}
                       <div className="space-y-1.5 text-xs border-t border-slate-100 pt-2.5">
                         <div className="flex justify-between text-slate-600">
-                          <span>Category:</span>
-                          <span className="font-bold text-slate-800">{biz.category}</span>
+                          <span>Business Name:</span>
+                          <span className="font-bold text-slate-900">{biz.shopName}</span>
                         </div>
                         <div className="flex justify-between text-slate-600">
                           <span>Monthly Income:</span>
@@ -3314,14 +3314,10 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
             {/* Non-Sensitive Business Highlights */}
             <div className="space-y-3">
               <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Business Profile Highlights</h4>
-              <div className="grid grid-cols-2 gap-3 text-xs">
-                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80">
-                  <span className="text-slate-400 font-bold block text-[10px] uppercase">Business Category</span>
-                  <span className="font-extrabold text-slate-800 text-sm mt-0.5 block">{moreInfoModalBiz.category}</span>
-                </div>
-                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80">
-                  <span className="text-slate-400 font-bold block text-[10px] uppercase">Registration Type</span>
-                  <span className="font-extrabold text-slate-800 text-sm mt-0.5 block">Proprietorship / MSME</span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 sm:col-span-2">
+                  <span className="text-slate-400 font-bold block text-[10px] uppercase">Business / Shop Name</span>
+                  <span className="font-extrabold text-slate-900 text-sm mt-0.5 block">{moreInfoModalBiz.shopName}</span>
                 </div>
                 <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80">
                   <span className="text-slate-400 font-bold block text-[10px] uppercase">Annual Turnover</span>
