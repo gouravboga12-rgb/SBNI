@@ -161,6 +161,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
   const [selectedVendor, setSelectedVendor] = useState<VendorVerificationRequest | null>(null);
   const [requests, setRequests] = useState<VendorVerificationRequest[]>([]);
   const [actionFeedback, setActionFeedback] = useState('');
+  const [deleteConfirmLead, setDeleteConfirmLead] = useState<VendorVerificationRequest | null>(null);
   const [internalActiveTab, setInternalActiveTab] = useState<'home' | 'businesses' | 'reports' | 'profile'>('home');
   const activeTab = controlledActiveTab !== undefined ? controlledActiveTab : internalActiveTab;
   const setActiveTab = (tab: 'home' | 'businesses' | 'reports' | 'profile') => {
@@ -1085,23 +1086,28 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
     }, 1500);
   };
 
-  const handleDeleteRequest = async (id: string, vendorName?: string) => {
-    if (!window.confirm(`Are you sure you want to delete this financing request${vendorName ? ` from "${vendorName}"` : ''}? This action will permanently remove it from your dashboard and reset the vendor's status so they can apply again.`)) {
-      return;
-    }
+  const promptDeleteRequest = (req: VendorVerificationRequest) => {
+    setDeleteConfirmLead(req);
+  };
+
+  const handleConfirmDeleteLead = async () => {
+    if (!deleteConfirmLead) return;
+    const target = deleteConfirmLead;
+    const id = target.id;
+    const targetLenderId = target.lenderId || (currentUserObj as any)?.id || (currentUserObj as any)?.regNo;
+    const targetEmail = target.emailId;
+    const targetName = target.vendorName;
+    const targetShop = target.shopName;
+    const targetPhone = target.mobileNumber;
 
     try {
-      // Find request details before removing
-      const targetReq = requests.find((r) => r.id === id);
-      const targetLenderId = targetReq?.lenderId || (currentUserObj as any)?.id || (currentUserObj as any)?.regNo;
-      const targetEmail = targetReq?.emailId;
+      // 1. Immediately update local requests state
+      setRequests((prev) =>
+        prev.filter((r) => r.id !== id && (targetName ? r.vendorName?.toLowerCase() !== targetName.toLowerCase() : true))
+      );
 
-      // 1. Call backend API to delete lead from RDS
+      // 2. Call backend API to delete lead from PostgreSQL RDS
       await deleteLenderLeadApi(id).catch(() => {});
-
-      // 2. Update local requests state
-      const updated = requests.filter((r) => r.id !== id);
-      setRequests(updated);
 
       // 3. Update localStorage sbni_vendor_requests
       try {
@@ -1109,7 +1115,11 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
         if (stored) {
           const list = JSON.parse(stored);
           if (Array.isArray(list)) {
-            const updatedList = list.filter((r: any) => r.id !== id && (!targetEmail || r.emailId !== targetEmail));
+            const updatedList = list.filter((r: any) =>
+              r.id !== id &&
+              (!targetEmail || r.emailId !== targetEmail) &&
+              (!targetName || r.vendorName?.toLowerCase() !== targetName.toLowerCase())
+            );
             safeSetLocalStorage('sbni_vendor_requests', JSON.stringify(updatedList));
           }
         }
@@ -1117,18 +1127,11 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
 
       // 4. Clear vendor applied markers for this lender
       try {
-        if (targetLenderId) {
-          localStorage.removeItem(`sbni_applied_${targetLenderId}`);
-        }
-        if ((currentUserObj as any)?.id) {
-          localStorage.removeItem(`sbni_applied_${(currentUserObj as any).id}`);
-        }
-        if ((currentUserObj as any)?.regNo) {
-          localStorage.removeItem(`sbni_applied_${(currentUserObj as any).regNo}`);
-        }
+        if (targetLenderId) localStorage.removeItem(`sbni_applied_${targetLenderId}`);
+        if ((currentUserObj as any)?.id) localStorage.removeItem(`sbni_applied_${(currentUserObj as any).id}`);
+        if ((currentUserObj as any)?.regNo) localStorage.removeItem(`sbni_applied_${(currentUserObj as any).regNo}`);
         localStorage.removeItem(`sbni_applied_${id}`);
 
-        // Scan localStorage and remove any sbni_applied_ keys that match this lender
         for (let i = 0; i < localStorage.length; i++) {
           const key = localStorage.key(i);
           if (key && key.startsWith('sbni_applied_')) {
@@ -1149,19 +1152,21 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
       // 5. Update deleted ids list so it never re-appears across reloads
       try {
         const delList = JSON.parse(localStorage.getItem('sbni_deleted_leads') || '[]');
-        if (!delList.includes(id)) {
-          delList.push(id);
-          safeSetLocalStorage('sbni_deleted_leads', JSON.stringify(delList));
-        }
+        const toAdd = [id, targetEmail, targetName, targetShop, targetPhone].filter(Boolean);
+        toAdd.forEach((item) => {
+          if (!delList.includes(item)) delList.push(item);
+        });
+        safeSetLocalStorage('sbni_deleted_leads', JSON.stringify(delList));
       } catch (e) {}
 
       // 6. If selectedVendor is this request, close the view
-      if (selectedVendor && selectedVendor.id === id) {
+      if (selectedVendor && (selectedVendor.id === id || selectedVendor.vendorName === targetName)) {
         setSelectedVendor(null);
       }
 
+      setDeleteConfirmLead(null);
       setActionFeedback('✓ Financing request deleted. Vendor can now re-apply.');
-      setTimeout(() => setActionFeedback(''), 2500);
+      setTimeout(() => setActionFeedback(''), 3000);
 
       window.dispatchEvent(new Event('sbni_request_submitted'));
       window.dispatchEvent(new Event('sbni_vendor_deleted'));
@@ -1908,7 +1913,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleDeleteRequest(vendor.id, vendor.vendorName);
+                                promptDeleteRequest(vendor);
                               }}
                               className="p-1.5 rounded-xl bg-slate-100 hover:bg-rose-50 text-slate-400 hover:text-rose-600 border border-slate-200 hover:border-rose-200 transition-all cursor-pointer shadow-xs active:scale-90"
                               title="Delete Financing Request"
@@ -2042,7 +2047,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
               </div>
 
               <button
-                onClick={() => handleDeleteRequest(selectedVendor.id, selectedVendor.vendorName)}
+                onClick={() => promptDeleteRequest(selectedVendor)}
                 className="py-2 px-3.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-extrabold text-xs transition-all active:scale-95 cursor-pointer flex items-center gap-1.5 shadow-xs"
                 title="Delete Financing Request"
               >
@@ -3556,6 +3561,53 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
               >
                 <MessageSquare className="w-4 h-4" />
                 <span>Chat on WhatsApp</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Financing Request Confirmation Modal */}
+      {deleteConfirmLead && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl space-y-5 border border-rose-200">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="font-extrabold text-rose-700 text-base flex items-center gap-2 font-heading">
+                <Trash2 className="w-5 h-5 text-rose-600" />
+                <span>Delete Financing Request</span>
+              </div>
+              <button
+                onClick={() => setDeleteConfirmLead(null)}
+                className="p-2 rounded-full hover:bg-slate-100 text-slate-500 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-900 leading-relaxed font-medium">
+                Are you sure you want to permanently delete the financing request from <strong className="font-bold">{deleteConfirmLead.vendorName}</strong> ({deleteConfirmLead.shopName})?
+              </div>
+              <p className="text-slate-500 text-[11px] leading-relaxed">
+                This will remove the applicant from your dashboard and reset the vendor's status so they can submit a new application if needed.
+              </p>
+            </div>
+
+            <div className="flex justify-end gap-2.5 pt-2">
+              <button
+                type="button"
+                onClick={() => setDeleteConfirmLead(null)}
+                className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-bold text-xs hover:bg-slate-100 cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDeleteLead}
+                className="flex-1 sm:flex-none px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs shadow-md cursor-pointer flex items-center justify-center gap-1.5 active:scale-95 transition-all"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>Delete Request</span>
               </button>
             </div>
           </div>

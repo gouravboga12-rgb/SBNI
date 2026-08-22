@@ -348,7 +348,12 @@ export const deleteLead = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { leadId } = req.params;
     await (prisma as any).financingLead.deleteMany({
-      where: { id: leadId },
+      where: {
+        OR: [
+          { id: leadId },
+          { vendorId: leadId },
+        ],
+      },
     });
     res.json({
       success: true,
