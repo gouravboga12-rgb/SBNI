@@ -312,16 +312,25 @@ export const LenderCard: React.FC<LenderCardProps> = ({ lender, onOpenSubscripti
                   <span>Limit: ₹{minAmt} to ₹{maxAmt}</span>
                 </span>
 
-                <span className="text-emerald-900 bg-emerald-100/90 px-2.5 py-1 rounded-lg text-[11px] font-extrabold border border-emerald-300 flex items-center gap-1.5 shadow-xs animate-pulse-subtle">
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-600"></span>
+                {Number(lender.distanceKm) <= (Number(lender.lendingRadiusKm) || 50) ? (
+                  <span className="text-emerald-900 bg-emerald-100/90 px-2.5 py-1 rounded-lg text-[11px] font-extrabold border border-emerald-300 flex items-center gap-1.5 shadow-xs animate-pulse-subtle">
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-600"></span>
+                    </span>
+                    <MapPin className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
+                    <span>
+                      {lender.distanceKm} KM away • {lender.place ? `${lender.place}, ` : ''}{lender.city} (Inside {lender.lendingRadiusKm || 50} KM Radius)
+                    </span>
                   </span>
-                  <MapPin className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
-                  <span>
-                    {lender.distanceKm} KM away • {lender.place ? `${lender.place}, ` : ''}{lender.city} (Inside {lender.lendingRadiusKm || 50} KM Radius)
+                ) : (
+                  <span className="text-amber-900 bg-amber-100/90 px-2.5 py-1 rounded-lg text-[11px] font-extrabold border border-amber-300 flex items-center gap-1.5 shadow-xs">
+                    <MapPin className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+                    <span>
+                      {lender.distanceKm} KM away • {lender.place ? `${lender.place}, ` : ''}{lender.city} ({lender.lendingRadiusKm || 50} KM Coverage • Outside Radius)
+                    </span>
                   </span>
-                </span>
+                )}
               </div>
             </div>
           </div>

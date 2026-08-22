@@ -1037,6 +1037,13 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
   const fraudCount = fraudRequests.length;
 
   const filteredNearbyBusinesses = nearbyBusinesses.filter((b) => {
+    // 1. Strict Service Radius enforcement (e.g. 50 KM)
+    const maxRadius = Number(lenderLocation.lendingRadiusKm) || 50;
+    if (b.distanceKm > maxRadius) {
+      return false;
+    }
+
+    // 2. Search Query filter
     if (!nearbySearchQuery.trim()) return true;
     const q = nearbySearchQuery.toLowerCase();
     return (
@@ -1172,7 +1179,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                 <div className="card-white p-4 flex items-center justify-between hover:shadow-md transition-all">
                   <div>
                     <div className="text-xs text-slate-500 font-medium">Total Shop Businesses</div>
-                    <div className="text-2xl font-extrabold text-slate-900 font-heading mt-0.5">{nearbyBusinesses.length}</div>
+                    <div className="text-2xl font-extrabold text-slate-900 font-heading mt-0.5">{filteredNearbyBusinesses.length}</div>
                     <button
                       onClick={handleBusinessesClick}
                       className="text-xs text-blue-600 font-bold mt-1 hover:underline flex items-center gap-0.5 cursor-pointer"
@@ -1448,8 +1455,12 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                           <MapPin className="w-3.5 h-3.5 text-rose-500 shrink-0" />
                           <span>{biz.distanceKm} KM away • {biz.place}, {biz.city}</span>
                         </div>
-                        <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md shrink-0">
-                          Inside Radius
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md shrink-0 ${
+                          biz.distanceKm <= (Number(lenderLocation.lendingRadiusKm) || 50)
+                            ? 'text-emerald-700 bg-emerald-50'
+                            : 'text-amber-700 bg-amber-50'
+                        }`}>
+                          {biz.distanceKm <= (Number(lenderLocation.lendingRadiusKm) || 50) ? 'Inside Radius' : 'Outside Radius'}
                         </span>
                       </div>
 

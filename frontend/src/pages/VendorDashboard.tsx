@@ -872,31 +872,34 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                       <div className="w-6 h-6 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin mx-auto" />
                       <div>Discovering nearby verified financers with Mapbox GPS...</div>
                     </div>
-                  ) : currentLendersList.length === 0 ? (
+                  ) : currentLendersList.filter((l) => Number(l.distanceKm) <= (Number(l.lendingRadiusKm) || 50)).length === 0 ? (
                     <div className="card-white p-8 text-center rounded-2xl border border-slate-200/90 shadow-sm space-y-3">
                       <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto">
                         <Users className="w-6 h-6" />
                       </div>
-                      <h4 className="font-extrabold text-slate-900 text-sm">No Financers Located in Current Area</h4>
+                      <h4 className="font-extrabold text-slate-900 text-sm">No Financers Located within Service Radius</h4>
                       <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                        No active financers found within 50 km of {searchLocation.place}, {searchLocation.city}. Expand your location search or explore all financers.
+                        No active financers found within their service radius of {searchLocation.place}, {searchLocation.city}. Expand your location search or explore all financers.
                       </p>
                       <button
                         onClick={() => handleTabChange('lenders')}
-                        className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs shadow-sm transition-all"
+                        className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs shadow-sm transition-all cursor-pointer"
                       >
-                        Explore All Financers
+                        Explore All Financers ({currentLendersList.length})
                       </button>
                     </div>
                   ) : (
-                    currentLendersList.slice(0, 3).map((lender) => (
-                      <LenderCard
-                        key={lender.id}
-                        lender={lender}
-                        onOpenSubscription={onOpenSubscription}
-                        onRequestLoan={handleRequestLoan}
-                      />
-                    ))
+                    currentLendersList
+                      .filter((l) => Number(l.distanceKm) <= (Number(l.lendingRadiusKm) || 50))
+                      .slice(0, 3)
+                      .map((lender) => (
+                        <LenderCard
+                          key={lender.id}
+                          lender={lender}
+                          onOpenSubscription={onOpenSubscription}
+                          onRequestLoan={handleRequestLoan}
+                        />
+                      ))
                   )}
                 </div>
               </div>
