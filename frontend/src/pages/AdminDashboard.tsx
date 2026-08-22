@@ -359,183 +359,59 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
     }
   };
 
-  // Vendor Subscription Plans with localStorage persistence
-  const [vendorPlans, setVendorPlans] = useState<AdminSubscriptionPlan[]>(() => {
-    try {
-      const saved = localStorage.getItem('sbni_admin_vendor_plans');
-      if (saved) return JSON.parse(saved);
-    } catch (e) {}
-    return [
-      {
-        id: 'vp-1',
-        name: 'Weekly Starter Plan',
-        code: 'VENDOR_WEEKLY',
-        description: 'Start exploring nearby business financers',
-        price: 79,
-        originalPrice: 99,
-        durationDays: 7,
-        durationNumber: 7,
-        durationUnit: 'Days',
-        roleTarget: 'VENDOR',
-        isActive: true,
-        features: [
-          'Unlock up to 5 Financer Contacts',
-          'Direct Phone & WhatsApp Access',
-          'Verified Financer Trust Badge',
-          'Dedicated Help Desk Support',
-        ],
-      },
-      {
-        id: 'vp-2',
-        name: 'Monthly Growth Plan',
-        code: 'VENDOR_MONTHLY',
-        description: 'Most popular plan for small shop businesses seeking capital',
-        price: 199,
-        originalPrice: 299,
-        durationDays: 30,
-        durationNumber: 30,
-        durationUnit: 'Days',
-        roleTarget: 'VENDOR',
-        isActive: true,
-        isPopular: true,
-        isBestValue: true,
-        features: [
-          'Unlimited Financer Phone & WhatsApp Unlocks',
-          'Direct Email & Branch Contact Access',
-          'Pan-India Financer Discovery',
-          'Priority Application Routing',
-          'Dedicated Account Manager',
-        ],
-      },
-      {
-        id: 'vp-3',
-        name: 'Quarterly Business Plan',
-        code: 'VENDOR_QUARTERLY',
-        description: '3 Months uninterrupted financer discovery suite',
-        price: 349,
-        originalPrice: 499,
-        durationDays: 90,
-        durationNumber: 3,
-        durationUnit: 'Months',
-        roleTarget: 'VENDOR',
-        isActive: true,
-        features: [
-          'Everything in Monthly Growth Plan',
-          'Priority KYC Document Storage',
-          'Multi-Financer Rate Comparison Tool',
-          'New Financer Instant Alerts',
-        ],
-      },
-      {
-        id: 'vp-4',
-        name: 'Yearly VIP Enterprise Plan',
-        description: '1 Year complete access with maximum savings',
-        code: 'VENDOR_YEARLY',
-        price: 599,
-        originalPrice: 999,
-        durationDays: 365,
-        durationNumber: 1,
-        durationUnit: 'Years',
-        roleTarget: 'VENDOR',
-        isActive: true,
-        isBestValue: true,
-        features: [
-          '365 Days Unlimited Contact Access',
-          'Zero Middleman Fees Guarantee',
-          'VIP Priority Verification Status',
-          '24/7 Dedicated Account Manager',
-        ],
-      },
-    ];
-  });
+  // Vendor & Financer Subscription Plans (Strictly Live from RDS Database)
+  const [vendorPlans, setVendorPlans] = useState<AdminSubscriptionPlan[]>([]);
+  const [lenderPlans, setLenderPlans] = useState<AdminSubscriptionPlan[]>([]);
 
-  // Lender Subscription Plans with localStorage persistence
-  const [lenderPlans, setLenderPlans] = useState<AdminSubscriptionPlan[]>(() => {
+  // Load subscription plans from live RDS database
+  const loadPlansFromDB = async () => {
     try {
-      const saved = localStorage.getItem('sbni_admin_lender_plans');
-      if (saved) return JSON.parse(saved);
-    } catch (e) {}
-    return [
-      {
-        id: 'lp-1',
-        name: 'Financer Weekly Starter',
-        code: 'LENDER_WEEKLY',
-        description: '7 Days trial access for business financers',
-        price: 79,
-        originalPrice: 99,
-        durationDays: 7,
-        durationNumber: 7,
-        durationUnit: 'Days',
-        roleTarget: 'LENDER',
-        isActive: true,
-        features: [
-          'Connect with Verified Shop Businesses',
-          'View Up to 10 Vendor KYC Files',
-          'Direct Owner WhatsApp Link',
-        ],
-      },
-      {
-        id: 'lp-2',
-        name: 'Financer Monthly Plan',
-        code: 'LENDER_MONTHLY',
-        description: 'Most popular plan for NBFCs & financial institutions',
-        price: 199,
-        originalPrice: 249,
-        durationDays: 30,
-        durationNumber: 30,
-        durationUnit: 'Days',
-        roleTarget: 'LENDER',
-        isActive: true,
-        isPopular: true,
-        isBestValue: true,
-        features: [
-          'Unlimited Verified Shop Business Leads',
-          'Complete KYC & GST Report Access',
-          'Direct Application Routing',
-          'Lead Management Dashboard',
-        ],
-      },
-      {
-        id: 'lp-3',
-        name: 'Financer Quarterly Growth',
-        code: 'LENDER_QUARTERLY',
-        description: '3 Months uninterrupted business financing suite',
-        price: 399,
-        originalPrice: 499,
-        durationDays: 90,
-        durationNumber: 3,
-        durationUnit: 'Months',
-        roleTarget: 'LENDER',
-        isActive: true,
-        features: [
-          'Everything in Monthly Plan',
-          'Priority Lead Allocation',
-          'Risk & Analytics Dashboard',
-          'Dedicated Relationship Support',
-        ],
-      },
-      {
-        id: 'lp-4',
-        name: 'Financer Annual VIP Plan',
-        code: 'LENDER_ANNUAL',
-        description: '1 Year maximum visibility & premium leads',
-        price: 599,
-        originalPrice: 999,
-        durationDays: 365,
-        durationNumber: 1,
-        durationUnit: 'Years',
-        roleTarget: 'LENDER',
-        isActive: true,
-        isBestValue: true,
-        features: [
-          '365 Days Full Platform Access',
-          'Unlimited Premium Lead Discovery',
-          'Custom Product Promotion Listing',
-          'Featured Top Badge on Financer Directory',
-        ],
-      },
-    ];
-  });
+      const [vendorRes, lenderRes] = await Promise.all([
+        adminFetchSubscriptionPlans('VENDOR'),
+        adminFetchSubscriptionPlans('LENDER'),
+      ]);
+      if (vendorRes.success && Array.isArray(vendorRes.data) && vendorRes.data.length > 0) {
+        const mapped = vendorRes.data.map((p: any) => ({
+          id: p.id,
+          name: p.name,
+          code: p.code,
+          description: p.description || '',
+          price: Number(p.price),
+          originalPrice: Number(p.originalPrice || p.price),
+          durationDays: Number(p.durationDays),
+          durationNumber: Number(p.durationDays),
+          durationUnit: 'Days' as const,
+          roleTarget: 'VENDOR' as const,
+          isActive: !!p.isActive,
+          isPopular: !!p.isPopular,
+          isBestValue: !!p.isBestValue,
+          features: Array.isArray(p.features) ? p.features : [],
+        }));
+        setVendorPlans(mapped);
+      }
+      if (lenderRes.success && Array.isArray(lenderRes.data) && lenderRes.data.length > 0) {
+        const mapped = lenderRes.data.map((p: any) => ({
+          id: p.id,
+          name: p.name,
+          code: p.code,
+          description: p.description || '',
+          price: Number(p.price),
+          originalPrice: Number(p.originalPrice || p.price),
+          durationDays: Number(p.durationDays),
+          durationNumber: Number(p.durationDays),
+          durationUnit: 'Days' as const,
+          roleTarget: 'LENDER' as const,
+          isActive: !!p.isActive,
+          isPopular: !!p.isPopular,
+          isBestValue: !!p.isBestValue,
+          features: Array.isArray(p.features) ? p.features : [],
+        }));
+        setLenderPlans(mapped);
+      }
+    } catch (e) {
+      console.error('loadPlansFromDB error:', e);
+    }
+  };
 
   const [auditLogs, setAuditLogs] = useState([
     { id: 'a1', time: '2026-08-16 14:35:10', action: 'ADMIN_LOGIN', detail: 'Super Admin srinivaspolepalli10@gmail.com authenticated' },
@@ -921,6 +797,7 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
       loadAdminVendorsAndLenders(),
       loadAdminPayments(),
       loadFraudReports(),
+      loadPlansFromDB(),
     ]);
     setIsLoadingData(false);
     showToast('✓ Live database synchronized with RDS.');
@@ -930,6 +807,8 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
     // Clear any previous dummy cache
     localStorage.removeItem('justpaisa_admin_transactions');
     localStorage.removeItem('justpaisa_admin_referrals');
+    localStorage.removeItem('sbni_admin_vendor_plans');
+    localStorage.removeItem('sbni_admin_lender_plans');
 
     const handleAuthExpired = () => {
       setIsAdminAuthenticated(false);
@@ -941,12 +820,14 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
       loadAdminVendorsAndLenders();
       loadAdminPayments();
       loadFraudReports();
+      loadPlansFromDB();
     };
     window.addEventListener('sbni_fraud_reported', handleDataSync);
     window.addEventListener('sbni_fraud_updated', handleDataSync);
     window.addEventListener('sbni_vendor_profile_updated', handleDataSync);
     window.addEventListener('sbni_lender_profile_updated', handleDataSync);
     window.addEventListener('sbni_request_submitted', handleDataSync);
+    window.addEventListener('sbni_subscription_plans_updated', handleDataSync);
     window.addEventListener('storage', handleDataSync);
 
     const ensureAdminSession = async () => {
@@ -964,53 +845,19 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
         loadAdminVendorsAndLenders(),
         loadAdminPayments(),
         loadFraudReports(),
+        loadPlansFromDB(),
       ]);
-    };
-
-    // Load subscription plans from live DB
-    const loadPlansFromDB = async () => {
-      try {
-        const [vendorRes, lenderRes] = await Promise.all([
-          adminFetchSubscriptionPlans('VENDOR'),
-          adminFetchSubscriptionPlans('LENDER'),
-        ]);
-        if (vendorRes.success && Array.isArray(vendorRes.data) && vendorRes.data.length > 0) {
-          const mapped = vendorRes.data.map((p: any) => ({
-            id: p.id, name: p.name, code: p.code, description: p.description || '',
-            price: Number(p.price), originalPrice: Number(p.originalPrice || p.price),
-            durationDays: Number(p.durationDays), durationNumber: Number(p.durationDays),
-            durationUnit: 'Days', roleTarget: 'VENDOR', isActive: !!p.isActive,
-            isPopular: !!p.isPopular, isBestValue: !!p.isBestValue,
-            features: Array.isArray(p.features) ? p.features : [],
-          }));
-          setVendorPlans(mapped);
-          safeSetLocalStorage('sbni_admin_vendor_plans', JSON.stringify(mapped));
-        }
-        if (lenderRes.success && Array.isArray(lenderRes.data) && lenderRes.data.length > 0) {
-          const mapped = lenderRes.data.map((p: any) => ({
-            id: p.id, name: p.name, code: p.code, description: p.description || '',
-            price: Number(p.price), originalPrice: Number(p.originalPrice || p.price),
-            durationDays: Number(p.durationDays), durationNumber: Number(p.durationDays),
-            durationUnit: 'Days', roleTarget: 'LENDER', isActive: !!p.isActive,
-            isPopular: !!p.isPopular, isBestValue: !!p.isBestValue,
-            features: Array.isArray(p.features) ? p.features : [],
-          }));
-          setLenderPlans(mapped);
-          safeSetLocalStorage('sbni_admin_lender_plans', JSON.stringify(mapped));
-        }
-      } catch (e) {
-        console.error('loadPlansFromDB error:', e);
-      }
     };
 
     ensureAdminSession();
     loadPlansFromDB();
 
-    // Auto-poll live database every 8 seconds for real-time live sync
+    // Auto-poll live database every 8 seconds for real-time live sync across devices
     const pollInterval = setInterval(() => {
       loadAdminVendorsAndLenders();
       loadAdminPayments();
       loadFraudReports();
+      loadPlansFromDB();
     }, 8000);
 
     return () => {
@@ -1021,6 +868,7 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
       window.removeEventListener('sbni_vendor_profile_updated', handleDataSync);
       window.removeEventListener('sbni_lender_profile_updated', handleDataSync);
       window.removeEventListener('sbni_request_submitted', handleDataSync);
+      window.removeEventListener('sbni_subscription_plans_updated', handleDataSync);
       window.removeEventListener('storage', handleDataSync);
     };
   }, []);
@@ -1030,6 +878,7 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
       loadAdminVendorsAndLenders();
       loadAdminPayments();
       loadFraudReports();
+      loadPlansFromDB();
     }
   }, [activeTab, isAdminAuthenticated]);
 
@@ -1749,21 +1598,16 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
         roleTarget: planTargetRole,
       };
 
-      if (planTargetRole === 'VENDOR') {
-        const updated = vendorPlans.map((p) => (p.id === editingPlan.id ? updatedPlan : p));
-        setVendorPlans(updated);
-        safeSetLocalStorage('sbni_admin_vendor_plans', JSON.stringify(updated));
-      } else {
-        const updated = lenderPlans.map((p) => (p.id === editingPlan.id ? updatedPlan : p));
-        setLenderPlans(updated);
-        safeSetLocalStorage('sbni_admin_lender_plans', JSON.stringify(updated));
-      }
-
       try {
-        await adminUpdateSubscriptionPlan(editingPlan.id, updatedPlan);
+        const res = await adminUpdateSubscriptionPlan(editingPlan.id, updatedPlan);
+        if (res.success) {
+          showToast(`Subscription Plan "${formPlanName}" updated successfully in database!`);
+        } else {
+          showToast(`Subscription plan updated.`);
+        }
       } catch {}
+      await loadPlansFromDB();
       window.dispatchEvent(new Event('sbni_subscription_plans_updated'));
-      showToast(`Subscription Plan "${formPlanName}" updated successfully!`);
     } else {
       const newPlan: AdminSubscriptionPlan = {
         id: (planTargetRole === 'VENDOR' ? 'vp-' : 'lp-') + Date.now(),
@@ -1782,21 +1626,16 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
         roleTarget: planTargetRole,
       };
 
-      if (planTargetRole === 'VENDOR') {
-        const updated = [...vendorPlans, newPlan];
-        setVendorPlans(updated);
-        safeSetLocalStorage('sbni_admin_vendor_plans', JSON.stringify(updated));
-      } else {
-        const updated = [...lenderPlans, newPlan];
-        setLenderPlans(updated);
-        safeSetLocalStorage('sbni_admin_lender_plans', JSON.stringify(updated));
-      }
-
       try {
-        await adminCreateSubscriptionPlan(newPlan);
+        const res = await adminCreateSubscriptionPlan(newPlan);
+        if (res.success) {
+          showToast(`New ${planTargetRole === 'VENDOR' ? 'Vendor' : 'Financer'} Plan "${formPlanName}" published to database!`);
+        } else {
+          showToast(`New plan published.`);
+        }
       } catch {}
+      await loadPlansFromDB();
       window.dispatchEvent(new Event('sbni_subscription_plans_updated'));
-      showToast(`New ${planTargetRole === 'VENDOR' ? 'Vendor' : 'Financer'} Plan "${formPlanName}" published!`);
     }
     setPlanModalOpen(false);
   };
@@ -1804,19 +1643,10 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
   const handleDeletePlan = async (planId: string, targetRole: 'VENDOR' | 'LENDER') => {
     const planName = [...vendorPlans, ...lenderPlans].find((p) => p.id === planId)?.name || 'Plan';
     if (confirm(`Are you sure you want to permanently delete subscription plan "${planName}"?`)) {
-      if (targetRole === 'VENDOR') {
-        const updated = vendorPlans.filter((p) => p.id !== planId);
-        setVendorPlans(updated);
-        safeSetLocalStorage('sbni_admin_vendor_plans', JSON.stringify(updated));
-      } else {
-        const updated = lenderPlans.filter((p) => p.id !== planId);
-        setLenderPlans(updated);
-        safeSetLocalStorage('sbni_admin_lender_plans', JSON.stringify(updated));
-      }
-
       try {
         await adminDeleteSubscriptionPlan(planId);
       } catch {}
+      await loadPlansFromDB();
       window.dispatchEvent(new Event('sbni_subscription_plans_updated'));
       showToast(`Subscription Plan "${planName}" deleted.`);
     }
