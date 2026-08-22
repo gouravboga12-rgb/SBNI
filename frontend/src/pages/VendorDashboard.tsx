@@ -56,6 +56,7 @@ import {
   Plus,
   XCircle,
   Download,
+  AlertCircle,
 } from 'lucide-react';
 
 const VENDOR_BANNER_SLIDES: BannerSlide[] = [
@@ -219,9 +220,13 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
       loadNearbyLenders();
     };
     window.addEventListener('sbni_lender_profile_updated', handleLenderSync);
+    window.addEventListener('sbni_vendor_profile_updated', handleLenderSync);
+    window.addEventListener('sbni_fraud_updated', handleLenderSync);
     window.addEventListener('storage', handleLenderSync);
     return () => {
       window.removeEventListener('sbni_lender_profile_updated', handleLenderSync);
+      window.removeEventListener('sbni_vendor_profile_updated', handleLenderSync);
+      window.removeEventListener('sbni_fraud_updated', handleLenderSync);
       window.removeEventListener('storage', handleLenderSync);
     };
   }, []);
@@ -376,6 +381,18 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
         }
       } catch (e) {}
 
+      const storedFraud = (() => {
+        try { return JSON.parse(localStorage.getItem('sbni_fraud_vendors') || '{}'); } catch { return {}; }
+      })();
+      const vId = profile?.id || u?.id;
+      const vEmail = email || u?.email;
+      const isFraud =
+        (vId && storedFraud[vId] !== undefined)
+          ? !!storedFraud[vId]
+          : (vEmail && storedFraud[vEmail] !== undefined)
+          ? !!storedFraud[vEmail]
+          : !!profile?.isFraud;
+
       return {
         name,
         shopName,
@@ -388,6 +405,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
         category,
         shopId,
         isVerified,
+        isFraud,
         panFileUrl,
         aadhaarFileUrl,
         businessLicenseUrl,
@@ -629,6 +647,12 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
       if (onOpenAuth) onOpenAuth();
       return;
     }
+
+    if (currentVendorObj?.isFraud) {
+      alert('Your shop account is currently restricted from submitting loan applications due to an active review flag by Super Admin. Please contact customer support.');
+      return;
+    }
+
     const isSubscribed =
       localStorage.getItem('sbni_vendor_subscribed') === 'true' ||
       localStorage.getItem('sbni_subscribed') === 'true';
@@ -666,6 +690,21 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
     <div className="bg-slate-50 min-h-screen pb-28 md:pb-28">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 md:pt-6">
         
+        {/* Fraud / Blacklist Warning Banner (Auto-clears when Admin lifts blacklist) */}
+        {currentVendorObj?.isFraud && (
+          <div className="mb-6 p-4 rounded-2xl bg-rose-50 border-2 border-rose-400 text-rose-900 flex items-start gap-3 shadow-md">
+            <AlertCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+            <div className="space-y-1 text-xs">
+              <div className="font-extrabold text-sm text-rose-800 flex items-center gap-1.5">
+                <span>🚨 Account Notice: Flagged for Investigation</span>
+              </div>
+              <p className="font-medium text-rose-700 leading-relaxed">
+                Your shop account currently has a review restriction flag applied by Super Admin. Inquiries to business money financers will remain restricted until resolved.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* TAB 1: HOME VIEW */}
         {activeTab === 'home' && (
           <div className="space-y-6">

@@ -306,9 +306,11 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
       loadNearbyBusinessesList();
     };
     window.addEventListener('sbni_vendor_profile_updated', handleGlobalSync);
+    window.addEventListener('sbni_fraud_updated', handleGlobalSync);
     window.addEventListener('storage', handleGlobalSync);
     return () => {
       window.removeEventListener('sbni_vendor_profile_updated', handleGlobalSync);
+      window.removeEventListener('sbni_fraud_updated', handleGlobalSync);
       window.removeEventListener('storage', handleGlobalSync);
     };
   }, [currentUser]);
@@ -676,6 +678,18 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
             const licenseDoc = kycDocs.find((d: any) => d.docType === 'BUSINESS_PROOF');
             const gstDoc = kycDocs.find((d: any) => d.docType === 'GST_CERTIFICATE');
 
+            const storedFraud = (() => {
+              try { return JSON.parse(localStorage.getItem('sbni_fraud_vendors') || '{}'); } catch { return {}; }
+            })();
+            const vId = lead.vendorId || v.id || v.userId;
+            const vEmail = snapshot.emailId || v.user?.email || v.email;
+            const isFraudStatus =
+              (vId && storedFraud[vId] !== undefined)
+                ? !!storedFraud[vId]
+                : (vEmail && storedFraud[vEmail] !== undefined)
+                ? !!storedFraud[vEmail]
+                : !!v.isFraud;
+
             return {
               id: lead.id,
               vendorName: snapshot.vendorName || v.ownerName || v.user?.name || 'Applicant Vendor',
@@ -698,7 +712,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
               yearsInBusiness: snapshot.yearsInBusiness || v.yearsInBusiness || 'Established',
               requiredAmount: lead.amount ? `₹ ${lead.amount.toLocaleString('en-IN')}` : (snapshot.requiredAmount || '₹ 5,00,000'),
               monthlyIncome: snapshot.monthlyIncome || (v.annualTurnover ? `₹ ${v.annualTurnover}` : '₹ 50,000 - 1 Lakh'),
-              isFraud: !!v.isFraud,
+              isFraud: isFraudStatus,
               avatarUrl: snapshot.avatarUrl || v.avatarUrl || null,
               liveSelfieUrl: snapshot.liveSelfieUrl || v.liveSelfieUrl || null,
               shopPhotoUrl: snapshot.shopPhotoUrl || v.shopPhotoUrl || null,
@@ -802,6 +816,18 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
             const vLng = vp.longitude ? Number(vp.longitude) : 78.5247;
             const distKm = calculateDistanceKm(lenderLocation.latitude, lenderLocation.longitude, vLat, vLng);
 
+            const storedFraud = (() => {
+              try { return JSON.parse(localStorage.getItem('sbni_fraud_vendors') || '{}'); } catch { return {}; }
+            })();
+            const vId = vp.id || vp.userId;
+            const vEmail = u.email || vp.email;
+            const isFraudStatus =
+              (vId && storedFraud[vId] !== undefined)
+                ? !!storedFraud[vId]
+                : (vEmail && storedFraud[vEmail] !== undefined)
+                ? !!storedFraud[vEmail]
+                : !!vp.isFraud;
+
             return {
               id: vp.id || vp.userId,
               vendorName: vp.ownerName || u.name || 'Local Shop Owner',
@@ -819,7 +845,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
               panNumber: vp.panNumber || panDoc?.documentNumber || null,
               aadhaarNumber: vp.aadhaarNumber || aadhaarDoc?.documentNumber || null,
               gstNumber: vp.gstNumber || gstDoc?.documentNumber || null,
-              isFraud: !!vp.isFraud,
+              isFraud: isFraudStatus,
               avatarUrl: vp.avatarUrl || null,
               liveSelfieUrl: vp.avatarUrl || null,
               panFileUrl: (vp as any).panFileUrl || panDoc?.fileUrl || null,
@@ -858,6 +884,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
     window.addEventListener('sbni_subscription_updated', handleSync);
     window.addEventListener('sbni_vendor_deleted', handleSync);
     window.addEventListener('sbni_vendor_profile_updated', handleSync);
+    window.addEventListener('sbni_fraud_updated', handleSync);
     window.addEventListener('storage', handleSync);
 
     return () => {
@@ -865,20 +892,23 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
       window.removeEventListener('sbni_subscription_updated', handleSync);
       window.removeEventListener('sbni_vendor_deleted', handleSync);
       window.removeEventListener('sbni_vendor_profile_updated', handleSync);
+      window.removeEventListener('sbni_fraud_updated', handleSync);
       window.removeEventListener('storage', handleSync);
     };
   }, [lenderLocation]);
 
   const checkVendorIsFraud = (vendor: VendorVerificationRequest | null | undefined): boolean => {
     if (!vendor) return false;
-    if (vendor.isFraud) return true;
     try {
       const storedFraud = JSON.parse(localStorage.getItem('sbni_fraud_vendors') || '{}');
-      if (storedFraud[vendor.id] || (vendor.emailId && storedFraud[vendor.emailId])) {
-        return true;
+      if (storedFraud[vendor.id] !== undefined) {
+        return !!storedFraud[vendor.id];
+      }
+      if (vendor.emailId && storedFraud[vendor.emailId] !== undefined) {
+        return !!storedFraud[vendor.emailId];
       }
     } catch {}
-    return false;
+    return !!vendor.isFraud;
   };
 
   const checkLenderSubscribed = () => {

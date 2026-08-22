@@ -627,21 +627,55 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
       }
       await adminConfirmFraudReport(report.id).catch(() => {});
 
-      const updated = fraudReports.map((r) => (r.id === report.id ? { ...r, status: 'CONFIRMED' as const } : r));
-      setFraudReports(updated);
+      // 1. Update Fraud Reports state
+      const updatedReports = fraudReports.map((r) =>
+        r.id === report.id || (report.vendorId && r.vendorId === report.vendorId)
+          ? { ...r, status: 'CONFIRMED' as const }
+          : r
+      );
+      setFraudReports(updatedReports);
 
+      // 2. Update Vendors list state in Admin Dashboard
+      const targetVendorId = report.vendorId;
+      const targetEmail = report.userEmail;
+      const updatedVendors = vendors.map((v) =>
+        (targetVendorId && v.id === targetVendorId) || (targetEmail && v.userEmail === targetEmail)
+          ? { ...v, isFraud: true }
+          : v
+      );
+      setVendors(updatedVendors);
+      safeSetLocalStorage('sbni_admin_vendors', JSON.stringify(updatedVendors));
+
+      // 3. Update localStorage registries
       try {
         const storedFraud = JSON.parse(localStorage.getItem('sbni_fraud_vendors') || '{}');
-        if (report.vendorId) storedFraud[report.vendorId] = true;
-        if (report.userEmail) storedFraud[report.userEmail] = true;
+        if (targetVendorId) storedFraud[targetVendorId] = true;
+        if (targetEmail) storedFraud[targetEmail] = true;
         safeSetLocalStorage('sbni_fraud_vendors', JSON.stringify(storedFraud));
 
         const storedList = JSON.parse(localStorage.getItem('sbni_lender_reported_frauds') || '[]');
-        const updatedList = storedList.map((r: any) => (r.id === report.id ? { ...r, status: 'CONFIRMED' } : r));
+        const updatedList = storedList.map((r: any) =>
+          r.id === report.id || (targetVendorId && r.vendorId === targetVendorId)
+            ? { ...r, status: 'CONFIRMED' }
+            : r
+        );
         safeSetLocalStorage('sbni_lender_reported_frauds', JSON.stringify(updatedList));
       } catch {}
 
+      // 4. Audit Log & Toast & Broadcast
+      setAuditLogs((prev) => [
+        {
+          id: 'a-' + Date.now(),
+          time: new Date().toISOString().replace('T', ' ').substring(0, 19),
+          action: 'FRAUD_CONFIRMED',
+          detail: `Vendor "${report.vendorName}" (${report.shopName}) confirmed as FRAUD. Blacklisted platform-wide.`,
+        },
+        ...prev,
+      ]);
+
       showToast(`🚨 Confirmed Fraud! Vendor "${report.vendorName}" is now blacklisted platform-wide.`);
+      window.dispatchEvent(new Event('sbni_fraud_updated'));
+      window.dispatchEvent(new Event('sbni_vendor_profile_updated'));
       window.dispatchEvent(new Event('storage'));
     } catch (err: any) {
       alert(err.message || 'Failed to confirm fraud report.');
@@ -650,18 +684,67 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
 
   const handleDismissFraud = async (report: FraudReportItem) => {
     try {
+      // 1. Invoke Backend APIs to dismiss report & lift blacklist on vendor
       await adminDismissFraudReport(report.id).catch(() => {});
+      if (report.vendorId) {
+        await adminToggleVendorFraud(report.vendorId, false).catch(() => {});
+      }
 
-      const updated = fraudReports.map((r) => (r.id === report.id ? { ...r, status: 'DISMISSED' as const } : r));
-      setFraudReports(updated);
+      // 2. Update Fraud Reports state in Admin Dashboard
+      const targetVendorId = report.vendorId;
+      const targetEmail = report.userEmail;
+      const updatedReports = fraudReports.map((r) =>
+        r.id === report.id || (targetVendorId && r.vendorId === targetVendorId) || (targetEmail && r.userEmail === targetEmail)
+          ? { ...r, status: 'DISMISSED' as const, adminNotes: 'Dismissed / Blacklist lifted by Super Admin.' }
+          : r
+      );
+      setFraudReports(updatedReports);
 
+      // 3. Update User Vendors list state in Admin Dashboard (clear isFraud)
+      const updatedVendors = vendors.map((v) =>
+        (targetVendorId && v.id === targetVendorId) || (targetEmail && v.userEmail === targetEmail)
+          ? { ...v, isFraud: false }
+          : v
+      );
+      setVendors(updatedVendors);
+      safeSetLocalStorage('sbni_admin_vendors', JSON.stringify(updatedVendors));
+
+      // 4. Clear fraud flags from localStorage registries
       try {
+        const storedFraud = JSON.parse(localStorage.getItem('sbni_fraud_vendors') || '{}');
+        if (targetVendorId) {
+          storedFraud[targetVendorId] = false;
+          delete storedFraud[targetVendorId];
+        }
+        if (targetEmail) {
+          storedFraud[targetEmail] = false;
+          delete storedFraud[targetEmail];
+        }
+        safeSetLocalStorage('sbni_fraud_vendors', JSON.stringify(storedFraud));
+
         const storedList = JSON.parse(localStorage.getItem('sbni_lender_reported_frauds') || '[]');
-        const updatedList = storedList.map((r: any) => (r.id === report.id ? { ...r, status: 'DISMISSED' } : r));
+        const updatedList = storedList.map((r: any) =>
+          r.id === report.id || (targetVendorId && r.vendorId === targetVendorId) || (targetEmail && (r.emailId === targetEmail || r.userEmail === targetEmail))
+            ? { ...r, status: 'DISMISSED', adminNotes: 'Dismissed / Blacklist lifted by Super Admin.' }
+            : r
+        );
         safeSetLocalStorage('sbni_lender_reported_frauds', JSON.stringify(updatedList));
       } catch {}
 
-      showToast(`✓ Fraud report dismissed for "${report.vendorName}".`);
+      // 5. Audit Log & Toast & Broadcast
+      setAuditLogs((prev) => [
+        {
+          id: 'a-' + Date.now(),
+          time: new Date().toISOString().replace('T', ' ').substring(0, 19),
+          action: 'VENDOR_BLACKLIST_LIFTED',
+          detail: `Blacklist lifted and fraud report dismissed for vendor "${report.vendorName}" (${report.shopName}).`,
+        },
+        ...prev,
+      ]);
+
+      showToast(`✓ Blacklist lifted & fraud report dismissed for "${report.vendorName}". Vendor is active platform-wide.`);
+      window.dispatchEvent(new Event('sbni_fraud_updated'));
+      window.dispatchEvent(new Event('sbni_vendor_profile_updated'));
       window.dispatchEvent(new Event('storage'));
     } catch (err: any) {
       alert(err.message || 'Failed to dismiss fraud report.');
@@ -1066,34 +1149,81 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
   const executeToggleVendorFraud = async (vendorId: string, currentIsFraud: boolean) => {
     const newIsFraud = !currentIsFraud;
     const vendorObj = vendors.find((v) => v.id === vendorId);
-    const vendorName = vendorObj?.businessName || 'Vendor';
+    const vendorName = vendorObj?.businessName || vendorObj?.ownerName || 'Vendor';
+    const userEmail = vendorObj?.userEmail;
 
-    setVendors(
-      vendors.map((v) => (v.id === vendorId ? { ...v, isFraud: newIsFraud } : v))
-    );
+    // 1. Update live Vendors state & local cache
+    const updatedVendors = vendors.map((v) => (v.id === vendorId ? { ...v, isFraud: newIsFraud } : v));
+    setVendors(updatedVendors);
+    safeSetLocalStorage('sbni_admin_vendors', JSON.stringify(updatedVendors));
 
+    // 2. Synchronize Fraud Reports state
+    if (!newIsFraud) {
+      setFraudReports((prev) =>
+        prev.map((r) =>
+          r.vendorId === vendorId || (userEmail && r.userEmail === userEmail)
+            ? { ...r, status: 'DISMISSED' as const, adminNotes: 'Dismissed: Fraud cleared by Super Admin in User Vendors control.' }
+            : r
+        )
+      );
+    } else {
+      setFraudReports((prev) =>
+        prev.map((r) =>
+          r.vendorId === vendorId || (userEmail && r.userEmail === userEmail)
+            ? { ...r, status: 'CONFIRMED' as const, adminNotes: 'Marked as Fraud by Super Admin from User Vendors control.' }
+            : r
+        )
+      );
+    }
+
+    // 3. Update localStorage registries
     try {
       const storedFraud = JSON.parse(localStorage.getItem('sbni_fraud_vendors') || '{}');
-      storedFraud[vendorId] = newIsFraud;
-      if (vendorObj?.userEmail) storedFraud[vendorObj.userEmail] = newIsFraud;
+      if (newIsFraud) {
+        storedFraud[vendorId] = true;
+        if (userEmail) storedFraud[userEmail] = true;
+      } else {
+        storedFraud[vendorId] = false;
+        delete storedFraud[vendorId];
+        if (userEmail) {
+          storedFraud[userEmail] = false;
+          delete storedFraud[userEmail];
+        }
+      }
       safeSetLocalStorage('sbni_fraud_vendors', JSON.stringify(storedFraud));
+
+      if (!newIsFraud) {
+        const storedReports = JSON.parse(localStorage.getItem('sbni_lender_reported_frauds') || '[]');
+        const updatedReports = storedReports.map((r: any) =>
+          r.vendorId === vendorId || (userEmail && (r.emailId === userEmail || r.userEmail === userEmail))
+            ? { ...r, status: 'DISMISSED', adminNotes: 'Dismissed: Fraud cleared by Super Admin in User Vendors control.' }
+            : r
+        );
+        safeSetLocalStorage('sbni_lender_reported_frauds', JSON.stringify(updatedReports));
+      }
+
       await adminToggleVendorFraud(vendorId, newIsFraud);
     } catch {}
 
-    setAuditLogs([
+    // 4. Audit Log & Toast & Global Events
+    setAuditLogs((prev) => [
       {
         id: 'a-' + Date.now(),
         time: new Date().toISOString().replace('T', ' ').substring(0, 19),
         action: newIsFraud ? 'VENDOR_MARKED_FRAUD' : 'VENDOR_FRAUD_CLEARED',
-        detail: `Vendor "${vendorName}" was ${newIsFraud ? 'MARKED AS FRAUD ACCOUNT' : 'cleared from fraud status'}`,
+        detail: `Vendor "${vendorName}" was ${newIsFraud ? 'MARKED AS FRAUD ACCOUNT' : 'cleared from fraud status & un-blacklisted'}`,
       },
-      ...auditLogs,
+      ...prev,
     ]);
+
+    window.dispatchEvent(new Event('sbni_fraud_updated'));
+    window.dispatchEvent(new Event('sbni_vendor_profile_updated'));
+    window.dispatchEvent(new Event('storage'));
 
     if (newIsFraud) {
       showToast(`🚨 Vendor "${vendorName}" marked as FRAUD ACCOUNT! Alert live for all lenders.`);
     } else {
-      showToast(`✅ Fraud status cleared for "${vendorName}".`);
+      showToast(`✅ Fraud status cleared for "${vendorName}". Platform-wide blacklist lifted.`);
     }
   };
 

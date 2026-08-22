@@ -191,15 +191,28 @@ export const registerUser = async (req: Request, res: Response) => {
 
   // Create profile based on role
   if (role === 'VENDOR') {
+    let vendorLat = 17.3850;
+    let vendorLng = 78.4867;
+    if (req.body.latitude !== undefined && req.body.latitude !== null && !isNaN(Number(req.body.latitude))) {
+      vendorLat = parseFloat(String(req.body.latitude));
+    }
+    if (req.body.longitude !== undefined && req.body.longitude !== null && !isNaN(Number(req.body.longitude))) {
+      vendorLng = parseFloat(String(req.body.longitude));
+    }
+
     await prisma.vendorProfile.create({
       data: {
         userId: user.id,
         businessName: businessName || (name ? `${name} Enterprise` : 'My Enterprise Business'),
         ownerName: name || 'Business Owner',
         address: address || '123 Commercial Belt',
-        city: city || 'Mumbai',
-        state: state || 'Maharashtra',
-        pincode: pincode || '400001',
+        place: req.body.place || 'Commercial Area',
+        city: city || 'Hyderabad',
+        state: state || 'Telangana',
+        country: req.body.country || 'India',
+        pincode: pincode || '500001',
+        latitude: vendorLat,
+        longitude: vendorLng,
         kycStatus: 'VERIFIED',
       },
     });

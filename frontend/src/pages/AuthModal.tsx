@@ -14,6 +14,7 @@ import {
   updateVendorProfileApi,
   updateLenderProfileApi,
 } from '../services/api';
+import { LocationPickerModal } from '../components/LocationPickerModal';
 import {
   X,
   User,
@@ -39,6 +40,8 @@ import {
   KeyRound,
   RefreshCw,
   Zap,
+  Compass,
+  Navigation,
 } from 'lucide-react';
 import { Role } from '../types';
 

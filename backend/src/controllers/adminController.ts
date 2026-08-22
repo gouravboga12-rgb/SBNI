@@ -80,23 +80,41 @@ export const updateVendorKYCStatus = async (req: AuthenticatedRequest, res: Resp
 };
 
 export const updateVendorFraudStatus = async (req: AuthenticatedRequest, res: Response) => {
-  const { vendorId } = req.params;
-  const { isFraud } = req.body;
+  try {
+    const { vendorId } = req.params;
+    const { isFraud } = req.body;
 
-  const vendor = await prisma.vendorProfile.update({
-    where: { id: vendorId },
-    data: {
-      isFraud: !!isFraud,
-    },
-  });
+    const vendor = await prisma.vendorProfile.update({
+      where: { id: vendorId },
+      data: {
+        isFraud: !!isFraud,
+      },
+    });
 
-  res.json({
-    success: true,
-    message: isFraud
-      ? 'Vendor account marked as FRAUD. Alert is now active across all business financer accounts!'
-      : 'Fraud status cleared for vendor account.',
-    data: vendor,
-  });
+    if (!isFraud) {
+      // Super Admin cleared fraud tag from User Vendors: dismiss all active reports for this vendor
+      await (prisma as any).fraudReport.updateMany({
+        where: {
+          vendorId: vendorId,
+          status: { in: ['PENDING', 'CONFIRMED'] },
+        },
+        data: {
+          status: 'DISMISSED',
+          adminNotes: 'Dismissed: Fraud status cleared by Super Admin from User Vendors control.',
+        },
+      });
+    }
+
+    res.json({
+      success: true,
+      message: isFraud
+        ? 'Vendor account marked as FRAUD. Alert is now active across all business financer accounts!'
+        : 'Fraud status cleared for vendor account.',
+      data: vendor,
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message || 'Failed to update vendor fraud status.' });
+  }
 };
 
 
@@ -798,13 +816,35 @@ export const dismissFraudReport = async (req: AuthenticatedRequest, res: Respons
       where: { id: reportId },
       data: {
         status: 'DISMISSED',
-        adminNotes: adminNotes || 'Dismissed by Super Admin.',
+        adminNotes: adminNotes || 'Dismissed / Blacklist lifted by Super Admin.',
       },
+      include: { vendor: true },
     });
+
+    if (report.vendorId) {
+      // 1. Lift blacklist on the VendorProfile in database
+      await prisma.vendorProfile.update({
+        where: { id: report.vendorId },
+        data: { isFraud: false },
+      });
+
+      // 2. Also dismiss any other active/pending reports for this vendor
+      await (prisma as any).fraudReport.updateMany({
+        where: {
+          vendorId: report.vendorId,
+          status: { in: ['PENDING', 'CONFIRMED'] },
+          id: { not: reportId },
+        },
+        data: {
+          status: 'DISMISSED',
+          adminNotes: adminNotes || 'Dismissed / Blacklist lifted by Super Admin.',
+        },
+      });
+    }
 
     res.json({
       success: true,
-      message: 'Fraud report dismissed. Vendor account is clear of this report.',
+      message: `Fraud report dismissed and blacklist lifted for vendor "${report.vendor?.businessName || 'Vendor'}". Account is now active platform-wide.`,
       data: report,
     });
   } catch (err: any) {
