@@ -13,6 +13,7 @@ import {
   fetchLenders,
   updateVendorProfileApi,
   getMyProfileApi,
+  fetchVendorMyLeadsApi,
   safeSetLocalStorage,
   uploadFileToEc2Api,
 } from '../services/api';
@@ -146,41 +147,97 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
   const [isLocatingGPS, setIsLocatingGPS] = useState(false);
   const [locationToast, setLocationToast] = useState<string | null>(null);
 
-  // Applications List (Strictly Real User Applications - Zero Dummy Data)
+  // Applications List (Strictly Real User Applications from AWS RDS Database)
   const [vendorApplications, setVendorApplications] = useState<any[]>(() => {
     try {
       const dynamicStr = localStorage.getItem('sbni_vendor_requests');
       if (dynamicStr) {
         const parsed = JSON.parse(dynamicStr);
         if (Array.isArray(parsed)) {
-          // Filter out any legacy dummy requests
-          return parsed.filter((r) => r && r.id !== 'REQ-9842' && r.id !== 'REQ-4410' && !r.lenderName?.includes('Nishanth Money Finance') && !r.lenderName?.includes('Sharma Financer & NBFC'));
+          return parsed
+            .filter((r) => r && r.id !== 'REQ-9842' && r.id !== 'REQ-4410' && !r.lenderName?.includes('Nishanth Money Finance') && !r.lenderName?.includes('Sharma Financer & NBFC'))
+            .map((r: any) => ({
+              ...r,
+              isAccepted: r.status === 'Accepted' || r.status === 'Verified' || r.status === 'Approved' || r.status === 'Completed',
+              isRejected: r.status === 'Rejected' || r.status === 'REJECTED',
+            }));
         }
       }
     } catch (e) {}
     return [];
   });
 
-  useEffect(() => {
-    const handleRequestsSync = () => {
-      try {
-        const dynamicStr = localStorage.getItem('sbni_vendor_requests');
-        if (dynamicStr) {
-          const parsed = JSON.parse(dynamicStr);
-          if (Array.isArray(parsed)) {
-            setVendorApplications(parsed.filter((r) => r && r.id !== 'REQ-9842' && r.id !== 'REQ-4410' && !r.lenderName?.includes('Nishanth Money Finance') && !r.lenderName?.includes('Sharma Financer & NBFC')));
-            return;
-          }
-        }
-      } catch (e) {}
-      setVendorApplications([]);
-    };
+  const loadVendorApplications = async () => {
+    try {
+      // 1. Fetch live leads directly from AWS RDS
+      const apiRes = await fetchVendorMyLeadsApi();
+      if (apiRes.success && Array.isArray(apiRes.data) && apiRes.data.length > 0) {
+        const mapped = apiRes.data.map((lead: any) => {
+          let snap: any = {};
+          try {
+            if (lead.vendorSnapshot) {
+              snap = typeof lead.vendorSnapshot === 'string' ? JSON.parse(lead.vendorSnapshot) : lead.vendorSnapshot;
+            }
+          } catch {}
 
-    window.addEventListener('sbni_request_submitted', handleRequestsSync);
-    window.addEventListener('storage', handleRequestsSync);
+          const status = lead.status || 'Pending';
+          const isAccepted = status === 'Accepted' || status === 'Verified' || status === 'Approved' || status === 'Completed';
+          const isRejected = status === 'Rejected' || status === 'REJECTED';
+
+          return {
+            id: lead.id,
+            title: snap.shopName || (lead.lender?.institutionName ? `Application to ${lead.lender.institutionName}` : 'Financing Application'),
+            lenderName: lead.lender?.institutionName || snap.lenderName || 'Verified Financer Partner',
+            lenderId: lead.lenderId,
+            lenderPhone: lead.lender?.phone || snap.lenderPhone,
+            lenderLatitude: lead.lender?.latitude || snap.lenderLatitude || 17.3713,
+            lenderLongitude: lead.lender?.longitude || snap.lenderLongitude || 78.5320,
+            amount: lead.amount ? `₹ ${lead.amount.toLocaleString('en-IN')}` : snap.requiredAmount || '₹ 5,00,000',
+            date: new Date(lead.createdAt || Date.now()).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
+            status,
+            isAccepted,
+            isRejected,
+          };
+        });
+
+        setVendorApplications(mapped);
+        safeSetLocalStorage('sbni_vendor_requests', JSON.stringify(mapped));
+        return;
+      }
+    } catch (e) {
+      console.warn('Notice: loading local applications fallback:', e);
+    }
+
+    // 2. Fallback to localStorage if offline / local mock
+    try {
+      const dynamicStr = localStorage.getItem('sbni_vendor_requests');
+      if (dynamicStr) {
+        const parsed = JSON.parse(dynamicStr);
+        if (Array.isArray(parsed)) {
+          const valid = parsed
+            .filter((r) => r && r.id !== 'REQ-9842' && r.id !== 'REQ-4410' && !r.lenderName?.includes('Nishanth Money Finance') && !r.lenderName?.includes('Sharma Financer & NBFC'))
+            .map((r: any) => ({
+              ...r,
+              isAccepted: r.status === 'Accepted' || r.status === 'Verified' || r.status === 'Approved' || r.status === 'Completed',
+              isRejected: r.status === 'Rejected' || r.status === 'REJECTED',
+            }));
+          setVendorApplications(valid);
+          return;
+        }
+      }
+    } catch (e) {}
+
+    setVendorApplications([]);
+  };
+
+  useEffect(() => {
+    loadVendorApplications();
+
+    window.addEventListener('sbni_request_submitted', loadVendorApplications);
+    window.addEventListener('storage', loadVendorApplications);
     return () => {
-      window.removeEventListener('sbni_request_submitted', handleRequestsSync);
-      window.removeEventListener('storage', handleRequestsSync);
+      window.removeEventListener('sbni_request_submitted', loadVendorApplications);
+      window.removeEventListener('storage', loadVendorApplications);
     };
   }, []);
 
@@ -1201,16 +1258,28 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {vendorApplications.map((app, idx) => {
                     const isAccepted =
+                      app.isAccepted ||
                       app.status === 'Verified' ||
                       app.status === 'Approved' ||
                       app.status === 'Accepted' ||
                       app.status === 'Completed';
 
+                    const isRejected =
+                      app.isRejected ||
+                      app.status === 'Rejected' ||
+                      app.status === 'REJECTED';
+
                     return (
                       <div key={app.id || idx} className="card-white p-5 space-y-4 shadow-sm border border-slate-200/90 rounded-2xl">
                         <div className="flex items-center justify-between">
-                          <span className={isAccepted ? 'badge-verified-green' : 'badge-pending-amber'}>
-                            {isAccepted ? '✓ Request Accepted' : app.status || 'Under Review'}
+                          <span className={
+                            isAccepted
+                              ? 'badge-verified-green'
+                              : isRejected
+                              ? 'px-2.5 py-1 rounded-full bg-rose-100 text-rose-800 text-[11px] font-extrabold border border-rose-200 flex items-center gap-1'
+                              : 'badge-pending-amber'
+                          }>
+                            {isAccepted ? '✓ Request Accepted' : isRejected ? '✕ Application Rejected' : '⏳ Under Review'}
                           </span>
                           <span className="text-xs text-slate-400 font-mono">App #{app.id}</span>
                         </div>
@@ -1225,7 +1294,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                           <div>Application Date: <span className="font-medium">{app.date || app.requestedDate || 'Recent'}</span></div>
                         </div>
 
-                        {/* Navigation Action: Enabled ONLY after acceptance as per requirement */}
+                        {/* Action / Information based on status */}
                         <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
                           {isAccepted ? (
                             <a
@@ -1241,6 +1310,19 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                               <Navigation className="w-4 h-4 text-white" />
                               <span>🧭 Navigate to Financer Office (Google Maps)</span>
                             </a>
+                          ) : isRejected ? (
+                            <div className="w-full space-y-2">
+                              <p className="text-[11px] text-rose-700 font-medium text-center">
+                                Financer was unable to approve this financing request at this time.
+                              </p>
+                              <button
+                                onClick={() => handleTabChange('lenders')}
+                                className="w-full py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-sm transition-all active:scale-95 cursor-pointer"
+                              >
+                                <Search className="w-3.5 h-3.5" />
+                                <span>Explore Other Financers in Area</span>
+                              </button>
+                            </div>
                           ) : (
                             <div className="w-full py-2.5 px-4 rounded-xl bg-slate-100 text-slate-400 font-bold text-xs flex items-center justify-center gap-2 border border-slate-200 cursor-not-allowed">
                               <Lock className="w-3.5 h-3.5 text-slate-400" />

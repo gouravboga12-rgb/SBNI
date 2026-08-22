@@ -354,19 +354,17 @@ export const getVendorMyLeads = async (req: AuthenticatedRequest, res: Response)
       return res.json({ success: true, count: 0, data: [] });
     }
 
-    const vendorProfile = await prisma.vendorProfile.findUnique({
-      where: { userId },
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: { vendorProfile: true },
     });
 
+    const vendorProfile = user?.vendorProfile;
     const vId = vendorProfile?.id;
+    const userEmail = user?.email?.toLowerCase();
+    const userPhone = user?.phone;
 
-    const leads = await (prisma as any).financingLead.findMany({
-      where: {
-        OR: [
-          ...(vId ? [{ vendorId: vId }] : []),
-          { vendorId: userId },
-        ],
-      },
+    const allLeads = await (prisma as any).financingLead.findMany({
       include: {
         lender: {
           select: {
@@ -374,13 +372,34 @@ export const getVendorMyLeads = async (req: AuthenticatedRequest, res: Response)
             institutionName: true,
             registrationNumber: true,
             contactPersonName: true,
+            city: true,
+            state: true,
+            latitude: true,
+            longitude: true,
+            phone: true,
+            email: true,
           },
         },
       },
       orderBy: { createdAt: 'desc' },
     });
 
-    res.json({ success: true, count: leads.length, data: leads });
+    const matchedLeads = allLeads.filter((lead: any) => {
+      if (lead.vendorId && (lead.vendorId === userId || (vId && lead.vendorId === vId))) {
+        return true;
+      }
+      if (lead.vendorSnapshot) {
+        try {
+          const snap = typeof lead.vendorSnapshot === 'string' ? JSON.parse(lead.vendorSnapshot) : lead.vendorSnapshot;
+          if (userEmail && snap.emailId && snap.emailId.toLowerCase() === userEmail) return true;
+          if (userEmail && snap.email && snap.email.toLowerCase() === userEmail) return true;
+          if (userPhone && (snap.mobileNumber === userPhone || snap.phone === userPhone)) return true;
+        } catch {}
+      }
+      return false;
+    });
+
+    res.json({ success: true, count: matchedLeads.length, data: matchedLeads });
   } catch (err: any) {
     res.status(500).json({ success: false, message: err.message || 'Failed to fetch vendor leads.' });
   }
