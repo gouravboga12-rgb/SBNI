@@ -739,6 +739,12 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
 
   const activeTab = controlledActiveTab !== undefined ? controlledActiveTab : internalActiveTab;
 
+  useEffect(() => {
+    if (activeTab === 'requests') {
+      loadVendorApplications();
+    }
+  }, [activeTab]);
+
   const handleTabChange = (tab: 'home' | 'lenders' | 'requests' | 'profile') => {
     if (onTabChange) {
       onTabChange(tab);
