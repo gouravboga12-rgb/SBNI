@@ -4,6 +4,15 @@ import { AuthenticatedRequest } from '../middlewares/auth';
 import { LenderType } from '@prisma/client';
 import { calculateDistanceKm } from '../utils/distance';
 
+const mapLenderTypeEnum = (type?: string): LenderType => {
+  if (!type) return 'NBFC';
+  const t = String(type).toUpperCase().replace(/\s+/g, '_');
+  if (t === 'BANK') return 'BANK';
+  if (t === 'FINANCIAL_INSTITUTION' || t === 'MONEY_FINANCER' || t === 'FINANCER') return 'FINANCIAL_INSTITUTION';
+  if (t === 'INDIVIDUAL') return 'INDIVIDUAL';
+  return 'NBFC';
+};
+
 export const updateLenderProfile = async (req: AuthenticatedRequest, res: Response) => {
   const userId = req.user?.userId;
   const {
@@ -84,7 +93,7 @@ export const updateLenderProfile = async (req: AuthenticatedRequest, res: Respon
     where: { userId },
     update: {
       institutionName: financerName || undefined,
-      institutionType: institutionType ? (institutionType as LenderType) : undefined,
+      institutionType: institutionType ? mapLenderTypeEnum(institutionType) : undefined,
       registrationNumber: registrationNumber || undefined,
       loanCategories: Array.isArray(loanCategories) ? JSON.stringify(loanCategories) : (loanCategories || undefined),
       minLoanAmount: minLoanAmount !== undefined && minLoanAmount !== null ? parseFloat(String(minLoanAmount)) : undefined,
@@ -107,7 +116,7 @@ export const updateLenderProfile = async (req: AuthenticatedRequest, res: Respon
     create: {
       userId: userId!,
       institutionName: financerName || 'Business Money Financer',
-      institutionType: (institutionType as LenderType) || 'NBFC',
+      institutionType: mapLenderTypeEnum(institutionType),
       registrationNumber: registrationNumber || 'REG-1001',
       loanCategories: Array.isArray(loanCategories) ? JSON.stringify(loanCategories) : JSON.stringify(['Business Loan']),
       minLoanAmount: minLoanAmount !== undefined && minLoanAmount !== null ? parseFloat(String(minLoanAmount)) : 10000,

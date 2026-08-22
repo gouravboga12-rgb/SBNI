@@ -104,7 +104,11 @@ function resolveInitialLenderDetails(currentUser: any) {
     const profile = u.lenderProfile || (() => {
       try {
         const p = localStorage.getItem('sbni_lender_profile');
-        return p ? JSON.parse(p) : null;
+        const parsed = p ? JSON.parse(p) : null;
+        if (parsed && u?.email && parsed.email && parsed.email !== u.email) {
+          return null; // Don't use a profile from another account
+        }
+        return parsed;
       } catch {
         return null;
       }
@@ -113,9 +117,7 @@ function resolveInitialLenderDetails(currentUser: any) {
     let officer = profile?.contactPersonName || u?.name || u?.fullName || '';
     if (!officer || officer.includes('@') || officer === 'Credit Officer' || officer === 'Business Money Financer') {
       const email = u?.email || profile?.email || '';
-      if (email.toLowerCase().includes('gourav')) {
-        officer = 'Gourav';
-      } else if (email) {
+      if (email) {
         const handle = email.split('@')[0].replace(/[0-9_.-]/g, ' ').trim();
         officer = handle ? handle.split(' ').map((s: string) => s.charAt(0).toUpperCase() + s.slice(1)).join(' ') : 'Credit Officer';
       } else {
@@ -139,7 +141,7 @@ function resolveInitialLenderDetails(currentUser: any) {
       state: profile?.state || 'Telangana',
       regNo: profile?.registrationNumber || 'REG-FIN-1001',
       institutionType: 'Money Financer',
-      minLoan: profile?.minLoanAmount ?? 5000,
+      minLoan: profile?.minLoanAmount ?? 10000,
       maxLoan: profile?.maxLoanAmount ?? 100000,
       minRate: profile?.minInterestRate || 9.5,
       lendingRadius: profile?.lendingRadiusKm || 50,
@@ -212,9 +214,6 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
   });
 
   const [currentUserObj, setCurrentUserObj] = useState<any>(() => resolveInitialLenderDetails(currentUser));
-  useEffect(() => {
-    setCurrentUserObj(resolveInitialLenderDetails(currentUser));
-  }, [currentUser]);
   const [lenderAvatarUrl, setLenderAvatarUrl] = useState<string>(() => {
     try { localStorage.removeItem('sbni_lender_avatar'); } catch (e) {}
     const direct = currentUser?.lenderProfile?.logoUrl || currentUser?.lenderProfile?.avatarUrl;
@@ -226,12 +225,38 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
   });
 
   useEffect(() => {
+    setCurrentUserObj(resolveInitialLenderDetails(currentUser));
     const direct = currentUser?.lenderProfile?.logoUrl || currentUser?.lenderProfile?.avatarUrl;
     const userKey = currentUser?.email ? `sbni_lender_avatar_${currentUser.email}` : null;
     const saved = userKey ? localStorage.getItem(userKey) : null;
     if (direct || saved) {
       setLenderAvatarUrl(direct || saved || 'https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=200');
     }
+
+    // Live query fresh database profile for this authenticated lender
+    const fetchFreshProfile = async () => {
+      try {
+        const res = await getMyProfileApi();
+        if (res.success && res.data) {
+          const freshUser = res.data;
+          const freshLender = freshUser.lenderProfile;
+          if (freshLender) {
+            const resolved = resolveInitialLenderDetails(freshUser);
+            if (resolved) setCurrentUserObj(resolved);
+            const freshAvatar = freshLender.logoUrl || freshLender.avatarUrl;
+            if (freshAvatar) {
+              setLenderAvatarUrl(freshAvatar);
+              if (freshUser.email) {
+                localStorage.setItem(`sbni_lender_avatar_${freshUser.email}`, freshAvatar);
+              }
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('Could not fetch fresh lender profile:', e);
+      }
+    };
+    fetchFreshProfile();
   }, [currentUser]);
 
   const [nearbyBusinesses, setNearbyBusinesses] = useState<any[]>([]);

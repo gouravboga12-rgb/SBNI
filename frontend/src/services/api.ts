@@ -282,10 +282,12 @@ export async function loginUser(
           u.name = ownerName;
           u.fullName = ownerName;
         }
-        safeSetLocalStorage('sbni_vendor_profile', JSON.stringify(u.vendorProfile));
+        safeSetLocalStorage('sbni_vendor_profile', JSON.stringify({ ...u.vendorProfile, email: u.email }));
+        try { localStorage.removeItem('sbni_lender_profile'); } catch (e) {}
       }
       if (u?.lenderProfile) {
-        safeSetLocalStorage('sbni_lender_profile', JSON.stringify(u.lenderProfile));
+        safeSetLocalStorage('sbni_lender_profile', JSON.stringify({ ...u.lenderProfile, email: u.email }));
+        try { localStorage.removeItem('sbni_vendor_profile'); } catch (e) {}
       }
       safeSetLocalStorage('sbni_token', data.data.accessToken);
       safeSetLocalStorage('sbni_user', JSON.stringify(u));
@@ -304,7 +306,7 @@ export async function loginUser(
   }
 }
 
-export async function registerVendor(payload: {
+export const registerVendor = async (payload: {
   name: string;
   email: string;
   phone: string;
@@ -312,22 +314,27 @@ export async function registerVendor(payload: {
   businessName: string;
   address: string;
   otpCode?: string;
-}): Promise<{ success: boolean; token?: string; user?: any; message?: string }> {
+}): Promise<{ success: boolean; token?: string; user?: any; message?: string }> => {
   try {
     const data = await apiFetch('/auth/register', {
       method: 'POST',
       body: JSON.stringify({ ...payload, role: 'VENDOR' }),
     });
     if (data.success) {
+      const user = data.data?.user || {};
       safeSetLocalStorage('sbni_token', data.data.accessToken);
-      safeSetLocalStorage('sbni_user', JSON.stringify(data.data.user));
-      return { success: true, token: data.data.accessToken, user: data.data.user };
+      safeSetLocalStorage('sbni_user', JSON.stringify(user));
+      if (user.vendorProfile) {
+        safeSetLocalStorage('sbni_vendor_profile', JSON.stringify({ ...user.vendorProfile, email: user.email }));
+      }
+      try { localStorage.removeItem('sbni_lender_profile'); } catch (e) {}
+      return { success: true, token: data.data.accessToken, user };
     }
-    return { success: false, message: data.message || 'Registration failed' };
+    return { success: false, message: data.message || 'Vendor registration failed' };
   } catch (err: any) {
-    return { success: false, message: err.message || 'Server connection failed. Please try again.' };
+    return { success: false, message: err.message || 'Registration failed.' };
   }
-}
+};
 
 export async function registerLender(payload: {
   name: string;
@@ -345,6 +352,7 @@ export async function registerLender(payload: {
   lendingRadiusKm?: number;
   successRate?: string;
   otpCode?: string;
+  avatarUrl?: string;
 }): Promise<{ success: boolean; token?: string; user?: any; message?: string }> {
   try {
     const data = await apiFetch('/auth/register', {
@@ -353,21 +361,27 @@ export async function registerLender(payload: {
     });
     if (data.success) {
       const user = data.data?.user || {};
-      // Persist institution name so profile page can show it correctly
-      if (payload.institutionName) {
-        const storedProfile = {
-          institutionName: payload.institutionName,
-          institutionType: 'Money Financer',
-          minLoanAmount: payload.minLoanAmount,
-          maxLoanAmount: payload.maxLoanAmount,
-          lendingRadiusKm: payload.lendingRadiusKm,
-          successRate: payload.successRate || '80% - 90%',
-        };
-        safeSetLocalStorage('sbni_lender_profile', JSON.stringify(storedProfile));
-      }
+      const fullLenderProfile = user.lenderProfile || {
+        institutionName: payload.institutionName,
+        institutionType: 'Money Financer',
+        contactPersonName: payload.name,
+        minLoanAmount: payload.minLoanAmount,
+        maxLoanAmount: payload.maxLoanAmount,
+        lendingRadiusKm: payload.lendingRadiusKm,
+        successRate: payload.successRate || '80% - 90%',
+        city: payload.city,
+        state: payload.state,
+        address: payload.address,
+        pincode: payload.pincode,
+        avatarUrl: payload.avatarUrl,
+        email: payload.email,
+      };
+
+      safeSetLocalStorage('sbni_lender_profile', JSON.stringify(fullLenderProfile));
+      try { localStorage.removeItem('sbni_vendor_profile'); } catch (e) {}
       safeSetLocalStorage('sbni_token', data.data.accessToken);
-      safeSetLocalStorage('sbni_user', JSON.stringify({ ...user, name: payload.name }));
-      return { success: true, token: data.data.accessToken, user: { ...user, name: payload.name } };
+      safeSetLocalStorage('sbni_user', JSON.stringify({ ...user, name: payload.name, lenderProfile: fullLenderProfile }));
+      return { success: true, token: data.data.accessToken, user: { ...user, name: payload.name, lenderProfile: fullLenderProfile } };
     }
     return { success: false, message: data.message || 'Registration failed' };
   } catch (err: any) {

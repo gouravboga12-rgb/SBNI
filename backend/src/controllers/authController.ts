@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import prisma from '../config/prisma';
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from '../utils/jwt';
-import { Role } from '@prisma/client';
+import { Role, LenderType } from '@prisma/client';
 import { AuthenticatedRequest } from '../middlewares/auth';
 import { sendSignupOtpEmail, sendForgotPasswordOtpEmail } from '../utils/mailer';
 
@@ -132,6 +132,15 @@ export const verifySignupOtp = async (req: Request, res: Response) => {
   });
 };
 
+const mapLenderTypeEnum = (type?: string): LenderType => {
+  if (!type) return 'NBFC';
+  const t = String(type).toUpperCase().replace(/\s+/g, '_');
+  if (t === 'BANK') return 'BANK';
+  if (t === 'FINANCIAL_INSTITUTION' || t === 'MONEY_FINANCER' || t === 'FINANCER') return 'FINANCIAL_INSTITUTION';
+  if (t === 'INDIVIDUAL') return 'INDIVIDUAL';
+  return 'NBFC';
+};
+
 /**
  * 3. REGISTER USER (Vendor or Lender)
  */
@@ -143,6 +152,7 @@ export const registerUser = async (req: Request, res: Response) => {
   }
 
   const normalizedEmail = email.toLowerCase().trim();
+  const trimmedPhone = phone.trim();
 
   // If OTP was provided, verify it
   if (otpCode) {
@@ -153,11 +163,12 @@ export const registerUser = async (req: Request, res: Response) => {
   }
 
   const existingUser = await prisma.user.findFirst({
-    where: { OR: [{ email: normalizedEmail }, { phone: phone.trim() }] },
+    where: { OR: [{ email: normalizedEmail }, { phone: trimmedPhone }] },
+    include: { vendorProfile: true, lenderProfile: true },
   });
 
   if (existingUser) {
-    if (existingUser.isDeleted) {
+    if (existingUser.isDeleted || (!existingUser.vendorProfile && !existingUser.lenderProfile)) {
       try {
         await prisma.user.delete({ where: { id: existingUser.id } });
       } catch (e) {}
@@ -170,118 +181,146 @@ export const registerUser = async (req: Request, res: Response) => {
           message: `This account is already registered as a ${existingRoleLabel}. It cannot be registered as a ${attemptedRoleLabel}.`,
         });
       }
-      return res.status(400).json({ success: false, message: 'User with this email or phone already exists.' });
+      return res.status(400).json({ success: false, message: 'User with this email or phone already exists. Please login instead.' });
     }
   }
 
   const passwordHash = await bcrypt.hash(password, 10);
   const userOtpCode = Math.floor(100000 + Math.random() * 900000).toString();
 
-  const user = await prisma.user.create({
-    data: {
-      email: normalizedEmail,
-      phone: phone.trim(),
-      passwordHash,
-      role: role as Role,
-      isVerified: true, // Verified via email OTP
-      otpCode: userOtpCode,
-      otpExpiresAt: new Date(Date.now() + 10 * 60 * 1000),
-    },
-  });
+  try {
+    const result = await prisma.$transaction(async (tx) => {
+      // Ensure any lingering orphan user with this email/phone without profile is purged
+      await tx.user.deleteMany({
+        where: {
+          OR: [{ email: normalizedEmail }, { phone: trimmedPhone }],
+          vendorProfile: null,
+          lenderProfile: null,
+        },
+      });
 
-  // Create profile based on role
-  if (role === 'VENDOR') {
-    let vendorLat = 17.3850;
-    let vendorLng = 78.4867;
-    if (req.body.latitude !== undefined && req.body.latitude !== null && !isNaN(Number(req.body.latitude))) {
-      vendorLat = parseFloat(String(req.body.latitude));
-    }
-    if (req.body.longitude !== undefined && req.body.longitude !== null && !isNaN(Number(req.body.longitude))) {
-      vendorLng = parseFloat(String(req.body.longitude));
-    }
+      const newUser = await tx.user.create({
+        data: {
+          email: normalizedEmail,
+          phone: trimmedPhone,
+          passwordHash,
+          role: role as Role,
+          isVerified: true,
+          otpCode: userOtpCode,
+          otpExpiresAt: new Date(Date.now() + 10 * 60 * 1000),
+        },
+      });
 
-    await prisma.vendorProfile.create({
+      let createdProfile: any = null;
+
+      if (role === 'VENDOR') {
+        let vendorLat = 17.3850;
+        let vendorLng = 78.4867;
+        if (req.body.latitude !== undefined && req.body.latitude !== null && !isNaN(Number(req.body.latitude))) {
+          vendorLat = parseFloat(String(req.body.latitude));
+        }
+        if (req.body.longitude !== undefined && req.body.longitude !== null && !isNaN(Number(req.body.longitude))) {
+          vendorLng = parseFloat(String(req.body.longitude));
+        }
+
+        createdProfile = await tx.vendorProfile.create({
+          data: {
+            userId: newUser.id,
+            businessName: businessName || (name ? `${name} Enterprise` : 'My Enterprise Business'),
+            ownerName: name || 'Business Owner',
+            address: address || '123 Commercial Belt',
+            place: req.body.place || 'Commercial Area',
+            city: city || 'Hyderabad',
+            state: state || 'Telangana',
+            country: req.body.country || 'India',
+            pincode: pincode || '500001',
+            latitude: vendorLat,
+            longitude: vendorLng,
+            kycStatus: 'VERIFIED',
+          },
+        });
+      } else if (role === 'LENDER') {
+        let financerName = businessName || req.body.institutionName || name || 'Business Money Financer';
+        if (!financerName.toLowerCase().includes('money financer')) {
+          financerName = `${financerName} Money Financer`;
+        }
+
+        let lenderLat = 17.3850;
+        let lenderLng = 78.4867;
+        const combinedAddr = `${address || ''} ${city || ''} ${state || ''}`.toLowerCase();
+        if (combinedAddr.includes('mumbai')) { lenderLat = 19.0760; lenderLng = 72.8777; }
+        else if (combinedAddr.includes('delhi')) { lenderLat = 28.6139; lenderLng = 77.2090; }
+        else if (combinedAddr.includes('bangalore') || combinedAddr.includes('bengaluru')) { lenderLat = 12.9716; lenderLng = 77.5946; }
+        else if (combinedAddr.includes('chennai')) { lenderLat = 13.0827; lenderLng = 80.2707; }
+        else if (combinedAddr.includes('pune')) { lenderLat = 18.5204; lenderLng = 73.8567; }
+        else if (combinedAddr.includes('kolkata')) { lenderLat = 22.5726; lenderLng = 88.3639; }
+        else if (combinedAddr.includes('vijayawada')) { lenderLat = 16.5062; lenderLng = 80.6480; }
+        else if (combinedAddr.includes('hyderabad') || combinedAddr.includes('telangana')) { lenderLat = 17.3850; lenderLng = 78.4867; }
+
+        if (req.body.latitude && !isNaN(Number(req.body.latitude))) lenderLat = parseFloat(String(req.body.latitude));
+        if (req.body.longitude && !isNaN(Number(req.body.longitude))) lenderLng = parseFloat(String(req.body.longitude));
+
+        createdProfile = await tx.lenderProfile.create({
+          data: {
+            userId: newUser.id,
+            institutionName: financerName,
+            institutionType: mapLenderTypeEnum(institutionType || req.body.type),
+            registrationNumber: 'REG-' + Math.floor(100000 + Math.random() * 900000),
+            loanCategories: JSON.stringify(['Business Loan', 'MSME Working Capital']),
+            minLoanAmount: minLoanAmount ? parseFloat(minLoanAmount) : 10000,
+            maxLoanAmount: maxLoanAmount ? parseFloat(maxLoanAmount) : 100000,
+            lendingRadiusKm: lendingRadiusKm ? parseFloat(lendingRadiusKm) : 50,
+            address: address || 'Financial Center',
+            place: req.body.place || 'Financial District',
+            city: city || 'Hyderabad',
+            state: state || 'Telangana',
+            pincode: pincode || '500001',
+            latitude: lenderLat,
+            longitude: lenderLng,
+            contactPersonName: name || 'Lending Officer',
+            successRate: req.body.successRate || '80% - 90%',
+            verificationStatus: 'VERIFIED',
+            avatarUrl: req.body.avatarUrl || req.body.logoUrl || null,
+            logoUrl: req.body.logoUrl || req.body.avatarUrl || null,
+          },
+        });
+      }
+
+      return { newUser, createdProfile };
+    });
+
+    const { newUser, createdProfile } = result;
+    pendingSignupOtps.delete(normalizedEmail);
+
+    const accessToken = generateAccessToken({ userId: newUser.id, email: newUser.email, role: newUser.role });
+    const refreshToken = generateRefreshToken({ userId: newUser.id, email: newUser.email, role: newUser.role });
+
+    await prisma.user.update({
+      where: { id: newUser.id },
+      data: { activeRefreshToken: refreshToken },
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'User registered and verified successfully.',
       data: {
-        userId: user.id,
-        businessName: businessName || (name ? `${name} Enterprise` : 'My Enterprise Business'),
-        ownerName: name || 'Business Owner',
-        address: address || '123 Commercial Belt',
-        place: req.body.place || 'Commercial Area',
-        city: city || 'Hyderabad',
-        state: state || 'Telangana',
-        country: req.body.country || 'India',
-        pincode: pincode || '500001',
-        latitude: vendorLat,
-        longitude: vendorLng,
-        kycStatus: 'VERIFIED',
+        user: {
+          id: newUser.id,
+          email: newUser.email,
+          phone: newUser.phone,
+          role: newUser.role,
+          isVerified: newUser.isVerified,
+          vendorProfile: role === 'VENDOR' ? createdProfile : undefined,
+          lenderProfile: role === 'LENDER' ? createdProfile : undefined,
+        },
+        accessToken,
+        refreshToken,
       },
     });
-  } else if (role === 'LENDER') {
-    // Build financer name: ensure it ends with "Money Financer"
-    let financerName = businessName || name || 'Business Money Financer';
-    if (!financerName.toLowerCase().includes('money financer')) {
-      financerName = `${financerName} Money Financer`;
-    }
-
-    let lenderLat = 17.3850;
-    let lenderLng = 78.4867;
-    const combinedAddr = `${address || ''} ${city || ''} ${state || ''}`.toLowerCase();
-    if (combinedAddr.includes('mumbai')) { lenderLat = 19.0760; lenderLng = 72.8777; }
-    else if (combinedAddr.includes('delhi')) { lenderLat = 28.6139; lenderLng = 77.2090; }
-    else if (combinedAddr.includes('bangalore') || combinedAddr.includes('bengaluru')) { lenderLat = 12.9716; lenderLng = 77.5946; }
-    else if (combinedAddr.includes('chennai')) { lenderLat = 13.0827; lenderLng = 80.2707; }
-    else if (combinedAddr.includes('pune')) { lenderLat = 18.5204; lenderLng = 73.8567; }
-    else if (combinedAddr.includes('kolkata')) { lenderLat = 22.5726; lenderLng = 88.3639; }
-    else if (combinedAddr.includes('vijayawada')) { lenderLat = 16.5062; lenderLng = 80.6480; }
-    else if (combinedAddr.includes('hyderabad') || combinedAddr.includes('telangana')) { lenderLat = 17.3850; lenderLng = 78.4867; }
-
-    if (req.body.latitude) lenderLat = parseFloat(String(req.body.latitude));
-    if (req.body.longitude) lenderLng = parseFloat(String(req.body.longitude));
-
-    await (prisma.lenderProfile as any).create({
-      data: {
-        userId: user.id,
-        institutionName: financerName,
-        institutionType: 'MONEY_FINANCER' as any,
-        registrationNumber: 'REG-' + Math.floor(100000 + Math.random() * 900000),
-        loanCategories: JSON.stringify(['Business Loan', 'MSME Working Capital']),
-        minLoanAmount: minLoanAmount ? parseFloat(minLoanAmount) : 10000,
-        maxLoanAmount: maxLoanAmount ? parseFloat(maxLoanAmount) : 100000,
-        lendingRadiusKm: lendingRadiusKm ? parseFloat(lendingRadiusKm) : 50,
-        address: address || 'Financial Center',
-        place: req.body.place || 'Financial District',
-        city: city || 'Hyderabad',
-        state: state || 'Telangana',
-        pincode: pincode || '500001',
-        latitude: lenderLat,
-        longitude: lenderLng,
-        contactPersonName: name || 'Lending Officer',
-        successRate: req.body.successRate || '80% - 90%',
-        verificationStatus: 'VERIFIED',
-      },
-    });
+  } catch (err: any) {
+    console.error('Registration error in transaction:', err);
+    res.status(500).json({ success: false, message: err.message || 'Registration failed. Please try again.' });
   }
-
-  // Clear pending signup OTP after successful registration
-  pendingSignupOtps.delete(normalizedEmail);
-
-  const accessToken = generateAccessToken({ userId: user.id, email: user.email, role: user.role });
-  const refreshToken = generateRefreshToken({ userId: user.id, email: user.email, role: user.role });
-
-  await prisma.user.update({
-    where: { id: user.id },
-    data: { activeRefreshToken: refreshToken },
-  });
-
-  res.status(201).json({
-    success: true,
-    message: 'User registered and verified successfully.',
-    data: {
-      user: { id: user.id, email: user.email, phone: user.phone, role: user.role, isVerified: user.isVerified },
-      accessToken,
-      refreshToken,
-    },
-  });
 };
 
 /**
@@ -332,6 +371,55 @@ export const loginUser = async (req: Request, res: Response) => {
   const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
   if (!isPasswordValid) {
     return res.status(401).json({ success: false, message: 'Invalid credentials.' });
+  }
+
+  // Auto-heal missing profiles if any
+  if (user.role === 'LENDER' && !user.lenderProfile) {
+    try {
+      const emailPrefix = user.email.split('@')[0].replace(/[0-9_.-]/g, ' ').trim();
+      const officerName = emailPrefix ? emailPrefix.split(' ').map((s: string) => s.charAt(0).toUpperCase() + s.slice(1)).join(' ') : 'Lending Officer';
+      const newLp = await prisma.lenderProfile.create({
+        data: {
+          userId: user.id,
+          institutionName: `${officerName} Money Financer`,
+          institutionType: 'FINANCIAL_INSTITUTION',
+          registrationNumber: 'REG-' + Math.floor(100000 + Math.random() * 900000),
+          loanCategories: JSON.stringify(['Business Loan', 'MSME Working Capital']),
+          minLoanAmount: 10000,
+          maxLoanAmount: 100000,
+          lendingRadiusKm: 50,
+          address: 'Financial Center',
+          city: 'Hyderabad',
+          state: 'Telangana',
+          pincode: '500001',
+          contactPersonName: officerName,
+          verificationStatus: 'VERIFIED',
+        },
+      });
+      (user as any).lenderProfile = newLp;
+    } catch (e) {
+      console.error('Error auto-creating missing lender profile on login:', e);
+    }
+  } else if (user.role === 'VENDOR' && !user.vendorProfile) {
+    try {
+      const emailPrefix = user.email.split('@')[0].replace(/[0-9_.-]/g, ' ').trim();
+      const ownerName = emailPrefix ? emailPrefix.split(' ').map((s: string) => s.charAt(0).toUpperCase() + s.slice(1)).join(' ') : 'Shop Owner';
+      const newVp = await prisma.vendorProfile.create({
+        data: {
+          userId: user.id,
+          businessName: `${ownerName} Enterprise`,
+          ownerName: ownerName,
+          address: 'Commercial Belt',
+          city: 'Hyderabad',
+          state: 'Telangana',
+          pincode: '500001',
+          kycStatus: 'VERIFIED',
+        },
+      });
+      (user as any).vendorProfile = newVp;
+    } catch (e) {
+      console.error('Error auto-creating missing vendor profile on login:', e);
+    }
   }
 
   const accessToken = generateAccessToken({ userId: user.id, email: user.email, role: user.role });
