@@ -193,8 +193,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
     let count = 0;
     if (record.pan) count++;
     if (record.aadhaar) count++;
-    if (record.shopPhotos) count++;
-    const total = 3;
+    const total = 2;
     const isComplete = count >= total;
     return { count, total, isComplete };
   };
@@ -2669,19 +2668,19 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                             </div>
                           ) : (
                             <div className="w-9 h-9 rounded-full bg-amber-500 text-white flex items-center justify-center font-extrabold text-xs shrink-0 shadow-sm animate-pulse">
-                              {progress.count}/3
+                              {progress.count}/2
                             </div>
                           )}
                           <div>
                             <div className="font-extrabold text-xs sm:text-sm">
                               {progress.isComplete
-                                ? '✅ Mandatory Document Inspection Complete (3/3 Verified)'
-                                : `⚠️ Mandatory Inspection Required: ${progress.count}/3 Documents Inspected`}
+                                ? '✅ Mandatory Document Inspection Complete (2/2 Verified)'
+                                : `⚠️ Mandatory Inspection Required: ${progress.count}/2 Documents Inspected`}
                             </div>
                             <div className="text-[11px] opacity-80 mt-0.5">
                               {progress.isComplete
-                                ? 'All KYC identity cards & premises photos have been reviewed. Financer is authorized to approve.'
-                                : 'You must click "View & Inspect" or "Download" on PAN Card, Aadhaar Card, and Shop Photos before approving.'}
+                                ? 'All KYC identity cards (PAN & Aadhaar) have been reviewed. Financer is authorized to approve.'
+                                : 'You must click "View & Inspect" or "Download" on PAN Card and Aadhaar Card before approving.'}
                             </div>
                           </div>
                         </div>
@@ -2702,13 +2701,6 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                           }`}>
                             {isDocInspected(selectedVendor.id, 'aadhaar') ? '✓ Aadhaar' : '○ Aadhaar'}
                           </span>
-                          <span className={`px-2.5 py-1 rounded-lg text-[10px] font-extrabold flex items-center gap-1 ${
-                            isDocInspected(selectedVendor.id, 'shopPhotos')
-                              ? 'bg-emerald-200 text-emerald-900 border border-emerald-300'
-                              : 'bg-amber-200 text-amber-900 border border-amber-300 animate-pulse'
-                          }`}>
-                            {isDocInspected(selectedVendor.id, 'shopPhotos') ? '✓ Shop Photos' : '○ Shop Photos'}
-                          </span>
                         </div>
                       </div>
                     </div>
@@ -2716,15 +2708,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                 })()}
 
                 {/* Bottom Action Buttons */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
-                  <button
-                    onClick={() => handleReject(selectedVendor.id)}
-                    className="py-3 px-4 rounded-xl border border-rose-500 text-rose-600 font-bold text-xs md:text-sm flex items-center justify-center gap-2 hover:bg-rose-50 transition-colors cursor-pointer"
-                  >
-                    <XCircle className="w-4 h-4" />
-                    <span>Reject Request</span>
-                  </button>
-
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
                   {(selectedVendor.status === 'Accepted' || selectedVendor.status === 'Verified') ? (
                     <button
                       onClick={() => setReportingFraudVendor(selectedVendor)}
@@ -2735,14 +2719,11 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                     </button>
                   ) : (
                     <button
-                      onClick={() => {
-                        setActionFeedback('ℹ️ Request for additional documents sent to vendor.');
-                        setTimeout(() => setActionFeedback(''), 2500);
-                      }}
-                      className="py-3 px-4 rounded-xl border border-amber-500 text-amber-600 font-bold text-xs md:text-sm flex items-center justify-center gap-2 hover:bg-amber-50 transition-colors cursor-pointer"
+                      onClick={() => handleReject(selectedVendor.id)}
+                      className="py-3 px-4 rounded-xl border border-rose-500 text-rose-600 font-bold text-xs md:text-sm flex items-center justify-center gap-2 hover:bg-rose-50 transition-colors cursor-pointer"
                     >
-                      <AlertCircle className="w-4 h-4" />
-                      <span>Request Info</span>
+                      <XCircle className="w-4 h-4" />
+                      <span>Reject Request</span>
                     </button>
                   )}
 
@@ -2756,7 +2737,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
 
                       const progress = getInspectionProgress(selectedVendor.id);
                       if (!progress.isComplete && selectedVendor.status !== 'Accepted' && selectedVendor.status !== 'Verified') {
-                        setActionFeedback('🔒 Compliance Check: Please open & inspect all required documents (PAN Card, Aadhaar Card, and Shop Photos) before approving.');
+                        setActionFeedback('🔒 Compliance Check: Please open & inspect all required documents (PAN Card and Aadhaar Card) before approving.');
                         setTimeout(() => setActionFeedback(''), 4000);
                         return;
                       }
@@ -2782,7 +2763,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                         ? '✓ Request Accepted'
                         : getInspectionProgress(selectedVendor.id).isComplete
                         ? 'Accept & Unlock Navigation'
-                        : `🔒 Inspect Docs to Approve (${getInspectionProgress(selectedVendor.id).count}/3)`}
+                        : `🔒 Inspect Docs to Approve (${getInspectionProgress(selectedVendor.id).count}/2)`}
                     </span>
                   </button>
                 </div>
