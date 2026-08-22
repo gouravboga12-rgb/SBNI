@@ -93,6 +93,26 @@ export function App() {
     initSession();
   }, []);
 
+  // Listen for live profile updates across Vendor and Financer dashboards
+  useEffect(() => {
+    const handleProfileSync = () => {
+      try {
+        const u = localStorage.getItem('sbni_user');
+        if (u) {
+          setCurrentUser(JSON.parse(u));
+        }
+      } catch {}
+    };
+    window.addEventListener('sbni_vendor_profile_updated', handleProfileSync);
+    window.addEventListener('sbni_lender_profile_updated', handleProfileSync);
+    window.addEventListener('storage', handleProfileSync);
+    return () => {
+      window.removeEventListener('sbni_vendor_profile_updated', handleProfileSync);
+      window.removeEventListener('sbni_lender_profile_updated', handleProfileSync);
+      window.removeEventListener('storage', handleProfileSync);
+    };
+  }, []);
+
   // Listen for subscription status updates across tabs / events
   useEffect(() => {
     const syncSubStatus = async () => {

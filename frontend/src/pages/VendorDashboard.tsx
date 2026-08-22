@@ -346,17 +346,13 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
   const [showPassword, setShowPassword] = useState(false);
 
   const currentVendorObj = (() => {
-    if (!currentUser) return null;
     try {
-      const u = currentUser;
-      const profile = u.vendorProfile || (() => {
-        try {
-          const p = localStorage.getItem('sbni_vendor_profile');
-          return p ? JSON.parse(p) : null;
-        } catch {
-          return null;
-        }
-      })();
+      const uStr = localStorage.getItem('sbni_user');
+      const pStr = localStorage.getItem('sbni_vendor_profile');
+      const u = uStr ? JSON.parse(uStr) : currentUser;
+      const profile = pStr ? JSON.parse(pStr) : (u?.vendorProfile || null);
+
+      if (!u && !profile) return null;
 
       let rawName = profile?.ownerName || profile?.fullName || u?.vendorProfile?.ownerName || u?.name || u?.fullName;
       if (!rawName || rawName === 'Registered Vendor' || rawName === 'Business Owner' || rawName === 'Owner Name') {
@@ -369,16 +365,12 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
       }
       const name = rawName;
       const shopName = profile?.businessName || u?.vendorProfile?.businessName || (name ? `${name} Enterprise` : 'Business Enterprise');
-      const phone = u?.phone || profile?.phone || 'Not provided';
-      const email = u?.email || profile?.email || 'vendor@sbni.com';
+      const phone = profile?.phone || u?.phone || 'Not provided';
+      const email = profile?.email || u?.email || 'vendor@sbni.com';
 
-      let addressParts = [];
-      if (profile?.address) addressParts.push(profile.address);
-      if (profile?.place) addressParts.push(profile.place);
-      if (profile?.city) addressParts.push(profile.city);
-      if (profile?.state) addressParts.push(profile.state);
-      if (profile?.pincode) addressParts.push(profile.pincode);
-      const address = addressParts.length > 0 ? addressParts.join(', ') : 'Registered Location';
+      // Clean address resolution without duplicate concatenation
+      const address = profile?.address || [profile?.place, profile?.city, profile?.state, profile?.pincode].filter(Boolean).join(', ') || 'Registered Location';
+      const annualTurnover = profile?.annualTurnover || profile?.annualIncome || 'Under 2 Lakhs';
 
       const panNumber = profile?.panNumber || u?.panNumber || null;
       const gstNumber = profile?.gstNumber || null;
@@ -415,6 +407,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
         phone,
         email,
         address,
+        annualTurnover,
         panNumber,
         gstNumber,
         aadhaarNumber,
@@ -442,7 +435,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
     email: '',
     address: '',
     category: '',
-    annualTurnover: '10-50 Lakhs',
+    annualTurnover: 'Under 2 Lakhs',
     panNumber: '',
     aadhaarNumber: '',
     gstNumber: '',
@@ -463,13 +456,13 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
       return;
     }
     setVendorEditForm({
-      name: currentVendorObj.name,
-      shopName: currentVendorObj.shopName,
-      phone: currentVendorObj.phone,
-      email: currentVendorObj.email,
-      address: currentVendorObj.address,
-      category: currentVendorObj.category,
-      annualTurnover: '10-50 Lakhs',
+      name: currentVendorObj.name || '',
+      shopName: currentVendorObj.shopName || '',
+      phone: currentVendorObj.phone || '',
+      email: currentVendorObj.email || '',
+      address: currentVendorObj.address || '',
+      category: currentVendorObj.category || 'Retail Shop Business',
+      annualTurnover: currentVendorObj.annualTurnover || 'Under 2 Lakhs',
       panNumber: currentVendorObj.panNumber || '',
       aadhaarNumber: currentVendorObj.aadhaarNumber || '',
       gstNumber: currentVendorObj.gstNumber || '',
@@ -591,13 +584,6 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
       const u = JSON.parse(uStr);
       const p = JSON.parse(pStr);
 
-      const mergedUser = {
-        ...u,
-        name: vendorEditForm.name,
-        fullName: vendorEditForm.name,
-        phone: vendorEditForm.phone,
-        email: vendorEditForm.email,
-      };
       const mergedProfile = {
         ...p,
         ownerName: vendorEditForm.name,
@@ -610,12 +596,21 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
         panNumber: vendorEditForm.panNumber,
         aadhaarNumber: vendorEditForm.aadhaarNumber,
         gstNumber: vendorEditForm.gstNumber,
-        avatarUrl: avatarUrl || undefined,
+        avatarUrl: avatarUrl || p.avatarUrl || undefined,
         panFileUrl: vendorEditForm.panFileUrl || p.panFileUrl || undefined,
         aadhaarFileUrl: vendorEditForm.aadhaarFileUrl || p.aadhaarFileUrl || undefined,
         businessLicenseUrl: vendorEditForm.businessLicenseUrl || p.businessLicenseUrl || undefined,
         gstFileUrl: vendorEditForm.gstFileUrl || p.gstFileUrl || undefined,
         shopPhotos: vendorEditForm.shopPhotos.length > 0 ? JSON.stringify(vendorEditForm.shopPhotos) : p.shopPhotos || undefined,
+      };
+
+      const mergedUser = {
+        ...u,
+        name: vendorEditForm.name,
+        fullName: vendorEditForm.name,
+        phone: vendorEditForm.phone,
+        email: vendorEditForm.email,
+        vendorProfile: mergedProfile,
       };
 
       safeSetLocalStorage('sbni_user', JSON.stringify(mergedUser));
@@ -1472,7 +1467,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
 
                     <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
                       <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Annual Income</span>
-                      <div className="font-extrabold text-slate-900 text-sm">{(currentVendorObj as any).annualTurnover || '10-50 Lakhs'}</div>
+                      <div className="font-extrabold text-slate-900 text-sm">{currentVendorObj.annualTurnover || 'Under 2 Lakhs'}</div>
                     </div>
 
                     {/* Full Address */}
