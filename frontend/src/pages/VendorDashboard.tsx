@@ -1464,15 +1464,15 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                       </div>
                     </div>
 
-                    {/* Category & Turnover */}
+                    {/* Category & Annual Income */}
                     <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
                       <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Business Category</span>
                       <div className="font-extrabold text-slate-900 text-sm">{currentVendorObj.category}</div>
                     </div>
 
                     <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
-                      <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Annual Turnover</span>
-                      <div className="font-extrabold text-slate-900 text-sm">10-50 Lakhs</div>
+                      <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Annual Income</span>
+                      <div className="font-extrabold text-slate-900 text-sm">{(currentVendorObj as any).annualTurnover || '10-50 Lakhs'}</div>
                     </div>
 
                     {/* Full Address */}
@@ -1556,19 +1556,19 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                       </select>
                     </div>
 
-                    {/* Annual Turnover */}
+                    {/* Annual Income */}
                     <div className="p-3.5 rounded-2xl bg-blue-50/40 border border-blue-200/80 space-y-1.5">
-                      <label className="text-slate-600 font-bold uppercase text-[10px] tracking-wider block">Annual Business Turnover</label>
+                      <label className="text-slate-600 font-bold uppercase text-[10px] tracking-wider block">Annual Income</label>
                       <select
                         value={vendorEditForm.annualTurnover}
                         onChange={(e) => setVendorEditForm({ ...vendorEditForm, annualTurnover: e.target.value })}
                         className="w-full px-3 py-2 bg-white rounded-xl border border-slate-300 font-bold text-slate-900 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
                       >
-                        <option value="Under 10 Lakhs">Under 10 Lakhs</option>
-                        <option value="10-50 Lakhs">10 - 50 Lakhs</option>
-                        <option value="50 Lakhs - 1 Crore">50 Lakhs - 1 Crore</option>
-                        <option value="1 Crore - 5 Crores">1 Crore - 5 Crores</option>
-                        <option value="5 Crores+">5 Crores+</option>
+                        <option value="Under 2 Lakhs">Under 2 Lakhs / year</option>
+                        <option value="2-5 Lakhs">2 - 5 Lakhs / year</option>
+                        <option value="5-10 Lakhs">5 - 10 Lakhs / year</option>
+                        <option value="10-25 Lakhs">10 - 25 Lakhs / year</option>
+                        <option value="25 Lakhs+">25 Lakhs+ / year</option>
                       </select>
                     </div>
 
