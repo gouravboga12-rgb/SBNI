@@ -134,7 +134,7 @@ export const LenderCard: React.FC<LenderCardProps> = ({ lender, onOpenSubscripti
     let state = '';
     let panNumber = undefined;
     let aadhaarNumber = undefined;
-    let monthlyIncome = '₹ 50,000 / month';
+    let annualIncome = 'Under 2 Lakhs';
     let avatarUrl = undefined;
     let panFileUrl = undefined;
     let aadhaarFileUrl = undefined;
@@ -158,7 +158,7 @@ export const LenderCard: React.FC<LenderCardProps> = ({ lender, onOpenSubscripti
       address = vp?.address || (city ? `${city}, ${state}` : '');
       panNumber = vp?.panNumber || u?.panNumber;
       aadhaarNumber = vp?.aadhaarNumber;
-      monthlyIncome = vp?.monthlyIncome || u?.monthlyIncome || '₹ 50,000 / month';
+      annualIncome = vp?.annualIncome || vp?.annualTurnover || u?.annualTurnover || 'Under 2 Lakhs';
       avatarUrl = vp?.avatarUrl || vp?.photoDataUrl || localStorage.getItem('sbni_vendor_avatar') || undefined;
       panFileUrl = vp?.panFileUrl || vp?.panDataUrl || undefined;
       aadhaarFileUrl = vp?.aadhaarFileUrl || vp?.aadhaarDataUrl || undefined;
@@ -178,7 +178,8 @@ export const LenderCard: React.FC<LenderCardProps> = ({ lender, onOpenSubscripti
       state,
       panNumber,
       aadhaarNumber,
-      monthlyIncome,
+      annualIncome,
+      annualTurnover: annualIncome,
       avatarUrl,
       panFileUrl,
       aadhaarFileUrl,
@@ -222,7 +223,9 @@ export const LenderCard: React.FC<LenderCardProps> = ({ lender, onOpenSubscripti
         emailId: v.email,
         panNumber: v.panNumber || 'PAN Verified',
         aadhaarNumber: v.aadhaarNumber || 'Aadhaar Verified',
-        monthlyIncome: v.monthlyIncome,
+        annualIncome: v.annualIncome,
+        annualTurnover: v.annualTurnover,
+        monthlyIncome: v.annualIncome,
         lenderId: lender.id,
         lenderName: lender.institutionName,
         avatarUrl: v.avatarUrl || v.liveSelfieUrl,

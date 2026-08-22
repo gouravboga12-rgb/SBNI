@@ -1661,12 +1661,8 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                           <span className="font-bold text-slate-900">{biz.shopName}</span>
                         </div>
                         <div className="flex justify-between text-slate-600">
-                          <span>Monthly Income:</span>
-                          <span className="font-bold text-emerald-700">{biz.monthlyIncome || '₹ 50,000 / month'}</span>
-                        </div>
-                        <div className="flex justify-between text-slate-600">
                           <span>Annual Income:</span>
-                          <span className="font-bold text-slate-800">{biz.annualTurnover || '10-50 Lakhs'}</span>
+                          <span className="font-bold text-slate-800">{biz.annualTurnover || biz.annualIncome || 'Under 2 Lakhs'}</span>
                         </div>
                       </div>
                     </div>
@@ -1940,8 +1936,8 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                             <span className="font-bold text-slate-800">{vendor.city}, {vendor.state}</span>
                           </div>
                           <div className="flex justify-between text-slate-600">
-                            <span>Monthly Income:</span>
-                            <span className="font-bold text-emerald-700">{vendor.monthlyIncome || '₹ 50,000'}</span>
+                            <span>Annual Income:</span>
+                            <span className="font-bold text-slate-800">{vendor.annualTurnover || vendor.annualIncome || 'Under 2 Lakhs'}</span>
                           </div>
                           <div className="flex justify-between text-slate-600">
                             <span>Mobile Contact:</span>
@@ -2114,13 +2110,13 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                   )}
                 </div>
 
-                {/* Monthly Income Card */}
+                {/* Annual Income Card */}
                 <div className="card-white p-5 bg-gradient-to-r from-[#003893] to-[#001f54] text-white rounded-2xl shadow-md space-y-2">
                   <div className="border-b border-white/20 pb-2">
                     <div>
-                      <div className="text-[10px] text-blue-200 uppercase font-extrabold tracking-wider">Monthly Income</div>
+                      <div className="text-[10px] text-blue-200 uppercase font-extrabold tracking-wider">Annual Income</div>
                       <div className="text-xl sm:text-2xl font-extrabold text-emerald-300 font-heading mt-0.5">
-                        ₹ {selectedVendor.monthlyIncome || '50,000'}
+                        {selectedVendor.annualIncome || selectedVendor.annualTurnover || (selectedVendor.monthlyIncome ? `₹ ${selectedVendor.monthlyIncome}` : 'Under 2 Lakhs')}
                       </div>
                     </div>
                   </div>
@@ -3588,17 +3584,13 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
             <div className="space-y-3">
               <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Business Profile Highlights</h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 sm:col-span-2">
+                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80">
                   <span className="text-slate-400 font-bold block text-[10px] uppercase">Business / Shop Name</span>
                   <span className="font-extrabold text-slate-900 text-sm mt-0.5 block">{moreInfoModalBiz.shopName}</span>
                 </div>
                 <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80">
                   <span className="text-slate-400 font-bold block text-[10px] uppercase">Annual Income</span>
-                  <span className="font-extrabold text-slate-800 text-sm mt-0.5 block">{moreInfoModalBiz.annualTurnover || '10-50 Lakhs'}</span>
-                </div>
-                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80">
-                  <span className="text-slate-400 font-bold block text-[10px] uppercase">Est. Monthly Income</span>
-                  <span className="font-extrabold text-emerald-700 text-sm mt-0.5 block">{moreInfoModalBiz.monthlyIncome || '₹ 50,000 / month'}</span>
+                  <span className="font-extrabold text-emerald-700 text-sm mt-0.5 block">{moreInfoModalBiz.annualTurnover || moreInfoModalBiz.annualIncome || 'Under 2 Lakhs'}</span>
                 </div>
               </div>
             </div>

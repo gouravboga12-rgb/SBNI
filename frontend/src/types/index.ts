@@ -74,6 +74,8 @@ export interface VendorVerificationRequest {
   gstFileUrl?: string;
   requiredAmount?: string;
   monthlyIncome?: string;
+  annualIncome?: string;
+  annualTurnover?: string;
   lenderId?: string;
   lenderName?: string;
   bankAccountDetails?: string;

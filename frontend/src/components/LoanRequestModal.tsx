@@ -37,7 +37,7 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
-  const [monthlyIncome, setMonthlyIncome] = useState('');
+  const [annualIncome, setAnnualIncome] = useState('Under 2 Lakhs');
   const [bankAccountDetails, setBankAccountDetails] = useState('');
   
   const [panFile, setPanFile] = useState<File | null>(null);
@@ -83,7 +83,7 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
       setFullName(nameVal);
       setPhone(phoneVal);
       setEmail(emailVal);
-      setMonthlyIncome(vp.monthlyIncome || u.monthlyIncome || '50000');
+      setAnnualIncome(vp.annualIncome || vp.annualTurnover || u.annualTurnover || 'Under 2 Lakhs');
       setBankAccountDetails(vp.bankDetails || u.bankDetails || '');
 
       setPanHostedUrl(vp.panFileUrl || '');
@@ -111,6 +111,7 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
             if (freshVp.ownerName) setFullName(freshVp.ownerName);
             if (freshVp.phone || res.data.phone) setPhone(freshVp.phone || res.data.phone);
             if (freshVp.email || res.data.email) setEmail(freshVp.email || res.data.email);
+            if (freshVp.annualTurnover || freshVp.annualIncome) setAnnualIncome(freshVp.annualTurnover || freshVp.annualIncome);
             if (freshVp.panFileUrl) setPanHostedUrl(freshVp.panFileUrl);
             if (freshVp.aadhaarFileUrl) setAadhaarHostedUrl(freshVp.aadhaarFileUrl);
             if (freshVp.businessLicenseUrl) setBusinessLicenseHostedUrl(freshVp.businessLicenseUrl);
@@ -171,8 +172,8 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
       setFormError('Please enter your Email ID.');
       return;
     }
-    if (!monthlyIncome.trim()) {
-      setFormError('Please enter your Monthly Income.');
+    if (!annualIncome.trim()) {
+      setFormError('Please select your Annual Income.');
       return;
     }
 
@@ -203,7 +204,9 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
       emailId: email,
       panNumber: cachedVp.panNumber || 'PAN Verified',
       aadhaarNumber: cachedVp.aadhaarNumber || 'Aadhaar Verified',
-      monthlyIncome: monthlyIncome,
+      annualIncome: annualIncome,
+      annualTurnover: annualIncome,
+      monthlyIncome: annualIncome,
       lenderId: lender.id,
       lenderName: lender.institutionName,
       bankAccountDetails: bankAccountDetails || undefined,
@@ -318,7 +321,7 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
 
               <div className="p-3 rounded-2xl bg-white border border-emerald-200 text-xs text-left space-y-1 max-w-sm mx-auto">
                 <div className="text-slate-500 font-medium">Status: <span className="font-bold text-amber-600">Pending Verification</span></div>
-                <div className="text-slate-500 font-medium">Monthly Income: <span className="font-bold text-slate-900">₹{monthlyIncome}</span></div>
+                <div className="text-slate-500 font-medium">Annual Income: <span className="font-bold text-slate-900">{annualIncome}</span></div>
                 <div className="text-slate-500 font-medium">Financer Contact: <span className="font-bold text-slate-900">{lender.phone}</span></div>
               </div>
 
@@ -393,20 +396,23 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
                 </div>
               </div>
 
-              {/* Monthly Income Field */}
+              {/* Annual Income Field */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Monthly Income *</label>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Annual Income *</label>
                 <div className="relative">
                   <Wallet className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                  <input
-                    type="number"
-                    placeholder="e.g. 50000"
-                    value={monthlyIncome}
-                    onChange={(e) => setMonthlyIncome(e.target.value)}
+                  <select
+                    value={annualIncome}
+                    onChange={(e) => setAnnualIncome(e.target.value)}
                     required
-                    min="1000"
-                    className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 placeholder-slate-400 outline-none focus:border-[#003893] transition-colors"
-                  />
+                    className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 outline-none focus:border-[#003893] transition-colors appearance-none cursor-pointer"
+                  >
+                    <option value="Under 2 Lakhs">Under ₹2 Lakhs / year</option>
+                    <option value="2-5 Lakhs">₹2 – 5 Lakhs / year</option>
+                    <option value="5-10 Lakhs">₹5 – 10 Lakhs / year</option>
+                    <option value="10-25 Lakhs">₹10 – 25 Lakhs / year</option>
+                    <option value="25 Lakhs+">₹25 Lakhs+ / year</option>
+                  </select>
                 </div>
               </div>
 
