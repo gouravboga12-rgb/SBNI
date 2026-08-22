@@ -779,28 +779,43 @@ export const createFraudReport = async (req: AuthenticatedRequest, res: Response
 export const confirmFraudReport = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { reportId } = req.params;
-    const { adminNotes } = req.body;
+    const { adminNotes, vendorId } = req.body;
 
-    const report = await (prisma as any).fraudReport.update({
-      where: { id: reportId },
-      data: {
-        status: 'CONFIRMED',
-        adminNotes: adminNotes || 'Confirmed by Super Admin after review.',
+    let report = await (prisma as any).fraudReport.findFirst({
+      where: {
+        OR: [
+          { id: reportId },
+          { vendorId: reportId },
+          { vendorId: vendorId || '' },
+        ],
       },
       include: { vendor: true },
     });
 
-    if (report.vendorId) {
-      await prisma.vendorProfile.update({
-        where: { id: report.vendorId },
+    if (report) {
+      report = await (prisma as any).fraudReport.update({
+        where: { id: report.id },
+        data: {
+          status: 'CONFIRMED',
+          adminNotes: adminNotes || 'Confirmed by Super Admin after review.',
+        },
+        include: { vendor: true },
+      });
+    }
+
+    const effectiveVendorId = report?.vendorId || vendorId || (reportId && reportId.length > 20 ? reportId : undefined);
+
+    if (effectiveVendorId) {
+      await prisma.vendorProfile.updateMany({
+        where: { id: effectiveVendorId },
         data: { isFraud: true },
       });
     }
 
     res.json({
       success: true,
-      message: `Fraud report confirmed. Vendor "${report.vendor?.businessName || 'Vendor'}" is now blacklisted platform-wide as FRAUD.`,
-      data: report,
+      message: `Fraud report confirmed. Vendor is now blacklisted platform-wide as FRAUD.`,
+      data: report || { id: reportId, status: 'CONFIRMED' },
     });
   } catch (err: any) {
     res.status(500).json({ success: false, message: err.message || 'Failed to confirm fraud report.' });
@@ -810,30 +825,44 @@ export const confirmFraudReport = async (req: AuthenticatedRequest, res: Respons
 export const dismissFraudReport = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { reportId } = req.params;
-    const { adminNotes } = req.body;
+    const { adminNotes, vendorId } = req.body;
 
-    const report = await (prisma as any).fraudReport.update({
-      where: { id: reportId },
-      data: {
-        status: 'DISMISSED',
-        adminNotes: adminNotes || 'Dismissed / Blacklist lifted by Super Admin.',
+    let report = await (prisma as any).fraudReport.findFirst({
+      where: {
+        OR: [
+          { id: reportId },
+          { vendorId: reportId },
+          { vendorId: vendorId || '' },
+        ],
       },
       include: { vendor: true },
     });
 
-    if (report.vendorId) {
+    if (report) {
+      report = await (prisma as any).fraudReport.update({
+        where: { id: report.id },
+        data: {
+          status: 'DISMISSED',
+          adminNotes: adminNotes || 'Dismissed / Blacklist lifted by Super Admin.',
+        },
+        include: { vendor: true },
+      });
+    }
+
+    const effectiveVendorId = report?.vendorId || vendorId || (reportId && reportId.length > 20 ? reportId : undefined);
+
+    if (effectiveVendorId) {
       // 1. Lift blacklist on the VendorProfile in database
-      await prisma.vendorProfile.update({
-        where: { id: report.vendorId },
+      await prisma.vendorProfile.updateMany({
+        where: { id: effectiveVendorId },
         data: { isFraud: false },
       });
 
       // 2. Also dismiss any other active/pending reports for this vendor
       await (prisma as any).fraudReport.updateMany({
         where: {
-          vendorId: report.vendorId,
+          vendorId: effectiveVendorId,
           status: { in: ['PENDING', 'CONFIRMED'] },
-          id: { not: reportId },
         },
         data: {
           status: 'DISMISSED',
@@ -844,8 +873,8 @@ export const dismissFraudReport = async (req: AuthenticatedRequest, res: Respons
 
     res.json({
       success: true,
-      message: `Fraud report dismissed and blacklist lifted for vendor "${report.vendor?.businessName || 'Vendor'}". Account is now active platform-wide.`,
-      data: report,
+      message: `Fraud report dismissed and blacklist lifted. Account is now active platform-wide.`,
+      data: report || { id: reportId, status: 'DISMISSED' },
     });
   } catch (err: any) {
     res.status(500).json({ success: false, message: err.message || 'Failed to dismiss fraud report.' });

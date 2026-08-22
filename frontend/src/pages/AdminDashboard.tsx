@@ -631,7 +631,7 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
       if (report.vendorId) {
         await adminToggleVendorFraud(report.vendorId, true).catch(() => {});
       }
-      await adminConfirmFraudReport(report.id).catch(() => {});
+      await adminConfirmFraudReport(report.id, undefined, report.vendorId).catch(() => {});
 
       // 1. Update Fraud Reports state
       const updatedReports = fraudReports.map((r) =>
@@ -682,7 +682,6 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
       showToast(`🚨 Confirmed Fraud! Vendor "${report.vendorName}" is now blacklisted platform-wide.`);
       window.dispatchEvent(new Event('sbni_fraud_updated'));
       window.dispatchEvent(new Event('sbni_vendor_profile_updated'));
-      window.dispatchEvent(new Event('storage'));
     } catch (err: any) {
       alert(err.message || 'Failed to confirm fraud report.');
     }
@@ -691,7 +690,7 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
   const handleDismissFraud = async (report: FraudReportItem) => {
     try {
       // 1. Invoke Backend APIs to dismiss report & lift blacklist on vendor
-      await adminDismissFraudReport(report.id).catch(() => {});
+      await adminDismissFraudReport(report.id, undefined, report.vendorId).catch(() => {});
       if (report.vendorId) {
         await adminToggleVendorFraud(report.vendorId, false).catch(() => {});
       }
@@ -751,7 +750,6 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
       showToast(`✓ Blacklist lifted & fraud report dismissed for "${report.vendorName}". Vendor is active platform-wide.`);
       window.dispatchEvent(new Event('sbni_fraud_updated'));
       window.dispatchEvent(new Event('sbni_vendor_profile_updated'));
-      window.dispatchEvent(new Event('storage'));
     } catch (err: any) {
       alert(err.message || 'Failed to dismiss fraud report.');
     }

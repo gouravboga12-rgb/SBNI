@@ -1371,12 +1371,13 @@ export async function adminFetchFraudReports(): Promise<{ success: boolean; data
 
 export async function adminConfirmFraudReport(
   reportId: string,
-  adminNotes?: string
+  adminNotes?: string,
+  vendorId?: string
 ): Promise<{ success: boolean; message?: string }> {
   try {
     const data = await adminFetch(`/admin/fraud-reports/${reportId}/confirm`, {
       method: 'PUT',
-      body: JSON.stringify({ adminNotes }),
+      body: JSON.stringify({ adminNotes, vendorId }),
     });
     return { success: data.success, message: data.message };
   } catch (err: any) {
@@ -1386,12 +1387,13 @@ export async function adminConfirmFraudReport(
 
 export async function adminDismissFraudReport(
   reportId: string,
-  adminNotes?: string
+  adminNotes?: string,
+  vendorId?: string
 ): Promise<{ success: boolean; message?: string }> {
   try {
     const data = await adminFetch(`/admin/fraud-reports/${reportId}/dismiss`, {
       method: 'PUT',
-      body: JSON.stringify({ adminNotes }),
+      body: JSON.stringify({ adminNotes, vendorId }),
     });
     return { success: data.success, message: data.message };
   } catch (err: any) {
