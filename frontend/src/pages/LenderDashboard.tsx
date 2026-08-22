@@ -235,7 +235,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
 
   const [nearbyBusinesses, setNearbyBusinesses] = useState<any[]>([]);
   const [nearbySearchQuery, setNearbySearchQuery] = useState('');
-  const [reportsFilterStatus, setReportsFilterStatus] = useState<'PENDING' | 'ACCEPTED' | 'REJECTED' | 'FRAUD' | 'ALL'>('PENDING');
+  const [reportsFilterStatus, setReportsFilterStatus] = useState<'PENDING' | 'ACCEPTED' | 'REJECTED' | 'FRAUD' | 'ALL'>('ALL');
   const [reportsSearchQuery, setReportsSearchQuery] = useState('');
 
   const loadNearbyBusinessesList = async () => {
@@ -1021,7 +1021,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleReportsClick = (filter: 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'FRAUD' | 'ALL' = 'PENDING') => {
+  const handleReportsClick = (filter: 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'FRAUD' | 'ALL' = 'ALL') => {
     setSelectedVendor(null);
     setReportsFilterStatus(filter);
     setActiveTab('reports');
@@ -1754,6 +1754,18 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                 {/* Status Filter Buttons */}
                 <div className="flex items-center bg-slate-200/80 p-1 rounded-2xl w-fit flex-wrap gap-1">
                   <button
+                    onClick={() => setReportsFilterStatus('ALL')}
+                    className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 ${
+                      reportsFilterStatus === 'ALL'
+                        ? 'bg-slate-900 text-white shadow-md'
+                        : 'text-slate-700 hover:text-slate-900 hover:bg-slate-300/60'
+                    }`}
+                  >
+                    <FileText className="w-3.5 h-3.5" />
+                    <span>All ({requests.length})</span>
+                  </button>
+
+                  <button
                     onClick={() => setReportsFilterStatus('PENDING')}
                     className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 ${
                       reportsFilterStatus === 'PENDING'
@@ -1765,53 +1777,42 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                     <span>Pending Requests ({pendingCount})</span>
                   </button>
 
-                <button
-                  onClick={() => setReportsFilterStatus('ACCEPTED')}
-                  className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 ${
-                    reportsFilterStatus === 'ACCEPTED'
-                      ? 'bg-emerald-600 text-white shadow-md'
-                      : 'text-slate-700 hover:text-slate-900 hover:bg-slate-300/60'
-                  }`}
-                >
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  <span>Accepted Requests ({acceptedCount})</span>
-                </button>
+                  <button
+                    onClick={() => setReportsFilterStatus('ACCEPTED')}
+                    className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 ${
+                      reportsFilterStatus === 'ACCEPTED'
+                        ? 'bg-emerald-600 text-white shadow-md'
+                        : 'text-slate-700 hover:text-slate-900 hover:bg-slate-300/60'
+                    }`}
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>Accepted Requests ({acceptedCount})</span>
+                  </button>
 
-                <button
-                  onClick={() => setReportsFilterStatus('REJECTED')}
-                  className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 ${
-                    reportsFilterStatus === 'REJECTED'
-                      ? 'bg-rose-600 text-white shadow-md'
-                      : 'text-slate-700 hover:text-slate-900 hover:bg-slate-300/60'
-                  }`}
-                >
-                  <XCircle className="w-3.5 h-3.5" />
-                  <span>Rejected ({rejectedCount})</span>
-                </button>
+                  <button
+                    onClick={() => setReportsFilterStatus('REJECTED')}
+                    className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 ${
+                      reportsFilterStatus === 'REJECTED'
+                        ? 'bg-rose-600 text-white shadow-md'
+                        : 'text-slate-700 hover:text-slate-900 hover:bg-slate-300/60'
+                    }`}
+                  >
+                    <XCircle className="w-3.5 h-3.5" />
+                    <span>Rejected ({rejectedCount})</span>
+                  </button>
 
-                <button
-                  onClick={() => setReportsFilterStatus('FRAUD')}
-                  className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 ${
-                    reportsFilterStatus === 'FRAUD'
-                      ? 'bg-rose-700 text-white shadow-md'
-                      : 'text-rose-700 hover:text-rose-900 hover:bg-rose-100/60'
-                  }`}
-                >
-                  <AlertTriangle className="w-3.5 h-3.5" />
-                  <span>Fraud Alert Reports ({fraudCount})</span>
-                </button>
-
-                <button
-                  onClick={() => setReportsFilterStatus('ALL')}
-                  className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                    reportsFilterStatus === 'ALL'
-                      ? 'bg-white text-slate-900 shadow-xs'
-                      : 'text-slate-500 hover:text-slate-900'
-                  }`}
-                >
-                  All ({requests.length})
-                </button>
-              </div>
+                  <button
+                    onClick={() => setReportsFilterStatus('FRAUD')}
+                    className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 ${
+                      reportsFilterStatus === 'FRAUD'
+                        ? 'bg-rose-700 text-white shadow-md'
+                        : 'text-rose-700 hover:text-rose-900 hover:bg-rose-100/60'
+                    }`}
+                  >
+                    <AlertTriangle className="w-3.5 h-3.5" />
+                    <span>Fraud Alert Reports ({fraudCount})</span>
+                  </button>
+                </div>
             </div>
 
             {/* Action Feedback Banner */}
@@ -3247,7 +3248,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
         </button>
 
         <button
-          onClick={() => handleReportsClick('PENDING')}
+          onClick={() => handleReportsClick('ALL')}
           className={`flex-1 sm:flex-initial flex flex-col items-center justify-center gap-0.5 sm:gap-1 text-[10px] sm:text-xs font-extrabold py-1 px-1 sm:px-6 rounded-xl sm:rounded-2xl transition-all whitespace-nowrap cursor-pointer ${
             activeTab === 'reports' ? 'text-[#059669] bg-emerald-50/90 shadow-2xs' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
           }`}
