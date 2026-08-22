@@ -8,5 +8,6 @@ const router = Router();
 router.get('/plans', asyncHandler(getSubscriptionPlans));
 router.post('/purchase', authenticateUser, asyncHandler(purchaseSubscriptionPlan));
 router.get('/active', authenticateUser, asyncHandler(getMyActiveSubscription));
+router.get('/status', authenticateUser, asyncHandler(getMyActiveSubscription));
 
 export default router;

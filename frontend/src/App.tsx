@@ -93,6 +93,32 @@ export function App() {
     initSession();
   }, []);
 
+  // Listen for subscription status updates across tabs / events
+  useEffect(() => {
+    const syncSubStatus = async () => {
+      const isSubscribedLocally =
+        localStorage.getItem('sbni_vendor_subscribed') === 'true' ||
+        localStorage.getItem('sbni_subscribed') === 'true' ||
+        localStorage.getItem('sbni_lender_subscribed') === 'true';
+      const token = getToken();
+      if (token) {
+        const subStatus = await checkSubscriptionStatus();
+        setHasActiveSubscription(subStatus.isActive || isSubscribedLocally);
+      } else {
+        setHasActiveSubscription(isSubscribedLocally);
+      }
+    };
+
+    window.addEventListener('sbni_subscription_updated', syncSubStatus);
+    window.addEventListener('sbni_auth_changed', syncSubStatus);
+    window.addEventListener('storage', syncSubStatus);
+    return () => {
+      window.removeEventListener('sbni_subscription_updated', syncSubStatus);
+      window.removeEventListener('sbni_auth_changed', syncSubStatus);
+      window.removeEventListener('storage', syncSubStatus);
+    };
+  }, []);
+
   // Load lenders from AWS whenever role changes
   const loadLenders = async () => {
     try {
