@@ -323,10 +323,26 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
 
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
-  // Profile Avatar & Password Visibility State
+  // Profile Avatar & Password Visibility State (scoped per authenticated user email)
   const [avatarUrl, setAvatarUrl] = useState<string | null>(() => {
-    return localStorage.getItem('sbni_vendor_avatar') || null;
+    // Purge legacy unscoped global key if present
+    try { localStorage.removeItem('sbni_vendor_avatar'); } catch (e) {}
+
+    const direct = currentUser?.vendorProfile?.avatarUrl || currentUser?.vendorProfile?.logoUrl;
+    if (direct) return direct;
+    if (currentUser?.email) {
+      return localStorage.getItem(`sbni_vendor_avatar_${currentUser.email}`) || null;
+    }
+    return null;
   });
+
+  useEffect(() => {
+    const direct = currentUser?.vendorProfile?.avatarUrl || currentUser?.vendorProfile?.logoUrl;
+    const userKey = currentUser?.email ? `sbni_vendor_avatar_${currentUser.email}` : null;
+    const saved = userKey ? localStorage.getItem(userKey) : null;
+    setAvatarUrl(direct || saved || null);
+  }, [currentUser]);
+
   const [showPassword, setShowPassword] = useState(false);
 
   const currentVendorObj = (() => {
@@ -479,6 +495,9 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
       const fileUrl = res.fileUrl || res.fullUrl;
       if (fileUrl) {
         setAvatarUrl(fileUrl);
+        if (currentUser?.email) {
+          localStorage.setItem(`sbni_vendor_avatar_${currentUser.email}`, fileUrl);
+        }
         await updateVendorProfileApi({
           avatarUrl: fileUrl,
           logoUrl: fileUrl,
@@ -2062,9 +2081,6 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                       currentVendorObj.shopPhotos.forEach((img: string, i: number) => {
                         if (img) photos.push({ title: `Storefront / Shop Photo ${i + 1}`, url: img });
                       });
-                    }
-                    if (avatarUrl && !photos.some(p => p.url === avatarUrl)) {
-                      photos.push({ title: 'Live Storefront Photo / Profile', url: avatarUrl });
                     }
 
                     if (photos.length > 0) {

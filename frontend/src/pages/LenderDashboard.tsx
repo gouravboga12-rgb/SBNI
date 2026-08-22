@@ -215,8 +215,23 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
     setCurrentUserObj(resolveInitialLenderDetails(currentUser));
   }, [currentUser]);
   const [lenderAvatarUrl, setLenderAvatarUrl] = useState<string>(() => {
-    return localStorage.getItem('sbni_lender_avatar') || 'https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=200';
+    try { localStorage.removeItem('sbni_lender_avatar'); } catch (e) {}
+    const direct = currentUser?.lenderProfile?.logoUrl || currentUser?.lenderProfile?.avatarUrl;
+    if (direct) return direct;
+    if (currentUser?.email) {
+      return localStorage.getItem(`sbni_lender_avatar_${currentUser.email}`) || 'https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=200';
+    }
+    return 'https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=200';
   });
+
+  useEffect(() => {
+    const direct = currentUser?.lenderProfile?.logoUrl || currentUser?.lenderProfile?.avatarUrl;
+    const userKey = currentUser?.email ? `sbni_lender_avatar_${currentUser.email}` : null;
+    const saved = userKey ? localStorage.getItem(userKey) : null;
+    if (direct || saved) {
+      setLenderAvatarUrl(direct || saved || 'https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=200');
+    }
+  }, [currentUser]);
 
   const [nearbyBusinesses, setNearbyBusinesses] = useState<any[]>([]);
   const [nearbySearchQuery, setNearbySearchQuery] = useState('');
