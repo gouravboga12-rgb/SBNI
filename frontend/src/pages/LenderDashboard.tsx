@@ -852,19 +852,22 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                 ? !!storedFraud[vEmail]
                 : !!vp.isFraud;
 
+            const rawOwner = vp.vendorName || vp.ownerName || u.name || (vp.emailId && !vp.emailId.includes('@example.com') ? vp.emailId.split('@')[0] : (u.email ? u.email.split('@')[0] : 'Business Owner'));
+            const rawShop = vp.shopName || vp.businessName || (rawOwner && rawOwner !== 'Business Owner' ? `${rawOwner} Store` : 'Business Enterprise');
+
             return {
               id: vp.id || vp.userId,
-              vendorName: vp.ownerName || u.name || 'Local Shop Owner',
-              shopName: vp.businessName || 'Local Enterprise',
-              shopAddress: vp.address || `${vp.place || 'Dilsukhnagar'}, ${vp.city || 'Hyderabad'}`,
+              vendorName: rawOwner,
+              shopName: rawShop,
+              shopAddress: vp.address || vp.shopAddress || `${vp.place || 'Commercial Area'}, ${vp.city || 'Hyderabad'}`,
               city: vp.city || 'Hyderabad',
               state: vp.state || 'Telangana',
-              place: vp.place || 'Dilsukhnagar',
+              place: vp.place || 'Commercial Area',
               category: vp.category || 'Retail Shop Business',
               annualTurnover: vp.annualTurnover || '10-50 Lakhs',
               monthlyIncome: vp.monthlyIncome || '₹ 50,000 / month',
-              mobileNumber: u.phone || vp.phone || '+91 98765 43210',
-              emailId: u.email || vp.email || 'vendor@example.com',
+              mobileNumber: vp.mobileNumber || u.phone || vp.phone || 'Not provided',
+              emailId: vp.emailId || u.email || vp.email || 'vendor@example.com',
               dateOfBirth: vp.dateOfBirth || 'Not specified',
               panNumber: vp.panNumber || panDoc?.documentNumber || null,
               aadhaarNumber: vp.aadhaarNumber || aadhaarDoc?.documentNumber || null,
