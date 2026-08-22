@@ -53,9 +53,32 @@ export const getAdminDashboardStats = async (req: AuthenticatedRequest, res: Res
 // Vendor Management
 export const getAllVendors = async (req: AuthenticatedRequest, res: Response) => {
   const vendors = await prisma.vendorProfile.findMany({
-    include: {
+    select: {
+      id: true,
+      userId: true,
+      businessName: true,
+      ownerName: true,
+      gstNumber: true,
+      panNumber: true,
+      aadhaarNumber: true,
+      registrationType: true,
+      annualTurnover: true,
+      category: true,
+      address: true,
+      place: true,
+      city: true,
+      state: true,
+      country: true,
+      pincode: true,
+      latitude: true,
+      longitude: true,
+      kycStatus: true,
+      kycRejectionReason: true,
+      isFraud: true,
+      createdAt: true,
+      updatedAt: true,
       user: {
-        select: { email: true, phone: true, isVerified: true, createdAt: true, kycDocuments: true },
+        select: { email: true, phone: true, isVerified: true, createdAt: true },
       },
     },
     orderBy: { createdAt: 'desc' },
@@ -122,9 +145,35 @@ export const updateVendorFraudStatus = async (req: AuthenticatedRequest, res: Re
 export const getAllLenders = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const lenders = await prisma.lenderProfile.findMany({
-      include: {
+      select: {
+        id: true,
+        userId: true,
+        institutionName: true,
+        institutionType: true,
+        registrationNumber: true,
+        loanCategories: true,
+        minLoanAmount: true,
+        maxLoanAmount: true,
+        minInterestRate: true,
+        address: true,
+        place: true,
+        city: true,
+        state: true,
+        country: true,
+        pincode: true,
+        latitude: true,
+        longitude: true,
+        lendingRadiusKm: true,
+        contactPersonName: true,
+        verificationStatus: true,
+        rejectionReason: true,
+        rating: true,
+        reviewCount: true,
+        successRate: true,
+        createdAt: true,
+        updatedAt: true,
         user: {
-          select: { email: true, phone: true, isVerified: true, createdAt: true, kycDocuments: true },
+          select: { email: true, phone: true, isVerified: true, createdAt: true },
         },
       },
       orderBy: { createdAt: 'desc' },

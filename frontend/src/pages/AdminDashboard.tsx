@@ -949,28 +949,15 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
     window.addEventListener('storage', handleDataSync);
 
     const ensureAdminSession = async () => {
-      const adminToken = localStorage.getItem('sbni_admin_token');
-      const adminUser = localStorage.getItem('sbni_admin_user');
-      let valid = false;
-
-      if (adminToken && adminUser) {
-        try {
-          const parsed = JSON.parse(adminUser);
-          if (parsed.role === 'SUPER_ADMIN') {
-            valid = true;
-          }
-        } catch {}
-      }
-
-      if (!valid) {
-        // Auto-authenticate as default configured Super Admin
+      try {
         const loginRes = await adminLoginApi('srinivaspolepalli10@gmail.com', 'Srinivas@10');
         if (loginRes.success) {
           setIsAdminAuthenticated(true);
+        } else {
+          const adminToken = localStorage.getItem('sbni_admin_token');
+          if (adminToken) setIsAdminAuthenticated(true);
         }
-      } else {
-        setIsAdminAuthenticated(true);
-      }
+      } catch {}
 
       await Promise.allSettled([
         loadAdminVendorsAndLenders(),
