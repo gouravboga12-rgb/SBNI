@@ -228,9 +228,12 @@ async function apiFetch<T = any>(
   options: RequestInit = {}
 ): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
+    cache: 'no-store',
     ...options,
     headers: {
       'Content-Type': 'application/json',
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
       ...options.headers,
     },
   });
@@ -1071,9 +1074,12 @@ async function adminFetch<T = any>(path: string, options: RequestInit = {}, retr
   }
 
   const res = await fetch(`${API_BASE}${path}`, {
+    cache: 'no-store',
     ...options,
     headers: {
       'Content-Type': 'application/json',
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...options.headers,
     },
@@ -1115,7 +1121,7 @@ export async function adminFetchVendors(params?: { page?: number; limit?: number
     if (params?.limit) q.append('limit', String(params.limit));
     if (params?.status) q.append('status', params.status);
     const data = await adminFetch(`/admin/vendors?${q.toString()}`);
-    const vendorsList = Array.isArray(data.data) ? data.data : (data.data?.vendors || []);
+    const vendorsList = Array.isArray(data.data) ? data.data : (data.data?.vendors || (Array.isArray(data.vendors) ? data.vendors : []));
     return { vendors: vendorsList, total: data.count || data.data?.total || vendorsList.length };
   } catch (err: any) {
     console.error('adminFetchVendors error:', err.message);
@@ -1182,7 +1188,7 @@ export async function adminFetchLenders(params?: { page?: number; limit?: number
     if (params?.limit) q.append('limit', String(params.limit));
     if (params?.status) q.append('status', params.status);
     const data = await adminFetch(`/admin/lenders?${q.toString()}`);
-    const lendersList = Array.isArray(data.data) ? data.data : (data.data?.lenders || []);
+    const lendersList = Array.isArray(data.data) ? data.data : (data.data?.lenders || (Array.isArray(data.lenders) ? data.lenders : []));
     return { lenders: lendersList, total: data.count || data.data?.total || lendersList.length };
   } catch (err: any) {
     console.error('adminFetchLenders error:', err.message);
@@ -1277,7 +1283,8 @@ export async function adminDeleteSubscriptionPlan(planId: string): Promise<{ suc
 export async function adminFetchPayments(): Promise<{ payments: any[] }> {
   try {
     const data = await adminFetch('/admin/payments');
-    return { payments: data.data || [] };
+    const list = Array.isArray(data.data) ? data.data : (data.data?.payments || (Array.isArray(data.payments) ? data.payments : []));
+    return { payments: list };
   } catch (err: any) {
     return { payments: [] };
   }

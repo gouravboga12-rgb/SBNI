@@ -9,10 +9,12 @@ export default defineConfig({
       '/api': {
         target: 'http://18.61.36.65',
         changeOrigin: true,
+        secure: false,
       },
       '/uploads': {
         target: 'http://18.61.36.65',
         changeOrigin: true,
+        secure: false,
       },
     },
   },
