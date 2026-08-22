@@ -696,7 +696,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const currentLendersList = liveLenders.length > 0 ? liveLenders : lenders;
+  const currentLendersList = liveLenders;
   const filteredLenders = currentLendersList.filter((l) =>
     l.institutionName.toLowerCase().includes(searchQuery.toLowerCase()) ||
     l.institutionType.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -1094,7 +1094,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
             {/* Results Count Bar */}
             <div className="flex items-center justify-between px-1">
               <div className="text-xs text-slate-600 font-bold">
-                Found <strong className="text-[#003893] font-black">{filteredLenders.length}</strong> eligible financers within service coverage of{' '}
+                Found <strong className="text-[#003893] font-black">{filteredLenders.length}</strong> eligible financer{filteredLenders.length === 1 ? '' : 's'} within service coverage of{' '}
                 <strong className="text-slate-900">{searchLocation.place || searchLocation.city}</strong>
               </div>
               <button

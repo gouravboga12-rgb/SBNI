@@ -301,11 +301,10 @@ export const searchLenders = async (req: AuthenticatedRequest, res: Response) =>
   // Sort by nearest distance first
   formattedLenders.sort((a, b) => a.distanceKm - b.distanceKm);
 
-  // Strict radius filtering: If we have matches in current radius, use them.
-  // Otherwise, provide all verified lenders sorted by distance so the screen is never empty.
-  const radiusMatched = formattedLenders.filter((l) => l.isWithinRadius);
-  if (radiusMatched.length > 0) {
-    formattedLenders = radiusMatched;
+  // Strict radius filtering:
+  // If no explicit text query is given, only return financers who actually cover the searched location
+  if (!query && !city) {
+    formattedLenders = formattedLenders.filter((l) => l.isWithinRadius);
   }
 
   // Filter by search query if provided (Institution name, category, city, place)
