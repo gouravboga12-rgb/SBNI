@@ -791,6 +791,11 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
   }, [activeTab]);
 
   const handleTabChange = (tab: 'home' | 'lenders' | 'requests' | 'profile') => {
+    // Gate: Financers tab requires login
+    if (tab === 'lenders' && !currentUser) {
+      if (onOpenAuth) onOpenAuth();
+      return;
+    }
     if (onTabChange) {
       onTabChange(tab);
     } else {

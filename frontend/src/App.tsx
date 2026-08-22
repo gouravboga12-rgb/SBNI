@@ -225,6 +225,12 @@ export function App() {
   };
 
   const handleNavigateLenders = () => {
+    if (!currentUser) {
+      setAuthSubscribeIntent(false);
+      setAuthRole('VENDOR');
+      setAuthModalOpen(true);
+      return;
+    }
     setVendorActiveTab('lenders');
     setLenderActiveTab('businesses');
     window.scrollTo({ top: 0, behavior: 'smooth' });
