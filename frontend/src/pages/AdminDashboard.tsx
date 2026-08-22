@@ -954,6 +954,28 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
       return dateStr;
     }
   };
+  const formatLoanRange = (min?: number, max?: number): string => {
+    const formatAmount = (num: number) => {
+      if (!num || isNaN(num)) return '₹0';
+      if (num >= 10000000) {
+        const cr = num / 10000000;
+        return `₹${cr % 1 === 0 ? cr : cr.toFixed(1)} Cr`;
+      }
+      if (num >= 100000) {
+        const l = num / 100000;
+        return `₹${l % 1 === 0 ? l : l.toFixed(1)} Lakh`;
+      }
+      if (num >= 1000) {
+        const k = num / 1000;
+        return `₹${k % 1 === 0 ? k : k.toFixed(0)}k`;
+      }
+      return `₹${num.toLocaleString('en-IN')}`;
+    };
+
+    const minVal = min ? Number(min) : 10000;
+    const maxVal = max ? Number(max) : 100000;
+    return `${formatAmount(minVal)} – ${formatAmount(maxVal)}`;
+  };
 
   // ─── VENDOR REVENUE CALCULATIONS & FILTERING ────────────────────────────────
   const vendorTransactions = useMemo(() => {
@@ -3371,7 +3393,7 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
                       <th className="p-4">Business & Owner</th>
                       <th className="p-4">Category</th>
                       <th className="p-4">City / State</th>
-                      <th className="p-4">Annual Turnover</th>
+                      <th className="p-4">Contact Info</th>
                       <th className="p-4">KYC Status</th>
                       <th className="p-4 text-center">Actions & Controls</th>
                     </tr>
@@ -3401,9 +3423,8 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
                               )}
                             </div>
                             <div className="text-[11px] text-slate-500 font-medium">
-                              {v.ownerName} • {v.userPhone}
+                              {v.ownerName}
                             </div>
-                            <div className="text-[10px] text-slate-400 font-mono">{v.userEmail}</div>
                           </td>
 
                           <td className="p-4">
@@ -3416,7 +3437,10 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
                             {v.city}, {v.state}
                           </td>
 
-                          <td className="p-4 font-bold text-slate-900">{v.annualTurnover}</td>
+                          <td className="p-4">
+                            <div className="font-semibold text-slate-900 text-xs">{v.userPhone}</div>
+                            <div className="text-[11px] text-slate-500 font-mono">{v.userEmail}</div>
+                          </td>
 
                           <td className="p-4">
                             <button
@@ -3535,7 +3559,7 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
                       <th className="p-4">Type</th>
                       <th className="p-4">Registration #</th>
                       <th className="p-4">City / State</th>
-                      <th className="p-4">Loan Range</th>
+                      <th className="p-4">Lending Loan Range</th>
                       <th className="p-4">Verification</th>
                       <th className="p-4 text-center">Actions</th>
                     </tr>
@@ -3570,8 +3594,10 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
                             {l.city}, {l.state}
                           </td>
 
-                          <td className="p-4 font-bold text-slate-900">
-                            ₹{(l.minLoanAmount / 100000).toFixed(1)}L - ₹{(l.maxLoanAmount / 10000000).toFixed(1)}Cr
+                          <td className="p-4 font-extrabold text-slate-900">
+                            <span className="px-2.5 py-1 bg-slate-100 rounded-lg border border-slate-200">
+                              {formatLoanRange(l.minLoanAmount, l.maxLoanAmount)}
+                            </span>
                           </td>
 
                           <td className="p-4">

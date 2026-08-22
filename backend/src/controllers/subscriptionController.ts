@@ -133,39 +133,62 @@ export const purchaseSubscriptionPlan = async (req: AuthenticatedRequest, res: R
 };
 
 export const getMyActiveSubscription = async (req: AuthenticatedRequest, res: Response) => {
-  const userId = req.user?.userId;
+  try {
+    const userId = req.user?.userId;
+    if (!userId) {
+      return res.status(401).json({ success: false, hasActiveSubscription: false, message: 'Unauthorized' });
+    }
 
-  const subscription = await prisma.userSubscription.findFirst({
-    where: {
-      userId,
-      status: 'ACTIVE',
-      endDate: { gte: new Date() },
-    },
-    include: {
-      plan: true,
-      payments: true,
-    },
-    orderBy: { createdAt: 'desc' },
-  });
-
-  if (!subscription) {
-    return res.json({
-      success: true,
-      hasActiveSubscription: false,
-      message: 'No active subscription found.',
+    const subscription = await prisma.userSubscription.findFirst({
+      where: {
+        userId,
+        status: 'ACTIVE',
+        endDate: { gte: new Date() },
+      },
+      include: {
+        plan: true,
+        payments: true,
+      },
+      orderBy: { createdAt: 'desc' },
     });
-  }
 
-  res.json({
-    success: true,
-    hasActiveSubscription: true,
-    data: {
-      isActive: true,
-      ...subscription,
-      plan: subscription.plan ? {
-        ...subscription.plan,
-        features: JSON.parse(subscription.plan.features || '[]'),
-      } : null,
-    },
-  });
+    if (!subscription) {
+      return res.json({
+        success: true,
+        hasActiveSubscription: false,
+        data: { isActive: false },
+        message: 'No active subscription found.',
+      });
+    }
+
+    let parsedFeatures: string[] = [];
+    if (subscription.plan?.features) {
+      try {
+        parsedFeatures = Array.isArray(subscription.plan.features)
+          ? subscription.plan.features
+          : JSON.parse(subscription.plan.features);
+      } catch {
+        parsedFeatures = typeof subscription.plan.features === 'string'
+          ? subscription.plan.features.split(',').map((s: string) => s.trim())
+          : [];
+      }
+    }
+
+    res.json({
+      success: true,
+      hasActiveSubscription: true,
+      data: {
+        isActive: true,
+        ...subscription,
+        plan: subscription.plan
+          ? {
+              ...subscription.plan,
+              features: parsedFeatures,
+            }
+          : null,
+      },
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, hasActiveSubscription: false, message: err.message });
+  }
 };

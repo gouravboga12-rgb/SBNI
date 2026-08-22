@@ -120,21 +120,39 @@ export const updateVendorFraudStatus = async (req: AuthenticatedRequest, res: Re
 
 // Lender Management
 export const getAllLenders = async (req: AuthenticatedRequest, res: Response) => {
-  const lenders = await prisma.lenderProfile.findMany({
-    include: {
-      user: {
-        select: { email: true, phone: true, isVerified: true, createdAt: true, kycDocuments: true },
+  try {
+    const lenders = await prisma.lenderProfile.findMany({
+      include: {
+        user: {
+          select: { email: true, phone: true, isVerified: true, createdAt: true, kycDocuments: true },
+        },
       },
-    },
-    orderBy: { createdAt: 'desc' },
-  });
+      orderBy: { createdAt: 'desc' },
+    });
 
-  const formattedLenders = lenders.map((lender) => ({
-    ...lender,
-    loanCategories: JSON.parse(lender.loanCategories || '[]'),
-  }));
+    const formattedLenders = lenders.map((lender) => {
+      let parsedCategories: string[] = [];
+      try {
+        parsedCategories = Array.isArray(lender.loanCategories)
+          ? lender.loanCategories
+          : JSON.parse(lender.loanCategories || '[]');
+      } catch {
+        parsedCategories = typeof lender.loanCategories === 'string'
+          ? lender.loanCategories.split(',').map((s: string) => s.trim())
+          : [];
+      }
+      return {
+        ...lender,
+        loanCategories: parsedCategories,
+        userPhone: lender.user?.phone || 'Not provided',
+        userEmail: lender.user?.email || 'Not provided',
+      };
+    });
 
-  res.json({ success: true, count: formattedLenders.length, data: formattedLenders });
+    res.json({ success: true, count: formattedLenders.length, data: formattedLenders });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message || 'Failed to fetch lenders.' });
+  }
 };
 
 export const updateLenderVerificationStatus = async (req: AuthenticatedRequest, res: Response) => {
