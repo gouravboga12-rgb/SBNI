@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { SubscriptionPlan } from '../types';
-import { fetchSubscriptionPlans, purchaseSubscription, safeSetLocalStorage } from '../services/api';
-import { Zap, Check, Lock, X, ShieldCheck, Ticket, Sparkles } from 'lucide-react';
+import { fetchSubscriptionPlans, purchaseSubscription, safeSetLocalStorage, checkSubscriptionStatus } from '../services/api';
+import { Zap, Check, X, Ticket, Sparkles, ShieldCheck, CalendarCheck, Clock, AlertCircle } from 'lucide-react';
 
 interface SubscriptionModalProps {
   isOpen: boolean;
@@ -24,6 +24,8 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
   const [couponError, setCouponError] = useState('');
   const [loading, setLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+  const [activeSub, setActiveSub] = useState<any>(null);
+  const [loadingActiveSub, setLoadingActiveSub] = useState(false);
 
   const loadPlans = () => {
     fetchSubscriptionPlans(userRole).then((data) => {
@@ -35,9 +37,26 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
     });
   };
 
+  const loadActiveSub = async () => {
+    setLoadingActiveSub(true);
+    try {
+      const res = await checkSubscriptionStatus();
+      if (res.isActive && res.subscription) {
+        setActiveSub(res.subscription);
+      } else {
+        setActiveSub(null);
+      }
+    } catch {
+      setActiveSub(null);
+    } finally {
+      setLoadingActiveSub(false);
+    }
+  };
+
   useEffect(() => {
     if (isOpen) {
       loadPlans();
+      loadActiveSub();
     }
   }, [userRole, isOpen]);
 
@@ -112,6 +131,16 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
 
   const isLender = userRole === 'LENDER';
 
+  // Active plan helpers
+  const formatDate = (d: string | Date) => {
+    const date = new Date(d);
+    return date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+  };
+
+  const daysRemaining = activeSub?.endDate
+    ? Math.max(0, Math.ceil((new Date(activeSub.endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+    : 0;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-900/75 backdrop-blur-sm overflow-y-auto">
       <div className="relative w-full max-w-5xl bg-white p-5 sm:p-6 rounded-3xl border border-slate-200 shadow-2xl my-auto max-h-[90vh] flex flex-col overflow-y-auto">
@@ -123,6 +152,77 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
         >
           <X className="w-5 h-5" />
         </button>
+
+        {/* ── ACTIVE PLAN BANNER ─────────────────────────────────────── */}
+        {loadingActiveSub ? (
+          <div className="mb-4 p-3 rounded-2xl bg-slate-100 border border-slate-200 text-xs text-slate-500 font-medium animate-pulse flex items-center gap-2">
+            <Clock className="w-4 h-4 text-slate-400" />
+            Checking your current subscription...
+          </div>
+        ) : activeSub ? (
+          <div className={`mb-4 p-4 rounded-2xl border-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+            daysRemaining > 3
+              ? 'bg-emerald-50 border-emerald-400'
+              : daysRemaining > 0
+              ? 'bg-amber-50 border-amber-400'
+              : 'bg-rose-50 border-rose-400'
+          }`}>
+            <div className="flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                daysRemaining > 3 ? 'bg-emerald-100 text-emerald-700' : daysRemaining > 0 ? 'bg-amber-100 text-amber-700' : 'bg-rose-100 text-rose-700'
+              }`}>
+                <ShieldCheck className="w-5 h-5" />
+              </div>
+              <div>
+                <div className={`text-[10px] font-extrabold uppercase tracking-wider ${
+                  daysRemaining > 3 ? 'text-emerald-600' : daysRemaining > 0 ? 'text-amber-600' : 'text-rose-600'
+                }`}>
+                  {daysRemaining > 0 ? '✅ Current Active Plan' : '⚠️ Plan Expired'}
+                </div>
+                <div className="font-extrabold text-slate-900 text-sm">
+                  {activeSub.plan?.name || 'Subscription Plan'}
+                </div>
+                <div className="flex flex-wrap items-center gap-3 mt-0.5">
+                  <span className="flex items-center gap-1 text-[11px] text-slate-600 font-medium">
+                    <CalendarCheck className="w-3 h-3 text-slate-400" />
+                    Started: {formatDate(activeSub.startDate || activeSub.createdAt)}
+                  </span>
+                  <span className="flex items-center gap-1 text-[11px] text-slate-600 font-medium">
+                    <Clock className="w-3 h-3 text-slate-400" />
+                    Valid Until: {formatDate(activeSub.endDate)}
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div className={`shrink-0 px-4 py-2 rounded-xl text-center text-xs font-extrabold border ${
+              daysRemaining > 3
+                ? 'bg-emerald-600 text-white border-emerald-700'
+                : daysRemaining > 0
+                ? 'bg-amber-500 text-white border-amber-600'
+                : 'bg-rose-500 text-white border-rose-600'
+            }`}>
+              {daysRemaining > 0 ? (
+                <>
+                  <div className="text-xl font-black leading-none">{daysRemaining}</div>
+                  <div className="text-[9px] uppercase tracking-wider">Days Left</div>
+                </>
+              ) : (
+                <>
+                  <AlertCircle className="w-4 h-4 mx-auto mb-0.5" />
+                  <div className="text-[9px]">Renew Now</div>
+                </>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="mb-4 p-3.5 rounded-2xl bg-amber-50 border border-amber-300 flex items-center gap-2.5">
+            <AlertCircle className="w-5 h-5 text-amber-600 shrink-0" />
+            <div>
+              <div className="text-xs font-extrabold text-amber-900">No Active Plan</div>
+              <div className="text-[10px] text-amber-700 font-medium">Choose a plan below to unlock all platform features.</div>
+            </div>
+          </div>
+        )}
 
         {/* Modal Header */}
         <div className="text-center max-w-2xl mx-auto mb-4 space-y-1.5 flex-shrink-0">
