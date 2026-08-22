@@ -1022,23 +1022,26 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
 
               {/* Right Column (1 Col on Desktop): Recent Activity & Protection Banner */}
               <div className="space-y-4">
-                <h3 className="font-bold text-slate-900 text-lg font-heading">Recent Activity</h3>
+                {/* Recent Activity: Hidden on mobile view as requested */}
+                <div className="hidden md:block space-y-4">
+                  <h3 className="font-bold text-slate-900 text-lg font-heading">Recent Activity</h3>
 
-                <div className="card-white p-4 space-y-3 shadow-sm">
-                  <div className="flex items-center justify-between text-xs pb-3 border-b border-slate-100">
-                    <div>
-                      <div className="font-bold text-slate-900 text-sm">Enquiry request submitted</div>
-                      <div className="text-slate-500 text-xs mt-0.5">Working Capital • 02 May 2024</div>
+                  <div className="card-white p-4 space-y-3 shadow-sm">
+                    <div className="flex items-center justify-between text-xs pb-3 border-b border-slate-100">
+                      <div>
+                        <div className="font-bold text-slate-900 text-sm">Enquiry request submitted</div>
+                        <div className="text-slate-500 text-xs mt-0.5">Working Capital • 02 May 2024</div>
+                      </div>
+                      <span className="badge-pending-amber">Pending</span>
                     </div>
-                    <span className="badge-pending-amber">Pending</span>
-                  </div>
 
-                  <div className="flex items-center justify-between text-xs pt-1">
-                    <div>
-                      <div className="font-bold text-slate-900 text-sm">Profile verified successfully</div>
-                      <div className="text-slate-500 text-xs mt-0.5">Vendor Verification • 30 Apr 2024</div>
+                    <div className="flex items-center justify-between text-xs pt-1">
+                      <div>
+                        <div className="font-bold text-slate-900 text-sm">Profile verified successfully</div>
+                        <div className="text-slate-500 text-xs mt-0.5">Vendor Verification • 30 Apr 2024</div>
+                      </div>
+                      <span className="badge-verified-green">Completed</span>
                     </div>
-                    <span className="badge-verified-green">Completed</span>
                   </div>
                 </div>
 
