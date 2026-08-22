@@ -43,6 +43,8 @@ import {
   FolderX,
   Phone,
   MessageSquare,
+  Menu,
+  ChevronRight,
 } from 'lucide-react';
 import {
   adminLoginApi,
@@ -197,6 +199,9 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
     | 'referrals'
     | 'audits'
   >('overview');
+
+  // Mobile Navigation Drawer State
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Search & Filters
   const [searchQuery, setSearchQuery] = useState('');
@@ -1878,8 +1883,114 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
   }
 
   // ─── SUPER ADMIN AUTHENTICATED VIEW ────────────────────────────────────────
+  // Navigation Tabs Configuration
+  const navTabs = [
+    {
+      id: 'overview' as const,
+      label: 'Overview',
+      fullLabel: 'Overview Dashboard',
+      icon: LayoutDashboard,
+      activeClass: 'bg-[#003893] text-white shadow-md',
+      pillActiveClass: 'bg-[#003893] text-white shadow-sm',
+      badge: null,
+      badgeColor: '',
+    },
+    {
+      id: 'vendors' as const,
+      label: 'Vendors',
+      fullLabel: 'User Vendors',
+      icon: Users,
+      activeClass: 'bg-[#003893] text-white shadow-md',
+      pillActiveClass: 'bg-[#003893] text-white shadow-sm',
+      badge: vendors.length,
+      badgeColor: 'bg-blue-100 text-[#003893]',
+    },
+    {
+      id: 'lenders' as const,
+      label: 'Financers',
+      fullLabel: 'Business Financers',
+      icon: Building2,
+      activeClass: 'bg-[#007a33] text-white shadow-md',
+      pillActiveClass: 'bg-[#007a33] text-white shadow-sm',
+      badge: lenders.length,
+      badgeColor: 'bg-emerald-100 text-[#007a33]',
+    },
+    {
+      id: 'fraud_reports' as const,
+      label: 'Fraud Queue',
+      fullLabel: 'Fraud Reports',
+      icon: AlertTriangle,
+      activeClass: 'bg-rose-700 text-white shadow-md',
+      pillActiveClass: 'bg-rose-700 text-white shadow-sm',
+      badge: fraudReports.filter((r) => r.status === 'PENDING').length > 0
+        ? `${fraudReports.filter((r) => r.status === 'PENDING').length} Pending`
+        : fraudReports.length,
+      badgeColor: fraudReports.filter((r) => r.status === 'PENDING').length > 0 ? 'bg-rose-500 text-white animate-pulse' : 'bg-slate-200 text-slate-700',
+    },
+    {
+      id: 'vendor_revenue' as const,
+      label: 'Shop Rev',
+      fullLabel: 'Shop Business Revenue',
+      icon: DollarSign,
+      activeClass: 'bg-[#003893] text-white shadow-md',
+      pillActiveClass: 'bg-[#003893] text-white shadow-sm',
+      badge: `₹${vendorStats.totalAll.toLocaleString('en-IN')}`,
+      badgeColor: 'bg-blue-100 text-[#003893]',
+    },
+    {
+      id: 'lender_revenue' as const,
+      label: 'Financer Rev',
+      fullLabel: 'Business Money Revenue',
+      icon: Wallet,
+      activeClass: 'bg-[#007a33] text-white shadow-md',
+      pillActiveClass: 'bg-[#007a33] text-white shadow-sm',
+      badge: `₹${lenderStats.totalAll.toLocaleString('en-IN')}`,
+      badgeColor: 'bg-emerald-100 text-[#007a33]',
+    },
+    {
+      id: 'referrals' as const,
+      label: 'Referrals',
+      fullLabel: 'Manage Referrals',
+      icon: Gift,
+      activeClass: 'bg-gradient-to-r from-purple-700 to-indigo-700 text-white shadow-md',
+      pillActiveClass: 'bg-purple-700 text-white shadow-sm',
+      badge: referralStats.totalInvites,
+      badgeColor: 'bg-purple-100 text-purple-700',
+    },
+    {
+      id: 'vendor_subs' as const,
+      label: 'Vendor Plans',
+      fullLabel: 'Vendor Plans',
+      icon: Zap,
+      activeClass: 'bg-[#003893] text-white shadow-md',
+      pillActiveClass: 'bg-[#003893] text-white shadow-sm',
+      badge: vendorPlans.length,
+      badgeColor: 'bg-blue-100 text-[#003893]',
+    },
+    {
+      id: 'lender_subs' as const,
+      label: 'Financer Plans',
+      fullLabel: 'Financer Plans',
+      icon: CreditCard,
+      activeClass: 'bg-[#007a33] text-white shadow-md',
+      pillActiveClass: 'bg-[#007a33] text-white shadow-sm',
+      badge: lenderPlans.length,
+      badgeColor: 'bg-emerald-100 text-[#007a33]',
+    },
+    {
+      id: 'audits' as const,
+      label: 'Audit Trail',
+      fullLabel: 'Audit Logs',
+      icon: Activity,
+      activeClass: 'bg-[#003893] text-white shadow-md',
+      pillActiveClass: 'bg-[#003893] text-white shadow-sm',
+      badge: auditLogs.length,
+      badgeColor: 'bg-slate-200 text-slate-700',
+    },
+  ];
+
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col md:flex-row font-sans">
+    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col lg:flex-row font-sans">
       {/* Toast Notification */}
       {toastMessage && (
         <div className="fixed top-5 right-5 z-50 bg-[#007a33] text-white font-extrabold px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-2 animate-bounce border border-emerald-400 text-xs">
@@ -1888,13 +1999,208 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
         </div>
       )}
 
-      {/* Sidebar Navigation */}
-      <aside className="w-full md:w-64 bg-white border-r border-slate-200 p-5 flex flex-col justify-between flex-shrink-0 shadow-sm">
+      {/* ========================================================================= */}
+      {/* MOBILE & TABLET STICKY TOP NAVBAR (Hidden on Desktop >= 1024px)          */}
+      {/* ========================================================================= */}
+      <header className="lg:hidden sticky top-0 z-40 bg-white border-b border-slate-200 shadow-2xs">
+        {/* Top bar with Hamburger, Logo & Actions */}
+        <div className="px-3.5 sm:px-5 py-2.5 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2.5">
+            <button
+              onClick={() => setMobileMenuOpen(true)}
+              className="p-2 -ml-1 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 transition-colors relative"
+              aria-label="Open Navigation Menu"
+            >
+              <Menu className="w-5 h-5" />
+              {fraudReports.filter((r) => r.status === 'PENDING').length > 0 && (
+                <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-rose-500 rounded-full ring-2 ring-white animate-pulse" />
+              )}
+            </button>
+            <div className="flex items-center gap-2">
+              <SBNILogo imgClassName="h-8 sm:h-9 w-auto object-contain" />
+              <div className="hidden sm:block text-[10px] font-extrabold text-[#003893] uppercase tracking-wider bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                Admin Center
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <button
+              onClick={refreshAllAdminData}
+              disabled={isLoadingData}
+              className="p-2 sm:px-3 sm:py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center gap-1 transition-all active:scale-95 disabled:opacity-50"
+              title="Refresh Live Data"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 text-[#003893] ${isLoadingData ? 'animate-spin' : ''}`} />
+              <span className="hidden sm:inline">{isLoadingData ? 'Syncing...' : 'Sync DB'}</span>
+            </button>
+
+            {onNavigateHome && (
+              <button
+                onClick={onNavigateHome}
+                className="p-2 sm:px-3 sm:py-1.5 text-xs text-[#003893] font-extrabold bg-blue-50 hover:bg-blue-100 rounded-xl border border-blue-200 transition-colors flex items-center gap-1"
+                title="Return to Website"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Website</span>
+              </button>
+            )}
+
+            <button
+              onClick={handleAdminLogout}
+              className="p-2 rounded-xl text-rose-700 hover:bg-rose-50 border border-rose-200 transition-colors"
+              title="Log Out Admin"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+
+        {/* Swipeable Horizontal Quick Tab Pills Bar (Mobile & Tablet) */}
+        <div className="overflow-x-auto no-scrollbar flex items-center gap-1.5 px-3 py-2 bg-slate-50 border-t border-slate-100">
+          {navTabs.map((tab) => {
+            const IconComponent = tab.icon;
+            const isTabActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-extrabold whitespace-nowrap transition-all shrink-0 ${
+                  isTabActive
+                    ? tab.pillActiveClass
+                    : 'text-slate-600 bg-white border border-slate-200 hover:bg-slate-100 hover:text-slate-900 shadow-2xs'
+                }`}
+              >
+                <IconComponent className="w-3.5 h-3.5 shrink-0" />
+                <span>{tab.label}</span>
+                {tab.badge !== null && tab.badge !== undefined && (
+                  <span
+                    className={`ml-0.5 px-1.5 py-0.2 rounded-md text-[9px] font-black ${
+                      isTabActive ? 'bg-white/25 text-white' : tab.badgeColor || 'bg-slate-100 text-slate-700'
+                    }`}
+                  >
+                    {tab.badge}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </header>
+
+      {/* ========================================================================= */}
+      {/* MOBILE & TABLET SLIDE-OUT DRAWER (Hidden on Desktop >= 1024px)            */}
+      {/* ========================================================================= */}
+      {mobileMenuOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden flex">
+          {/* Backdrop Blur Overlay */}
+          <div
+            onClick={() => setMobileMenuOpen(false)}
+            className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs transition-opacity animate-fade-in"
+          />
+
+          {/* Drawer Panel */}
+          <aside className="relative w-72 max-w-[85vw] bg-white h-full p-5 shadow-2xl flex flex-col justify-between overflow-y-auto z-10 animate-slide-right">
+            <div>
+              {/* Drawer Header */}
+              <div className="pb-4 border-b border-slate-100 flex items-center justify-between">
+                <div className="space-y-1">
+                  <SBNILogo imgClassName="h-9 w-auto object-contain" />
+                  <div className="text-[10px] font-extrabold text-[#003893] uppercase tracking-wider bg-blue-50 px-2 py-0.5 rounded border border-blue-200 inline-block">
+                    JustPaisa Admin Center
+                  </div>
+                </div>
+                <button
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="p-2 rounded-xl bg-slate-100 text-slate-600 hover:text-slate-900 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Admin Profile Box */}
+              <div className="my-3.5 p-3 rounded-2xl bg-slate-50 border border-slate-200 text-xs">
+                <div className="text-slate-500 text-[10px] font-bold uppercase tracking-wider">Logged In Super Admin</div>
+                <div className="text-[#003893] font-extrabold truncate mt-0.5">{adminEmail}</div>
+                <div className="flex items-center gap-1.5 mt-1.5 text-[10px] text-emerald-700 font-bold">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span>AWS Live Connected</span>
+                </div>
+              </div>
+
+              {/* Drawer Navigation List */}
+              <nav className="space-y-1 text-xs font-bold pt-1">
+                {navTabs.map((tab) => {
+                  const IconComponent = tab.icon;
+                  const isTabActive = activeTab === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => {
+                        setActiveTab(tab.id);
+                        setMobileMenuOpen(false);
+                      }}
+                      className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all ${
+                        isTabActive
+                          ? tab.activeClass
+                          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <IconComponent className="w-4 h-4 shrink-0" />
+                        <span>{tab.fullLabel}</span>
+                      </div>
+                      {tab.badge !== null && tab.badge !== undefined && (
+                        <span
+                          className={`px-2 py-0.5 rounded-md text-[10px] font-extrabold ${
+                            isTabActive ? 'bg-white/20 text-white' : tab.badgeColor || 'bg-slate-200 text-slate-700'
+                          }`}
+                        >
+                          {tab.badge}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </nav>
+            </div>
+
+            {/* Drawer Footer Actions */}
+            <div className="pt-4 border-t border-slate-200 space-y-2 mt-4">
+              {onNavigateHome && (
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    onNavigateHome();
+                  }}
+                  className="w-full flex items-center justify-center gap-2 px-3 py-2.5 text-xs text-[#003893] font-extrabold bg-blue-50 hover:bg-blue-100 rounded-xl border border-blue-200 transition-colors shadow-2xs"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" /> Return to Website
+                </button>
+              )}
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  handleAdminLogout();
+                }}
+                className="w-full flex items-center justify-center gap-2 px-3 py-2.5 text-xs text-rose-700 hover:text-rose-900 bg-rose-50 hover:bg-rose-100 rounded-xl border border-rose-200 transition-colors font-extrabold shadow-2xs"
+              >
+                <LogOut className="w-3.5 h-3.5" /> Log Out Admin
+              </button>
+            </div>
+          </aside>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* DESKTOP SIDEBAR NAVIGATION (Hidden on Mobile & Tablet < 1024px)           */}
+      {/* ========================================================================= */}
+      <aside className="hidden lg:flex lg:w-64 xl:w-72 bg-white border-r border-slate-200 p-5 flex-col justify-between flex-shrink-0 shadow-sm sticky top-0 h-screen overflow-y-auto">
         <div>
           {/* Logo Header */}
-          <div className="pb-6 border-b border-slate-100 space-y-2">
+          <div className="pb-5 border-b border-slate-100 space-y-2">
             <div className="flex justify-start">
-              <SBNILogo imgClassName="h-12 w-auto object-contain" />
+              <SBNILogo imgClassName="h-11 w-auto object-contain" />
             </div>
             <div className="flex items-center justify-between">
               <div className="text-[11px] font-extrabold text-[#003893] uppercase tracking-wider bg-blue-50 px-2.5 py-0.5 rounded-md border border-blue-200">
@@ -1905,221 +2211,47 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
           </div>
 
           {/* Admin User Info Box */}
-          <div className="my-4 p-3 rounded-2xl bg-slate-50 border border-slate-200 text-xs">
+          <div className="my-3.5 p-3 rounded-2xl bg-slate-50 border border-slate-200 text-xs">
             <div className="text-slate-500 text-[10px] font-bold uppercase tracking-wider">Logged In Admin</div>
             <div className="text-[#003893] font-extrabold truncate mt-0.5">{adminEmail}</div>
           </div>
 
           {/* Navigation Links */}
           <nav className="space-y-1.5 text-xs font-bold">
-            {/* Overview Dashboard */}
-            <button
-              onClick={() => setActiveTab('overview')}
-              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all ${
-                activeTab === 'overview'
-                  ? 'bg-[#003893] text-white shadow-md'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-              }`}
-            >
-              <LayoutDashboard className="w-4 h-4" /> Overview Dashboard
-            </button>
-
-            {/* User Vendors */}
-            <button
-              onClick={() => setActiveTab('vendors')}
-              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl transition-all ${
-                activeTab === 'vendors'
-                  ? 'bg-[#003893] text-white shadow-md'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <Users className="w-4 h-4" /> User Vendors
-              </div>
-              <span
-                className={`px-2 py-0.5 rounded-md text-[10px] font-extrabold ${
-                  activeTab === 'vendors' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'
-                }`}
-              >
-                {vendors.length}
-              </span>
-            </button>
-
-            {/* Business Financers */}
-            <button
-              onClick={() => setActiveTab('lenders')}
-              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl transition-all ${
-                activeTab === 'lenders'
-                  ? 'bg-[#007a33] text-white shadow-md'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <Building2 className="w-4 h-4" /> Business Financers
-              </div>
-              <span
-                className={`px-2 py-0.5 rounded-md text-[10px] font-extrabold ${
-                  activeTab === 'lenders' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'
-                }`}
-              >
-                {lenders.length}
-              </span>
-            </button>
-
-            {/* 🚨 FRAUD REPORTS & BLACKLIST QUEUE */}
-            <button
-              onClick={() => setActiveTab('fraud_reports')}
-              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl transition-all ${
-                activeTab === 'fraud_reports'
-                  ? 'bg-rose-700 text-white shadow-md'
-                  : 'text-slate-700 hover:text-rose-700 hover:bg-rose-50/80'
-              }`}
-            >
-              <div className="flex items-center gap-2.5">
-                <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0" />
-                <span>Fraud Reports</span>
-              </div>
-              {fraudReports.filter((r) => r.status === 'PENDING').length > 0 ? (
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-500 text-white shadow-xs animate-pulse">
-                  {fraudReports.filter((r) => r.status === 'PENDING').length} Pending
-                </span>
-              ) : (
-                <span
-                  className={`px-2 py-0.5 rounded-md text-[10px] font-extrabold ${
-                    activeTab === 'fraud_reports' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'
+            {navTabs.map((tab) => {
+              const IconComponent = tab.icon;
+              const isTabActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl transition-all ${
+                    isTabActive
+                      ? tab.activeClass
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                   }`}
                 >
-                  {fraudReports.length}
-                </span>
-              )}
-            </button>
-
-            {/* 💰 REVENUE PAGE 1: VENDORS / SHOP BUSINESS REVENUE */}
-            <button
-              onClick={() => setActiveTab('vendor_revenue')}
-              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl transition-all ${
-                activeTab === 'vendor_revenue'
-                  ? 'bg-[#003893] text-white shadow-md'
-                  : 'text-slate-700 hover:text-[#003893] hover:bg-blue-50/80'
-              }`}
-            >
-              <div className="flex items-center gap-2.5">
-                <DollarSign className="w-4 h-4 text-emerald-500 shrink-0" />
-                <span>Shop Business Revenue</span>
-              </div>
-              <span
-                className={`px-2 py-0.5 rounded-md text-[10px] font-extrabold ${
-                  activeTab === 'vendor_revenue' ? 'bg-white/20 text-white' : 'bg-blue-100 text-[#003893]'
-                }`}
-              >
-                ₹{vendorStats.totalAll.toLocaleString('en-IN')}
-              </span>
-            </button>
-
-            {/* 💳 REVENUE PAGE 2: BUSINESS MONEY REVENUE (LENDERS) */}
-            <button
-              onClick={() => setActiveTab('lender_revenue')}
-              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl transition-all ${
-                activeTab === 'lender_revenue'
-                  ? 'bg-[#007a33] text-white shadow-md'
-                  : 'text-slate-700 hover:text-[#007a33] hover:bg-emerald-50/80'
-              }`}
-            >
-              <div className="flex items-center gap-2.5">
-                <Wallet className="w-4 h-4 text-emerald-500 shrink-0" />
-                <span>Business Money Revenue</span>
-              </div>
-              <span
-                className={`px-2 py-0.5 rounded-md text-[10px] font-extrabold ${
-                  activeTab === 'lender_revenue' ? 'bg-white/20 text-white' : 'bg-emerald-100 text-[#007a33]'
-                }`}
-              >
-                ₹{lenderStats.totalAll.toLocaleString('en-IN')}
-              </span>
-            </button>
-
-            {/* 🎁 PAGE 3: MANAGE REFERRALS */}
-            <button
-              onClick={() => setActiveTab('referrals')}
-              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl transition-all ${
-                activeTab === 'referrals'
-                  ? 'bg-gradient-to-r from-purple-700 to-indigo-700 text-white shadow-md'
-                  : 'text-slate-700 hover:text-purple-700 hover:bg-purple-50/80'
-              }`}
-            >
-              <div className="flex items-center gap-2.5">
-                <Gift className="w-4 h-4 text-purple-500 shrink-0" />
-                <span>Manage Referrals</span>
-              </div>
-              <span
-                className={`px-2 py-0.5 rounded-md text-[10px] font-extrabold ${
-                  activeTab === 'referrals' ? 'bg-white/20 text-white' : 'bg-purple-100 text-purple-700'
-                }`}
-              >
-                {referralStats.totalInvites}
-              </span>
-            </button>
-
-            {/* Vendor Subscription Plans */}
-            <button
-              onClick={() => setActiveTab('vendor_subs')}
-              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl transition-all ${
-                activeTab === 'vendor_subs'
-                  ? 'bg-[#003893] text-white shadow-md'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-blue-50/60'
-              }`}
-            >
-              <div className="flex items-center gap-2.5">
-                <Zap className="w-4 h-4 text-amber-500 shrink-0" />
-                <span>Vendor Plans</span>
-              </div>
-              <span
-                className={`px-2 py-0.5 rounded-md text-[10px] font-extrabold ${
-                  activeTab === 'vendor_subs' ? 'bg-white/20 text-white' : 'bg-blue-100 text-[#003893]'
-                }`}
-              >
-                {vendorPlans.length}
-              </span>
-            </button>
-
-            {/* Financer Subscription Plans */}
-            <button
-              onClick={() => setActiveTab('lender_subs')}
-              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl transition-all ${
-                activeTab === 'lender_subs'
-                  ? 'bg-[#007a33] text-white shadow-md'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-emerald-50/60'
-              }`}
-            >
-              <div className="flex items-center gap-2.5">
-                <CreditCard className="w-4 h-4 text-emerald-500 shrink-0" />
-                <span>Financer Plans</span>
-              </div>
-              <span
-                className={`px-2 py-0.5 rounded-md text-[10px] font-extrabold ${
-                  activeTab === 'lender_subs' ? 'bg-white/20 text-white' : 'bg-emerald-100 text-[#007a33]'
-                }`}
-              >
-                {lenderPlans.length}
-              </span>
-            </button>
-
-            {/* Audit Logs */}
-            <button
-              onClick={() => setActiveTab('audits')}
-              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all ${
-                activeTab === 'audits'
-                  ? 'bg-[#003893] text-white shadow-md'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-              }`}
-            >
-              <Activity className="w-4 h-4" /> Audit Logs
-            </button>
+                  <div className="flex items-center gap-3">
+                    <IconComponent className="w-4 h-4 shrink-0" />
+                    <span>{tab.fullLabel}</span>
+                  </div>
+                  {tab.badge !== null && tab.badge !== undefined && (
+                    <span
+                      className={`px-2 py-0.5 rounded-md text-[10px] font-extrabold ${
+                        isTabActive ? 'bg-white/20 text-white' : tab.badgeColor || 'bg-slate-200 text-slate-700'
+                      }`}
+                    >
+                      {tab.badge}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </nav>
         </div>
 
         {/* Footer Actions */}
-        <div className="pt-6 border-t border-slate-200 space-y-2">
+        <div className="pt-5 border-t border-slate-200 space-y-2">
           {onNavigateHome && (
             <button
               onClick={onNavigateHome}
@@ -2138,7 +2270,7 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 p-5 sm:p-8 overflow-y-auto">
+      <main className="flex-1 min-w-0 w-full p-3.5 sm:p-6 lg:p-8 overflow-y-auto pb-24 lg:pb-8">
         {/* ========================================================================= */}
         {/* TAB 1: OVERVIEW DASHBOARD                                                */}
         {/* ========================================================================= */}
@@ -2171,94 +2303,94 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
             </div>
 
             {/* Stat Cards Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
               <div
                 onClick={() => setActiveTab('vendor_revenue')}
-                className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm space-y-2 hover:border-[#003893] transition-all cursor-pointer group"
+                className="bg-white p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl border border-slate-200 shadow-sm space-y-1.5 sm:space-y-2 hover:border-[#003893] transition-all cursor-pointer group"
               >
                 <div className="flex items-center justify-between">
-                  <div className="text-xs text-slate-500 font-extrabold uppercase tracking-wider">
+                  <div className="text-[10px] sm:text-xs text-slate-500 font-extrabold uppercase tracking-wider">
                     Vendors Revenue
                   </div>
-                  <div className="w-9 h-9 rounded-xl bg-blue-100 text-[#003893] flex items-center justify-center font-bold group-hover:scale-110 transition-transform">
-                    <DollarSign className="w-5 h-5" />
+                  <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-xl bg-blue-100 text-[#003893] flex items-center justify-center font-bold group-hover:scale-110 transition-transform shrink-0">
+                    <DollarSign className="w-4 h-4 sm:w-5 sm:h-5" />
                   </div>
                 </div>
-                <div className="text-2xl sm:text-3xl font-extrabold text-[#003893] font-heading">
+                <div className="text-lg sm:text-2xl lg:text-3xl font-extrabold text-[#003893] font-heading truncate">
                   ₹{vendorStats.totalAll.toLocaleString('en-IN')}
                 </div>
-                <div className="text-[11px] text-slate-500 font-medium flex items-center justify-between">
-                  <span>{vendorStats.count} Live Subscriptions</span>
-                  <span className="text-blue-600 font-bold underline">View ➔</span>
+                <div className="text-[10px] sm:text-[11px] text-slate-500 font-medium flex items-center justify-between">
+                  <span className="truncate">{vendorStats.count} Subscriptions</span>
+                  <span className="text-blue-600 font-bold underline shrink-0 ml-1">View ➔</span>
                 </div>
               </div>
 
               <div
                 onClick={() => setActiveTab('lender_revenue')}
-                className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm space-y-2 hover:border-[#007a33] transition-all cursor-pointer group"
+                className="bg-white p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl border border-slate-200 shadow-sm space-y-1.5 sm:space-y-2 hover:border-[#007a33] transition-all cursor-pointer group"
               >
                 <div className="flex items-center justify-between">
-                  <div className="text-xs text-slate-500 font-extrabold uppercase tracking-wider">
+                  <div className="text-[10px] sm:text-xs text-slate-500 font-extrabold uppercase tracking-wider">
                     Financers Revenue
                   </div>
-                  <div className="w-9 h-9 rounded-xl bg-emerald-100 text-[#007a33] flex items-center justify-center font-bold group-hover:scale-110 transition-transform">
-                    <Wallet className="w-5 h-5" />
+                  <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-xl bg-emerald-100 text-[#007a33] flex items-center justify-center font-bold group-hover:scale-110 transition-transform shrink-0">
+                    <Wallet className="w-4 h-4 sm:w-5 sm:h-5" />
                   </div>
                 </div>
-                <div className="text-2xl sm:text-3xl font-extrabold text-[#007a33] font-heading">
+                <div className="text-lg sm:text-2xl lg:text-3xl font-extrabold text-[#007a33] font-heading truncate">
                   ₹{lenderStats.totalAll.toLocaleString('en-IN')}
                 </div>
-                <div className="text-[11px] text-slate-500 font-medium flex items-center justify-between">
-                  <span>{lenderStats.count} Live Subscriptions</span>
-                  <span className="text-emerald-700 font-bold underline">View ➔</span>
+                <div className="text-[10px] sm:text-[11px] text-slate-500 font-medium flex items-center justify-between">
+                  <span className="truncate">{lenderStats.count} Subscriptions</span>
+                  <span className="text-emerald-700 font-bold underline shrink-0 ml-1">View ➔</span>
                 </div>
               </div>
 
               <div
                 onClick={() => setActiveTab('referrals')}
-                className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm space-y-2 hover:border-purple-500 transition-all cursor-pointer group"
+                className="bg-white p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl border border-slate-200 shadow-sm space-y-1.5 sm:space-y-2 hover:border-purple-500 transition-all cursor-pointer group"
               >
                 <div className="flex items-center justify-between">
-                  <div className="text-xs text-slate-500 font-extrabold uppercase tracking-wider">
+                  <div className="text-[10px] sm:text-xs text-slate-500 font-extrabold uppercase tracking-wider">
                     Referral Payouts
                   </div>
-                  <div className="w-9 h-9 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-bold group-hover:scale-110 transition-transform">
-                    <Gift className="w-5 h-5" />
+                  <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-bold group-hover:scale-110 transition-transform shrink-0">
+                    <Gift className="w-4 h-4 sm:w-5 sm:h-5" />
                   </div>
                 </div>
-                <div className="text-2xl sm:text-3xl font-extrabold text-purple-700 font-heading">
+                <div className="text-lg sm:text-2xl lg:text-3xl font-extrabold text-purple-700 font-heading truncate">
                   ₹{referralStats.totalPaidAmount.toLocaleString('en-IN')}
                 </div>
-                <div className="text-[11px] text-slate-500 font-medium flex items-center justify-between">
-                  <span>{referralStats.totalInvites} Live Invites Tracked</span>
-                  <span className="text-purple-600 font-bold underline">Manage ➔</span>
+                <div className="text-[10px] sm:text-[11px] text-slate-500 font-medium flex items-center justify-between">
+                  <span className="truncate">{referralStats.totalInvites} Invites</span>
+                  <span className="text-purple-600 font-bold underline shrink-0 ml-1">Manage ➔</span>
                 </div>
               </div>
 
               <div
                 onClick={() => setActiveTab('vendors')}
-                className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm space-y-2 hover:border-amber-400 transition-all cursor-pointer group"
+                className="bg-white p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl border border-slate-200 shadow-sm space-y-1.5 sm:space-y-2 hover:border-amber-400 transition-all cursor-pointer group"
               >
                 <div className="flex items-center justify-between">
-                  <div className="text-xs text-slate-500 font-extrabold uppercase tracking-wider">
+                  <div className="text-[10px] sm:text-xs text-slate-500 font-extrabold uppercase tracking-wider">
                     Registered Users
                   </div>
-                  <div className="w-9 h-9 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center font-bold group-hover:scale-110 transition-transform">
-                    <Users className="w-5 h-5" />
+                  <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center font-bold group-hover:scale-110 transition-transform shrink-0">
+                    <Users className="w-4 h-4 sm:w-5 sm:h-5" />
                   </div>
                 </div>
-                <div className="text-2xl sm:text-3xl font-extrabold text-amber-800 font-heading">
+                <div className="text-lg sm:text-2xl lg:text-3xl font-extrabold text-amber-800 font-heading truncate">
                   {vendors.length + lenders.length}
                 </div>
-                <div className="text-[11px] text-slate-500 font-medium flex items-center justify-between">
-                  <span>{vendors.length} Vendors • {lenders.length} Financers</span>
-                  <span className="text-amber-700 font-bold underline">Manage ➔</span>
+                <div className="text-[10px] sm:text-[11px] text-slate-500 font-medium flex items-center justify-between">
+                  <span className="truncate">{vendors.length}V • {lenders.length}F</span>
+                  <span className="text-amber-700 font-bold underline shrink-0 ml-1">Manage ➔</span>
                 </div>
               </div>
             </div>
 
             {/* Quick Navigation Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 pt-2">
               <div className="bg-gradient-to-br from-blue-900 via-blue-950 to-slate-900 text-white p-6 rounded-3xl shadow-lg space-y-3">
                 <div className="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center text-blue-300">
                   <DollarSign className="w-5 h-5" />
@@ -2373,74 +2505,74 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
             </div>
 
             {/* Calculated KPI Cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-              <div className="bg-gradient-to-br from-[#003893] to-[#002669] text-white p-4 rounded-2xl shadow-md space-y-1">
-                <div className="text-[10px] text-blue-200 font-extrabold uppercase tracking-wider">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
+              <div className="bg-gradient-to-br from-[#003893] to-[#002669] text-white p-3.5 sm:p-4 rounded-2xl shadow-md space-y-1">
+                <div className="text-[9px] sm:text-[10px] text-blue-200 font-extrabold uppercase tracking-wider">
                   Total Vendor Revenue
                 </div>
-                <div className="text-xl sm:text-2xl font-extrabold font-heading">
+                <div className="text-base sm:text-xl lg:text-2xl font-extrabold font-heading truncate">
                   ₹{vendorStats.totalAll.toLocaleString('en-IN')}
                 </div>
-                <div className="text-[10px] text-blue-200 font-medium">All Time Total</div>
+                <div className="text-[9px] sm:text-[10px] text-blue-200 font-medium">All Time Total</div>
               </div>
 
-              <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-1">
-                <div className="text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">
+              <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-xs space-y-1">
+                <div className="text-[9px] sm:text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">
                   Today's Revenue
                 </div>
-                <div className="text-xl sm:text-2xl font-extrabold text-emerald-600 font-heading">
+                <div className="text-base sm:text-xl lg:text-2xl font-extrabold text-emerald-600 font-heading truncate">
                   ₹{vendorStats.today.toLocaleString('en-IN')}
                 </div>
-                <div className="text-[10px] text-slate-400 font-medium">Day-Wise Today</div>
+                <div className="text-[9px] sm:text-[10px] text-slate-400 font-medium">Day-Wise Today</div>
               </div>
 
-              <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-1">
-                <div className="text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">
+              <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-xs space-y-1">
+                <div className="text-[9px] sm:text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">
                   Weekly Revenue
                 </div>
-                <div className="text-xl sm:text-2xl font-extrabold text-blue-600 font-heading">
+                <div className="text-base sm:text-xl lg:text-2xl font-extrabold text-blue-600 font-heading truncate">
                   ₹{vendorStats.week.toLocaleString('en-IN')}
                 </div>
-                <div className="text-[10px] text-slate-400 font-medium">Last 7 Days</div>
+                <div className="text-[9px] sm:text-[10px] text-slate-400 font-medium">Last 7 Days</div>
               </div>
 
-              <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-1">
-                <div className="text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">
+              <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-xs space-y-1">
+                <div className="text-[9px] sm:text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">
                   Monthly Revenue
                 </div>
-                <div className="text-xl sm:text-2xl font-extrabold text-indigo-600 font-heading">
+                <div className="text-base sm:text-xl lg:text-2xl font-extrabold text-indigo-600 font-heading truncate">
                   ₹{vendorStats.month.toLocaleString('en-IN')}
                 </div>
-                <div className="text-[10px] text-slate-400 font-medium">This Month</div>
+                <div className="text-[9px] sm:text-[10px] text-slate-400 font-medium">This Month</div>
               </div>
 
-              <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-1">
-                <div className="text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">
+              <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-xs space-y-1">
+                <div className="text-[9px] sm:text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">
                   Yearly Revenue
                 </div>
-                <div className="text-xl sm:text-2xl font-extrabold text-slate-900 font-heading">
+                <div className="text-base sm:text-xl lg:text-2xl font-extrabold text-slate-900 font-heading truncate">
                   ₹{vendorStats.year.toLocaleString('en-IN')}
                 </div>
-                <div className="text-[10px] text-slate-400 font-medium">Year 2026</div>
+                <div className="text-[9px] sm:text-[10px] text-slate-400 font-medium">Year 2026</div>
               </div>
 
-              <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-1">
-                <div className="text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">
+              <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-xs space-y-1">
+                <div className="text-[9px] sm:text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">
                   Avg. Order Value
                 </div>
-                <div className="text-xl sm:text-2xl font-extrabold text-amber-600 font-heading">
+                <div className="text-base sm:text-xl lg:text-2xl font-extrabold text-amber-600 font-heading truncate">
                   ₹{vendorStats.aov.toLocaleString('en-IN')}
                 </div>
-                <div className="text-[10px] text-slate-400 font-medium">Per Subscription</div>
+                <div className="text-[9px] sm:text-[10px] text-slate-400 font-medium">Per Subscription</div>
               </div>
             </div>
 
             {/* Filter & Period Toolbar */}
-            <div className="bg-white p-4 rounded-3xl border border-slate-200 shadow-sm space-y-3">
-              {/* Period Tabs */}
-              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
-                <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl">
-                  <span className="text-xs font-extrabold text-slate-600 px-2 flex items-center gap-1">
+            <div className="bg-white p-3.5 sm:p-4 rounded-2xl sm:rounded-3xl border border-slate-200 shadow-sm space-y-3">
+              {/* Period Tabs (Scrollable on mobile) */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border-b border-slate-100 pb-3">
+                <div className="overflow-x-auto no-scrollbar flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl">
+                  <span className="text-xs font-extrabold text-slate-600 px-2 flex items-center gap-1 whitespace-nowrap">
                     <Calendar className="w-3.5 h-3.5 text-[#003893]" /> Period:
                   </span>
                   {(
@@ -2455,7 +2587,7 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
                     <button
                       key={p.key}
                       onClick={() => setVendorRevenuePeriod(p.key)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-extrabold transition-all ${
+                      className={`px-3 py-1.5 rounded-lg text-xs font-extrabold whitespace-nowrap transition-all ${
                         vendorRevenuePeriod === p.key
                           ? 'bg-[#003893] text-white shadow-xs'
                           : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200'
@@ -2473,12 +2605,12 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
               </div>
 
               {/* Search and Secondary Dropdowns */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
                 <div className="relative">
                   <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
                   <input
                     type="text"
-                    placeholder="Search shop name, owner, invoice, phone..."
+                    placeholder="Search shop, owner, invoice, phone..."
                     value={vendorRevenueSearch}
                     onChange={(e) => setVendorRevenueSearch(e.target.value)}
                     className="w-full bg-slate-50 border border-slate-300 rounded-xl pl-10 pr-3 py-2 text-xs font-medium text-slate-900 outline-none focus:border-[#003893]"
@@ -2515,8 +2647,8 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
               </div>
             </div>
 
-            {/* Transactions Table */}
-            <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm">
+            {/* Desktop / Tablet Transactions Table (Hidden on mobile < 768px) */}
+            <div className="hidden md:block bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm">
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs text-slate-800">
                   <thead className="bg-slate-100 text-slate-700 uppercase text-[10px] font-extrabold tracking-wider border-b border-slate-200">
@@ -2616,6 +2748,88 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
                 </table>
               </div>
             </div>
+
+            {/* Mobile Card View (Hidden on Tablet & Desktop >= 768px) */}
+            <div className="block md:hidden space-y-3">
+              {filteredVendorTransactions.length === 0 ? (
+                <div className="bg-white p-8 rounded-2xl border border-slate-200 text-center space-y-2">
+                  <div className="w-10 h-10 rounded-xl bg-blue-50 text-[#003893] flex items-center justify-center font-bold mx-auto">
+                    <Receipt className="w-5 h-5" />
+                  </div>
+                  <div className="text-xs font-extrabold text-slate-700">No Vendor Payments Recorded Yet</div>
+                </div>
+              ) : (
+                filteredVendorTransactions.map((tx) => (
+                  <div
+                    key={tx.id}
+                    className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-3"
+                  >
+                    <div className="flex items-start justify-between gap-2 border-b border-slate-100 pb-2.5">
+                      <div className="min-w-0 flex-1">
+                        <div className="font-extrabold text-slate-900 text-sm truncate">{tx.entityName}</div>
+                        <div className="text-[11px] text-slate-500 font-medium truncate">
+                          {tx.personName} • {tx.phone}
+                        </div>
+                        <div className="text-[10px] text-slate-400 font-mono truncate">{tx.email}</div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <div className="text-base font-black text-slate-900 font-heading">
+                          ₹{tx.amount.toLocaleString('en-IN')}
+                        </div>
+                        <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-200 inline-flex items-center gap-0.5">
+                          <CheckCircle2 className="w-2.5 h-2.5 text-emerald-600" />
+                          PAID
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div className="space-y-0.5">
+                        <span className="text-[10px] text-slate-400 font-bold uppercase">Plan</span>
+                        <div>
+                          <span className="px-2 py-0.5 rounded-md text-[11px] font-extrabold bg-blue-50 text-[#003893] border border-blue-200 inline-flex items-center gap-1">
+                            <Zap className="w-3 h-3 text-amber-500" />
+                            {tx.planName}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="space-y-0.5">
+                        <span className="text-[10px] text-slate-400 font-bold uppercase">Method</span>
+                        <div className="text-[11px] font-bold text-slate-700 flex items-center gap-1">
+                          <CreditCard className="w-3 h-3 text-slate-500 shrink-0" />
+                          <span>{tx.paymentMethod.replace('_', ' ')}</span>
+                        </div>
+                      </div>
+
+                      <div className="space-y-0.5 col-span-2 sm:col-span-1">
+                        <span className="text-[10px] text-slate-400 font-bold uppercase">Date & Time</span>
+                        <div className="text-[10px] font-bold text-slate-700 flex items-center gap-1">
+                          <Clock className="w-3 h-3 text-[#003893] shrink-0" />
+                          <span>{formatExactDateTime(tx.paymentDate)}</span>
+                        </div>
+                      </div>
+
+                      <div className="space-y-0.5 col-span-2 sm:col-span-1">
+                        <span className="text-[10px] text-slate-400 font-bold uppercase">Invoice / Txn ID</span>
+                        <div className="text-[10px] font-mono font-bold text-[#003893] truncate">{tx.invoiceNumber}</div>
+                        <div className="text-[9px] font-mono text-slate-400 truncate">{tx.transactionId}</div>
+                      </div>
+                    </div>
+
+                    <div className="pt-2 border-t border-slate-100 flex justify-end">
+                      <button
+                        onClick={() => handleDeletePayment(tx.id)}
+                        className="p-1.5 px-3 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 transition-all active:scale-95 flex items-center gap-1 text-[10px] font-extrabold"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        Delete Record
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         )}
 
@@ -2658,74 +2872,74 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
             </div>
 
             {/* Calculated KPI Cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-              <div className="bg-gradient-to-br from-[#007a33] to-[#00471d] text-white p-4 rounded-2xl shadow-md space-y-1">
-                <div className="text-[10px] text-emerald-200 font-extrabold uppercase tracking-wider">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
+              <div className="bg-gradient-to-br from-[#007a33] to-[#00471d] text-white p-3.5 sm:p-4 rounded-2xl shadow-md space-y-1">
+                <div className="text-[9px] sm:text-[10px] text-emerald-200 font-extrabold uppercase tracking-wider">
                   Total Financer Revenue
                 </div>
-                <div className="text-xl sm:text-2xl font-extrabold font-heading">
+                <div className="text-base sm:text-xl lg:text-2xl font-extrabold font-heading truncate">
                   ₹{lenderStats.totalAll.toLocaleString('en-IN')}
                 </div>
-                <div className="text-[10px] text-emerald-200 font-medium">All Time Inflow</div>
+                <div className="text-[9px] sm:text-[10px] text-emerald-200 font-medium">All Time Inflow</div>
               </div>
 
-              <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-1">
-                <div className="text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">
+              <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-xs space-y-1">
+                <div className="text-[9px] sm:text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">
                   Today's Revenue
                 </div>
-                <div className="text-xl sm:text-2xl font-extrabold text-emerald-700 font-heading">
+                <div className="text-base sm:text-xl lg:text-2xl font-extrabold text-emerald-700 font-heading truncate">
                   ₹{lenderStats.today.toLocaleString('en-IN')}
                 </div>
-                <div className="text-[10px] text-slate-400 font-medium">Day-Wise Today</div>
+                <div className="text-[9px] sm:text-[10px] text-slate-400 font-medium">Day-Wise Today</div>
               </div>
 
-              <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-1">
-                <div className="text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">
+              <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-xs space-y-1">
+                <div className="text-[9px] sm:text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">
                   Weekly Revenue
                 </div>
-                <div className="text-xl sm:text-2xl font-extrabold text-emerald-600 font-heading">
+                <div className="text-base sm:text-xl lg:text-2xl font-extrabold text-emerald-600 font-heading truncate">
                   ₹{lenderStats.week.toLocaleString('en-IN')}
                 </div>
-                <div className="text-[10px] text-slate-400 font-medium">Last 7 Days</div>
+                <div className="text-[9px] sm:text-[10px] text-slate-400 font-medium">Last 7 Days</div>
               </div>
 
-              <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-1">
-                <div className="text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">
+              <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-xs space-y-1">
+                <div className="text-[9px] sm:text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">
                   Monthly Revenue
                 </div>
-                <div className="text-xl sm:text-2xl font-extrabold text-teal-600 font-heading">
+                <div className="text-base sm:text-xl lg:text-2xl font-extrabold text-teal-600 font-heading truncate">
                   ₹{lenderStats.month.toLocaleString('en-IN')}
                 </div>
-                <div className="text-[10px] text-slate-400 font-medium">This Month</div>
+                <div className="text-[9px] sm:text-[10px] text-slate-400 font-medium">This Month</div>
               </div>
 
-              <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-1">
-                <div className="text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">
+              <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-xs space-y-1">
+                <div className="text-[9px] sm:text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">
                   Yearly Revenue
                 </div>
-                <div className="text-xl sm:text-2xl font-extrabold text-slate-900 font-heading">
+                <div className="text-base sm:text-xl lg:text-2xl font-extrabold text-slate-900 font-heading truncate">
                   ₹{lenderStats.year.toLocaleString('en-IN')}
                 </div>
-                <div className="text-[10px] text-slate-400 font-medium">Year 2026</div>
+                <div className="text-[9px] sm:text-[10px] text-slate-400 font-medium">Year 2026</div>
               </div>
 
-              <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-1">
-                <div className="text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">
+              <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-xs space-y-1">
+                <div className="text-[9px] sm:text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">
                   Avg. Plan Ticket
                 </div>
-                <div className="text-xl sm:text-2xl font-extrabold text-emerald-800 font-heading">
+                <div className="text-base sm:text-xl lg:text-2xl font-extrabold text-emerald-800 font-heading truncate">
                   ₹{lenderStats.aov.toLocaleString('en-IN')}
                 </div>
-                <div className="text-[10px] text-slate-400 font-medium">Per Financer</div>
+                <div className="text-[9px] sm:text-[10px] text-slate-400 font-medium">Per Financer</div>
               </div>
             </div>
 
             {/* Filter & Period Toolbar */}
-            <div className="bg-white p-4 rounded-3xl border border-slate-200 shadow-sm space-y-3">
-              {/* Period Tabs */}
-              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
-                <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl">
-                  <span className="text-xs font-extrabold text-slate-600 px-2 flex items-center gap-1">
+            <div className="bg-white p-3.5 sm:p-4 rounded-2xl sm:rounded-3xl border border-slate-200 shadow-sm space-y-3">
+              {/* Period Tabs (Scrollable on mobile) */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border-b border-slate-100 pb-3">
+                <div className="overflow-x-auto no-scrollbar flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl">
+                  <span className="text-xs font-extrabold text-slate-600 px-2 flex items-center gap-1 whitespace-nowrap">
                     <Calendar className="w-3.5 h-3.5 text-[#007a33]" /> Period:
                   </span>
                   {(
@@ -2740,7 +2954,7 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
                     <button
                       key={p.key}
                       onClick={() => setLenderRevenuePeriod(p.key)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-extrabold transition-all ${
+                      className={`px-3 py-1.5 rounded-lg text-xs font-extrabold whitespace-nowrap transition-all ${
                         lenderRevenuePeriod === p.key
                           ? 'bg-[#007a33] text-white shadow-xs'
                           : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200'
@@ -2759,7 +2973,7 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
               </div>
 
               {/* Search and Secondary Dropdowns */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
                 <div className="relative">
                   <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
                   <input
@@ -2800,8 +3014,8 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
               </div>
             </div>
 
-            {/* Transactions Table */}
-            <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm">
+            {/* Desktop / Tablet Transactions Table (Hidden on mobile < 768px) */}
+            <div className="hidden md:block bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm">
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs text-slate-800">
                   <thead className="bg-slate-100 text-slate-700 uppercase text-[10px] font-extrabold tracking-wider border-b border-slate-200">
@@ -2901,6 +3115,88 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
                 </table>
               </div>
             </div>
+
+            {/* Mobile Card View (Hidden on Tablet & Desktop >= 768px) */}
+            <div className="block md:hidden space-y-3">
+              {filteredLenderTransactions.length === 0 ? (
+                <div className="bg-white p-8 rounded-2xl border border-slate-200 text-center space-y-2">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-50 text-[#007a33] flex items-center justify-center font-bold mx-auto">
+                    <Wallet className="w-5 h-5" />
+                  </div>
+                  <div className="text-xs font-extrabold text-slate-700">No Financer Payments Recorded Yet</div>
+                </div>
+              ) : (
+                filteredLenderTransactions.map((tx) => (
+                  <div
+                    key={tx.id}
+                    className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-3"
+                  >
+                    <div className="flex items-start justify-between gap-2 border-b border-slate-100 pb-2.5">
+                      <div className="min-w-0 flex-1">
+                        <div className="font-extrabold text-slate-900 text-sm truncate">{tx.entityName}</div>
+                        <div className="text-[11px] text-slate-500 font-medium truncate">
+                          {tx.personName} • {tx.phone}
+                        </div>
+                        <div className="text-[10px] text-slate-400 font-mono truncate">{tx.email}</div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <div className="text-base font-black text-[#007a33] font-heading">
+                          ₹{tx.amount.toLocaleString('en-IN')}
+                        </div>
+                        <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-200 inline-flex items-center gap-0.5">
+                          <CheckCircle2 className="w-2.5 h-2.5 text-emerald-600" />
+                          PAID
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div className="space-y-0.5">
+                        <span className="text-[10px] text-slate-400 font-bold uppercase">Plan</span>
+                        <div>
+                          <span className="px-2 py-0.5 rounded-md text-[11px] font-extrabold bg-emerald-50 text-[#007a33] border border-emerald-200 inline-flex items-center gap-1">
+                            <CreditCard className="w-3 h-3 text-emerald-600" />
+                            {tx.planName}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="space-y-0.5">
+                        <span className="text-[10px] text-slate-400 font-bold uppercase">Method</span>
+                        <div className="text-[11px] font-bold text-slate-700 flex items-center gap-1">
+                          <Wallet className="w-3 h-3 text-slate-500 shrink-0" />
+                          <span>{tx.paymentMethod.replace('_', ' ')}</span>
+                        </div>
+                      </div>
+
+                      <div className="space-y-0.5 col-span-2 sm:col-span-1">
+                        <span className="text-[10px] text-slate-400 font-bold uppercase">Payment Date & Time</span>
+                        <div className="text-[10px] font-bold text-slate-700 flex items-center gap-1">
+                          <Clock className="w-3 h-3 text-[#007a33] shrink-0" />
+                          <span>{formatExactDateTime(tx.paymentDate)}</span>
+                        </div>
+                      </div>
+
+                      <div className="space-y-0.5 col-span-2 sm:col-span-1">
+                        <span className="text-[10px] text-slate-400 font-bold uppercase">Invoice / Txn ID</span>
+                        <div className="text-[10px] font-mono font-bold text-[#007a33] truncate">{tx.invoiceNumber}</div>
+                        <div className="text-[9px] font-mono text-slate-400 truncate">{tx.transactionId}</div>
+                      </div>
+                    </div>
+
+                    <div className="pt-2 border-t border-slate-100 flex justify-end">
+                      <button
+                        onClick={() => handleDeletePayment(tx.id)}
+                        className="p-1.5 px-3 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 transition-all active:scale-95 flex items-center gap-1 text-[10px] font-extrabold"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        Delete Record
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         )}
 
@@ -2942,66 +3238,65 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
             </div>
 
             {/* Calculated KPI Cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-              <div className="bg-gradient-to-br from-purple-700 to-indigo-800 text-white p-4 rounded-2xl shadow-md space-y-1">
-                <div className="text-[10px] text-purple-200 font-extrabold uppercase tracking-wider">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
+              <div className="bg-gradient-to-br from-purple-700 to-indigo-800 text-white p-3.5 sm:p-4 rounded-2xl shadow-md space-y-1">
+                <div className="text-[9px] sm:text-[10px] text-purple-200 font-extrabold uppercase tracking-wider">
                   Total Invites
                 </div>
-                <div className="text-xl sm:text-2xl font-extrabold font-heading">
+                <div className="text-base sm:text-xl lg:text-2xl font-extrabold font-heading truncate">
                   {referralStats.totalInvites}
                 </div>
-                <div className="text-[10px] text-purple-200 font-medium">Generated Links</div>
+                <div className="text-[9px] sm:text-[10px] text-purple-200 font-medium">Generated Links</div>
               </div>
 
-              <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-1">
-                <div className="text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">
+              <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-xs space-y-1">
+                <div className="text-[9px] sm:text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">
                   Rewards Paid Out
                 </div>
-                <div className="text-xl sm:text-2xl font-extrabold text-emerald-600 font-heading">
+                <div className="text-base sm:text-xl lg:text-2xl font-extrabold text-emerald-600 font-heading truncate">
                   ₹{referralStats.totalPaidAmount.toLocaleString('en-IN')}
                 </div>
-                <div className="text-[10px] text-slate-400 font-medium">
-                  {referralStats.paidCount} Successful Payouts
+                <div className="text-[9px] sm:text-[10px] text-slate-400 font-medium">
+                  {referralStats.paidCount} Successful
                 </div>
               </div>
 
-              <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-1">
-                <div className="text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">
+              <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-xs space-y-1">
+                <div className="text-[9px] sm:text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">
                   Pending Payouts
                 </div>
-                <div className="text-xl sm:text-2xl font-extrabold text-amber-600 font-heading">
+                <div className="text-base sm:text-xl lg:text-2xl font-extrabold text-amber-600 font-heading truncate">
                   ₹{referralStats.pendingPayoutAmount.toLocaleString('en-IN')}
                 </div>
-                <div className="text-[10px] text-slate-400 font-medium">
-                  {referralStats.readyCount} Awaiting Payout
+                <div className="text-[9px] sm:text-[10px] text-slate-400 font-medium">
+                  {referralStats.readyCount} Awaiting Action
                 </div>
               </div>
 
-              <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-1">
-                <div className="text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">
+              <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-xs space-y-1">
+                <div className="text-[9px] sm:text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">
                   Conversion Rate
                 </div>
-                <div className="text-xl sm:text-2xl font-extrabold text-purple-700 font-heading">
+                <div className="text-base sm:text-xl lg:text-2xl font-extrabold text-purple-700 font-heading truncate">
                   {referralStats.conversionRate}%
                 </div>
-                <div className="text-[10px] text-slate-400 font-medium">Verified Signups</div>
+                <div className="text-[9px] sm:text-[10px] text-slate-400 font-medium">Verified Signups</div>
               </div>
 
-              <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-1">
-                <div className="text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">
-                  Active Commission Rate
+              <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-xs space-y-1 col-span-2 sm:col-span-1">
+                <div className="text-[9px] sm:text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">
+                  Commission Rate
                 </div>
-                <div className="text-sm font-extrabold text-slate-800">
-                  ₹{referralVendorReward} <span className="text-xs text-slate-500 font-normal">(Shop)</span> / ₹
-                  {referralLenderReward} <span className="text-xs text-slate-500 font-normal">(Financer)</span>
+                <div className="text-xs sm:text-sm font-extrabold text-slate-800 truncate">
+                  ₹{referralVendorReward} <span className="text-[10px] text-slate-500 font-normal">(Shop)</span> / ₹{referralLenderReward} <span className="text-[10px] text-slate-500 font-normal">(Financer)</span>
                 </div>
-                <div className="text-[10px] text-emerald-600 font-semibold">{referralDiscountPct}% Referee Discount</div>
+                <div className="text-[9px] sm:text-[10px] text-emerald-600 font-semibold">{referralDiscountPct}% Referee Discount</div>
               </div>
             </div>
 
             {/* Filter Toolbar */}
-            <div className="bg-white p-4 rounded-3xl border border-slate-200 shadow-sm space-y-3">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="bg-white p-3.5 sm:p-4 rounded-2xl sm:rounded-3xl border border-slate-200 shadow-sm space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
                 <div className="relative">
                   <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
                   <input
@@ -3020,7 +3315,7 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
                     className="w-full bg-slate-50 border border-slate-300 text-xs font-bold text-slate-700 rounded-xl px-3 py-2 outline-none focus:border-purple-600"
                   >
                     <option value="ALL">All Payout Statuses</option>
-                    <option value="REWARD_READY">Ready for Payout (Pending Admin Action)</option>
+                    <option value="REWARD_READY">Ready for Payout (Pending Action)</option>
                     <option value="PAID">Paid Out Successfully</option>
                     <option value="PENDING_VERIFICATION">Awaiting KYC Verification</option>
                   </select>
@@ -3033,15 +3328,15 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
                     className="w-full bg-slate-50 border border-slate-300 text-xs font-bold text-slate-700 rounded-xl px-3 py-2 outline-none focus:border-purple-600"
                   >
                     <option value="ALL">All Referrer Types</option>
-                    <option value="VENDOR">Vendors (Small Shop Owners)</option>
+                    <option value="VENDOR">Vendors (Shop Owners)</option>
                     <option value="LENDER">Financers (Lenders)</option>
                   </select>
                 </div>
               </div>
             </div>
 
-            {/* Referrals Table */}
-            <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm">
+            {/* Desktop / Tablet Referrals Table (Hidden on mobile < 768px) */}
+            <div className="hidden md:block bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm">
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs text-slate-800">
                   <thead className="bg-slate-100 text-slate-700 uppercase text-[10px] font-extrabold tracking-wider border-b border-slate-200">
@@ -3179,6 +3474,118 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
                 </table>
               </div>
             </div>
+
+            {/* Mobile Card View (Hidden on Tablet & Desktop >= 768px) */}
+            <div className="block md:hidden space-y-3">
+              {filteredReferrals.length === 0 ? (
+                <div className="bg-white p-8 rounded-2xl border border-slate-200 text-center space-y-2">
+                  <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center font-bold mx-auto">
+                    <Gift className="w-5 h-5" />
+                  </div>
+                  <div className="text-xs font-extrabold text-slate-700">No Referrals Recorded Yet</div>
+                </div>
+              ) : (
+                filteredReferrals.map((r) => (
+                  <div
+                    key={r.id}
+                    className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-3"
+                  >
+                    <div className="flex items-start justify-between gap-2 border-b border-slate-100 pb-2.5">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="font-extrabold text-slate-900 text-sm truncate">{r.referrerName}</span>
+                          <span
+                            className={`text-[9px] font-extrabold px-1.5 py-0.2 rounded-md ${
+                              r.referrerRole === 'VENDOR'
+                                ? 'bg-blue-50 text-[#003893] border border-blue-200'
+                                : 'bg-emerald-50 text-[#007a33] border border-emerald-200'
+                            }`}
+                          >
+                            {r.referrerRole === 'VENDOR' ? 'Shop' : 'Financer'}
+                          </span>
+                        </div>
+                        <div className="text-[11px] text-slate-500 font-medium truncate">{r.referrerPhone}</div>
+                        <div className="text-[10px] text-slate-400 font-mono truncate">{r.referrerEmail}</div>
+                      </div>
+
+                      <div className="text-right shrink-0">
+                        <div className="text-base font-black text-purple-700 font-heading">
+                          ₹{r.rewardAmount}
+                        </div>
+                        {r.status === 'PAID' && (
+                          <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-200 inline-flex items-center gap-0.5">
+                            <CheckCircle2 className="w-2.5 h-2.5 text-emerald-600" />
+                            PAID
+                          </span>
+                        )}
+                        {r.status === 'REWARD_READY' && (
+                          <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-blue-100 text-blue-800 border border-blue-200 inline-flex items-center gap-0.5 animate-pulse">
+                            <Award className="w-2.5 h-2.5 text-blue-600" />
+                            READY
+                          </span>
+                        )}
+                        {r.status === 'PENDING_VERIFICATION' && (
+                          <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-amber-100 text-amber-800 border border-amber-200 inline-flex items-center gap-0.5">
+                            <Clock className="w-2.5 h-2.5 text-amber-600" />
+                            PENDING
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div className="space-y-0.5">
+                        <span className="text-[10px] text-slate-400 font-bold uppercase">Referral Code</span>
+                        <div>
+                          <div className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-50 border border-purple-200 rounded-lg text-purple-700 font-mono font-extrabold text-[11px]">
+                            <span>{r.referralCode}</span>
+                            <button
+                              onClick={() => {
+                                navigator.clipboard?.writeText(r.referralCode);
+                                showToast(`Copied ${r.referralCode}`);
+                              }}
+                              className="text-purple-400 hover:text-purple-700"
+                            >
+                              <Copy className="w-2.5 h-2.5" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-0.5">
+                        <span className="text-[10px] text-slate-400 font-bold uppercase">Invited Business</span>
+                        <div className="text-[11px] font-bold text-slate-900 truncate">{r.refereeName}</div>
+                        <div className="text-[10px] text-slate-500 truncate">{r.refereeBusiness}</div>
+                      </div>
+
+                      <div className="space-y-0.5 col-span-2">
+                        <span className="text-[10px] text-slate-400 font-bold uppercase">Invited On</span>
+                        <div className="text-[10px] font-bold text-slate-700 flex items-center gap-1">
+                          <Clock className="w-3 h-3 text-purple-600 shrink-0" />
+                          <span>{formatExactDateTime(r.createdAt)}</span>
+                        </div>
+                        {r.paidAt && (
+                          <div className="text-[9px] text-emerald-600 font-semibold">
+                            Paid on: {formatExactDateTime(r.paidAt)} {r.payoutTxnId ? `(${r.payoutTxnId})` : ''}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {r.status === 'REWARD_READY' && (
+                      <div className="pt-2 border-t border-slate-100 flex justify-end">
+                        <button
+                          onClick={() => handlePayReferralReward(r.id)}
+                          className="w-full py-2 bg-[#007a33] hover:bg-[#005e27] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all active:scale-95 flex items-center justify-center gap-1"
+                        >
+                          <Check className="w-3.5 h-3.5" /> Pay ₹{r.rewardAmount} Reward
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         )}
 
@@ -3216,62 +3623,62 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
             </div>
 
             {/* Stat Cards Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-1">
-                <div className="text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+              <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-xs space-y-1">
+                <div className="text-[9px] sm:text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">
                   Total Fraud Reports
                 </div>
-                <div className="text-2xl font-extrabold text-slate-900 font-heading">
+                <div className="text-xl sm:text-2xl font-extrabold text-slate-900 font-heading">
                   {fraudReports.length}
                 </div>
-                <div className="text-[10px] text-slate-400 font-medium">Filed by Financers</div>
+                <div className="text-[9px] sm:text-[10px] text-slate-400 font-medium">Filed by Financers</div>
               </div>
 
-              <div className="bg-white p-4 rounded-2xl border border-amber-200 shadow-xs space-y-1 bg-gradient-to-br from-amber-50/50 to-white">
-                <div className="text-[10px] text-amber-700 font-extrabold uppercase tracking-wider flex items-center gap-1">
+              <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-amber-200 shadow-xs space-y-1 bg-gradient-to-br from-amber-50/50 to-white">
+                <div className="text-[9px] sm:text-[10px] text-amber-700 font-extrabold uppercase tracking-wider flex items-center gap-1">
                   <Clock className="w-3 h-3" /> Pending Review
                 </div>
-                <div className="text-2xl font-extrabold text-amber-600 font-heading">
+                <div className="text-xl sm:text-2xl font-extrabold text-amber-600 font-heading">
                   {fraudReports.filter((r) => r.status === 'PENDING').length}
                 </div>
-                <div className="text-[10px] text-amber-600/80 font-medium">Awaiting Action</div>
+                <div className="text-[9px] sm:text-[10px] text-amber-600/80 font-medium">Awaiting Action</div>
               </div>
 
-              <div className="bg-white p-4 rounded-2xl border border-rose-300 shadow-xs space-y-1 bg-gradient-to-br from-rose-50/50 to-white">
-                <div className="text-[10px] text-rose-700 font-extrabold uppercase tracking-wider flex items-center gap-1">
-                  <AlertTriangle className="w-3 h-3" /> Confirmed Blacklists
+              <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-rose-300 shadow-xs space-y-1 bg-gradient-to-br from-rose-50/50 to-white">
+                <div className="text-[9px] sm:text-[10px] text-rose-700 font-extrabold uppercase tracking-wider flex items-center gap-1">
+                  <AlertTriangle className="w-3 h-3" /> Confirmed
                 </div>
-                <div className="text-2xl font-extrabold text-rose-700 font-heading">
+                <div className="text-xl sm:text-2xl font-extrabold text-rose-700 font-heading">
                   {fraudReports.filter((r) => r.status === 'CONFIRMED').length}
                 </div>
-                <div className="text-[10px] text-rose-600/80 font-medium">Platform-Wide Fraud</div>
+                <div className="text-[9px] sm:text-[10px] text-rose-600/80 font-medium">Platform-Wide Fraud</div>
               </div>
 
-              <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-1 bg-gradient-to-br from-slate-50/50 to-white">
-                <div className="text-[10px] text-slate-600 font-extrabold uppercase tracking-wider flex items-center gap-1">
-                  <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Dismissed / Cleared
+              <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-xs space-y-1 bg-gradient-to-br from-slate-50/50 to-white">
+                <div className="text-[9px] sm:text-[10px] text-slate-600 font-extrabold uppercase tracking-wider flex items-center gap-1">
+                  <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Dismissed
                 </div>
-                <div className="text-2xl font-extrabold text-slate-700 font-heading">
+                <div className="text-xl sm:text-2xl font-extrabold text-slate-700 font-heading">
                   {fraudReports.filter((r) => r.status === 'DISMISSED').length}
                 </div>
-                <div className="text-[10px] text-slate-400 font-medium">Reports Rejected</div>
+                <div className="text-[9px] sm:text-[10px] text-slate-400 font-medium">Reports Rejected</div>
               </div>
             </div>
 
             {/* Filter Toolbar */}
-            <div className="flex flex-col sm:flex-row gap-3 bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm">
+            <div className="flex flex-col sm:flex-row gap-2.5 sm:gap-3 bg-white p-3 sm:p-3.5 rounded-2xl border border-slate-200 shadow-sm">
               <div className="relative flex-1">
                 <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
                 <input
                   type="text"
-                  placeholder="Search vendor name, shop, reporting financer, reason..."
+                  placeholder="Search vendor, shop, reporting financer, reason..."
                   value={fraudSearchQuery}
                   onChange={(e) => setFraudSearchQuery(e.target.value)}
                   className="w-full bg-slate-50 border border-slate-300 rounded-xl pl-10 pr-3 py-2 text-xs font-medium text-slate-900 focus:outline-none focus:border-rose-500"
                 />
               </div>
 
-              <div className="flex gap-1.5 bg-slate-100 p-1 rounded-xl flex-wrap">
+              <div className="overflow-x-auto no-scrollbar flex gap-1.5 bg-slate-100 p-1 rounded-xl">
                 {(
                   [
                     { key: 'ALL', label: `All (${fraudReports.length})` },
@@ -3283,7 +3690,7 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
                   <button
                     key={f.key}
                     onClick={() => setFraudFilterStatus(f.key)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${
+                    className={`px-3 py-1.5 rounded-lg text-xs font-extrabold whitespace-nowrap transition-all cursor-pointer ${
                       fraudFilterStatus === f.key
                         ? f.key === 'CONFIRMED'
                           ? 'bg-rose-600 text-white shadow-xs'
@@ -3570,8 +3977,8 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
               </div>
             </div>
 
-            {/* Vendors Table */}
-            <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm">
+            {/* Vendors Table (Desktop & Tablet >= 768px) */}
+            <div className="hidden md:block bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm">
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs text-slate-800">
                   <thead className="bg-slate-100 text-slate-700 uppercase text-[10px] font-extrabold tracking-wider border-b border-slate-200">
@@ -3691,6 +4098,117 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
                 </table>
               </div>
             </div>
+
+            {/* Mobile Card View (Hidden on Tablet & Desktop >= 768px) */}
+            <div className="block md:hidden space-y-3">
+              {filteredVendors.length === 0 ? (
+                <div className="bg-white p-8 rounded-2xl border border-slate-200 text-center text-slate-400 font-bold">
+                  {isLoadingData ? 'Loading vendor accounts from database...' : 'No vendor accounts found.'}
+                </div>
+              ) : (
+                filteredVendors.map((v) => (
+                  <div
+                    key={v.id}
+                    className={`bg-white p-4 rounded-2xl border transition-all shadow-2xs space-y-3 ${
+                      v.isFraud ? 'border-rose-300 bg-rose-50/40' : 'border-slate-200'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2 border-b border-slate-100 pb-2.5">
+                      <div className="min-w-0 flex-1">
+                        <div className="font-extrabold text-slate-900 text-sm flex items-center gap-1.5 flex-wrap">
+                          <span className="truncate">{v.businessName}</span>
+                          {v.isFraud && (
+                            <span className="bg-rose-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full tracking-wider animate-pulse">
+                              🚨 FRAUD
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-[11px] text-slate-500 font-medium truncate">{v.ownerName}</div>
+                      </div>
+                      <span className="bg-blue-50 text-[#003893] px-2 py-0.5 rounded-md text-[10px] font-bold border border-blue-200 shrink-0">
+                        {v.category}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div className="space-y-0.5">
+                        <span className="text-[10px] text-slate-400 font-bold uppercase">City & State</span>
+                        <div className="text-[11px] font-medium text-slate-700 truncate">{v.city}, {v.state}</div>
+                      </div>
+
+                      <div className="space-y-0.5">
+                        <span className="text-[10px] text-slate-400 font-bold uppercase">KYC Status</span>
+                        <div>
+                          <button
+                            onClick={() => handleToggleVendorKYC(v.id, v.kycStatus)}
+                            className={`px-2 py-0.5 rounded-full text-[9px] font-extrabold inline-flex items-center gap-1 transition-all ${
+                              v.kycStatus === 'VERIFIED'
+                                ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                                : 'bg-amber-100 text-amber-800 border border-amber-200'
+                            }`}
+                          >
+                            {v.kycStatus === 'VERIFIED' ? (
+                              <CheckCircle2 className="w-2.5 h-2.5 text-emerald-600" />
+                            ) : (
+                              <Clock className="w-2.5 h-2.5 text-amber-600" />
+                            )}
+                            <span>{v.kycStatus}</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="space-y-0.5 col-span-2">
+                        <span className="text-[10px] text-slate-400 font-bold uppercase">Contact</span>
+                        <div className="text-[11px] font-semibold text-slate-900">{v.userPhone}</div>
+                        <div className="text-[10px] text-slate-400 font-mono truncate">{v.userEmail}</div>
+                      </div>
+                    </div>
+
+                    {/* Actions Toolbar */}
+                    <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between gap-2 flex-wrap">
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={() => setSelectedDocVendor(v)}
+                          className="px-2.5 py-1.5 text-xs text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors border border-blue-200 font-bold flex items-center gap-1"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                          <span>Docs</span>
+                        </button>
+
+                        <button
+                          onClick={() => setGrantSubModalVendor(v)}
+                          className="px-2.5 py-1.5 text-xs text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-colors border border-emerald-200 font-bold flex items-center gap-1"
+                        >
+                          <Gift className="w-3.5 h-3.5" />
+                          <span>Grant Sub</span>
+                        </button>
+                      </div>
+
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={() => handleToggleVendorFraud(v)}
+                          className={`px-2.5 py-1.5 text-[10px] font-black rounded-lg transition-all border ${
+                            v.isFraud
+                              ? 'bg-emerald-600 text-white border-emerald-700'
+                              : 'bg-rose-600 text-white border-rose-700'
+                          }`}
+                        >
+                          {v.isFraud ? 'Clear' : '🚨 Mark Fraud'}
+                        </button>
+
+                        <button
+                          onClick={() => handleDeleteVendor(v.id)}
+                          className="p-1.5 text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-lg transition-colors border border-rose-200"
+                          title="Permanently Delete Vendor Account"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         )}
 
@@ -3735,8 +4253,8 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
               </div>
             </div>
 
-            {/* Lenders Table */}
-            <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm">
+            {/* Lenders Table (Desktop & Tablet >= 768px) */}
+            <div className="hidden md:block bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm">
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs text-slate-800">
                   <thead className="bg-slate-100 text-slate-700 uppercase text-[10px] font-extrabold tracking-wider border-b border-slate-200">
@@ -3820,6 +4338,85 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
                 </table>
               </div>
             </div>
+
+            {/* Mobile Card View (Hidden on Tablet & Desktop >= 768px) */}
+            <div className="block md:hidden space-y-3">
+              {filteredLenders.length === 0 ? (
+                <div className="bg-white p-8 rounded-2xl border border-slate-200 text-center text-slate-400 font-bold">
+                  {isLoadingData ? 'Loading business financers from database...' : 'No business financers found.'}
+                </div>
+              ) : (
+                filteredLenders.map((l) => (
+                  <div
+                    key={l.id}
+                    className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-3"
+                  >
+                    <div className="flex items-start justify-between gap-2 border-b border-slate-100 pb-2.5">
+                      <div className="min-w-0 flex-1">
+                        <div className="font-extrabold text-slate-900 text-sm truncate">{l.institutionName}</div>
+                        <div className="text-[11px] text-slate-500 font-medium truncate">
+                          {l.contactPersonName || 'Branch Officer'} • {l.userPhone}
+                        </div>
+                        <div className="text-[10px] text-slate-400 font-mono truncate">{l.userEmail}</div>
+                      </div>
+                      <span className="bg-emerald-50 text-[#007a33] px-2 py-0.5 rounded-md text-[10px] font-bold border border-emerald-200 shrink-0">
+                        {l.institutionType}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div className="space-y-0.5">
+                        <span className="text-[10px] text-slate-400 font-bold uppercase">Registration #</span>
+                        <div className="font-mono font-bold text-slate-700 text-[11px] truncate">{l.registrationNumber}</div>
+                      </div>
+
+                      <div className="space-y-0.5">
+                        <span className="text-[10px] text-slate-400 font-bold uppercase">Location</span>
+                        <div className="text-[11px] font-medium text-slate-700 truncate">{l.city}, {l.state}</div>
+                      </div>
+
+                      <div className="space-y-0.5">
+                        <span className="text-[10px] text-slate-400 font-bold uppercase">Loan Range</span>
+                        <div className="text-[11px] font-extrabold text-slate-800">
+                          {formatLoanRange(l.minLoanAmount, l.maxLoanAmount)}
+                        </div>
+                      </div>
+
+                      <div className="space-y-0.5">
+                        <span className="text-[10px] text-slate-400 font-bold uppercase">Verification</span>
+                        <div>
+                          <button
+                            onClick={() => handleToggleLenderVerification(l.id, l.verificationStatus)}
+                            className={`px-2 py-0.5 rounded-full text-[9px] font-extrabold inline-flex items-center gap-1 transition-all ${
+                              l.verificationStatus === 'VERIFIED'
+                                ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                                : 'bg-amber-100 text-amber-800 border border-amber-200'
+                            }`}
+                          >
+                            {l.verificationStatus === 'VERIFIED' ? (
+                              <CheckCircle2 className="w-2.5 h-2.5 text-emerald-600" />
+                            ) : (
+                              <Clock className="w-2.5 h-2.5 text-amber-600" />
+                            )}
+                            <span>{l.verificationStatus}</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="pt-2 border-t border-slate-100 flex justify-end">
+                      <button
+                        onClick={() => handleDeleteLender(l.id)}
+                        className="p-1.5 px-3 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 transition-all active:scale-95 flex items-center gap-1 text-[10px] font-extrabold"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        Delete Account
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         )}
 
@@ -3845,11 +4442,11 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
               </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
               {vendorPlans.map((plan) => (
                 <div
                   key={plan.id}
-                  className="bg-white rounded-3xl border-2 border-slate-200 p-5 shadow-sm space-y-4 hover:border-[#003893] transition-all flex flex-col justify-between"
+                  className="bg-white rounded-3xl border-2 border-slate-200 p-4 sm:p-5 shadow-sm space-y-3 sm:space-y-4 hover:border-[#003893] transition-all flex flex-col justify-between"
                 >
                   <div className="space-y-2">
                     <div className="flex justify-between items-start">
@@ -3934,11 +4531,11 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
               </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
               {lenderPlans.map((plan) => (
                 <div
                   key={plan.id}
-                  className="bg-white rounded-3xl border-2 border-slate-200 p-5 shadow-sm space-y-4 hover:border-[#007a33] transition-all flex flex-col justify-between"
+                  className="bg-white rounded-3xl border-2 border-slate-200 p-4 sm:p-5 shadow-sm space-y-3 sm:space-y-4 hover:border-[#007a33] transition-all flex flex-col justify-between"
                 >
                   <div className="space-y-2">
                     <div className="flex justify-between items-start">
@@ -4040,8 +4637,8 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
       {/* MODAL: REFERRAL CAMPAIGN SETTINGS                                        */}
       {/* ========================================================================= */}
       {referralSettingsModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-full max-w-md bg-white border border-slate-200 rounded-3xl p-6 shadow-2xl space-y-4">
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="w-full max-w-md bg-white border border-slate-200 rounded-3xl p-5 sm:p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div className="flex items-center gap-2">
                 <Gift className="w-5 h-5 text-purple-600" />
@@ -4150,7 +4747,7 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
       {/* ========================================================================= */}
       {planModalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-          <div className="relative w-full max-w-lg bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-5 my-auto">
+          <div className="relative w-full max-w-lg bg-white border border-slate-200 rounded-3xl p-5 sm:p-8 shadow-2xl space-y-5 my-auto max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div>
                 <h3 className="text-lg font-extrabold text-slate-900 font-heading">
@@ -4275,7 +4872,7 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
                 />
               </div>
 
-              <div className="flex items-center gap-6 pt-1">
+              <div className="flex items-center gap-6 pt-1 flex-wrap">
                 <label className="flex items-center gap-2 cursor-pointer font-bold text-slate-700">
                   <input
                     type="checkbox"
@@ -4324,8 +4921,8 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
 
       {/* Grant Subscription Modal */}
       {grantSubModalVendor && (
-        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-full max-w-md bg-white border border-slate-200 rounded-3xl p-6 shadow-2xl space-y-4">
+        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="w-full max-w-md bg-white border border-slate-200 rounded-3xl p-5 sm:p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
             <div>
               <h3 className="text-lg font-extrabold text-slate-900 font-heading">
                 Grant Subscription Access
@@ -4369,8 +4966,8 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
 
       {/* View Documents Modal */}
       {selectedDocVendor && (
-        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-full max-w-lg bg-white border border-slate-200 rounded-3xl p-6 shadow-2xl space-y-4">
+        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="w-full max-w-lg bg-white border border-slate-200 rounded-3xl p-5 sm:p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div>
                 <h3 className="text-base font-extrabold text-slate-900 font-heading">
@@ -4415,8 +5012,8 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
 
       {/* STICKY FRAUD CONFIRMATION MODAL */}
       {fraudConfirmVendor && (
-        <div className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="relative w-full max-w-md bg-white border-2 border-rose-600 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-5">
+        <div className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+          <div className="relative w-full max-w-md bg-white border-2 border-rose-600 rounded-3xl p-5 sm:p-8 shadow-2xl space-y-4 sm:space-y-5 max-h-[90vh] overflow-y-auto my-auto">
             <button
               onClick={() => setFraudConfirmVendor(null)}
               className="absolute top-4 right-4 p-2 rounded-full bg-slate-100 text-slate-500 hover:text-slate-900 hover:bg-slate-200 transition-colors"

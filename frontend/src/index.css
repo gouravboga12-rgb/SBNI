@@ -327,3 +327,13 @@ h1, h2, h3, h4, h5, h6 {
   animation: splash-shimmer 3s infinite linear, splash-button-pulse-glow 2.5s infinite ease-in-out !important;
 }
 
+/* Hide scrollbar for smooth horizontal tab navigation */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+

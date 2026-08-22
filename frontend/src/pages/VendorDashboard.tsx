@@ -1169,22 +1169,55 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
 
             {/* Lender Cards Grid */}
             {filteredLenders.length === 0 ? (
-              <div className="p-12 text-center bg-white rounded-3xl border border-slate-200 space-y-3">
-                <Compass className="w-12 h-12 text-slate-300 mx-auto" />
-                <div className="font-extrabold text-slate-800 text-base">No Eligible Financers in This Area Radius</div>
-                <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
-                  No registered financers currently cover <strong className="text-slate-700">{searchLocation.place}, {searchLocation.city}</strong> within their configured service radius.
-                </p>
-                <div className="pt-2">
+              <div className="card-white p-8 sm:p-12 text-center rounded-3xl border border-slate-200 shadow-sm space-y-4 max-w-xl mx-auto my-4">
+                <div className="w-16 h-16 rounded-3xl bg-blue-50 border border-blue-100 flex items-center justify-center mx-auto text-[#003893] shadow-inner">
+                  <Compass className="w-8 h-8" />
+                </div>
+                
+                <div className="space-y-1.5">
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-100/70 text-[#003893] text-[11px] font-extrabold uppercase tracking-wider mb-1">
+                    <span>🚀 Coverage Expanding Soon</span>
+                  </div>
+                  <h3 className="font-extrabold text-slate-900 text-lg sm:text-xl font-heading">
+                    No Registered Financers in This Area Yet
+                  </h3>
+                  <p className="text-xs text-slate-600 max-w-md mx-auto leading-relaxed">
+                    Currently, there are no registered business money financers covering <strong className="text-slate-900">{searchLocation.place || searchLocation.city}</strong> within their active radius.
+                  </p>
+                  <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed pt-1">
+                    New verified financers and NBFC partners are onboarding and will be available in your location soon. For now, please explore adjacent business hubs or try searching a nearby city.
+                  </p>
+                </div>
+
+                <div className="pt-3 flex flex-col sm:flex-row items-center justify-center gap-3">
                   <button
                     type="button"
                     onClick={() => {
                       setLocationModalMode('VENDOR_SEARCH');
                       setIsLocationModalOpen(true);
                     }}
-                    className="px-5 py-2.5 rounded-xl bg-[#003893] text-white font-extrabold text-xs hover:bg-[#002669] transition-all shadow-md cursor-pointer"
+                    className="w-full sm:w-auto px-6 py-3 rounded-xl bg-gradient-to-r from-[#003893] to-[#001f54] hover:from-[#002669] hover:to-[#001438] text-white font-extrabold text-xs shadow-md transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-2"
                   >
-                    Try Searching a Different City (e.g. Hyderabad / Mumbai)
+                    <Search className="w-3.5 h-3.5" />
+                    <span>Search Alternative Places / Nearby Cities</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearchLocation({
+                        place: searchLocation.city || 'Hyderabad',
+                        city: searchLocation.city || 'Hyderabad',
+                        state: searchLocation.state || 'Telangana',
+                        country: 'India',
+                        latitude: searchLocation.latitude || 17.3850,
+                        longitude: searchLocation.longitude || 78.4867,
+                      });
+                      loadNearbyLenders(searchLocation.latitude || 17.3850, searchLocation.longitude || 78.4867);
+                    }}
+                    className="w-full sm:w-auto px-4 py-3 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-50 font-bold text-xs transition-all active:scale-95 cursor-pointer"
+                  >
+                    <span>View Entire City</span>
                   </button>
                 </div>
               </div>
