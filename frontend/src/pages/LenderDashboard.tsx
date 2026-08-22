@@ -2818,12 +2818,12 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
               </button>
             </div>
           ) : (
-            <div className="space-y-6 max-w-4xl mx-auto">
+            <div className="space-y-4 sm:space-y-6 max-w-4xl mx-auto">
               
               {/* Header Title & Edit Mode Toggle */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                  <h2 className="text-2xl font-extrabold text-slate-900 font-heading">Business Money Financer Profile & Security</h2>
+                  <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 font-heading">Business Money Financer Profile & Security</h2>
                   <p className="text-xs text-slate-500 font-medium mt-0.5">
                     Manage financer credentials, credit officer contact details, and session status
                   </p>
@@ -2833,17 +2833,17 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                   <button
                     type="button"
                     onClick={startEditingLender}
-                    className="px-4 py-2.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-[#003893] border border-blue-200 font-extrabold text-xs flex items-center gap-2 transition-all shadow-xs active:scale-95 cursor-pointer w-fit"
+                    className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-[#003893] border border-blue-200 font-extrabold text-xs flex items-center justify-center gap-2 transition-all shadow-xs active:scale-95 cursor-pointer"
                   >
                     <Edit3 className="w-4 h-4 text-[#003893]" />
                     <span>Edit Financer Profile</span>
                   </button>
                 ) : (
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 w-full sm:w-auto">
                     <button
                       type="button"
                       onClick={() => setIsEditingLenderProfile(false)}
-                      className="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-bold text-xs hover:bg-slate-100 transition-colors cursor-pointer"
+                      className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-bold text-xs hover:bg-slate-100 transition-colors cursor-pointer text-center"
                     >
                       Cancel
                     </button>
@@ -2851,7 +2851,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                       type="button"
                       onClick={handleSaveLenderProfile}
                       disabled={isSavingLenderProfile}
-                      className="px-5 py-2.5 rounded-xl bg-[#003893] hover:bg-[#002366] text-white font-extrabold text-xs flex items-center gap-2 shadow-md transition-all active:scale-95 cursor-pointer"
+                      className="flex-1 sm:flex-none px-5 py-2.5 rounded-xl bg-[#003893] hover:bg-[#002366] text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-md transition-all active:scale-95 cursor-pointer"
                     >
                       {isSavingLenderProfile ? (
                         <>
@@ -2871,18 +2871,18 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
 
             {/* Save Success Banner */}
             {lenderSaveSuccess && (
-              <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2 shadow-xs animate-in fade-in">
+              <div className="p-3.5 sm:p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2 shadow-xs animate-in fade-in">
                 <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
                 <span>{lenderSaveSuccess}</span>
               </div>
             )}
 
-            <div className="card-white p-6 sm:p-8 space-y-6 shadow-md border border-slate-200/90 rounded-3xl">
+            <div className="card-white p-4 sm:p-6 md:p-8 space-y-5 sm:space-y-6 shadow-md border border-slate-200/90 rounded-2xl sm:rounded-3xl">
               
               {/* Header Box */}
-              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 pb-6 border-b border-slate-100">
+              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-5 pb-5 sm:pb-6 border-b border-slate-100">
                 <div className="relative group shrink-0">
-                  <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl overflow-hidden shadow-lg border-4 border-white ring-2 ring-emerald-100 bg-emerald-50 flex items-center justify-center">
+                  <div className="w-20 h-20 sm:w-28 sm:h-28 rounded-3xl overflow-hidden shadow-lg border-4 border-white ring-2 ring-emerald-100 bg-emerald-50 flex items-center justify-center">
                     <img
                       src={lenderAvatarUrl || 'https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=200'}
                       alt="Business Financer Profile"
@@ -2894,7 +2894,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                     className="absolute -bottom-1 -right-1 p-2 rounded-full bg-[#007a33] text-white hover:bg-[#005e27] cursor-pointer shadow-md transition-transform active:scale-95 flex items-center justify-center"
                     title="Change Profile Photo"
                   >
-                    <Camera className="w-4 h-4" />
+                    <Camera className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   </label>
                   <input
                     id="lender-profile-avatar-input"
@@ -2905,31 +2905,31 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                   />
                 </div>
 
-                <div className="text-center sm:text-left space-y-1 flex-1">
+                <div className="text-center sm:text-left space-y-1 flex-1 w-full">
                   <div className="flex flex-col sm:flex-row sm:items-center gap-2 justify-center sm:justify-start">
-                    <h3 className="text-2xl font-extrabold text-slate-900 font-heading">
+                    <h3 className="text-xl sm:text-2xl font-extrabold text-slate-900 font-heading break-words">
                       {isEditingLenderProfile ? lenderEditForm.institutionName || currentUserObj.name : currentUserObj.name}
                     </h3>
-                    <span className="badge-verified-green w-fit mx-auto sm:mx-0">
+                    <span className="badge-verified-green w-fit mx-auto sm:mx-0 text-[10px] sm:text-xs">
                       <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Verified Business Financer
                     </span>
                   </div>
-                  <div className="text-sm font-semibold text-slate-700 flex items-center justify-center sm:justify-start gap-1.5">
-                    <Building2 className="w-4 h-4 text-emerald-600" />
+                  <div className="text-xs sm:text-sm font-semibold text-slate-700 flex flex-wrap items-center justify-center sm:justify-start gap-1.5">
+                    <Building2 className="w-4 h-4 text-emerald-600 shrink-0" />
                     <span>Money Financer</span>
                     <span className="text-slate-300">•</span>
                     <span className="text-xs text-slate-500 font-medium">
                       Credit Officer: {isEditingLenderProfile ? lenderEditForm.contactPerson || currentUserObj.contactPerson : currentUserObj.contactPerson}
                     </span>
                   </div>
-                  <p className="text-xs text-slate-400 font-medium pt-1">
+                  <p className="text-xs text-slate-400 font-medium pt-0.5">
                     Registration No: <span className="font-mono text-slate-700 font-bold">{isEditingLenderProfile ? lenderEditForm.regNo || currentUserObj.regNo : currentUserObj.regNo}</span>
                   </p>
 
                   <div className="pt-2 flex items-center justify-center sm:justify-start gap-2">
                     <label
                       htmlFor="lender-profile-avatar-input"
-                      className="text-xs font-bold text-[#007a33] hover:text-emerald-900 cursor-pointer flex items-center gap-1 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-100 transition-colors"
+                      className="text-xs font-bold text-[#007a33] hover:text-emerald-900 cursor-pointer flex items-center gap-1 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-100 transition-colors active:scale-95"
                     >
                       <Camera className="w-3.5 h-3.5" />
                       <span>{lenderAvatarUrl ? 'Change Profile Photo' : 'Upload Profile Photo'}</span>
@@ -2941,39 +2941,39 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
               {/* Credit Officer Details Section */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between pb-1 border-b border-slate-100">
-                  <h4 className="font-extrabold text-slate-900 text-sm font-heading">Credit Officer Account Information</h4>
+                  <h4 className="font-extrabold text-slate-900 text-sm sm:text-base font-heading">Credit Officer Account Information</h4>
                   {isEditingLenderProfile && (
-                    <span className="text-[11px] font-extrabold text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-md border border-blue-200">
-                      ✏️ Edit Mode Active
+                    <span className="text-[10px] sm:text-[11px] font-extrabold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200">
+                      ✏️ Edit Active
                     </span>
                   )}
                 </div>
 
                 {!isEditingLenderProfile ? (
                   /* View Mode */
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                    <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-xs">
+                    <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
                       <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Chief Credit Officer</span>
-                      <div className="font-extrabold text-slate-900 text-sm">{currentUserObj.contactPerson}</div>
+                      <div className="font-extrabold text-slate-900 text-sm break-words">{currentUserObj.contactPerson}</div>
                     </div>
-                    <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
+                    <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
                       <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Mobile / WhatsApp</span>
-                      <div className="font-extrabold text-slate-900 text-sm flex items-center gap-1.5">
-                        <Phone className="w-3.5 h-3.5 text-emerald-600" />
+                      <div className="font-extrabold text-slate-900 text-sm flex items-center gap-1.5 font-mono">
+                        <Phone className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                         <span>{currentUserObj.phone}</span>
                       </div>
                     </div>
-                    <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
+                    <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
                       <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Email Address</span>
-                      <div className="font-extrabold text-slate-900 text-sm flex items-center gap-1.5">
-                        <Mail className="w-3.5 h-3.5 text-blue-600" />
+                      <div className="font-extrabold text-slate-900 text-xs sm:text-sm flex items-center gap-1.5 break-all">
+                        <Mail className="w-3.5 h-3.5 text-blue-600 shrink-0" />
                         <span>{currentUserObj.email}</span>
                       </div>
                     </div>
-                    <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
+                    <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
                       <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Office Location</span>
-                      <div className="font-extrabold text-slate-900 text-sm flex items-center gap-1.5">
-                        <MapPin className="w-3.5 h-3.5 text-rose-500" />
+                      <div className="font-extrabold text-slate-900 text-xs sm:text-sm flex items-center gap-1.5 break-words">
+                        <MapPin className="w-3.5 h-3.5 text-rose-500 shrink-0" />
                         <span>{currentUserObj.city}, {currentUserObj.state}</span>
                       </div>
                     </div>

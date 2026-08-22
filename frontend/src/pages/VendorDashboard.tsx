@@ -1283,12 +1283,12 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
               </button>
             </div>
           ) : (
-            <div className="space-y-6 max-w-4xl mx-auto">
+            <div className="space-y-4 sm:space-y-6 max-w-4xl mx-auto">
               
               {/* Header Title & Action Buttons */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                  <h2 className="text-2xl font-extrabold text-slate-900 font-heading">Small Shop & Local Startup Business Profile</h2>
+                  <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 font-heading">Small Shop & Local Startup Business Profile</h2>
                   <p className="text-xs text-slate-500 font-medium mt-0.5">
                     Manage your registration details, verification documents, and profile photo
                   </p>
@@ -1298,17 +1298,17 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                   <button
                     type="button"
                     onClick={startEditingVendor}
-                    className="px-4 py-2.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-[#003893] border border-blue-200 font-extrabold text-xs flex items-center gap-2 transition-all shadow-xs active:scale-95 cursor-pointer w-fit"
+                    className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-[#003893] border border-blue-200 font-extrabold text-xs flex items-center justify-center gap-2 transition-all shadow-xs active:scale-95 cursor-pointer"
                   >
                     <Edit3 className="w-4 h-4 text-[#003893]" />
                     <span>Edit Profile Details</span>
                   </button>
                 ) : (
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 w-full sm:w-auto">
                     <button
                       type="button"
                       onClick={() => setIsEditingVendorProfile(false)}
-                      className="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-bold text-xs hover:bg-slate-100 transition-colors cursor-pointer"
+                      className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-bold text-xs hover:bg-slate-100 transition-colors cursor-pointer text-center"
                     >
                       Cancel
                     </button>
@@ -1316,7 +1316,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                       type="button"
                       onClick={handleSaveVendorProfile}
                       disabled={isSavingVendorProfile}
-                      className="px-5 py-2.5 rounded-xl bg-[#003893] hover:bg-[#002366] text-white font-extrabold text-xs flex items-center gap-2 shadow-md transition-all active:scale-95 cursor-pointer"
+                      className="flex-1 sm:flex-none px-5 py-2.5 rounded-xl bg-[#003893] hover:bg-[#002366] text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-md transition-all active:scale-95 cursor-pointer"
                     >
                       {isSavingVendorProfile ? (
                         <>
@@ -1336,21 +1336,21 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
 
             {/* Save Success Banner */}
             {vendorSaveSuccess && (
-              <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2 shadow-xs animate-in fade-in">
+              <div className="p-3.5 sm:p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2 shadow-xs animate-in fade-in">
                 <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
                 <span>{vendorSaveSuccess}</span>
               </div>
             )}
 
             {/* Profile Main Card */}
-            <div className="card-white p-6 sm:p-8 space-y-6 shadow-md border border-slate-200/90 rounded-3xl">
+            <div className="card-white p-4 sm:p-6 md:p-8 space-y-5 sm:space-y-6 shadow-md border border-slate-200/90 rounded-2xl sm:rounded-3xl">
               
               {/* Header Box with Profile Avatar Upload */}
-              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 pb-6 border-b border-slate-100 relative">
+              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-5 pb-5 sm:pb-6 border-b border-slate-100 relative">
                 
                 {/* User Profile Avatar with Interactive Camera Overlay */}
                 <div className="relative group shrink-0">
-                  <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl bg-gradient-to-br from-[#003893] to-[#001f54] text-white flex items-center justify-center font-extrabold text-3xl shadow-lg overflow-hidden border-4 border-white ring-2 ring-blue-100">
+                  <div className="w-20 h-20 sm:w-28 sm:h-28 rounded-3xl bg-gradient-to-br from-[#003893] to-[#001f54] text-white flex items-center justify-center font-extrabold text-2xl sm:text-3xl shadow-lg overflow-hidden border-4 border-white ring-2 ring-blue-100">
                     {avatarUrl ? (
                       <img src={avatarUrl} alt="Shop Business Profile" className="w-full h-full object-cover" />
                     ) : (
@@ -1361,9 +1361,9 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                   {/* Camera Upload Button */}
                   <label 
                     title="Upload Profile Picture"
-                    className="absolute -bottom-2 -right-2 bg-[#003893] hover:bg-[#002366] text-white p-2.5 rounded-full shadow-xl border-2 border-white cursor-pointer transition-all hover:scale-110 active:scale-95 flex items-center justify-center"
+                    className="absolute -bottom-1 -right-1 sm:-bottom-2 sm:-right-2 bg-[#003893] hover:bg-[#002366] text-white p-2 sm:p-2.5 rounded-full shadow-xl border-2 border-white cursor-pointer transition-all hover:scale-110 active:scale-95 flex items-center justify-center"
                   >
-                    <Camera className="w-4 h-4 text-white" />
+                    <Camera className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
                     <input
                       type="file"
                       accept="image/*"
@@ -1374,31 +1374,31 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                 </div>
 
                 {/* Vendor Identity Details */}
-                <div className="text-center sm:text-left space-y-1 flex-1">
+                <div className="text-center sm:text-left space-y-1 flex-1 w-full">
                   <div className="flex flex-col sm:flex-row sm:items-center gap-2 justify-center sm:justify-start">
-                    <h3 className="text-2xl font-extrabold text-slate-900 font-heading">
+                    <h3 className="text-xl sm:text-2xl font-extrabold text-slate-900 font-heading break-words">
                       {isEditingVendorProfile ? vendorEditForm.name || currentVendorObj.name : currentVendorObj.name}
                     </h3>
-                    <span className="badge-verified-green w-fit mx-auto sm:mx-0">
+                    <span className="badge-verified-green w-fit mx-auto sm:mx-0 text-[10px] sm:text-xs">
                       <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Verified Shop Owner
                     </span>
                   </div>
 
-                  <div className="text-sm font-semibold text-slate-700 flex items-center justify-center sm:justify-start gap-1.5">
-                    <Store className="w-4 h-4 text-[#003893]" />
-                    <span>{isEditingVendorProfile ? vendorEditForm.shopName || currentVendorObj.shopName : currentVendorObj.shopName}</span>
+                  <div className="text-xs sm:text-sm font-semibold text-slate-700 flex flex-wrap items-center justify-center sm:justify-start gap-1.5">
+                    <Store className="w-4 h-4 text-[#003893] shrink-0" />
+                    <span className="break-words">{isEditingVendorProfile ? vendorEditForm.shopName || currentVendorObj.shopName : currentVendorObj.shopName}</span>
                     <span className="text-slate-300">•</span>
                     <span className="text-xs text-slate-500 font-medium">
                       {isEditingVendorProfile ? vendorEditForm.category || currentVendorObj.category : currentVendorObj.category}
                     </span>
                   </div>
 
-                  <p className="text-xs text-slate-400 font-medium pt-1">
+                  <p className="text-xs text-slate-400 font-medium pt-0.5">
                     Registration ID: <span className="font-mono text-slate-700 font-bold">{currentVendorObj.shopId}</span>
                   </p>
 
                   <div className="pt-2 flex items-center justify-center sm:justify-start gap-2">
-                    <label className="text-xs font-bold text-[#003893] hover:text-blue-900 cursor-pointer flex items-center gap-1 bg-blue-50 px-3 py-1.5 rounded-xl border border-blue-100 transition-colors">
+                    <label className="text-xs font-bold text-[#003893] hover:text-blue-900 cursor-pointer flex items-center gap-1 bg-blue-50 px-3 py-1.5 rounded-xl border border-blue-100 transition-colors active:scale-95">
                       <Camera className="w-3.5 h-3.5" />
                       <span>{avatarUrl ? 'Change Profile Photo' : 'Upload Profile Photo'}</span>
                       <input
@@ -1416,69 +1416,69 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
               {/* SECTION 1: Personal & Business Registration Information */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between pb-1 border-b border-slate-100">
-                  <div className="flex items-center gap-2 text-slate-900 font-extrabold text-base font-heading">
+                  <div className="flex items-center gap-2 text-slate-900 font-extrabold text-sm sm:text-base font-heading">
                     <User className="w-4 h-4 text-[#003893]" />
                     <span>Personal & Business Information</span>
                   </div>
                   {isEditingVendorProfile && (
-                    <span className="text-[11px] font-extrabold text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-md border border-blue-200">
-                      ✏️ Edit Mode Active
+                    <span className="text-[10px] sm:text-[11px] font-extrabold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200">
+                      ✏️ Edit Active
                     </span>
                   )}
                 </div>
 
                 {!isEditingVendorProfile ? (
                   /* View Mode */
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-xs">
                     
                     {/* Full Name */}
-                    <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
+                    <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
                       <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Owner / Full Name</span>
-                      <div className="font-extrabold text-slate-900 text-sm">{currentVendorObj.name}</div>
+                      <div className="font-extrabold text-slate-900 text-sm break-words">{currentVendorObj.name}</div>
                     </div>
 
                     {/* Phone Number / Mobile */}
-                    <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
+                    <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
                       <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Phone Number / Mobile</span>
-                      <div className="font-extrabold text-slate-900 text-sm flex items-center gap-1.5">
-                        <Phone className="w-3.5 h-3.5 text-emerald-600" />
+                      <div className="font-extrabold text-slate-900 text-sm flex items-center gap-1.5 font-mono">
+                        <Phone className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                         <span>{currentVendorObj.phone}</span>
                       </div>
                     </div>
 
                     {/* Gmail / Email ID */}
-                    <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
+                    <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
                       <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Gmail / Email ID</span>
-                      <div className="font-extrabold text-slate-900 text-sm flex items-center gap-1.5">
-                        <Mail className="w-3.5 h-3.5 text-blue-600" />
+                      <div className="font-extrabold text-slate-900 text-xs sm:text-sm flex items-center gap-1.5 break-all">
+                        <Mail className="w-3.5 h-3.5 text-blue-600 shrink-0" />
                         <span>{currentVendorObj.email}</span>
                       </div>
                     </div>
 
                     {/* Shop / Business Name */}
-                    <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
+                    <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
                       <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Shop / Business Name</span>
-                      <div className="font-extrabold text-slate-900 text-sm flex items-center gap-1.5">
-                        <Store className="w-3.5 h-3.5 text-amber-600" />
+                      <div className="font-extrabold text-slate-900 text-sm flex items-center gap-1.5 break-words">
+                        <Store className="w-3.5 h-3.5 text-amber-600 shrink-0" />
                         <span>{currentVendorObj.shopName}</span>
                       </div>
                     </div>
 
                     {/* Category & Annual Income */}
-                    <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
+                    <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
                       <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Business Category</span>
                       <div className="font-extrabold text-slate-900 text-sm">{currentVendorObj.category}</div>
                     </div>
 
-                    <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
+                    <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
                       <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Annual Income</span>
                       <div className="font-extrabold text-slate-900 text-sm">{(currentVendorObj as any).annualTurnover || '10-50 Lakhs'}</div>
                     </div>
 
                     {/* Full Address */}
-                    <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 sm:col-span-2">
+                    <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 sm:col-span-2">
                       <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Full Shop / Business Address</span>
-                      <div className="font-bold text-slate-800 text-xs flex items-start gap-1.5">
+                      <div className="font-bold text-slate-800 text-xs sm:text-sm flex items-start gap-1.5 break-words">
                         <MapPin className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
                         <span>{currentVendorObj.address}</span>
                       </div>
