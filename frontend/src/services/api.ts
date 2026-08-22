@@ -1447,15 +1447,13 @@ export const mockLendersList: Lender[] = [];
 
 export async function adminDeletePaymentApi(paymentId: string): Promise<{ success: boolean; message?: string }> {
   try {
-    const data = await apiFetch(`/admin/payments/${paymentId}`, {
-      method: 'DELETE',
-      headers: authHeaders(),
-    });
+    const data = await adminFetch(`/admin/payments/${paymentId}`, { method: 'DELETE' });
     return { success: data.success, message: data.message };
   } catch (err: any) {
     return { success: false, message: err.message || 'Failed to delete payment.' };
   }
 }
+
 
 
 
