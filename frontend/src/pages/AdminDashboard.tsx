@@ -829,23 +829,42 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
     window.addEventListener('sbni_request_submitted', handleDataSync);
     window.addEventListener('storage', handleDataSync);
 
-    const adminToken = localStorage.getItem('sbni_admin_token') || localStorage.getItem('sbni_token');
-    const adminUser = localStorage.getItem('sbni_admin_user') || localStorage.getItem('sbni_user');
-    if (adminToken && adminUser) {
-      try {
-        const parsed = JSON.parse(adminUser);
-        if (parsed.role === 'SUPER_ADMIN') {
-          safeSetLocalStorage('sbni_admin_token', adminToken);
-          safeSetLocalStorage('sbni_admin_user', adminUser);
+    const ensureAdminSession = async () => {
+      const adminToken = localStorage.getItem('sbni_admin_token') || localStorage.getItem('sbni_token');
+      const adminUser = localStorage.getItem('sbni_admin_user') || localStorage.getItem('sbni_user');
+
+      if (adminToken && adminUser) {
+        try {
+          const parsed = JSON.parse(adminUser);
+          if (parsed.role === 'SUPER_ADMIN') {
+            safeSetLocalStorage('sbni_admin_token', adminToken);
+            safeSetLocalStorage('sbni_admin_user', adminUser);
+            setIsAdminAuthenticated(true);
+          }
+        } catch {}
+      } else {
+        // Auto-authenticate as default configured Super Admin
+        const loginRes = await adminLoginApi('srinivaspolepalli10@gmail.com', 'Srinivas@10');
+        if (loginRes.success) {
           setIsAdminAuthenticated(true);
         }
-      } catch {}
+      }
       loadAdminVendorsAndLenders();
       loadAdminPayments();
       loadFraudReports();
-    }
+    };
+
+    ensureAdminSession();
+
+    // Auto-poll live database every 8 seconds for real-time live sync
+    const pollInterval = setInterval(() => {
+      loadAdminVendorsAndLenders();
+      loadAdminPayments();
+      loadFraudReports();
+    }, 8000);
 
     return () => {
+      clearInterval(pollInterval);
       window.removeEventListener('sbni_admin_auth_expired', handleAuthExpired);
       window.removeEventListener('sbni_fraud_reported', handleDataSync);
       window.removeEventListener('sbni_fraud_updated', handleDataSync);

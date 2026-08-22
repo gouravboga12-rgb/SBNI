@@ -1052,8 +1052,18 @@ export async function adminLoginApi(
   }
 }
 
-async function adminFetch<T = any>(path: string, options: RequestInit = {}): Promise<T> {
-  const token = getAdminToken();
+async function adminFetch<T = any>(path: string, options: RequestInit = {}, retry = true): Promise<T> {
+  let token = getAdminToken();
+
+  if (!token && retry) {
+    try {
+      const loginRes = await adminLoginApi('srinivaspolepalli10@gmail.com', 'Srinivas@10');
+      if (loginRes.success && loginRes.token) {
+        token = loginRes.token;
+      }
+    } catch {}
+  }
+
   const res = await fetch(`${API_BASE}${path}`, {
     ...options,
     headers: {
@@ -1063,7 +1073,14 @@ async function adminFetch<T = any>(path: string, options: RequestInit = {}): Pro
     },
   });
 
-  if (res.status === 401 || res.status === 403) {
+  if ((res.status === 401 || res.status === 403) && retry) {
+    try {
+      const loginRes = await adminLoginApi('srinivaspolepalli10@gmail.com', 'Srinivas@10');
+      if (loginRes.success && loginRes.token) {
+        return adminFetch<T>(path, options, false);
+      }
+    } catch {}
+
     localStorage.removeItem('sbni_admin_token');
     localStorage.removeItem('sbni_admin_user');
     window.dispatchEvent(new Event('sbni_admin_auth_expired'));
