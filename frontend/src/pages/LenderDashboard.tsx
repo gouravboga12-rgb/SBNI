@@ -627,7 +627,10 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
               return true;
             }
             return false;
-          });
+          }).map((r: any) => ({
+            ...r,
+            isFraud: checkVendorIsFraud(r),
+          }));
         }
       }
     } catch (e) {}
@@ -873,6 +876,13 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
     const handleSync = () => {
       loadVendorRequests();
       loadNearbyBusinesses();
+      setSelectedVendor((prev) => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          isFraud: checkVendorIsFraud(prev),
+        };
+      });
       setIsSubscribed(
         localStorage.getItem('sbni_lender_subscribed') === 'true' ||
         localStorage.getItem('sbni_subscribed') === 'true' ||
@@ -900,15 +910,45 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
   const checkVendorIsFraud = (vendor: VendorVerificationRequest | null | undefined): boolean => {
     if (!vendor) return false;
     try {
-      const storedFraud = JSON.parse(localStorage.getItem('sbni_fraud_vendors') || '{}');
-      if (storedFraud[vendor.id] !== undefined) {
-        return !!storedFraud[vendor.id];
+      const vId = vendor.id || (vendor as any).vendorId;
+      const vEmail = (vendor.emailId || (vendor as any).userEmail || '').toLowerCase().trim();
+
+      // 1. Check if this lender reported this vendor and Super Admin DISMISSED it
+      const lenderReports = JSON.parse(localStorage.getItem('sbni_lender_reported_frauds') || '[]');
+      const targetReport = lenderReports.find((r: any) =>
+        (r.vendorId && (r.vendorId === vId || r.vendorId === (vendor as any).vendorId)) ||
+        (r.emailId && vEmail && r.emailId.toLowerCase().trim() === vEmail) ||
+        (r.userEmail && vEmail && r.userEmail.toLowerCase().trim() === vEmail)
+      );
+      if (targetReport) {
+        if (targetReport.status === 'DISMISSED') return false;
+        if (targetReport.status === 'CONFIRMED' || targetReport.status === 'PENDING') return true;
       }
-      if (vendor.emailId && storedFraud[vendor.emailId] !== undefined) {
-        return !!storedFraud[vendor.emailId];
+
+      // 2. Check live admin vendors registry (from RDS)
+      const adminVendors = JSON.parse(localStorage.getItem('sbni_admin_vendors') || '[]');
+      const adminVendorMatch = adminVendors.find((v: any) =>
+        (vId && (v.id === vId || v.userId === vId)) ||
+        (v.userEmail && vEmail && v.userEmail.toLowerCase().trim() === vEmail)
+      );
+      if (adminVendorMatch) {
+        return !!adminVendorMatch.isFraud;
+      }
+
+      // 3. Check global fraud map
+      const storedFraud = JSON.parse(localStorage.getItem('sbni_fraud_vendors') || '{}');
+      if (vId && storedFraud[vId] !== undefined) {
+        return !!storedFraud[vId];
+      }
+      if ((vendor as any).vendorId && storedFraud[(vendor as any).vendorId] !== undefined) {
+        return !!storedFraud[(vendor as any).vendorId];
+      }
+      if (vEmail && storedFraud[vEmail] !== undefined) {
+        return !!storedFraud[vEmail];
       }
     } catch {}
-    return !!vendor.isFraud;
+
+    return false;
   };
 
   const checkLenderSubscribed = () => {

@@ -734,6 +734,32 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
             : r
         );
         safeSetLocalStorage('sbni_lender_reported_frauds', JSON.stringify(updatedList));
+
+        // Also clean sbni_vendor_requests
+        const reqs = JSON.parse(localStorage.getItem('sbni_vendor_requests') || '[]');
+        const updatedReqs = reqs.map((r: any) => {
+          if (
+            (targetVendorId && (r.id === targetVendorId || r.vendorId === targetVendorId)) ||
+            (targetEmail && (r.emailId === targetEmail || (r.emailId && r.emailId.toLowerCase() === targetEmail.toLowerCase())))
+          ) {
+            return { ...r, isFraud: false };
+          }
+          return r;
+        });
+        safeSetLocalStorage('sbni_vendor_requests', JSON.stringify(updatedReqs));
+
+        // Also clean sbni_vendor_profile
+        const pStr = localStorage.getItem('sbni_vendor_profile');
+        if (pStr) {
+          const p = JSON.parse(pStr);
+          if (
+            (targetVendorId && (p.id === targetVendorId || p.userId === targetVendorId)) ||
+            (targetEmail && p.email && p.email.toLowerCase() === targetEmail.toLowerCase())
+          ) {
+            p.isFraud = false;
+            safeSetLocalStorage('sbni_vendor_profile', JSON.stringify(p));
+          }
+        }
       } catch {}
 
       // 5. Audit Log & Toast & Broadcast
@@ -1281,6 +1307,34 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
             : r
         );
         safeSetLocalStorage('sbni_lender_reported_frauds', JSON.stringify(updatedReports));
+
+        // Also clean sbni_vendor_requests
+        const reqs = JSON.parse(localStorage.getItem('sbni_vendor_requests') || '[]');
+        const updatedReqs = reqs.map((r: any) => {
+          if (
+            r.id === vendorId ||
+            r.vendorId === vendorId ||
+            (userEmail && (r.emailId === userEmail || (r.emailId && r.emailId.toLowerCase() === userEmail.toLowerCase())))
+          ) {
+            return { ...r, isFraud: false };
+          }
+          return r;
+        });
+        safeSetLocalStorage('sbni_vendor_requests', JSON.stringify(updatedReqs));
+
+        // Also clean sbni_vendor_profile
+        const pStr = localStorage.getItem('sbni_vendor_profile');
+        if (pStr) {
+          const p = JSON.parse(pStr);
+          if (
+            p.id === vendorId ||
+            p.userId === vendorId ||
+            (userEmail && p.email && p.email.toLowerCase() === userEmail.toLowerCase())
+          ) {
+            p.isFraud = false;
+            safeSetLocalStorage('sbni_vendor_profile', JSON.stringify(p));
+          }
+        }
       }
 
       await adminToggleVendorFraud(vendorId, newIsFraud);
