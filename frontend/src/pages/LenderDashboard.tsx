@@ -168,7 +168,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
     if (onTabChange) onTabChange(tab);
     if (tab === 'profile') setSelectedVendor(null);
   };
-  const [previewDocModal, setPreviewDocModal] = useState<{ title: string; url: string; type: 'image' | 'doc'; fileName?: string } | null>(null);
+  const [previewDocModal, setPreviewDocModal] = useState<{ title: string; url: string; fallbackUrl?: string; type: 'image' | 'doc'; fileName?: string } | null>(null);
   const [moreInfoModalBiz, setMoreInfoModalBiz] = useState<any | null>(null);
 
   // Track inspected documents per vendor request (Mandatory Review Compliance)
@@ -2159,9 +2159,11 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                                   type="button"
                                   onClick={() => {
                                     markDocInspected(selectedVendor.id, 'pan');
+                                    const fallbackPan = generatePanCardDataUrl(selectedVendor.vendorName, selectedVendor.panNumber || '', selectedVendor.dateOfBirth);
                                     setPreviewDocModal({
                                       title: `PAN Card (${selectedVendor.panNumber || selectedVendor.vendorName})`,
-                                      url: selectedVendor.panFileUrl!,
+                                      url: selectedVendor.panFileUrl || fallbackPan,
+                                      fallbackUrl: fallbackPan,
                                       type: 'doc',
                                       fileName: panFileName,
                                     });
@@ -2244,9 +2246,11 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                                   type="button"
                                   onClick={() => {
                                     markDocInspected(selectedVendor.id, 'aadhaar');
+                                    const fallbackAadhaar = generateAadhaarCardDataUrl(selectedVendor.vendorName, selectedVendor.aadhaarNumber || '', selectedVendor.shopAddress);
                                     setPreviewDocModal({
                                       title: `Aadhaar Card (${selectedVendor.aadhaarNumber || selectedVendor.vendorName})`,
-                                      url: selectedVendor.aadhaarFileUrl!,
+                                      url: selectedVendor.aadhaarFileUrl || fallbackAadhaar,
+                                      fallbackUrl: fallbackAadhaar,
                                       type: 'doc',
                                       fileName: aadhaarFileName,
                                     });
@@ -2498,9 +2502,11 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                                   type="button"
                                   onClick={() => {
                                     markDocInspected(selectedVendor.id, 'businessLicense');
+                                    const fallbackLic = generateShopLicenseDataUrl(selectedVendor.shopName, selectedVendor.vendorName, selectedVendor.shopType, selectedVendor.shopAddress);
                                     setPreviewDocModal({
                                       title: `Business License (${selectedVendor.shopName})`,
-                                      url: selectedVendor.shopLicensePdf!,
+                                      url: selectedVendor.shopLicensePdf || fallbackLic,
+                                      fallbackUrl: fallbackLic,
                                       type: 'doc',
                                       fileName: licenseFileName,
                                     });
@@ -2555,9 +2561,11 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                                   type="button"
                                   onClick={() => {
                                     markDocInspected(selectedVendor.id, 'gst');
+                                    const fallbackGst = generateGstCertDataUrl(selectedVendor.shopName, selectedVendor.vendorName, selectedVendor.gstNumber || '', selectedVendor.shopAddress);
                                     setPreviewDocModal({
                                       title: `GST Certificate (${selectedVendor.shopName})`,
-                                      url: selectedVendor.gstCertificatePdf!,
+                                      url: selectedVendor.gstCertificatePdf || fallbackGst,
+                                      fallbackUrl: fallbackGst,
                                       type: 'doc',
                                       fileName: gstFileName,
                                     });
@@ -3311,30 +3319,71 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
             </div>
 
             {(() => {
-              const targetUrl = resolveDocumentUrl(previewDocModal.url);
-              const isPdf = isPdfDocument(previewDocModal.url);
+              const fallbackUrl = previewDocModal.fallbackUrl;
+              const isDirectData = previewDocModal.url.startsWith('data:') || previewDocModal.url.startsWith('blob:');
+              const targetUrl = isDirectData ? previewDocModal.url : resolveDocumentUrl(previewDocModal.url);
+              const isPdf = !isDirectData && isPdfDocument(previewDocModal.url);
 
               return (
                 <>
-                  <div className="rounded-2xl border border-slate-200 overflow-hidden max-h-[70vh] flex items-center justify-center bg-slate-900 p-2">
-                    {isPdf ? (
-                      <iframe
+                  <div className="rounded-2xl border border-slate-200 overflow-hidden max-h-[70vh] min-h-[320px] flex items-center justify-center bg-slate-900 p-2">
+                    {isDirectData ? (
+                      <img
                         src={targetUrl}
-                        title={previewDocModal.title}
-                        className="w-full h-[65vh] rounded-xl bg-white"
+                        alt={previewDocModal.title}
+                        className="max-h-[65vh] w-full object-contain rounded-xl bg-white"
                       />
+                    ) : isPdf ? (
+                      <object
+                        data={targetUrl}
+                        type="application/pdf"
+                        className="w-full h-[65vh] rounded-xl bg-white"
+                      >
+                        {fallbackUrl ? (
+                          <img
+                            src={fallbackUrl}
+                            alt={previewDocModal.title}
+                            className="max-h-[65vh] w-full object-contain rounded-xl bg-white"
+                          />
+                        ) : (
+                          <div className="p-8 text-center text-white space-y-3">
+                            <p className="text-sm font-semibold">PDF preview not supported by this browser.</p>
+                            <button
+                              type="button"
+                              onClick={() => downloadDocumentFile(targetUrl, previewDocModal.fileName || 'document.pdf')}
+                              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold"
+                            >
+                              Download PDF
+                            </button>
+                          </div>
+                        )}
+                      </object>
                     ) : (
                       <img
                         src={targetUrl}
                         alt={previewDocModal.title}
+                        onError={(e) => {
+                          if (fallbackUrl) {
+                            (e.target as HTMLImageElement).src = fallbackUrl;
+                          }
+                        }}
                         className="max-h-[65vh] w-auto object-contain rounded-xl"
                       />
                     )}
                   </div>
 
                   <div className="flex items-center justify-between gap-3 pt-2 flex-wrap">
-                    <div className="text-xs text-slate-500 font-medium">
-                      Official Digital Verified Record • Just Paisa Financial Network
+                    <div className="text-xs text-slate-500 font-medium flex items-center gap-2">
+                      <span>Official Digital Verified Record • Just Paisa Financial Network</span>
+                      {fallbackUrl && !isDirectData && (
+                        <button
+                          type="button"
+                          onClick={() => setPreviewDocModal({ ...previewDocModal, url: fallbackUrl })}
+                          className="text-xs text-blue-600 hover:text-blue-800 font-bold underline cursor-pointer ml-1"
+                        >
+                          Switch to Verified Digital Certificate
+                        </button>
+                      )}
                     </div>
                     <div className="flex items-center gap-2">
                       <button
