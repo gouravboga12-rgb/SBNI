@@ -108,8 +108,30 @@ export const LenderCard: React.FC<LenderCardProps> = ({ lender, onOpenSubscripti
     };
   }, [lender.id]);
 
+  const checkIsVendorFraud = () => {
+    try {
+      const uStr = localStorage.getItem('sbni_user');
+      const vpStr = localStorage.getItem('sbni_vendor_profile');
+      const u = uStr ? JSON.parse(uStr) : null;
+      const vp = vpStr ? JSON.parse(vpStr) : null;
+      const storedFraud = JSON.parse(localStorage.getItem('sbni_fraud_vendors') || '{}');
+      const vId = vp?.id || u?.id;
+      const vEmail = (vp?.email || u?.email || '').toLowerCase().trim();
+      if (vId && storedFraud[vId]) return true;
+      if (vEmail && storedFraud[vEmail]) return true;
+      if (vp?.isFraud || u?.isFraud || u?.vendorProfile?.isFraud) return true;
+    } catch (e) {}
+    return false;
+  };
+
   const handleApplyClick = (e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
+
+    if (checkIsVendorFraud()) {
+      alert('🚨 Account Restricted: Your account has been flagged as Fraud / Blacklisted by Admin. Loan applications and financing requests are currently restricted. Please contact JustPaisa support.');
+      return;
+    }
+
     const isSubscribed = checkSubscription();
     
     if (!isSubscribed && !isSubscribedState) {
@@ -281,6 +303,12 @@ export const LenderCard: React.FC<LenderCardProps> = ({ lender, onOpenSubscripti
 
   const handleCallClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+
+    if (checkIsVendorFraud()) {
+      alert('🚨 Account Restricted: Your account has been flagged as Fraud / Blacklisted by Admin. Financer calls are restricted.');
+      return;
+    }
+
     const isSubscribed = checkSubscription();
     if (!isSubscribed && !isSubscribedState) {
       if (onOpenSubscription) onOpenSubscription();
@@ -295,6 +323,12 @@ export const LenderCard: React.FC<LenderCardProps> = ({ lender, onOpenSubscripti
 
   const handleWhatsAppClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+
+    if (checkIsVendorFraud()) {
+      alert('🚨 Account Restricted: Your account has been flagged as Fraud / Blacklisted by Admin. Financer messages are restricted.');
+      return;
+    }
+
     const isSubscribed = checkSubscription();
     if (!isSubscribed && !isSubscribedState) {
       if (onOpenSubscription) onOpenSubscription();

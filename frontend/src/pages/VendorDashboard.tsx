@@ -766,6 +766,11 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
       return;
     }
 
+    if (currentVendorObj?.isFraud) {
+      alert('🚨 Account Restricted: Your shop account has been flagged as Fraud / Blacklisted by Admin. Loan applications and financing requests are currently restricted. Please contact JustPaisa support.');
+      return;
+    }
+
     const isSubscribed =
       localStorage.getItem('sbni_vendor_subscribed') === 'true' ||
       localStorage.getItem('sbni_subscribed') === 'true';
@@ -819,6 +824,26 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
     <div className="bg-slate-50 min-h-screen pb-28 md:pb-28">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 md:pt-6">
         
+        {/* Fraud / Blacklist Warning Banner */}
+        {currentVendorObj?.isFraud && (
+          <div className="mb-6 p-5 rounded-3xl bg-rose-50 border-2 border-rose-400 text-rose-950 flex items-start gap-3.5 shadow-lg animate-fade-in">
+            <div className="w-10 h-10 rounded-2xl bg-rose-100 border border-rose-300 flex items-center justify-center text-rose-600 shrink-0 mt-0.5">
+              <AlertCircle className="w-6 h-6 text-rose-600 animate-pulse" />
+            </div>
+            <div className="space-y-1.5 text-xs">
+              <div className="font-black text-sm text-rose-900 flex items-center gap-2">
+                <span>🚨 FRAUD / BLACKLIST ACCOUNT NOTICE</span>
+                <span className="px-2 py-0.5 rounded-full bg-rose-200 text-rose-900 text-[10px] font-extrabold border border-rose-300">
+                  Working Restricted
+                </span>
+              </div>
+              <p className="font-semibold text-rose-800 leading-relaxed">
+                Your shop account has been flagged and confirmed as a <strong>Fraud Account</strong> by Super Admin. Applying for new financing, requesting loans from lenders, and initiating lender contacts are currently restricted. Please contact JustPaisa support if you believe this is in error.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* TAB 1: HOME VIEW */}
         {activeTab === 'home' && (
           <div className="space-y-6">
@@ -839,9 +864,15 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                     <div className="text-xs text-blue-200 font-semibold tracking-wide uppercase">Welcome back,</div>
                     <h2 className="text-2xl sm:text-3xl font-extrabold text-white font-heading">{currentVendorObj.name}</h2>
                     <div className="pt-2">
-                      <span className="badge-verified-green bg-emerald-500/25 text-emerald-200 border border-emerald-400/40 shadow-sm backdrop-blur-md">
-                        <CheckCircle2 className="w-3.5 h-3.5" /> Verified Shop Owner
-                      </span>
+                      {currentVendorObj.isFraud ? (
+                        <span className="badge-pending-amber bg-rose-600/40 text-rose-200 border border-rose-400/50 shadow-sm backdrop-blur-md font-extrabold flex items-center gap-1">
+                          <AlertCircle className="w-3.5 h-3.5 text-rose-300" /> Account Flagged as Fraud (Restricted)
+                        </span>
+                      ) : (
+                        <span className="badge-verified-green bg-emerald-500/25 text-emerald-200 border border-emerald-400/40 shadow-sm backdrop-blur-md">
+                          <CheckCircle2 className="w-3.5 h-3.5" /> Verified Shop Owner
+                        </span>
+                      )}
                     </div>
                   </div>
 

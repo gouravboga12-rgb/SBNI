@@ -294,6 +294,13 @@ export const ingestLead = async (req: AuthenticatedRequest, res: Response) => {
       }
     }
 
+    if (dbVendorProfile?.isFraud) {
+      return res.status(403).json({
+        success: false,
+        message: '🚨 Account Restricted: Your account is flagged as Fraud / Blacklisted by Admin. Loan applications and financing requests are restricted.',
+      });
+    }
+
     // 3. Merge verified cloud-hosted document URLs from database into snapshot so all documents are complete
     if (dbVendorProfile) {
       snap.vendorName = snap.vendorName || dbVendorProfile.ownerName;
