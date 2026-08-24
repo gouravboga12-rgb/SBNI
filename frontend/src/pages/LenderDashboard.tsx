@@ -1184,18 +1184,28 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
 
   const submitFraudReportToAdmin = async () => {
     if (!reportingFraudVendor) return;
+    const vendor = reportingFraudVendor;
+    const targetVendorId = (vendor as any).vendorId || vendor.id;
+    const targetEmail = vendor.emailId || (vendor as any).userEmail || (vendor as any).email;
+    const targetName = vendor.vendorName || (vendor as any).ownerName;
+    const targetShop = vendor.shopName || (vendor as any).businessName;
+    const targetPhone = vendor.mobileNumber || (vendor as any).phone;
+
     try {
       const storedFraud = JSON.parse(localStorage.getItem('sbni_fraud_vendors') || '{}');
-      storedFraud[reportingFraudVendor.id] = true;
-      if (reportingFraudVendor.emailId) storedFraud[reportingFraudVendor.emailId] = true;
+      if (vendor.id) storedFraud[vendor.id] = true;
+      if (targetVendorId) storedFraud[targetVendorId] = true;
+      if (targetEmail) storedFraud[targetEmail.toLowerCase().trim()] = true;
       safeSetLocalStorage('sbni_fraud_vendors', JSON.stringify(storedFraud));
 
       const lenderReports = JSON.parse(localStorage.getItem('sbni_lender_reported_frauds') || '[]');
       const newReportEntry = {
         id: 'fraud-' + Date.now(),
-        vendorId: reportingFraudVendor.id,
-        vendorName: reportingFraudVendor.vendorName,
-        shopName: reportingFraudVendor.shopName,
+        vendorId: targetVendorId,
+        vendorName: targetName,
+        shopName: targetShop,
+        emailId: targetEmail,
+        mobileNumber: targetPhone,
         reportedBy: currentUserObj.name,
         reason: fraudReason || 'Suspicious financial activity or fraudulent documents',
         status: 'PENDING',
@@ -1204,24 +1214,30 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
       lenderReports.push(newReportEntry);
       safeSetLocalStorage('sbni_lender_reported_frauds', JSON.stringify(lenderReports));
 
-      // Asynchronously submit to AWS backend /api/v1/admin/fraud-reports
+      // Asynchronously submit to AWS backend /api/v1/admin/fraud-reports with complete metadata
       submitFraudReportApi({
-        vendorId: reportingFraudVendor.id,
-        lenderId: currentUserObj.regNo || undefined,
+        vendorId: targetVendorId,
+        vendorEmail: targetEmail,
+        vendorName: targetName,
+        shopName: targetShop,
+        vendorPhone: targetPhone,
+        leadId: vendor.id,
+        lenderId: (currentUserObj as any)?.id || currentUserObj.regNo || undefined,
         reportedBy: currentUserObj.name,
         reason: fraudReason || 'Suspicious financial activity or fraudulent documents',
       }).catch((err) => console.error('Failed to submit fraud report to backend:', err));
 
       window.dispatchEvent(new Event('sbni_fraud_reported'));
+      window.dispatchEvent(new Event('sbni_fraud_updated'));
     } catch (e) {
       console.error('Error submitting fraud report:', e);
     }
 
     setRequests(
-      requests.map((r) => (r.id === reportingFraudVendor.id ? { ...r, isFraud: true } : r))
+      requests.map((r) => (r.id === vendor.id || (targetEmail && r.emailId === targetEmail) ? { ...r, isFraud: true } : r))
     );
 
-    setActionFeedback(`🚨 Fraud report submitted for ${reportingFraudVendor.vendorName}. JustPaisa Admin will review manually.`);
+    setActionFeedback(`🚨 Fraud report submitted for ${targetName || 'vendor'}. JustPaisa Admin will review manually.`);
     setReportingFraudVendor(null);
     setFraudReason('');
     setTimeout(() => setActionFeedback(''), 3500);

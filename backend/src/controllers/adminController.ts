@@ -863,37 +863,83 @@ export const getAllFraudReports = async (req: AuthenticatedRequest, res: Respons
 
 export const createFraudReport = async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const { vendorId, lenderId, reportedBy, reason, evidenceUrl } = req.body;
-    if (!vendorId || !reason) {
-      return res.status(400).json({ success: false, message: 'Vendor ID and Reason are required.' });
+    const { vendorId, vendorEmail, vendorName, shopName, vendorPhone, leadId, lenderId, reportedBy, reason, evidenceUrl } = req.body;
+    if ((!vendorId && !vendorEmail && !leadId && !vendorName && !shopName) || !reason) {
+      return res.status(400).json({ success: false, message: 'Vendor details and Reason are required.' });
     }
 
-    // 1. Resolve VendorProfile ID in RDS
-    let resolvedVendor = await prisma.vendorProfile.findFirst({
+    let resolvedVendor: any = null;
+
+    // 1. Check direct matches on VendorProfile and User tables
+    const candidateIds = [vendorId, leadId].filter(Boolean) as string[];
+    resolvedVendor = await prisma.vendorProfile.findFirst({
       where: {
         OR: [
-          { id: vendorId },
-          { userId: vendorId },
-          { businessName: { equals: vendorId, mode: 'insensitive' } },
-          { ownerName: { equals: vendorId, mode: 'insensitive' } },
-          { user: { email: { equals: vendorId, mode: 'insensitive' } } },
-          { user: { phone: { equals: vendorId } } },
+          ...candidateIds.map((k) => ({ id: k })),
+          ...candidateIds.map((k) => ({ userId: k })),
+          ...(vendorEmail ? [{ user: { email: { equals: vendorEmail.trim(), mode: 'insensitive' as const } } }] : []),
+          ...(vendorPhone ? [{ user: { phone: { equals: vendorPhone.trim() } } }] : []),
+          ...(shopName ? [{ businessName: { equals: shopName.trim(), mode: 'insensitive' as const } }] : []),
+          ...(vendorName ? [{ ownerName: { equals: vendorName.trim(), mode: 'insensitive' as const } }] : []),
         ],
       },
+      include: { user: true },
     });
 
-    if (!resolvedVendor) {
-      const firstVendor = await prisma.vendorProfile.findFirst({});
-      if (firstVendor) {
-        resolvedVendor = firstVendor;
+    // 2. If not found and leadId or vendorId is provided, check LenderLead table
+    if (!resolvedVendor && (leadId || vendorId)) {
+      const targetLeadId = leadId || vendorId;
+      const lead = await (prisma as any).lenderLead.findFirst({
+        where: { id: targetLeadId },
+        include: { vendor: { include: { user: true } } },
+      });
+
+      if (lead?.vendor) {
+        resolvedVendor = lead.vendor;
+      } else if (lead?.vendorSnapshot) {
+        let snap: any = null;
+        try {
+          snap = typeof lead.vendorSnapshot === 'string' ? JSON.parse(lead.vendorSnapshot) : lead.vendorSnapshot;
+        } catch {}
+        const snapEmail = snap?.emailId || snap?.email;
+        const snapName = snap?.vendorName;
+        const snapShop = snap?.shopName;
+        if (snapEmail || snapName || snapShop) {
+          resolvedVendor = await prisma.vendorProfile.findFirst({
+            where: {
+              OR: [
+                ...(snapEmail ? [{ user: { email: { equals: snapEmail.trim(), mode: 'insensitive' as const } } }] : []),
+                ...(snapShop ? [{ businessName: { equals: snapShop.trim(), mode: 'insensitive' as const } }] : []),
+                ...(snapName ? [{ ownerName: { equals: snapName.trim(), mode: 'insensitive' as const } }] : []),
+              ],
+            },
+            include: { user: true },
+          });
+        }
       }
     }
 
-    if (!resolvedVendor) {
-      return res.status(404).json({ success: false, message: 'Vendor profile not found in database.' });
+    // 3. If still not found, try partial match on businessName or ownerName
+    if (!resolvedVendor && (shopName || vendorName)) {
+      resolvedVendor = await prisma.vendorProfile.findFirst({
+        where: {
+          OR: [
+            ...(shopName ? [{ businessName: { contains: shopName.trim(), mode: 'insensitive' as const } }] : []),
+            ...(vendorName ? [{ ownerName: { contains: vendorName.trim(), mode: 'insensitive' as const } }] : []),
+          ],
+        },
+        include: { user: true },
+      });
     }
 
-    // 2. Resolve LenderProfile ID if provided
+    if (!resolvedVendor) {
+      return res.status(404).json({
+        success: false,
+        message: `Vendor profile "${vendorName || shopName || vendorEmail || vendorId}" was not found in the database.`,
+      });
+    }
+
+    // Resolve LenderProfile ID if provided
     let resolvedLenderId: string | null = null;
     if (lenderId) {
       const resolvedLender = await prisma.lenderProfile.findFirst({

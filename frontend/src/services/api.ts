@@ -1371,7 +1371,12 @@ export async function deleteLenderLeadApi(
 // ================================================================
 
 export async function submitFraudReportApi(payload: {
-  vendorId: string;
+  vendorId?: string;
+  vendorEmail?: string;
+  vendorName?: string;
+  shopName?: string;
+  vendorPhone?: string;
+  leadId?: string;
   lenderId?: string;
   reportedBy: string;
   reason: string;
