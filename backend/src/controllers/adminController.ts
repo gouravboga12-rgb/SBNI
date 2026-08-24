@@ -107,10 +107,24 @@ export const updateVendorFraudStatus = async (req: AuthenticatedRequest, res: Re
     const { vendorId } = req.params;
     const { isFraud } = req.body;
 
-    const vendor = await prisma.vendorProfile.update({
-      where: { id: vendorId },
+    await prisma.vendorProfile.updateMany({
+      where: {
+        OR: [
+          { id: vendorId },
+          { userId: vendorId },
+        ],
+      },
       data: {
         isFraud: !!isFraud,
+      },
+    });
+
+    const vendor = await prisma.vendorProfile.findFirst({
+      where: {
+        OR: [
+          { id: vendorId },
+          { userId: vendorId },
+        ],
       },
     });
 
@@ -118,7 +132,10 @@ export const updateVendorFraudStatus = async (req: AuthenticatedRequest, res: Re
       // Super Admin cleared fraud tag from User Vendors: dismiss all active reports for this vendor
       await (prisma as any).fraudReport.updateMany({
         where: {
-          vendorId: vendorId,
+          OR: [
+            { vendorId: vendorId },
+            { vendorId: vendor?.id || '' },
+          ],
           status: { in: ['PENDING', 'CONFIRMED'] },
         },
         data: {
@@ -540,9 +557,10 @@ export const grantManualSubscription = async (req: AuthenticatedRequest, res: Re
 
 // Subscription Plans CRUD
 export const listSubscriptionPlansAdmin = async (req: AuthenticatedRequest, res: Response) => {
-  const { role } = req.query;
+  const { role, includeInactive } = req.query;
   const where: any = {};
   if (role) where.roleTarget = String(role).toUpperCase();
+  if (includeInactive !== 'true') where.isActive = true;
 
   const plans = await prisma.subscriptionPlan.findMany({
     where,
@@ -944,7 +962,12 @@ export const confirmFraudReport = async (req: AuthenticatedRequest, res: Respons
 
     if (effectiveVendorId) {
       await prisma.vendorProfile.updateMany({
-        where: { id: effectiveVendorId },
+        where: {
+          OR: [
+            { id: effectiveVendorId },
+            { userId: effectiveVendorId },
+          ],
+        },
         data: { isFraud: true },
       });
     }
@@ -991,14 +1014,22 @@ export const dismissFraudReport = async (req: AuthenticatedRequest, res: Respons
     if (effectiveVendorId) {
       // 1. Lift blacklist on the VendorProfile in database
       await prisma.vendorProfile.updateMany({
-        where: { id: effectiveVendorId },
+        where: {
+          OR: [
+            { id: effectiveVendorId },
+            { userId: effectiveVendorId },
+          ],
+        },
         data: { isFraud: false },
       });
 
       // 2. Also dismiss any other active/pending reports for this vendor
       await (prisma as any).fraudReport.updateMany({
         where: {
-          vendorId: effectiveVendorId,
+          OR: [
+            { vendorId: effectiveVendorId },
+            { id: reportId },
+          ],
           status: { in: ['PENDING', 'CONFIRMED'] },
         },
         data: {
@@ -1053,13 +1084,23 @@ export const deleteFraudReport = async (req: AuthenticatedRequest, res: Response
     if (effectiveVendorId) {
       // Lift blacklist on the VendorProfile in database
       await prisma.vendorProfile.updateMany({
-        where: { id: effectiveVendorId },
+        where: {
+          OR: [
+            { id: effectiveVendorId },
+            { userId: effectiveVendorId },
+          ],
+        },
         data: { isFraud: false },
       });
 
       // Also clean up any remaining reports for this vendor
       await (prisma as any).fraudReport.deleteMany({
-        where: { vendorId: effectiveVendorId },
+        where: {
+          OR: [
+            { vendorId: effectiveVendorId },
+            { id: reportId },
+          ],
+        },
       });
     }
 

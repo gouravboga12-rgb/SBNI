@@ -265,14 +265,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
   const [reportsSearchQuery, setReportsSearchQuery] = useState('');
 
   const loadNearbyBusinessesList = async () => {
-    try {
-      const list = await fetchVendorProfilesForLender();
-      if (Array.isArray(list)) {
-        setNearbyBusinesses(list);
-      }
-    } catch (e) {
-      console.error('Failed to load nearby businesses:', e);
-    }
+    await loadNearbyBusinesses();
   };
 
   // Fetch live profile from server on mount
@@ -874,13 +867,11 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
               try { return JSON.parse(localStorage.getItem('sbni_fraud_vendors') || '{}'); } catch { return {}; }
             })();
             const vId = vp.id || vp.userId;
-            const vEmail = u.email || vp.email;
+            const vEmail = (u.email || vp.email || vp.emailId || '').toLowerCase().trim();
             const isFraudStatus =
-              (vId && storedFraud[vId] !== undefined)
-                ? !!storedFraud[vId]
-                : (vEmail && storedFraud[vEmail] !== undefined)
-                ? !!storedFraud[vEmail]
-                : !!vp.isFraud;
+              !!vp.isFraud ||
+              (vId && storedFraud[vId] !== undefined ? !!storedFraud[vId] : false) ||
+              (vEmail && storedFraud[vEmail] !== undefined ? !!storedFraud[vEmail] : false);
 
             const rawOwner = vp.vendorName || vp.ownerName || u.name || (vp.emailId && !vp.emailId.includes('@example.com') ? vp.emailId.split('@')[0] : (u.email ? u.email.split('@')[0] : 'Business Owner'));
             const rawShop = vp.shopName || vp.businessName || (rawOwner && rawOwner !== 'Business Owner' ? `${rawOwner} Store` : 'Business Enterprise');
@@ -961,40 +952,18 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
     };
   }, [lenderLocation]);
 
-  // Clean up any stale client fraud keys on mount
-  useEffect(() => {
-    try {
-      const adminVendors = JSON.parse(localStorage.getItem('sbni_admin_vendors') || '[]');
-      const fraudEmails = new Set(adminVendors.filter((v: any) => v.isFraud).map((v: any) => v.userEmail?.toLowerCase()));
-      const storedFraud = JSON.parse(localStorage.getItem('sbni_fraud_vendors') || '{}');
-      let changed = false;
-      for (const k of Object.keys(storedFraud)) {
-        if (!fraudEmails.has(k.toLowerCase())) {
-          delete storedFraud[k];
-          changed = true;
-        }
-      }
-      if (changed) {
-        safeSetLocalStorage('sbni_fraud_vendors', JSON.stringify(storedFraud));
-      }
-    } catch {}
-  }, []);
-
   const checkVendorIsFraud = (vendor: VendorVerificationRequest | null | undefined): boolean => {
     if (!vendor) return false;
     try {
-      const vId = vendor.id || (vendor as any).vendorId;
-      const vEmail = (vendor.emailId || (vendor as any).userEmail || '').toLowerCase().trim();
+      if ((vendor as any).isFraud === true) return true;
 
-      // 1. Check live admin vendors registry (from RDS)
-      const adminVendors = JSON.parse(localStorage.getItem('sbni_admin_vendors') || '[]');
-      const adminVendorMatch = adminVendors.find((v: any) =>
-        (vId && !String(vId).startsWith('req-') && !String(vId).startsWith('REQ-') && (v.id === vId || v.userId === vId)) ||
-        (v.userEmail && vEmail && v.userEmail.toLowerCase().trim() === vEmail)
-      );
-      if (adminVendorMatch) {
-        return !!adminVendorMatch.isFraud;
-      }
+      const vId = vendor.id || (vendor as any).vendorId || (vendor as any).userId;
+      const vEmail = (vendor.emailId || (vendor as any).userEmail || (vendor as any).email || '').toLowerCase().trim();
+
+      // 1. Check live localStorage fraud map
+      const storedFraud = JSON.parse(localStorage.getItem('sbni_fraud_vendors') || '{}');
+      if (vId && storedFraud[vId] === true) return true;
+      if (vEmail && storedFraud[vEmail] === true) return true;
 
       // 2. Check live report registry (if confirmed by Super Admin)
       const lenderReports = JSON.parse(localStorage.getItem('sbni_lender_reported_frauds') || '[]');
@@ -1004,12 +973,19 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
         (r.userEmail && vEmail && r.userEmail.toLowerCase().trim() === vEmail)
       );
       if (targetReport) {
-        if (targetReport.status === 'DISMISSED' || targetReport.status === 'PENDING') return false;
         if (targetReport.status === 'CONFIRMED') return true;
+        if (targetReport.status === 'DISMISSED') return false;
       }
 
-      // 3. Fallback to live vendor profile object property
-      return !!(vendor as any).isFraud && (vendor as any).isFraud !== false;
+      // 3. Check live admin vendors registry (from RDS)
+      const adminVendors = JSON.parse(localStorage.getItem('sbni_admin_vendors') || '[]');
+      const adminVendorMatch = adminVendors.find((v: any) =>
+        (vId && (v.id === vId || v.userId === vId)) ||
+        (v.userEmail && vEmail && v.userEmail.toLowerCase().trim() === vEmail)
+      );
+      if (adminVendorMatch) {
+        return !!adminVendorMatch.isFraud;
+      }
     } catch {}
 
     return false;
@@ -1643,113 +1619,139 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredNearbyBusinesses.map((biz) => (
-                  <div
-                    key={biz.id}
-                    className="card-white p-5 space-y-4 hover:shadow-xl transition-all border border-slate-200 rounded-3xl flex flex-col justify-between group relative overflow-hidden"
-                  >
-                    <div className="space-y-3">
-                      {/* Header Box */}
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className="w-12 h-12 rounded-2xl bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center font-extrabold text-slate-700 shrink-0 shadow-xs">
-                            {biz.avatarUrl ? (
-                              <img src={biz.avatarUrl} alt={biz.shopName} className="w-full h-full object-cover" />
-                            ) : (
-                              <span>{biz.shopName.charAt(0).toUpperCase()}</span>
-                            )}
+                {filteredNearbyBusinesses.map((biz) => {
+                  const isBizFraud = checkVendorIsFraud(biz) || !!biz.isFraud;
+                  return (
+                    <div
+                      key={biz.id}
+                      className={`card-white p-5 space-y-4 hover:shadow-xl transition-all border rounded-3xl flex flex-col justify-between group relative overflow-hidden ${
+                        isBizFraud
+                          ? 'border-rose-400 bg-rose-50/20 ring-2 ring-rose-200'
+                          : 'border-slate-200'
+                      }`}
+                    >
+                      <div className="space-y-3">
+                        {/* Header Box */}
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className={`w-12 h-12 rounded-2xl border overflow-hidden flex items-center justify-center font-extrabold shrink-0 shadow-xs ${
+                              isBizFraud ? 'bg-rose-100 border-rose-300 text-rose-700' : 'bg-slate-100 border-slate-200 text-slate-700'
+                            }`}>
+                              {biz.avatarUrl ? (
+                                <img src={biz.avatarUrl} alt={biz.shopName} className="w-full h-full object-cover" />
+                              ) : (
+                                <span>{biz.shopName.charAt(0).toUpperCase()}</span>
+                              )}
+                            </div>
+                            <div className="min-w-0">
+                              <h4 className={`font-extrabold text-base font-heading transition-colors truncate ${
+                                isBizFraud ? 'text-rose-900 group-hover:text-rose-700' : 'text-slate-900 group-hover:text-emerald-700'
+                              }`}>
+                                {biz.shopName}
+                              </h4>
+                              <div className="text-xs text-slate-500 font-medium truncate">Owner: {biz.vendorName}</div>
+                            </div>
                           </div>
-                          <div className="min-w-0">
-                            <h4 className="font-extrabold text-slate-900 text-base font-heading group-hover:text-emerald-700 transition-colors truncate">
-                              {biz.shopName}
-                            </h4>
-                            <div className="text-xs text-slate-500 font-medium truncate">Owner: {biz.vendorName}</div>
-                          </div>
+
+                          {isBizFraud ? (
+                            <span className="px-2.5 py-1 rounded-full bg-rose-100 text-rose-800 border border-rose-300 font-extrabold text-[11px] shadow-xs flex items-center gap-1 shrink-0 animate-pulse">
+                              <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
+                              <span>Fraud Account</span>
+                            </span>
+                          ) : (
+                            <span className="badge-verified-green shrink-0">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                              <span>Verified</span>
+                            </span>
+                          )}
                         </div>
 
-                        <span className="badge-verified-green shrink-0">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                          <span>Verified</span>
-                        </span>
+                        {/* Fraud Warning Banner inside Card */}
+                        {isBizFraud && (
+                          <div className="px-3 py-2 rounded-xl bg-rose-100/90 border border-rose-300 text-rose-900 text-[11px] font-bold flex items-center gap-1.5 shadow-xs">
+                            <AlertTriangle className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                            <span>⚠️ Confirmed Fraud Account (Blacklisted)</span>
+                          </div>
+                        )}
+
+                        {/* Distance & Location Pill */}
+                        <div className="p-2.5 rounded-xl bg-gradient-to-r from-blue-50/80 to-indigo-50/80 border border-blue-200/80 text-xs text-slate-700 font-medium flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-1.5 font-bold text-blue-900 text-[11px] truncate">
+                            <MapPin className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+                            <span>{biz.distanceKm} KM away • {biz.place}, {biz.city}</span>
+                          </div>
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md shrink-0 ${
+                            biz.distanceKm <= (Number(lenderLocation.lendingRadiusKm) || 50)
+                              ? 'text-emerald-700 bg-emerald-50'
+                              : 'text-amber-700 bg-amber-50'
+                          }`}>
+                            {biz.distanceKm <= (Number(lenderLocation.lendingRadiusKm) || 50) ? 'Inside Radius' : 'Outside Radius'}
+                          </span>
+                        </div>
+
+                        {/* Business Summary Info */}
+                        <div className="space-y-1.5 text-xs border-t border-slate-100 pt-2.5">
+                          <div className="flex justify-between text-slate-600">
+                            <span>Business Name:</span>
+                            <span className="font-bold text-slate-900">{biz.shopName}</span>
+                          </div>
+                          <div className="flex justify-between text-slate-600">
+                            <span>Annual Income:</span>
+                            <span className="font-bold text-slate-800">{biz.annualTurnover || biz.annualIncome || 'Under 2 Lakhs'}</span>
+                          </div>
+                        </div>
                       </div>
 
-                      {/* Distance & Location Pill */}
-                      <div className="p-2.5 rounded-xl bg-gradient-to-r from-blue-50/80 to-indigo-50/80 border border-blue-200/80 text-xs text-slate-700 font-medium flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-1.5 font-bold text-blue-900 text-[11px] truncate">
-                          <MapPin className="w-3.5 h-3.5 text-rose-500 shrink-0" />
-                          <span>{biz.distanceKm} KM away • {biz.place}, {biz.city}</span>
-                        </div>
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md shrink-0 ${
-                          biz.distanceKm <= (Number(lenderLocation.lendingRadiusKm) || 50)
-                            ? 'text-emerald-700 bg-emerald-50'
-                            : 'text-amber-700 bg-amber-50'
-                        }`}>
-                          {biz.distanceKm <= (Number(lenderLocation.lendingRadiusKm) || 50) ? 'Inside Radius' : 'Outside Radius'}
-                        </span>
-                      </div>
+                      {/* Action Buttons: Call, WhatsApp, More Info */}
+                      <div className="pt-3 border-t border-slate-100 space-y-2">
+                        <div className="grid grid-cols-2 gap-2">
+                          {/* Call Button */}
+                          <button
+                            onClick={() => {
+                              if (!checkLenderSubscribed()) return;
+                              if (biz.mobileNumber && biz.mobileNumber !== 'Not provided') {
+                                window.location.href = `tel:${biz.mobileNumber}`;
+                              } else {
+                                alert('Contact phone number is currently not provided for this business.');
+                              }
+                            }}
+                            className="py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold flex items-center justify-center gap-1.5 shadow-sm transition-all active:scale-95 cursor-pointer"
+                          >
+                            <Phone className="w-3.5 h-3.5" />
+                            <span>Call</span>
+                          </button>
 
-                      {/* Business Summary Info */}
-                      <div className="space-y-1.5 text-xs border-t border-slate-100 pt-2.5">
-                        <div className="flex justify-between text-slate-600">
-                          <span>Business Name:</span>
-                          <span className="font-bold text-slate-900">{biz.shopName}</span>
+                          {/* WhatsApp Button */}
+                          <button
+                            onClick={() => {
+                              if (!checkLenderSubscribed()) return;
+                              if (biz.mobileNumber && biz.mobileNumber !== 'Not provided') {
+                                const cleanPhone = biz.mobileNumber.replace(/\D/g, '');
+                                const msg = encodeURIComponent(`Hello ${biz.vendorName}, I saw your business "${biz.shopName}" on JustPaisa and would like to discuss business financing options.`);
+                                window.open(`https://wa.me/91${cleanPhone}?text=${msg}`, '_blank');
+                              } else {
+                                alert('WhatsApp contact number is currently not provided for this business.');
+                              }
+                            }}
+                            className="py-2.5 px-3 rounded-xl bg-[#25D366] hover:bg-[#20bd5a] text-white text-xs font-extrabold flex items-center justify-center gap-1.5 shadow-sm transition-all active:scale-95 cursor-pointer"
+                          >
+                            <MessageSquare className="w-3.5 h-3.5" />
+                            <span>WhatsApp</span>
+                          </button>
                         </div>
-                        <div className="flex justify-between text-slate-600">
-                          <span>Annual Income:</span>
-                          <span className="font-bold text-slate-800">{biz.annualTurnover || biz.annualIncome || 'Under 2 Lakhs'}</span>
-                        </div>
+
+                        {/* More Info Button */}
+                        <button
+                          onClick={() => setMoreInfoModalBiz(biz)}
+                          className="w-full py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer border border-slate-200/80"
+                        >
+                          <Info className="w-3.5 h-3.5 text-[#003893]" />
+                          <span>More Info & Location</span>
+                        </button>
                       </div>
                     </div>
-
-                    {/* Action Buttons: Call, WhatsApp, More Info */}
-                    <div className="pt-3 border-t border-slate-100 space-y-2">
-                      <div className="grid grid-cols-2 gap-2">
-                        {/* Call Button */}
-                        <button
-                          onClick={() => {
-                            if (!checkLenderSubscribed()) return;
-                            if (biz.mobileNumber && biz.mobileNumber !== 'Not provided') {
-                              window.location.href = `tel:${biz.mobileNumber}`;
-                            } else {
-                              alert('Contact phone number is currently not provided for this business.');
-                            }
-                          }}
-                          className="py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold flex items-center justify-center gap-1.5 shadow-sm transition-all active:scale-95 cursor-pointer"
-                        >
-                          <Phone className="w-3.5 h-3.5" />
-                          <span>Call</span>
-                        </button>
-
-                        {/* WhatsApp Button */}
-                        <button
-                          onClick={() => {
-                            if (!checkLenderSubscribed()) return;
-                            if (biz.mobileNumber && biz.mobileNumber !== 'Not provided') {
-                              const cleanPhone = biz.mobileNumber.replace(/\D/g, '');
-                              const msg = encodeURIComponent(`Hello ${biz.vendorName}, I saw your business "${biz.shopName}" on JustPaisa and would like to discuss business financing options.`);
-                              window.open(`https://wa.me/91${cleanPhone}?text=${msg}`, '_blank');
-                            } else {
-                              alert('WhatsApp contact number is currently not provided for this business.');
-                            }
-                          }}
-                          className="py-2.5 px-3 rounded-xl bg-[#25D366] hover:bg-[#20bd5a] text-white text-xs font-extrabold flex items-center justify-center gap-1.5 shadow-sm transition-all active:scale-95 cursor-pointer"
-                        >
-                          <MessageSquare className="w-3.5 h-3.5" />
-                          <span>WhatsApp</span>
-                        </button>
-                      </div>
-
-                      {/* More Info Button */}
-                      <button
-                        onClick={() => setMoreInfoModalBiz(biz)}
-                        className="w-full py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer border border-slate-200/80"
-                      >
-                        <Info className="w-3.5 h-3.5 text-[#003893]" />
-                        <span>More Info & Location</span>
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
@@ -3477,9 +3479,15 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                     <h3 className="font-extrabold text-slate-900 text-lg font-heading">
                       {moreInfoModalBiz.shopName}
                     </h3>
-                    <span className="badge-verified-green text-[10px] py-0.5 px-2">
-                      <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Verified
-                    </span>
+                    {checkVendorIsFraud(moreInfoModalBiz) || !!moreInfoModalBiz.isFraud ? (
+                      <span className="px-2.5 py-1 rounded-full bg-rose-100 text-rose-800 border border-rose-300 font-extrabold text-[11px] shadow-xs flex items-center gap-1 shrink-0 animate-pulse">
+                        <AlertTriangle className="w-3.5 h-3.5 text-rose-600" /> Fraud Account
+                      </span>
+                    ) : (
+                      <span className="badge-verified-green text-[10px] py-0.5 px-2">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Verified
+                      </span>
+                    )}
                   </div>
                   <p className="text-xs text-slate-500 font-semibold mt-0.5">
                     Owner: <span className="text-slate-800 font-bold">{moreInfoModalBiz.vendorName}</span>
@@ -3493,6 +3501,19 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                 <X className="w-5 h-5" />
               </button>
             </div>
+
+            {/* Fraud Warning Banner in Modal */}
+            {(checkVendorIsFraud(moreInfoModalBiz) || !!moreInfoModalBiz.isFraud) && (
+              <div className="p-4 rounded-2xl bg-rose-50 border-2 border-rose-400 text-rose-900 space-y-1 shadow-sm">
+                <div className="font-extrabold flex items-center gap-1.5 text-rose-800 text-sm">
+                  <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+                  <span>🚨 CONFIRMED FRAUD ACCOUNT WARNING</span>
+                </div>
+                <p className="text-xs text-rose-700 leading-relaxed font-medium">
+                  This business / vendor account has been reported and confirmed as FRAUD by Super Admin. Exercise extreme caution and do not disburse funds without verified security.
+                </p>
+              </div>
+            )}
 
             {/* Location & Radius Card */}
             <div className="p-4 rounded-2xl bg-gradient-to-r from-blue-50/80 via-indigo-50/60 to-emerald-50/80 border border-blue-200/90 space-y-2">

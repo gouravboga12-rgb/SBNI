@@ -162,7 +162,6 @@ export const getVendorProfiles = async (req: AuthenticatedRequest, res: Response
 
   const vendors = await prisma.vendorProfile.findMany({
     where: {
-      isFraud: false,
       city: city ? { contains: String(city), mode: 'insensitive' } : undefined,
       category: category ? { contains: String(category), mode: 'insensitive' } : undefined,
     },
@@ -215,6 +214,7 @@ export const getVendorProfiles = async (req: AuthenticatedRequest, res: Response
       lendingRadiusKm: lenderRadiusKm,
       mobileNumber: v.user?.phone || 'Not provided',
       emailId: v.user?.email || 'vendor@justpaisa.com',
+      isFraud: !!v.isFraud,
       panNumber: null, // Redacted for discovery security
       aadhaarNumber: null, // Redacted for discovery security
       gstNumber: null, // Redacted for discovery security
