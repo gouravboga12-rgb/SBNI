@@ -114,12 +114,23 @@ export const LenderCard: React.FC<LenderCardProps> = ({ lender, onOpenSubscripti
       const vpStr = localStorage.getItem('sbni_vendor_profile');
       const u = uStr ? JSON.parse(uStr) : null;
       const vp = vpStr ? JSON.parse(vpStr) : null;
+
+      // Authoritative status directly from PostgreSQL RDS
+      if (vp && typeof vp.isFraud === 'boolean') {
+        return vp.isFraud;
+      }
+      if (u?.vendorProfile && typeof u.vendorProfile.isFraud === 'boolean') {
+        return u.vendorProfile.isFraud;
+      }
+      if (u && typeof u.isFraud === 'boolean') {
+        return u.isFraud;
+      }
+
       const storedFraud = JSON.parse(localStorage.getItem('sbni_fraud_vendors') || '{}');
       const vId = vp?.id || u?.id;
       const vEmail = (vp?.email || u?.email || '').toLowerCase().trim();
-      if (vId && storedFraud[vId]) return true;
-      if (vEmail && storedFraud[vEmail]) return true;
-      if (vp?.isFraud || u?.isFraud || u?.vendorProfile?.isFraud) return true;
+      if (vId && storedFraud[vId] === true) return true;
+      if (vEmail && storedFraud[vEmail] === true) return true;
     } catch (e) {}
     return false;
   };

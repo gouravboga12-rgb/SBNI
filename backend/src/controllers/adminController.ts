@@ -107,11 +107,27 @@ export const updateVendorFraudStatus = async (req: AuthenticatedRequest, res: Re
     const { vendorId } = req.params;
     const { isFraud } = req.body;
 
-    await prisma.vendorProfile.updateMany({
+    const targetVendor = await prisma.vendorProfile.findFirst({
       where: {
         OR: [
           { id: vendorId },
           { userId: vendorId },
+        ],
+      },
+      include: { user: true },
+    });
+
+    const vendorIdsToMatch = [
+      vendorId,
+      ...(targetVendor?.id ? [targetVendor.id] : []),
+      ...(targetVendor?.userId ? [targetVendor.userId] : []),
+    ];
+
+    await prisma.vendorProfile.updateMany({
+      where: {
+        OR: [
+          ...vendorIdsToMatch.map((id) => ({ id })),
+          ...vendorIdsToMatch.map((userId) => ({ userId })),
         ],
       },
       data: {
@@ -119,23 +135,21 @@ export const updateVendorFraudStatus = async (req: AuthenticatedRequest, res: Re
       },
     });
 
-    const vendor = await prisma.vendorProfile.findFirst({
+    const updatedVendor = await prisma.vendorProfile.findFirst({
       where: {
         OR: [
           { id: vendorId },
           { userId: vendorId },
         ],
       },
+      include: { user: true },
     });
 
     if (!isFraud) {
-      // Super Admin cleared fraud tag from User Vendors: dismiss all active reports for this vendor
+      // Super Admin cleared fraud tag: dismiss all active/pending reports for this vendor
       await (prisma as any).fraudReport.updateMany({
         where: {
-          OR: [
-            { vendorId: vendorId },
-            { vendorId: vendor?.id || '' },
-          ],
+          OR: vendorIdsToMatch.map((vId) => ({ vendorId: vId })),
           status: { in: ['PENDING', 'CONFIRMED'] },
         },
         data: {
@@ -150,7 +164,7 @@ export const updateVendorFraudStatus = async (req: AuthenticatedRequest, res: Re
       message: isFraud
         ? 'Vendor account marked as FRAUD. Alert is now active across all business financer accounts!'
         : 'Fraud status cleared for vendor account.',
-      data: vendor,
+      data: updatedVendor || targetVendor,
     });
   } catch (err: any) {
     res.status(500).json({ success: false, message: err.message || 'Failed to update vendor fraud status.' });
@@ -958,14 +972,19 @@ export const confirmFraudReport = async (req: AuthenticatedRequest, res: Respons
       });
     }
 
-    const effectiveVendorId = report?.vendorId || vendorId || (reportId && reportId.length > 20 ? reportId : undefined);
+    const targetIds = [
+      ...(report?.vendorId ? [report.vendorId] : []),
+      ...(report?.vendor?.userId ? [report.vendor.userId] : []),
+      ...(vendorId ? [vendorId] : []),
+      ...(reportId && reportId.length > 20 ? [reportId] : []),
+    ];
 
-    if (effectiveVendorId) {
+    if (targetIds.length > 0) {
       await prisma.vendorProfile.updateMany({
         where: {
           OR: [
-            { id: effectiveVendorId },
-            { userId: effectiveVendorId },
+            ...targetIds.map((id) => ({ id })),
+            ...targetIds.map((userId) => ({ userId })),
           ],
         },
         data: { isFraud: true },
@@ -1009,15 +1028,20 @@ export const dismissFraudReport = async (req: AuthenticatedRequest, res: Respons
       });
     }
 
-    const effectiveVendorId = report?.vendorId || vendorId || (reportId && reportId.length > 20 ? reportId : undefined);
+    const targetIds = [
+      ...(report?.vendorId ? [report.vendorId] : []),
+      ...(report?.vendor?.userId ? [report.vendor.userId] : []),
+      ...(vendorId ? [vendorId] : []),
+      ...(reportId && reportId.length > 20 ? [reportId] : []),
+    ];
 
-    if (effectiveVendorId) {
+    if (targetIds.length > 0) {
       // 1. Lift blacklist on the VendorProfile in database
       await prisma.vendorProfile.updateMany({
         where: {
           OR: [
-            { id: effectiveVendorId },
-            { userId: effectiveVendorId },
+            ...targetIds.map((id) => ({ id })),
+            ...targetIds.map((userId) => ({ userId })),
           ],
         },
         data: { isFraud: false },
@@ -1027,7 +1051,7 @@ export const dismissFraudReport = async (req: AuthenticatedRequest, res: Respons
       await (prisma as any).fraudReport.updateMany({
         where: {
           OR: [
-            { vendorId: effectiveVendorId },
+            ...targetIds.map((vId) => ({ vendorId: vId })),
             { id: reportId },
           ],
           status: { in: ['PENDING', 'CONFIRMED'] },
@@ -1062,9 +1086,15 @@ export const deleteFraudReport = async (req: AuthenticatedRequest, res: Response
           { vendorId: vendorId || '' },
         ],
       },
+      include: { vendor: true },
     });
 
-    const effectiveVendorId = report?.vendorId || vendorId || (reportId && reportId.length > 20 ? reportId : undefined);
+    const targetIds = [
+      ...(report?.vendorId ? [report.vendorId] : []),
+      ...(report?.vendor?.userId ? [report.vendor.userId] : []),
+      ...(vendorId ? [vendorId] : []),
+      ...(reportId && reportId.length > 20 ? [reportId] : []),
+    ];
 
     if (report) {
       await (prisma as any).fraudReport.delete({
@@ -1081,13 +1111,13 @@ export const deleteFraudReport = async (req: AuthenticatedRequest, res: Response
       });
     }
 
-    if (effectiveVendorId) {
+    if (targetIds.length > 0) {
       // Lift blacklist on the VendorProfile in database
       await prisma.vendorProfile.updateMany({
         where: {
           OR: [
-            { id: effectiveVendorId },
-            { userId: effectiveVendorId },
+            ...targetIds.map((id) => ({ id })),
+            ...targetIds.map((userId) => ({ userId })),
           ],
         },
         data: { isFraud: false },
@@ -1097,7 +1127,7 @@ export const deleteFraudReport = async (req: AuthenticatedRequest, res: Response
       await (prisma as any).fraudReport.deleteMany({
         where: {
           OR: [
-            { vendorId: effectiveVendorId },
+            ...targetIds.map((vId) => ({ vendorId: vId })),
             { id: reportId },
           ],
         },

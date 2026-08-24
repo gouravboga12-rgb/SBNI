@@ -288,7 +288,16 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
     };
   }, []);
 
-  // Fetch live vendor profile from backend on mount
+  const [liveVendorProfile, setLiveVendorProfile] = useState<any>(() => {
+    try {
+      const pStr = localStorage.getItem('sbni_vendor_profile');
+      return pStr ? JSON.parse(pStr) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  // Fetch live vendor profile from backend on mount and via continuous interval
   useEffect(() => {
     async function loadFreshVendorProfile() {
       try {
@@ -297,7 +306,30 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
           const u = res.data;
           const vp = u.vendorProfile;
           if (vp) {
+            setLiveVendorProfile(vp);
             safeSetLocalStorage('sbni_vendor_profile', JSON.stringify(vp));
+            safeSetLocalStorage('sbni_user', JSON.stringify(u));
+
+            // Synchronize client-side fraud registry with the authoritative RDS status
+            try {
+              const sf = JSON.parse(localStorage.getItem('sbni_fraud_vendors') || '{}');
+              const vId = vp.id || u.id;
+              const vEmail = (u.email || vp.email || '').toLowerCase().trim();
+
+              if (vp.isFraud) {
+                if (vId) sf[vId] = true;
+                if (vp.id) sf[vp.id] = true;
+                if (u.id) sf[u.id] = true;
+                if (vEmail) sf[vEmail] = true;
+              } else {
+                if (vId) delete sf[vId];
+                if (vp.id) delete sf[vp.id];
+                if (u.id) delete sf[u.id];
+                if (vEmail) delete sf[vEmail];
+              }
+              safeSetLocalStorage('sbni_fraud_vendors', JSON.stringify(sf));
+            } catch {}
+
             if (vp.avatarUrl || vp.logoUrl) {
               setAvatarUrl(vp.avatarUrl || vp.logoUrl);
             }
@@ -317,7 +349,9 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
         console.error('Failed to load fresh vendor profile:', e);
       }
     }
+
     loadFreshVendorProfile();
+    const interval = setInterval(loadFreshVendorProfile, 4000);
 
     const handleLenderSync = () => {
       loadFreshVendorProfile();
@@ -328,6 +362,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
     window.addEventListener('sbni_fraud_updated', handleLenderSync);
     window.addEventListener('storage', handleLenderSync);
     return () => {
+      clearInterval(interval);
       window.removeEventListener('sbni_lender_profile_updated', handleLenderSync);
       window.removeEventListener('sbni_vendor_profile_updated', handleLenderSync);
       window.removeEventListener('sbni_fraud_updated', handleLenderSync);
@@ -454,7 +489,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
       const uStr = localStorage.getItem('sbni_user');
       const pStr = localStorage.getItem('sbni_vendor_profile');
       const u = uStr ? JSON.parse(uStr) : currentUser;
-      const profile = pStr ? JSON.parse(pStr) : (u?.vendorProfile || null);
+      const profile = liveVendorProfile || (pStr ? JSON.parse(pStr) : (u?.vendorProfile || null));
 
       if (!u && !profile) return null;
 
@@ -493,17 +528,10 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
         }
       } catch (e) {}
 
-      const storedFraud = (() => {
-        try { return JSON.parse(localStorage.getItem('sbni_fraud_vendors') || '{}'); } catch { return {}; }
-      })();
-      const vId = profile?.id || u?.id;
-      const vEmail = email || u?.email;
-      const isFraud =
-        (vId && storedFraud[vId] !== undefined)
-          ? !!storedFraud[vId]
-          : (vEmail && storedFraud[vEmail] !== undefined)
-          ? !!storedFraud[vEmail]
-          : !!profile?.isFraud;
+      // Authoritative fraud status directly from PostgreSQL RDS
+      const isFraud = typeof profile?.isFraud === 'boolean'
+        ? profile.isFraud
+        : (typeof u?.isFraud === 'boolean' ? u.isFraud : false);
 
       return {
         name,

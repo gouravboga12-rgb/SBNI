@@ -868,10 +868,9 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
             })();
             const vId = vp.id || vp.userId;
             const vEmail = (u.email || vp.email || vp.emailId || '').toLowerCase().trim();
-            const isFraudStatus =
-              !!vp.isFraud ||
-              (vId && storedFraud[vId] !== undefined ? !!storedFraud[vId] : false) ||
-              (vEmail && storedFraud[vEmail] !== undefined ? !!storedFraud[vEmail] : false);
+            const isFraudStatus = typeof vp.isFraud === 'boolean'
+              ? vp.isFraud
+              : (vId && storedFraud[vId] === true ? true : (vEmail && storedFraud[vEmail] === true ? true : false));
 
             const rawOwner = vp.vendorName || vp.ownerName || u.name || (vp.emailId && !vp.emailId.includes('@example.com') ? vp.emailId.split('@')[0] : (u.email ? u.email.split('@')[0] : 'Business Owner'));
             const rawShop = vp.shopName || vp.businessName || (rawOwner && rawOwner !== 'Business Owner' ? `${rawOwner} Store` : 'Business Enterprise');
@@ -955,7 +954,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
   const checkVendorIsFraud = (vendor: VendorVerificationRequest | null | undefined): boolean => {
     if (!vendor) return false;
     try {
-      if ((vendor as any).isFraud === true) return true;
+      if (typeof (vendor as any).isFraud === 'boolean') return (vendor as any).isFraud;
 
       const vId = vendor.id || (vendor as any).vendorId || (vendor as any).userId;
       const vEmail = (vendor.emailId || (vendor as any).userEmail || (vendor as any).email || '').toLowerCase().trim();
@@ -964,6 +963,8 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
       const storedFraud = JSON.parse(localStorage.getItem('sbni_fraud_vendors') || '{}');
       if (vId && storedFraud[vId] === true) return true;
       if (vEmail && storedFraud[vEmail] === true) return true;
+      if (vId && storedFraud[vId] === false) return false;
+      if (vEmail && storedFraud[vEmail] === false) return false;
 
       // 2. Check live report registry (if confirmed by Super Admin)
       const lenderReports = JSON.parse(localStorage.getItem('sbni_lender_reported_frauds') || '[]');
