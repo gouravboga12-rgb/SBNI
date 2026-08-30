@@ -326,7 +326,12 @@ export const LenderCard: React.FC<LenderCardProps> = ({ lender, onOpenSubscripti
       return;
     }
 
-    recordLenderRequest('CALL');
+    // If already applied, do not re-send application details; only redirect to call
+    const alreadyApplied = hasApplied || checkHasApplied(lender.id);
+    if (!alreadyApplied) {
+      recordLenderRequest('CALL');
+    }
+
     if (lender.phone) {
       window.location.href = `tel:${lender.phone}`;
     }
@@ -346,7 +351,12 @@ export const LenderCard: React.FC<LenderCardProps> = ({ lender, onOpenSubscripti
       return;
     }
 
-    recordLenderRequest('WHATSAPP');
+    // If already applied, do not re-send application details; only redirect to WhatsApp
+    const alreadyApplied = hasApplied || checkHasApplied(lender.id);
+    if (!alreadyApplied) {
+      recordLenderRequest('WHATSAPP');
+    }
+
     if (lender.whatsAppUrl) {
       window.open(lender.whatsAppUrl, '_blank');
     } else if (lender.phone) {
