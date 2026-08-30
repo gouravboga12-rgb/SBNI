@@ -11,6 +11,8 @@ import {
   fetchLenderLeadsApi,
   safeSetLocalStorage,
   uploadFileToEc2Api,
+  checkSubscriptionStatus,
+  cancelAutoPayApi,
 } from '../services/api';
 import { LocationPickerModal } from '../components/LocationPickerModal';
 import { getGoogleMapsNavigationUrl } from '../services/mapboxService';
@@ -61,6 +63,10 @@ import {
   ExternalLink,
   Shield,
   Trash2,
+  Repeat,
+  Sparkles,
+  Zap,
+  CalendarCheck,
 } from 'lucide-react';
 
 const LENDER_BANNER_SLIDES: BannerSlide[] = [
@@ -539,6 +545,61 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
       alert('Failed to save profile changes. Please try again.');
     } finally {
       setIsSavingLenderProfile(false);
+    }
+  };
+
+  // Subscription & AutoPay Management State for Lender
+  const [lenderActiveSub, setLenderActiveSub] = useState<any>(null);
+  const [loadingLenderSub, setLoadingLenderSub] = useState(false);
+  const [cancellingLenderAutoPay, setCancellingLenderAutoPay] = useState(false);
+  const [showLenderCancelModal, setShowLenderCancelModal] = useState(false);
+  const [lenderSubFeedback, setLenderSubFeedback] = useState('');
+
+  const loadLenderSubscription = async () => {
+    setLoadingLenderSub(true);
+    try {
+      const res = await checkSubscriptionStatus();
+      if (res.isActive && res.subscription) {
+        setLenderActiveSub(res.subscription);
+      } else {
+        setLenderActiveSub(null);
+      }
+    } catch {
+      setLenderActiveSub(null);
+    } finally {
+      setLoadingLenderSub(false);
+    }
+  };
+
+  useEffect(() => {
+    loadLenderSubscription();
+    const handleSubSync = () => loadLenderSubscription();
+    window.addEventListener('sbni_subscription_updated', handleSubSync);
+    window.addEventListener('storage', handleSubSync);
+    return () => {
+      window.removeEventListener('sbni_subscription_updated', handleSubSync);
+      window.removeEventListener('storage', handleSubSync);
+    };
+  }, []);
+
+  const handleCancelLenderAutoPay = async () => {
+    setCancellingLenderAutoPay(true);
+    try {
+      const res = await cancelAutoPayApi();
+      if (res.success) {
+        setLenderSubFeedback(res.message || 'AutoPay cancelled. Your plan remains active until expiration.');
+        setLenderActiveSub((prev: any) => (prev ? { ...prev, isAutoPay: false } : prev));
+        setShowLenderCancelModal(false);
+        setTimeout(() => setLenderSubFeedback(''), 4500);
+      } else {
+        setLenderSubFeedback(res.message || 'Failed to cancel AutoPay.');
+        setTimeout(() => setLenderSubFeedback(''), 4500);
+      }
+    } catch (err: any) {
+      setLenderSubFeedback(err.message || 'Error cancelling AutoPay.');
+      setTimeout(() => setLenderSubFeedback(''), 4500);
+    } finally {
+      setCancellingLenderAutoPay(false);
     }
   };
 
@@ -2837,6 +2898,130 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                 <span>{lenderSaveSuccess}</span>
               </div>
             )}
+
+            {/* ── LENDER MEMBERSHIP & AUTOPAY BILLING SECTION ─────────────── */}
+            <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-emerald-50/50 to-slate-50 border border-emerald-200/90 shadow-sm space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-emerald-100">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-extrabold shrink-0 shadow-xs">
+                    <Zap className="w-5 h-5 text-emerald-700" />
+                  </div>
+                  <div>
+                    <div className="text-[10px] uppercase tracking-wider font-extrabold text-emerald-700">
+                      Financer Membership & Billing
+                    </div>
+                    <div className="text-sm sm:text-base font-extrabold text-slate-900 font-heading flex items-center gap-2">
+                      <span>{lenderActiveSub?.plan?.name || (lenderActiveSub ? 'Active Financer Plan' : 'No Active Membership')}</span>
+                      {lenderActiveSub?.isAutoPay && (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
+                          <Repeat className="w-3 h-3 text-emerald-600" /> AutoPay: Active
+                        </span>
+                      )}
+                      {!lenderActiveSub?.isAutoPay && lenderActiveSub?.endDate && (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-200 text-slate-700 border border-slate-300">
+                          AutoPay: Off
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  {lenderActiveSub?.isAutoPay && (
+                    <button
+                      type="button"
+                      onClick={() => setShowLenderCancelModal(true)}
+                      disabled={cancellingLenderAutoPay}
+                      className="px-3.5 py-2 text-xs font-extrabold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-xl transition-colors cursor-pointer whitespace-nowrap shadow-xs active:scale-95"
+                    >
+                      {cancellingLenderAutoPay ? 'Cancelling...' : 'Cancel AutoPay'}
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={onOpenSubscription}
+                    className="btn-sbni-green px-4 py-2 text-xs font-extrabold rounded-xl shadow-md transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                    <span>{lenderActiveSub ? 'Upgrade Plan' : 'Activate Plan'}</span>
+                  </button>
+                </div>
+              </div>
+
+              {lenderSubFeedback && (
+                <div className="p-3 rounded-xl bg-emerald-100 border border-emerald-300 text-emerald-900 font-bold text-xs text-center animate-bounce">
+                  {lenderSubFeedback}
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                <div className="p-3 rounded-xl bg-white border border-slate-200">
+                  <span className="text-slate-400 font-bold uppercase text-[9px] tracking-wider block mb-0.5">Plan Status</span>
+                  <div className="font-extrabold text-slate-900 flex items-center gap-1.5">
+                    <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>{lenderActiveSub ? 'Verified Financer Active' : 'Free Preview Mode'}</span>
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-xl bg-white border border-slate-200">
+                  <span className="text-slate-400 font-bold uppercase text-[9px] tracking-wider block mb-0.5">Valid Until</span>
+                  <div className="font-extrabold text-slate-900 flex items-center gap-1.5">
+                    <Clock className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>{lenderActiveSub?.endDate ? new Date(lenderActiveSub.endDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}</span>
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-xl bg-white border border-slate-200">
+                  <span className="text-slate-400 font-bold uppercase text-[9px] tracking-wider block mb-0.5">Auto-Renewal</span>
+                  <div className="font-extrabold text-slate-900 flex items-center gap-1.5">
+                    <Repeat className={`w-4 h-4 ${lenderActiveSub?.isAutoPay ? 'text-emerald-600' : 'text-slate-400'}`} />
+                    <span>{lenderActiveSub?.isAutoPay ? 'Continuous Auto-Renewal (UPI/Card)' : 'Manual Renewal'}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Cancel AutoPay Confirmation Modal for Lender */}
+              {showLenderCancelModal && (
+                <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xs">
+                  <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-200 text-center space-y-4 animate-in fade-in zoom-in-95 duration-200">
+                    <div className="w-14 h-14 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center mx-auto">
+                      <AlertCircle className="w-7 h-7" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-extrabold text-slate-900 font-heading">
+                        Turn Off Financer AutoPay?
+                      </h3>
+                      <p className="text-xs text-slate-600 mt-2 leading-relaxed font-medium">
+                        Your subscription will not be charged again. You will continue to have full access to verified shop leads until{' '}
+                        <span className="font-extrabold text-slate-900">
+                          {lenderActiveSub?.endDate ? new Date(lenderActiveSub.endDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'the end of your current cycle'}
+                        </span>
+                        .
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-3 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowLenderCancelModal(false)}
+                        disabled={cancellingLenderAutoPay}
+                        className="flex-1 py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold text-xs rounded-xl transition-colors cursor-pointer"
+                      >
+                        Keep AutoPay
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleCancelLenderAutoPay}
+                        disabled={cancellingLenderAutoPay}
+                        className="flex-1 py-2.5 px-4 bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs rounded-xl transition-colors cursor-pointer shadow-md"
+                      >
+                        {cancellingLenderAutoPay ? 'Cancelling...' : 'Yes, Turn Off'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
 
             <div className="card-white p-4 sm:p-6 md:p-8 space-y-5 sm:space-y-6 shadow-md border border-slate-200/90 rounded-2xl sm:rounded-3xl">
               

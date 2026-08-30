@@ -16,6 +16,8 @@ import {
   fetchVendorMyLeadsApi,
   safeSetLocalStorage,
   uploadFileToEc2Api,
+  checkSubscriptionStatus,
+  cancelAutoPayApi,
 } from '../services/api';
 import {
   downloadDocumentFile,
@@ -58,6 +60,11 @@ import {
   XCircle,
   Download,
   AlertCircle,
+  Repeat,
+  Sparkles,
+  Zap,
+  CalendarCheck,
+  Clock,
 } from 'lucide-react';
 
 const VENDOR_BANNER_SLIDES: BannerSlide[] = [
@@ -393,6 +400,61 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
   useEffect(() => {
     loadNearbyLenders();
   }, [searchLocation.latitude, searchLocation.longitude]);
+
+  // Subscription & AutoPay Management State
+  const [vendorActiveSub, setVendorActiveSub] = useState<any>(null);
+  const [loadingVendorSub, setLoadingVendorSub] = useState(false);
+  const [cancellingVendorAutoPay, setCancellingVendorAutoPay] = useState(false);
+  const [showVendorCancelModal, setShowVendorCancelModal] = useState(false);
+  const [vendorSubFeedback, setVendorSubFeedback] = useState('');
+
+  const loadVendorSubscription = async () => {
+    setLoadingVendorSub(true);
+    try {
+      const res = await checkSubscriptionStatus();
+      if (res.isActive && res.subscription) {
+        setVendorActiveSub(res.subscription);
+      } else {
+        setVendorActiveSub(null);
+      }
+    } catch {
+      setVendorActiveSub(null);
+    } finally {
+      setLoadingVendorSub(false);
+    }
+  };
+
+  useEffect(() => {
+    loadVendorSubscription();
+    const handleSubSync = () => loadVendorSubscription();
+    window.addEventListener('sbni_subscription_updated', handleSubSync);
+    window.addEventListener('storage', handleSubSync);
+    return () => {
+      window.removeEventListener('sbni_subscription_updated', handleSubSync);
+      window.removeEventListener('storage', handleSubSync);
+    };
+  }, []);
+
+  const handleCancelVendorAutoPay = async () => {
+    setCancellingVendorAutoPay(true);
+    try {
+      const res = await cancelAutoPayApi();
+      if (res.success) {
+        setVendorSubFeedback(res.message || 'AutoPay cancelled. Your plan remains active until expiration.');
+        setVendorActiveSub((prev: any) => (prev ? { ...prev, isAutoPay: false } : prev));
+        setShowVendorCancelModal(false);
+        setTimeout(() => setVendorSubFeedback(''), 4500);
+      } else {
+        setVendorSubFeedback(res.message || 'Failed to cancel AutoPay.');
+        setTimeout(() => setVendorSubFeedback(''), 4500);
+      }
+    } catch (err: any) {
+      setVendorSubFeedback(err.message || 'Error cancelling AutoPay.');
+      setTimeout(() => setVendorSubFeedback(''), 4500);
+    } finally {
+      setCancellingVendorAutoPay(false);
+    }
+  };
 
   // Use My Location (Mapbox GPS) quick trigger
   const handleVendorQuickGPS = async () => {
@@ -1666,6 +1728,130 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                   </div>
                 </div>
 
+              </div>
+
+              {/* ── MEMBERSHIP & AUTOPAY BILLING SECTION ────────────────── */}
+              <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-slate-50 to-blue-50/40 border border-blue-200/90 shadow-sm space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-blue-100">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-blue-100 text-[#003893] flex items-center justify-center font-extrabold shrink-0 shadow-xs">
+                      <Zap className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <div className="text-[10px] uppercase tracking-wider font-extrabold text-blue-700">
+                        Membership & Billing
+                      </div>
+                      <div className="text-sm sm:text-base font-extrabold text-slate-900 font-heading flex items-center gap-2">
+                        <span>{vendorActiveSub?.plan?.name || (vendorActiveSub ? 'Active Vendor Plan' : 'No Active Membership')}</span>
+                        {vendorActiveSub?.isAutoPay && (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
+                            <Repeat className="w-3 h-3 text-emerald-600" /> AutoPay: Active
+                          </span>
+                        )}
+                        {!vendorActiveSub?.isAutoPay && vendorActiveSub?.endDate && (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-200 text-slate-700 border border-slate-300">
+                            AutoPay: Off
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    {vendorActiveSub?.isAutoPay && (
+                      <button
+                        type="button"
+                        onClick={() => setShowVendorCancelModal(true)}
+                        disabled={cancellingVendorAutoPay}
+                        className="px-3.5 py-2 text-xs font-extrabold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-xl transition-colors cursor-pointer whitespace-nowrap shadow-xs active:scale-95"
+                      >
+                        {cancellingVendorAutoPay ? 'Cancelling...' : 'Cancel AutoPay'}
+                      </button>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={onOpenSubscription}
+                      className="btn-sbni-blue px-4 py-2 text-xs font-extrabold rounded-xl shadow-md transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+                    >
+                      <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                      <span>{vendorActiveSub ? 'Upgrade Plan' : 'Activate Plan'}</span>
+                    </button>
+                  </div>
+                </div>
+
+                {vendorSubFeedback && (
+                  <div className="p-3 rounded-xl bg-emerald-100 border border-emerald-300 text-emerald-900 font-bold text-xs text-center animate-bounce">
+                    {vendorSubFeedback}
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                  <div className="p-3 rounded-xl bg-white border border-slate-200">
+                    <span className="text-slate-400 font-bold uppercase text-[9px] tracking-wider block mb-0.5">Plan Status</span>
+                    <div className="font-extrabold text-slate-900 flex items-center gap-1.5">
+                      <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span>{vendorActiveSub ? 'Active & Verified' : 'Free Discovery Mode'}</span>
+                    </div>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-white border border-slate-200">
+                    <span className="text-slate-400 font-bold uppercase text-[9px] tracking-wider block mb-0.5">Valid Until</span>
+                    <div className="font-extrabold text-slate-900 flex items-center gap-1.5">
+                      <Clock className="w-4 h-4 text-blue-600 shrink-0" />
+                      <span>{vendorActiveSub?.endDate ? new Date(vendorActiveSub.endDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}</span>
+                    </div>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-white border border-slate-200">
+                    <span className="text-slate-400 font-bold uppercase text-[9px] tracking-wider block mb-0.5">Auto-Renewal</span>
+                    <div className="font-extrabold text-slate-900 flex items-center gap-1.5">
+                      <Repeat className={`w-4 h-4 ${vendorActiveSub?.isAutoPay ? 'text-emerald-600' : 'text-slate-400'}`} />
+                      <span>{vendorActiveSub?.isAutoPay ? 'Continuous Auto-Renewal (UPI/Card)' : 'Manual Renewal'}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Cancel AutoPay Confirmation Modal for Vendor */}
+                {showVendorCancelModal && (
+                  <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xs">
+                    <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-200 text-center space-y-4 animate-in fade-in zoom-in-95 duration-200">
+                      <div className="w-14 h-14 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center mx-auto">
+                        <AlertCircle className="w-7 h-7" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-extrabold text-slate-900 font-heading">
+                          Turn Off AutoPay?
+                        </h3>
+                        <p className="text-xs text-slate-600 mt-2 leading-relaxed font-medium">
+                          Your subscription will not be charged again. You will continue to have full, uninterrupted platform access until{' '}
+                          <span className="font-extrabold text-slate-900">
+                            {vendorActiveSub?.endDate ? new Date(vendorActiveSub.endDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'the end of your current cycle'}
+                          </span>
+                          .
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-3 pt-2">
+                        <button
+                          type="button"
+                          onClick={() => setShowVendorCancelModal(false)}
+                          disabled={cancellingVendorAutoPay}
+                          className="flex-1 py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold text-xs rounded-xl transition-colors cursor-pointer"
+                        >
+                          Keep AutoPay
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleCancelVendorAutoPay}
+                          disabled={cancellingVendorAutoPay}
+                          className="flex-1 py-2.5 px-4 bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs rounded-xl transition-colors cursor-pointer shadow-md"
+                        >
+                          {cancellingVendorAutoPay ? 'Cancelling...' : 'Yes, Turn Off'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* SECTION 1: Personal & Business Registration Information */}
