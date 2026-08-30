@@ -625,6 +625,10 @@ export const createSubscriptionPlanAdmin = async (req: AuthenticatedRequest, res
         isPopular: !!isPopular,
         isBestValue: !!isBestValue,
         roleTarget: targetRole,
+        referrerReward: req.body.referrerReward !== undefined ? parseFloat(req.body.referrerReward) : (targetRole === 'LENDER' ? 500 : 200),
+        refereeReward: req.body.refereeReward !== undefined ? parseFloat(req.body.refereeReward) : 0,
+        adminShare: req.body.adminShare !== undefined ? parseFloat(req.body.adminShare) : Math.max(0, parseFloat(price) - (targetRole === 'LENDER' ? 500 : 200)),
+        referralEnabled: req.body.referralEnabled !== undefined ? !!req.body.referralEnabled : true,
         isActive: true,
       },
     });
@@ -641,6 +645,10 @@ export const createSubscriptionPlanAdmin = async (req: AuthenticatedRequest, res
         isPopular: !!isPopular,
         isBestValue: !!isBestValue,
         roleTarget: targetRole,
+        referrerReward: req.body.referrerReward !== undefined ? parseFloat(req.body.referrerReward) : (targetRole === 'LENDER' ? 500 : 200),
+        refereeReward: req.body.refereeReward !== undefined ? parseFloat(req.body.refereeReward) : 0,
+        adminShare: req.body.adminShare !== undefined ? parseFloat(req.body.adminShare) : Math.max(0, parseFloat(price) - (targetRole === 'LENDER' ? 500 : 200)),
+        referralEnabled: req.body.referralEnabled !== undefined ? !!req.body.referralEnabled : true,
         isActive: true,
       },
     });
@@ -662,7 +670,7 @@ export const createSubscriptionPlanAdmin = async (req: AuthenticatedRequest, res
 
 export const updateSubscriptionPlanAdmin = async (req: AuthenticatedRequest, res: Response) => {
   const { planId } = req.params;
-  const { name, code, description, price, originalPrice, durationDays, features, isPopular, isBestValue, isActive, roleTarget } = req.body;
+  const { name, code, description, price, originalPrice, durationDays, features, isPopular, isBestValue, isActive, roleTarget, referrerReward, refereeReward, adminShare, referralEnabled } = req.body;
 
   const targetCode = (code || planId || '').toUpperCase().replace(/\s+/g, '_');
   const targetRole = roleTarget ? String(roleTarget).toUpperCase() : 'VENDOR';
@@ -694,6 +702,10 @@ export const updateSubscriptionPlanAdmin = async (req: AuthenticatedRequest, res
         isBestValue: isBestValue !== undefined ? !!isBestValue : existing.isBestValue,
         isActive: isActive !== undefined ? !!isActive : existing.isActive,
         roleTarget: roleTarget !== undefined ? targetRole : existing.roleTarget,
+        referrerReward: referrerReward !== undefined ? parseFloat(referrerReward) : existing.referrerReward,
+        refereeReward: refereeReward !== undefined ? parseFloat(refereeReward) : existing.refereeReward,
+        adminShare: adminShare !== undefined ? parseFloat(adminShare) : existing.adminShare,
+        referralEnabled: referralEnabled !== undefined ? !!referralEnabled : existing.referralEnabled,
       },
     });
   } else {
@@ -709,6 +721,10 @@ export const updateSubscriptionPlanAdmin = async (req: AuthenticatedRequest, res
         isPopular: !!isPopular,
         isBestValue: !!isBestValue,
         roleTarget: targetRole,
+        referrerReward: referrerReward !== undefined ? parseFloat(referrerReward) : (targetRole === 'LENDER' ? 500 : 200),
+        refereeReward: refereeReward !== undefined ? parseFloat(refereeReward) : 0,
+        adminShare: adminShare !== undefined ? parseFloat(adminShare) : Math.max(0, (price ? parseFloat(price) : 199) - (targetRole === 'LENDER' ? 500 : 200)),
+        referralEnabled: referralEnabled !== undefined ? !!referralEnabled : true,
         isActive: isActive !== undefined ? !!isActive : true,
       },
     });

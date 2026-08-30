@@ -50,12 +50,35 @@ export const processReferralRewardsForUser = async (userId: string, plan: any) =
 
     if (!pendingReferral) return;
 
-    const referrerReward = Number(plan.referrerReward) > 0 ? Number(plan.referrerReward) : 30;
-    const refereeReward = Number(plan.refereeReward) > 0 ? Number(plan.refereeReward) : 30;
+    if (plan.referralEnabled === false) {
+      await prisma.referralRecord.update({
+        where: { id: pendingReferral.id },
+        data: {
+          status: 'COMPLETED',
+          subscriptionPlanId: plan.id,
+          referrerReward: 0,
+          refereeReward: 0,
+          adminShare: Number(plan.price) || 0,
+          rewardedAt: new Date(),
+        },
+      });
+      return;
+    }
+
+    const referrerReward =
+      plan.referrerReward !== undefined && plan.referrerReward !== null
+        ? Math.max(0, Number(plan.referrerReward))
+        : (plan.roleTarget === 'LENDER' ? 500 : 200);
+
+    const refereeReward =
+      plan.refereeReward !== undefined && plan.refereeReward !== null
+        ? Math.max(0, Number(plan.refereeReward))
+        : 0;
+
     const adminShare =
-      Number(plan.adminShare) >= 0
+      plan.adminShare !== undefined && plan.adminShare !== null && Number(plan.adminShare) >= 0
         ? Number(plan.adminShare)
-        : Math.max(0, plan.price - referrerReward - refereeReward);
+        : Math.max(0, Number(plan.price) - referrerReward - refereeReward);
 
     await prisma.$transaction(async (tx) => {
       // 1. Credit Referrer

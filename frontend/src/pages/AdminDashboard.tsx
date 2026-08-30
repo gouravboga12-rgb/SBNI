@@ -1739,6 +1739,7 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
         }
       } catch {}
       await loadPlansFromDB();
+      await loadAdminReferralsAndRules();
       window.dispatchEvent(new Event('sbni_subscription_plans_updated'));
     } else {
       const newPlan: AdminSubscriptionPlan = {
@@ -1767,6 +1768,7 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
         }
       } catch {}
       await loadPlansFromDB();
+      await loadAdminReferralsAndRules();
       window.dispatchEvent(new Event('sbni_subscription_plans_updated'));
     }
     setPlanModalOpen(false);
@@ -1779,6 +1781,7 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
         await adminDeleteSubscriptionPlan(planId);
       } catch {}
       await loadPlansFromDB();
+      await loadAdminReferralsAndRules();
       window.dispatchEvent(new Event('sbni_subscription_plans_updated'));
       showToast(`Subscription Plan "${planName}" deleted.`);
     }
