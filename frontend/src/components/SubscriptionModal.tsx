@@ -78,25 +78,62 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
     }
   };
 
-  const loadPlans = () => {
-    fetchSubscriptionPlans(userRole).then((data) => {
-      setPlans(data);
-      if (data.length > 0) {
-        const popular = data.find((p) => p.isPopular) || data[1] || data[0];
-        setSelectedPlan(popular);
+  const selectBestPlan = (plansList: SubscriptionPlan[], currentSub: any) => {
+    if (!plansList || plansList.length === 0) return;
+
+    if (currentSub && currentSub.plan) {
+      const curPrice = Number(currentSub.plan.price) || 0;
+      const curDays = Number(currentSub.plan.durationDays) || 0;
+      const curId = currentSub.plan.id;
+      const curCode = currentSub.plan.code;
+      const curName = currentSub.plan.name?.trim().toLowerCase();
+
+      // Find higher upgrade plans (higher price or longer duration)
+      const higherPlans = plansList.filter((p) => {
+        const isMatch =
+          p.id === curId ||
+          (p.code && p.code === curCode) ||
+          (p.name && p.name.trim().toLowerCase() === curName);
+        if (isMatch) return false;
+        return p.price > curPrice || p.durationDays > curDays;
+      });
+
+      if (higherPlans.length > 0) {
+        // Pick the best value higher plan or next higher price plan
+        const recommendedUpgrade =
+          higherPlans.find((p) => p.isPopular || p.isBestValue) ||
+          [...higherPlans].sort((a, b) => a.price - b.price)[0];
+        setSelectedPlan(recommendedUpgrade);
+        return;
+      } else {
+        // Already on top tier plan
+        const matchingCurrent = plansList.find(
+          (p) => p.id === curId || p.code === curCode || p.name?.trim().toLowerCase() === curName
+        );
+        setSelectedPlan(matchingCurrent || plansList[plansList.length - 1]);
+        return;
       }
-    });
+    }
+
+    // Default if no active subscription: select popular or first plan
+    const popular = plansList.find((p) => p.isPopular) || plansList[1] || plansList[0];
+    setSelectedPlan(popular);
   };
 
-  const loadActiveSub = async () => {
+  const loadData = async () => {
     setLoadingActiveSub(true);
     try {
-      const res = await checkSubscriptionStatus();
-      if (res.isActive && res.subscription) {
-        setActiveSub(res.subscription);
-      } else {
-        setActiveSub(null);
-      }
+      const [plansData, subRes] = await Promise.all([
+        fetchSubscriptionPlans(userRole),
+        checkSubscriptionStatus().catch(() => ({ isActive: false, subscription: null })),
+      ]);
+
+      const loadedPlans = Array.isArray(plansData) ? plansData : [];
+      setPlans(loadedPlans);
+
+      const currentSub = subRes?.isActive && subRes?.subscription ? subRes.subscription : null;
+      setActiveSub(currentSub);
+      selectBestPlan(loadedPlans, currentSub);
     } catch {
       setActiveSub(null);
     } finally {
@@ -106,8 +143,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
 
   useEffect(() => {
     if (isOpen) {
-      loadPlans();
-      loadActiveSub();
+      loadData();
       setIsAutoPay(true);
       setErrorMessage('');
       setSuccessMessage('');
@@ -115,8 +151,9 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
   }, [userRole, isOpen]);
 
   useEffect(() => {
-    window.addEventListener('sbni_subscription_plans_updated', loadPlans);
-    return () => window.removeEventListener('sbni_subscription_plans_updated', loadPlans);
+    const handleReload = () => loadData();
+    window.addEventListener('sbni_subscription_plans_updated', handleReload);
+    return () => window.removeEventListener('sbni_subscription_plans_updated', handleReload);
   }, [userRole]);
 
   if (!isOpen) return null;
@@ -279,6 +316,33 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
     ? Math.max(0, Math.ceil((new Date(activeSub.endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
     : 0;
 
+  const curSubPrice = Number(activeSub?.plan?.price) || 0;
+  const curSubDays = Number(activeSub?.plan?.durationDays) || 0;
+  const curPlanId = activeSub?.plan?.id;
+  const curPlanCode = activeSub?.plan?.code;
+  const curPlanName = activeSub?.plan?.name?.trim().toLowerCase();
+
+  const isCurrentActivePlan = (plan: SubscriptionPlan) => {
+    if (!activeSub?.plan) return false;
+    return (
+      plan.id === curPlanId ||
+      (plan.code && plan.code === curPlanCode) ||
+      (plan.name && plan.name.trim().toLowerCase() === curPlanName)
+    );
+  };
+
+  const isHigherTierPlan = (plan: SubscriptionPlan) => {
+    if (!activeSub?.plan || isCurrentActivePlan(plan)) return false;
+    return plan.price > curSubPrice || plan.durationDays > curSubDays;
+  };
+
+  const isLowerTierPlan = (plan: SubscriptionPlan) => {
+    if (!activeSub?.plan || isCurrentActivePlan(plan)) return false;
+    return plan.price < curSubPrice && plan.durationDays <= curSubDays;
+  };
+
+  const isUpgrading = !!(activeSub && daysRemaining > 0);
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-900/75 backdrop-blur-sm overflow-y-auto">
       <div className="relative w-full max-w-5xl bg-white p-5 sm:p-6 rounded-3xl border border-slate-200 shadow-2xl my-auto max-h-[90vh] flex flex-col overflow-y-auto">
@@ -405,21 +469,36 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
           <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-xs font-extrabold">
             <Zap className="w-3.5 h-3.5 text-amber-600" />
             <span>
-              {isLender
+              {isUpgrading
+                ? 'Upgrade Your Subscription'
+                : isLender
                 ? 'Business Money Financer Subscription'
                 : 'Small Shop & Startup Business Unlock Subscription'}
             </span>
           </div>
 
           <h2 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-slate-900 font-heading">
-            Choose Your{' '}
-            <span className={isLender ? 'text-[#059669]' : 'text-[#003893]'}>
-              {isLender ? 'Business Money Financer Verification' : 'Small Shop & Startup Business Discovery'} Plan
-            </span>
+            {isUpgrading ? (
+              <>
+                Upgrade to a{' '}
+                <span className={isLender ? 'text-[#059669]' : 'text-[#003893]'}>
+                  Higher {isLender ? 'Financer' : 'Business'} Tier
+                </span>
+              </>
+            ) : (
+              <>
+                Choose Your{' '}
+                <span className={isLender ? 'text-[#059669]' : 'text-[#003893]'}>
+                  {isLender ? 'Business Money Financer Verification' : 'Small Shop & Startup Business Discovery'} Plan
+                </span>
+              </>
+            )}
           </h2>
 
           <p className="text-xs text-slate-600 font-medium">
-            {isLender
+            {isUpgrading
+              ? `You are currently on ${activeSub?.plan?.name || 'an active plan'}. Select a higher tier plan below for extended validity, higher priority, and maximum savings.`
+              : isLender
               ? 'Unlock unlimited shop business verifications, full KYC reports, GST documents, and direct shop owner access.'
               : 'Unlock direct phone numbers, WhatsApp connect, and verified financer details. Zero middleman fees.'}
           </p>
@@ -430,6 +509,10 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
           {plans.map((plan) => {
             const isSelected = selectedPlan?.id === plan.id;
             const planPrice = Math.max(0, plan.price - (plan.price * discountPercent) / 100);
+            const isCurrent = isCurrentActivePlan(plan);
+            const isHigher = isHigherTierPlan(plan);
+            const isLower = isLowerTierPlan(plan);
+
             return (
               <div
                 key={plan.id}
@@ -439,27 +522,51 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                     ? isLender
                       ? 'bg-emerald-50/70 border-2 border-[#059669] shadow-lg shadow-emerald-500/10 scale-[1.02]'
                       : 'bg-blue-50/70 border-2 border-[#003893] shadow-lg shadow-blue-500/10 scale-[1.02]'
+                    : isCurrent
+                    ? 'bg-emerald-50/30 border-emerald-300 hover:border-emerald-400'
+                    : isHigher
+                    ? 'bg-gradient-to-b from-indigo-50/40 to-slate-50 border-indigo-200 hover:border-indigo-400 hover:shadow-sm'
                     : 'bg-slate-50/80 border-slate-200 hover:border-slate-300 hover:bg-white hover:shadow-sm'
                 }`}
               >
                 <div className="absolute -top-2.5 inset-x-0 flex items-center justify-center gap-1.5 pointer-events-none">
-                  {plan.isPopular && (
+                  {isCurrent ? (
+                    <span className="bg-emerald-600 text-white text-[9px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider whitespace-nowrap shadow-sm flex items-center gap-1">
+                      <Check className="w-2.5 h-2.5" /> Current Plan
+                    </span>
+                  ) : isHigher && (plan.isBestValue || plan.isPopular) ? (
+                    <span className="bg-gradient-to-r from-amber-500 to-indigo-600 text-white text-[9px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider whitespace-nowrap shadow-sm flex items-center gap-1">
+                      🚀 Recommended Upgrade
+                    </span>
+                  ) : isHigher ? (
+                    <span className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-[9px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider whitespace-nowrap shadow-sm flex items-center gap-1">
+                      ✨ Upgrade Tier
+                    </span>
+                  ) : plan.isPopular ? (
                     <span className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-[9px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider whitespace-nowrap shadow-sm">
                       Most Popular
                     </span>
-                  )}
-
-                  {plan.isBestValue && (
+                  ) : plan.isBestValue ? (
                     <span className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-[9px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider whitespace-nowrap shadow-sm">
                       ✨ Best Value
                     </span>
-                  )}
+                  ) : isLower ? (
+                    <span className="bg-slate-200 text-slate-600 text-[9px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider whitespace-nowrap">
+                      Lower Tier
+                    </span>
+                  ) : null}
                 </div>
 
                 <div>
                   <div
                     className={`text-[9px] font-extrabold uppercase tracking-widest mb-0.5 ${
-                      isLender ? 'text-[#059669]' : 'text-[#003893]'
+                      isCurrent
+                        ? 'text-emerald-700'
+                        : isHigher
+                        ? 'text-indigo-700'
+                        : isLender
+                        ? 'text-[#059669]'
+                        : 'text-[#003893]'
                     }`}
                   >
                     {plan.durationLabel}
@@ -503,15 +610,37 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                     onClick={(e) => handleSubscribe(plan, e)}
                     disabled={loading}
                     className={`w-full text-xs font-extrabold py-2 px-2 rounded-xl transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 ${
-                      isSelected
+                      isCurrent && daysRemaining > 0
+                        ? isSelected
+                          ? 'bg-emerald-700 text-white ring-2 ring-emerald-300'
+                          : 'bg-emerald-100 hover:bg-emerald-200 text-emerald-900 border border-emerald-300'
+                        : isHigher
+                        ? isSelected
+                          ? 'bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white ring-2 ring-indigo-300'
+                          : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                        : isSelected
                         ? isLender
                           ? 'bg-[#059669] hover:bg-[#047857] text-white ring-2 ring-emerald-300'
                           : 'bg-[#003893] hover:bg-[#002d78] text-white ring-2 ring-blue-300'
                         : 'bg-emerald-600 hover:bg-emerald-700 text-white'
                     }`}
                   >
-                    <Sparkles className="w-3.5 h-3.5 text-amber-300 shrink-0" />
-                    <span>{loading && selectedPlan?.id === plan.id ? 'Connecting...' : `Pay ₹${planPrice} Now`}</span>
+                    {isCurrent && daysRemaining > 0 ? (
+                      <>
+                        <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                        <span>{loading && selectedPlan?.id === plan.id ? 'Connecting...' : `Current Active Plan`}</span>
+                      </>
+                    ) : isHigher ? (
+                      <>
+                        <Sparkles className="w-3.5 h-3.5 text-amber-300 shrink-0" />
+                        <span>{loading && selectedPlan?.id === plan.id ? 'Connecting...' : `Upgrade for ₹${planPrice}`}</span>
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-3.5 h-3.5 text-amber-300 shrink-0" />
+                        <span>{loading && selectedPlan?.id === plan.id ? 'Connecting...' : `Pay ₹${planPrice} Now`}</span>
+                      </>
+                    )}
                   </button>
                 </div>
               </div>
@@ -654,7 +783,9 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
             onClick={() => handleSubscribe()}
             disabled={loading}
             className={`w-full sm:w-auto py-3 px-8 text-xs sm:text-sm font-extrabold rounded-xl shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-95 ${
-              isLender
+              selectedPlan && isHigherTierPlan(selectedPlan)
+                ? 'bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white'
+                : isLender
                 ? 'bg-[#059669] hover:bg-[#047857] text-white'
                 : 'bg-[#003893] hover:bg-[#002d78] text-white'
             }`}
@@ -663,6 +794,12 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
             <span>
               {loading
                 ? 'Opening Razorpay Gateway...'
+                : selectedPlan && isHigherTierPlan(selectedPlan)
+                ? isAutoPay
+                  ? `Upgrade to ${selectedPlan.name} • ₹${calculatedPrice} AutoPay`
+                  : `Upgrade to ${selectedPlan.name} • Pay ₹${calculatedPrice} Now`
+                : selectedPlan && isCurrentActivePlan(selectedPlan) && daysRemaining > 0
+                ? `Extend / Renew ${selectedPlan.name} (₹${calculatedPrice})`
                 : isAutoPay
                 ? `Setup AutoPay ₹${calculatedPrice} & Activate ${selectedPlan?.name || 'Plan'}`
                 : `Pay ₹${calculatedPrice} with Razorpay & Unlock Contacts`}
