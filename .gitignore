@@ -21,8 +21,13 @@ yarn-error.log*
 # Keys and Secrets
 *.pem
 *.key
+*.csv
 .env*
 !.env.example
+
+# Scratch and test files
+scratch/
+test_*.js
 
 # Screenshot / Scratch artifacts
 image copy*.png

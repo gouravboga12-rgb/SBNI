@@ -898,6 +898,71 @@ function getDefaultPlans(role: 'VENDOR' | 'LENDER'): SubscriptionPlan[] {
   ];
 }
 
+export async function getRazorpayKey(): Promise<string> {
+  try {
+    const data = await apiFetch('/subscriptions/razorpay-key');
+    if (data.success && data.keyId) {
+      return data.keyId;
+    }
+  } catch (e) {}
+  return 'rzp_test_TUjAguyFqbDjNk';
+}
+
+export async function createRazorpayPaymentSession(
+  planId: string,
+  isAutoPay: boolean = false,
+  couponCode?: string
+): Promise<{
+  success: boolean;
+  mode?: 'order' | 'subscription';
+  orderId?: string;
+  subscriptionId?: string;
+  amount?: number;
+  amountPaise?: number;
+  currency?: string;
+  keyId?: string;
+  plan?: any;
+  message?: string;
+}> {
+  try {
+    const data = await apiFetch('/subscriptions/create-order', {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({ planId, isAutoPay, couponCode }),
+    });
+    return data;
+  } catch (err: any) {
+    return { success: false, message: err.message || 'Failed to initialize payment.' };
+  }
+}
+
+export async function verifyRazorpayPayment(payload: {
+  razorpay_order_id?: string;
+  razorpay_payment_id: string;
+  razorpay_signature: string;
+  razorpay_subscription_id?: string;
+  planId: string;
+  couponCode?: string;
+  isAutoPay?: boolean;
+}): Promise<{
+  success: boolean;
+  hasActiveSubscription?: boolean;
+  subscription?: any;
+  payment?: any;
+  message?: string;
+}> {
+  try {
+    const data = await apiFetch('/subscriptions/verify-payment', {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify(payload),
+    });
+    return data;
+  } catch (err: any) {
+    return { success: false, message: err.message || 'Payment verification failed.' };
+  }
+}
+
 export async function purchaseSubscription(
   planId: string,
   paymentDetails?: { method?: string; transactionId?: string }
