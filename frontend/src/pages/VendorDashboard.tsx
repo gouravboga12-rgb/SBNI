@@ -2016,107 +2016,69 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                 )}
               </div>
 
-              {/* ── ACCORDION 3: REGISTERED SHOP BUSINESS LOCATION ───────── */}
-              <div className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200/90 shadow-sm overflow-hidden transition-all">
-                <button
-                  type="button"
-                  onClick={() => toggleSection('location')}
-                  className="w-full p-4 sm:p-5 flex items-center justify-between gap-3 text-left hover:bg-slate-50/70 transition-colors cursor-pointer"
-                >
-                  <div className="flex items-center gap-3.5 min-w-0">
-                    <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0 shadow-2xs">
-                      <MapPin className="w-5 h-5 text-purple-600" />
-                    </div>
-                    <div>
-                      <h3 className="font-extrabold text-slate-900 text-sm sm:text-base font-heading leading-tight">
-                        Registered Shop Business Location
-                      </h3>
-                      <p className="text-xs text-slate-500 font-medium leading-tight mt-0.5 truncate">
-                        Manage your shop location and coordinates.
-                      </p>
-                    </div>
+              {/* ── SECTION 3: REGISTERED SHOP BUSINESS LOCATION (MAPBOX VERIFIED) ── */}
+              <div className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200/90 shadow-sm p-4 sm:p-5 space-y-3.5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                  <div className="flex items-center gap-2">
+                    <Compass className="w-5 h-5 text-[#003893]" />
+                    <h3 className="font-extrabold text-slate-900 text-sm sm:text-base font-heading">
+                      Registered Shop Business Location (Mapbox Verified)
+                    </h3>
                   </div>
-                  <ChevronDown
-                    className={`w-5 h-5 text-slate-400 shrink-0 transition-transform duration-200 ${
-                      expandedSections.location ? 'rotate-180 text-blue-600' : ''
-                    }`}
-                  />
-                </button>
 
-                {expandedSections.location && (
-                  <div className="p-4 sm:p-5 pt-0 border-t border-slate-100 space-y-4">
-                    {/* 3-card Sub-Grid matching the reference image! */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                      
-                      {/* Card 1: My Box Verified */}
-                      <div className="p-4 rounded-2xl border border-slate-200 bg-white shadow-2xs flex flex-col justify-between space-y-2">
-                        <div className="flex items-center gap-2 text-xs font-extrabold text-slate-900">
-                          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                          <span>My Box Verified</span>
-                        </div>
-                        <p className="text-[11px] text-slate-500 font-medium leading-tight">
-                          View verification status
-                        </p>
-                        <div className="pt-1">
-                          <span className="inline-block text-[10px] font-extrabold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                            ✓ GPS Radius Active
-                          </span>
-                        </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLocationModalMode('GENERAL_LOCATION');
+                      setIsLocationModalOpen(true);
+                    }}
+                    className="px-3.5 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-[#003893] border border-blue-200 font-extrabold text-xs flex items-center justify-center gap-1.5 transition-all shadow-2xs active:scale-95 cursor-pointer self-start sm:self-auto"
+                  >
+                    <Compass className="w-3.5 h-3.5" />
+                    <span>Update Shop Coordinates</span>
+                  </button>
+                </div>
+
+                {/* Inner Location Display Card */}
+                <div className="p-4 rounded-2xl bg-gradient-to-r from-blue-50/70 to-indigo-50/70 border border-blue-200/80 space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div className="flex items-start gap-2.5">
+                      <div className="w-8 h-8 rounded-full bg-rose-50 text-rose-500 border border-rose-200 flex items-center justify-center shrink-0 mt-0.5 shadow-2xs">
+                        <MapPin className="w-4 h-4 text-rose-500" />
                       </div>
-
-                      {/* Card 2: Update Shop Coordinates */}
-                      <div
-                        onClick={() => {
-                          setLocationModalMode('GENERAL_LOCATION');
-                          setIsLocationModalOpen(true);
-                        }}
-                        className="p-4 rounded-2xl border border-slate-200 bg-white hover:border-blue-400 hover:bg-blue-50/30 transition-all cursor-pointer shadow-2xs flex flex-col justify-between space-y-2 group"
-                      >
-                        <div className="flex items-center gap-2 text-xs font-extrabold text-slate-900 group-hover:text-blue-700">
-                          <Compass className="w-4 h-4 text-blue-600 shrink-0" />
-                          <span>Update Shop Coordinates</span>
-                        </div>
-                        <p className="text-[11px] text-slate-500 font-medium leading-tight">
-                          Update location details
-                        </p>
-                        <div className="pt-1 text-[11px] font-bold text-blue-700 flex items-center gap-1">
-                          <span>Open Mapbox GPS →</span>
-                        </div>
-                      </div>
-
-                      {/* Card 3: Registered Shop Location */}
-                      <a
-                        href={getGoogleMapsNavigationUrl(searchLocation.latitude, searchLocation.longitude, currentVendorObj.shopName)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="p-4 rounded-2xl border border-slate-200 bg-white hover:border-purple-400 hover:bg-purple-50/30 transition-all cursor-pointer shadow-2xs flex flex-col justify-between space-y-2 group block"
-                      >
-                        <div className="flex items-center gap-2 text-xs font-extrabold text-slate-900 group-hover:text-purple-700">
-                          <Store className="w-4 h-4 text-purple-600 shrink-0" />
-                          <span>Registered Shop Location</span>
-                        </div>
-                        <p className="text-[11px] text-slate-500 font-medium leading-tight">
-                          View shop location
-                        </p>
-                        <div className="pt-1 text-[11px] font-bold text-purple-700 flex items-center gap-1">
-                          <span>Google Maps ↗</span>
-                        </div>
-                      </a>
-
-                    </div>
-
-                    {/* Coordinates Bar */}
-                    <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-slate-600">
                       <div>
-                        <span className="font-bold text-slate-800">{searchLocation.place}, {searchLocation.city}</span>
-                        <span className="text-slate-400"> ({searchLocation.state})</span>
-                      </div>
-                      <div className="font-mono font-bold text-slate-700 text-[11px]">
-                        GPS: {Number(searchLocation.latitude).toFixed(4)}, {Number(searchLocation.longitude).toFixed(4)}
+                        <div className="font-extrabold text-slate-900 text-sm">
+                          {searchLocation.place ? `${searchLocation.place}, ${searchLocation.city}` : currentVendorObj.address || searchLocation.city || 'Chaitanya Puri Main Road, Hyderabad'}
+                        </div>
+                        <div className="text-xs text-slate-500 font-medium mt-0.5">
+                          {searchLocation.state || 'Telangana'}, {searchLocation.country || 'India'}
+                        </div>
                       </div>
                     </div>
+
+                    <div className="flex items-center">
+                      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-300 shadow-2xs">
+                        ✓ Active for Financer Radius Matching
+                      </span>
+                    </div>
                   </div>
-                )}
+
+                  <div className="pt-2 border-t border-blue-200/60 flex items-center justify-between text-xs text-slate-600 flex-wrap gap-2">
+                    <span className="font-mono text-[11px]">
+                      Latitude: <strong className="text-slate-900">{Number(searchLocation.latitude).toFixed(4)}</strong>, Longitude:{' '}
+                      <strong className="text-slate-900">{Number(searchLocation.longitude).toFixed(4)}</strong>
+                    </span>
+                    <a
+                      href={getGoogleMapsNavigationUrl(searchLocation.latitude, searchLocation.longitude, currentVendorObj.shopName)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[#003893] hover:text-blue-900 font-extrabold text-xs flex items-center gap-1 transition-colors"
+                    >
+                      <Navigation className="w-3.5 h-3.5" />
+                      <span>View on Google Maps</span>
+                    </a>
+                  </div>
+                </div>
               </div>
 
               {/* ── ACCORDION 4: KYC & IDENTITY VERIFICATION DOCUMENTS ───── */}
