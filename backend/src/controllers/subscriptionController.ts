@@ -271,13 +271,40 @@ export const verifyRazorpayPayment = async (req: AuthenticatedRequest, res: Resp
     const endDate = new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000);
     const invoiceNumber = 'INV-SBNI-' + Math.floor(100000 + Math.random() * 900000);
 
-    // Expire previous active subscriptions
+    // 1. Cancel previous Razorpay recurring mandates (if any) to prevent double charging on upgrades/switches
+    try {
+      const previousActiveSubs = await prisma.userSubscription.findMany({
+        where: { userId, status: 'ACTIVE' },
+        include: { payments: true },
+      });
+
+      for (const prevSub of previousActiveSubs) {
+        for (const p of prevSub.payments) {
+          if (
+            p.gatewayOrderId &&
+            p.gatewayOrderId.startsWith('sub_') &&
+            p.gatewayOrderId !== razorpay_subscription_id
+          ) {
+            try {
+              await razorpayInstance.subscriptions.cancel(p.gatewayOrderId, false);
+              console.log(`Cancelled previous Razorpay recurring mandate: ${p.gatewayOrderId}`);
+            } catch (cancelErr: any) {
+              console.warn(`Could not cancel previous Razorpay sub ${p.gatewayOrderId}:`, cancelErr?.message);
+            }
+          }
+        }
+      }
+    } catch (cleanErr: any) {
+      console.warn('Error cleaning up previous recurring mandates:', cleanErr?.message);
+    }
+
+    // 2. Expire previous active subscriptions in database
     await prisma.userSubscription.updateMany({
       where: { userId, status: 'ACTIVE' },
       data: { status: 'EXPIRED' },
     });
 
-    // Create new active UserSubscription
+    // 3. Create new active UserSubscription with upgraded validity
     const subscription = await prisma.userSubscription.create({
       data: {
         userId,
@@ -383,14 +410,31 @@ export const purchaseSubscriptionPlan = async (req: AuthenticatedRequest, res: R
   const endDate = new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000);
   const transactionId = 'TXN-' + Date.now() + '-' + Math.floor(1000 + Math.random() * 9000);
   const invoiceNumber = 'INV-SBNI-' + Math.floor(100000 + Math.random() * 900000);
+  // 1. Cancel previous Razorpay recurring mandates (if any)
+  try {
+    const previousActiveSubs = await prisma.userSubscription.findMany({
+      where: { userId: userId!, status: 'ACTIVE' },
+      include: { payments: true },
+    });
 
-  // Expire previous active subscriptions
+    for (const prevSub of previousActiveSubs) {
+      for (const p of prevSub.payments) {
+        if (p.gatewayOrderId && p.gatewayOrderId.startsWith('sub_')) {
+          try {
+            await razorpayInstance.subscriptions.cancel(p.gatewayOrderId, false);
+          } catch (cancelErr: any) {}
+        }
+      }
+    }
+  } catch (cleanErr: any) {}
+
+  // 2. Expire previous active subscriptions
   await prisma.userSubscription.updateMany({
     where: { userId: userId!, status: 'ACTIVE' },
     data: { status: 'EXPIRED' },
   });
 
-  // Create new active user subscription
+  // 3. Create new active user subscription
   const subscription = await prisma.userSubscription.create({
     data: {
       userId: userId!,
