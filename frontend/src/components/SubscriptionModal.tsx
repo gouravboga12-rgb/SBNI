@@ -48,7 +48,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
   const [discountPercent, setDiscountPercent] = useState(0);
   const [couponApplied, setCouponApplied] = useState(false);
   const [couponError, setCouponError] = useState('');
-  const [isAutoPay, setIsAutoPay] = useState<boolean>(false);
+  const [isAutoPay, setIsAutoPay] = useState<boolean>(true);
   const [loading, setLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
@@ -85,6 +85,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
     if (isOpen) {
       loadPlans();
       loadActiveSub();
+      setIsAutoPay(true);
       setErrorMessage('');
       setSuccessMessage('');
     }
