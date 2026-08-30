@@ -1052,9 +1052,7 @@ export async function adminFetchReferralsApi(): Promise<{
   message?: string;
 }> {
   try {
-    const data = await apiFetch('/referrals/admin/list', {
-      headers: authHeaders(),
-    });
+    const data = await adminFetch('/referrals/admin/list');
     return data;
   } catch (err: any) {
     return { success: false, message: err.message };
@@ -1067,9 +1065,7 @@ export async function adminFetchPlanReferralRulesApi(): Promise<{
   message?: string;
 }> {
   try {
-    const data = await apiFetch('/referrals/admin/plan-rules', {
-      headers: authHeaders(),
-    });
+    const data = await adminFetch('/referrals/admin/plan-rules');
     return data;
   } catch (err: any) {
     return { success: false, message: err.message };
@@ -1090,9 +1086,8 @@ export async function adminUpdatePlanReferralRuleApi(
   message?: string;
 }> {
   try {
-    const data = await apiFetch(`/referrals/admin/plan-rules/${planId}`, {
+    const data = await adminFetch(`/referrals/admin/plan-rules/${planId}`, {
       method: 'PUT',
-      headers: authHeaders(),
       body: JSON.stringify(payload),
     });
     return data;

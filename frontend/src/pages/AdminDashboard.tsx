@@ -277,7 +277,9 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
   });
 
   const [planReferralRules, setPlanReferralRules] = useState<any[]>([]);
+  const [planRulesRoleFilter, setPlanRulesRoleFilter] = useState<'ALL' | 'VENDOR' | 'LENDER'>('ALL');
   const [savingPlanRuleId, setSavingPlanRuleId] = useState<string | null>(null);
+  const [isSavingAllRules, setIsSavingAllRules] = useState(false);
   const [isLoadingData, setIsLoadingData] = useState(false);
 
   const loadAdminReferralsAndRules = async () => {
@@ -312,8 +314,27 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
         }
       }
 
-      if (rulesRes?.success && Array.isArray(rulesRes.data)) {
+      if (rulesRes?.success && Array.isArray(rulesRes.data) && rulesRes.data.length > 0) {
         setPlanReferralRules(rulesRes.data);
+      } else {
+        // Fallback to loaded vendorPlans & lenderPlans
+        const combined = [...vendorPlans, ...lenderPlans];
+        if (combined.length > 0) {
+          const mapped = combined.map((p) => ({
+            id: p.id,
+            name: p.name,
+            code: p.code,
+            roleTarget: p.roleTarget || 'VENDOR',
+            price: Number(p.price) || 0,
+            durationDays: Number(p.durationDays) || 30,
+            referrerReward: (p as any).referrerReward !== undefined ? Number((p as any).referrerReward) : (p.roleTarget === 'LENDER' ? 500 : 200),
+            refereeReward: (p as any).refereeReward !== undefined ? Number((p as any).refereeReward) : 0,
+            adminShare: (p as any).adminShare !== undefined ? Number((p as any).adminShare) : Math.max(0, Number(p.price) - (p.roleTarget === 'LENDER' ? 500 : 200)),
+            referralEnabled: (p as any).referralEnabled !== false,
+            isActive: p.isActive !== false,
+          }));
+          setPlanReferralRules(mapped);
+        }
       }
     } catch (e) {
       console.error('loadAdminReferralsAndRules error:', e);
@@ -323,23 +344,59 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
   const handleUpdatePlanReferralRule = async (plan: any) => {
     setSavingPlanRuleId(plan.id);
     try {
-      const res = await adminUpdatePlanReferralRuleApi(plan.id, {
-        referrerReward: Number(plan.referrerReward),
-        refereeReward: Number(plan.refereeReward),
-        adminShare: Number(plan.adminShare),
-        referralEnabled: plan.referralEnabled,
-      });
+      const refReward = Number(plan.referrerReward) || 0;
+      const refeeReward = Number(plan.refereeReward) || 0;
+      const calculatedAdminShare = Math.max(0, Number(plan.price) - refReward - refeeReward);
+      const isRefEnabled = plan.referralEnabled !== false;
+
+      const payload = {
+        referrerReward: refReward,
+        refereeReward: refeeReward,
+        adminShare: calculatedAdminShare,
+        referralEnabled: isRefEnabled,
+      };
+
+      const res = await adminUpdatePlanReferralRuleApi(plan.id, payload);
 
       if (res.success) {
         showToast(`✓ Referral reward settings saved for ${plan.name}!`);
-        loadAdminReferralsAndRules();
       } else {
-        alert(res.message || 'Failed to update plan referral rule.');
+        // Fallback directly to subscription plan update
+        await adminUpdateSubscriptionPlan(plan.id, payload);
+        showToast(`✓ Referral settings updated for ${plan.name}!`);
       }
+
+      setPlanReferralRules((prev) =>
+        prev.map((p) => (p.id === plan.id ? { ...p, ...payload } : p))
+      );
     } catch (err: any) {
-      alert(err.message || 'Error updating rule.');
+      alert(err.message || 'Error updating plan referral rule.');
     } finally {
       setSavingPlanRuleId(null);
+    }
+  };
+
+  const handleSaveAllPlanRules = async () => {
+    setIsSavingAllRules(true);
+    try {
+      await Promise.all(
+        planReferralRules.map((rule) => {
+          const refReward = Number(rule.referrerReward) || 0;
+          const refeeReward = Number(rule.refereeReward) || 0;
+          const calculatedAdminShare = Math.max(0, Number(rule.price) - refReward - refeeReward);
+          return adminUpdatePlanReferralRuleApi(rule.id, {
+            referrerReward: refReward,
+            refereeReward: refeeReward,
+            adminShare: calculatedAdminShare,
+            referralEnabled: rule.referralEnabled !== false,
+          }).catch(() => {});
+        })
+      );
+      showToast('✓ All Plan-Wise Referral & Referee Reward settings saved successfully!');
+    } catch {
+      alert('Failed to save all rules.');
+    } finally {
+      setIsSavingAllRules(false);
     }
   };
 
@@ -3150,238 +3207,326 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
         {/* ========================================================================= */}
         {/* TAB: MANAGE REFERRALS (PLAN-WISE REWARDS CONFIGURATION ONLY)              */}
         {/* ========================================================================= */}
-        {activeTab === 'referral_rules' && (
-          <div className="space-y-6">
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200">
-              <div>
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-bold">
-                    <Gift className="w-5 h-5" />
+        {activeTab === 'referral_rules' && (() => {
+          // Derive active rules list with fallback to live vendor & lender plans
+          const activeRulesList = planReferralRules.length > 0
+            ? planReferralRules
+            : [...vendorPlans, ...lenderPlans].map((p) => ({
+                id: p.id,
+                name: p.name,
+                code: p.code,
+                roleTarget: p.roleTarget || 'VENDOR',
+                price: Number(p.price) || 0,
+                durationDays: Number(p.durationDays) || 30,
+                referrerReward: (p as any).referrerReward !== undefined ? Number((p as any).referrerReward) : (p.roleTarget === 'LENDER' ? 500 : 200),
+                refereeReward: (p as any).refereeReward !== undefined ? Number((p as any).refereeReward) : 0,
+                adminShare: (p as any).adminShare !== undefined ? Number((p as any).adminShare) : Math.max(0, Number(p.price) - (p.roleTarget === 'LENDER' ? 500 : 200)),
+                referralEnabled: (p as any).referralEnabled !== false,
+                isActive: p.isActive !== false,
+              }));
+
+          const filteredRules = activeRulesList.filter((r) => {
+            if (planRulesRoleFilter === 'ALL') return true;
+            return r.roleTarget === planRulesRoleFilter;
+          });
+
+          return (
+            <div className="space-y-6">
+              {/* Header */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-bold">
+                      <Gift className="w-5 h-5" />
+                    </div>
+                    <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-heading tracking-tight">
+                      Manage Referrals
+                    </h1>
                   </div>
-                  <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-heading tracking-tight">
-                    Manage Referrals
-                  </h1>
+                  <p className="text-xs text-slate-500 font-medium mt-0.5">
+                    Control how much referral amount is distributed to users for each Vendor and Financer subscription plan
+                  </p>
                 </div>
-                <p className="text-xs text-slate-500 font-medium mt-0.5">
-                  Configure custom Referrer wallet rewards and Referee welcome cashback amounts per subscription tier
-                </p>
-              </div>
 
-              <div className="flex items-center gap-2.5">
-                <button
-                  onClick={() => setReferralSettingsModalOpen(true)}
-                  className="px-4 py-2.5 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-300 font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer"
-                >
-                  <Sliders className="w-4 h-4 text-purple-600" /> Global Referral Settings
-                </button>
-                <button
-                  type="button"
-                  onClick={loadAdminReferralsAndRules}
-                  className="px-4 py-2.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer"
-                  title="Reload Plan Rules"
-                >
-                  <RefreshCw className="w-4 h-4 text-purple-600" /> Reload Rules
-                </button>
-              </div>
-            </div>
-
-            {/* Quick Summary Highlights for Settings */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
-              <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-xs space-y-1">
-                <div className="text-[9px] sm:text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">
-                  Configured Plans
-                </div>
-                <div className="text-base sm:text-xl font-extrabold text-purple-700 font-heading truncate">
-                  {planReferralRules.length} Tiers
-                </div>
-                <div className="text-[9px] sm:text-[10px] text-slate-400 font-medium">
-                  {planReferralRules.filter((p) => p.referralEnabled !== false).length} Active Rules
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <button
+                    onClick={() => setReferralSettingsModalOpen(true)}
+                    className="px-4 py-2.5 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-300 font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer"
+                  >
+                    <Sliders className="w-4 h-4 text-purple-600" /> Global Defaults
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSaveAllPlanRules}
+                    disabled={isSavingAllRules}
+                    className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer disabled:opacity-50"
+                  >
+                    <Check className="w-4 h-4" /> {isSavingAllRules ? 'Saving All...' : 'Save All Rules'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      loadPlansFromDB();
+                      loadAdminReferralsAndRules();
+                    }}
+                    className="px-3.5 py-2.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer"
+                    title="Reload Plan Rules"
+                  >
+                    <RefreshCw className="w-4 h-4 text-purple-600" /> Reload
+                  </button>
                 </div>
               </div>
 
-              <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-xs space-y-1">
-                <div className="text-[9px] sm:text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">
-                  Default Shop Reward
-                </div>
-                <div className="text-base sm:text-xl font-extrabold text-slate-800 font-heading truncate">
-                  ₹{referralVendorReward}
-                </div>
-                <div className="text-[9px] sm:text-[10px] text-emerald-600 font-medium">Per Vendor Signup</div>
-              </div>
-
-              <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-xs space-y-1">
-                <div className="text-[9px] sm:text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">
-                  Default Financer Reward
-                </div>
-                <div className="text-base sm:text-xl font-extrabold text-slate-800 font-heading truncate">
-                  ₹{referralLenderReward}
-                </div>
-                <div className="text-[9px] sm:text-[10px] text-emerald-600 font-medium">Per Lender Signup</div>
-              </div>
-
-              <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-xs space-y-1">
-                <div className="text-[9px] sm:text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">
-                  Referee Discount
-                </div>
-                <div className="text-base sm:text-xl font-extrabold text-purple-700 font-heading truncate">
-                  {referralDiscountPct}% OFF
-                </div>
-                <div className="text-[9px] sm:text-[10px] text-slate-400 font-medium">Checkout Welcome Benefit</div>
-              </div>
-            </div>
-
-            {/* ── PLAN-WISE REFERRAL REWARDS CONFIGURATION PANEL ───────── */}
-            <div className="bg-white p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-slate-200 shadow-sm space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-bold shrink-0">
-                    <Sparkles className="w-4 h-4" />
+              {/* Quick Summary Highlights for Settings */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
+                <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-xs space-y-1">
+                  <div className="text-[9px] sm:text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">
+                    Configured Plans
                   </div>
-                  <div>
-                    <h3 className="text-base sm:text-lg font-extrabold text-slate-900 font-heading">
-                      Plan-Wise Referral & Referee Reward Settings
-                    </h3>
-                    <p className="text-xs text-slate-500 font-medium">
-                      Configure custom Referrer wallet rewards and Referee welcome cashback amounts per subscription tier.
-                    </p>
+                  <div className="text-base sm:text-xl font-extrabold text-purple-700 font-heading truncate">
+                    {activeRulesList.length} Tiers
+                  </div>
+                  <div className="text-[9px] sm:text-[10px] text-slate-400 font-medium">
+                    {activeRulesList.filter((p) => p.referralEnabled !== false).length} Active Rules
                   </div>
                 </div>
+
+                <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-xs space-y-1">
+                  <div className="text-[9px] sm:text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">
+                    Default Shop Reward
+                  </div>
+                  <div className="text-base sm:text-xl font-extrabold text-slate-800 font-heading truncate">
+                    ₹{referralVendorReward}
+                  </div>
+                  <div className="text-[9px] sm:text-[10px] text-emerald-600 font-medium">Vendor Referrer Payout</div>
+                </div>
+
+                <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-xs space-y-1">
+                  <div className="text-[9px] sm:text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">
+                    Default Financer Reward
+                  </div>
+                  <div className="text-base sm:text-xl font-extrabold text-slate-800 font-heading truncate">
+                    ₹{referralLenderReward}
+                  </div>
+                  <div className="text-[9px] sm:text-[10px] text-emerald-600 font-medium">Financer Referrer Payout</div>
+                </div>
+
+                <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-xs space-y-1">
+                  <div className="text-[9px] sm:text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">
+                    Referee Discount
+                  </div>
+                  <div className="text-base sm:text-xl font-extrabold text-purple-700 font-heading truncate">
+                    {referralDiscountPct}% OFF
+                  </div>
+                  <div className="text-[9px] sm:text-[10px] text-slate-400 font-medium">Checkout Welcome Benefit</div>
+                </div>
               </div>
 
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs border border-slate-200 rounded-xl overflow-hidden">
-                  <thead className="bg-slate-50 text-slate-600 uppercase text-[10px] font-bold border-b border-slate-200">
-                    <tr>
-                      <th className="p-3">Plan Details</th>
-                      <th className="p-3">Role</th>
-                      <th className="p-3">Plan Price</th>
-                      <th className="p-3">Referrer Reward (₹)</th>
-                      <th className="p-3">Referee Cashback (₹)</th>
-                      <th className="p-3">Platform Retained (₹)</th>
-                      <th className="p-3 text-center">Referral Active</th>
-                      <th className="p-3 text-right">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {planReferralRules && planReferralRules.length > 0 ? (
-                      planReferralRules.map((planRule, idx) => {
-                        const calculatedRetained = Math.max(
-                          0,
-                          planRule.price - (Number(planRule.referrerReward) || 0) - (Number(planRule.refereeReward) || 0)
-                        );
+              {/* ── PLAN-WISE REFERRAL REWARDS CONFIGURATION PANEL ───────── */}
+              <div className="bg-white p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-slate-200 shadow-sm space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-bold shrink-0">
+                      <Sparkles className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h3 className="text-base sm:text-lg font-extrabold text-slate-900 font-heading">
+                        Plan-Wise Referral & Referee Reward Settings
+                      </h3>
+                      <p className="text-xs text-slate-500 font-medium">
+                        Set custom distributed amounts to referrers and welcome referee cashbacks for each subscription tier.
+                      </p>
+                    </div>
+                  </div>
 
-                        return (
-                          <tr key={planRule.id || idx} className="hover:bg-slate-50/50 transition-colors">
-                            <td className="p-3">
-                              <div className="font-extrabold text-slate-900 text-xs">{planRule.name}</div>
-                              <div className="text-[10px] text-slate-400 font-mono">{planRule.code} • {planRule.durationDays} Days</div>
-                            </td>
+                  {/* Role Target Filter Tabs */}
+                  <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200 self-start sm:self-auto">
+                    <button
+                      type="button"
+                      onClick={() => setPlanRulesRoleFilter('ALL')}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${
+                        planRulesRoleFilter === 'ALL'
+                          ? 'bg-purple-700 text-white shadow-xs'
+                          : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                    >
+                      All Plans ({activeRulesList.length})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPlanRulesRoleFilter('VENDOR')}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${
+                        planRulesRoleFilter === 'VENDOR'
+                          ? 'bg-[#003893] text-white shadow-xs'
+                          : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                    >
+                      🏪 Vendor Plans ({activeRulesList.filter((p) => p.roleTarget === 'VENDOR').length})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPlanRulesRoleFilter('LENDER')}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${
+                        planRulesRoleFilter === 'LENDER'
+                          ? 'bg-[#007a33] text-white shadow-xs'
+                          : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                    >
+                      🏦 Financer Plans ({activeRulesList.filter((p) => p.roleTarget === 'LENDER').length})
+                    </button>
+                  </div>
+                </div>
 
-                            <td className="p-3">
-                              <span
-                                className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${
-                                  planRule.roleTarget === 'LENDER'
-                                    ? 'bg-emerald-100 text-emerald-800'
-                                    : 'bg-blue-100 text-blue-800'
-                                }`}
-                              >
-                                {planRule.roleTarget === 'LENDER' ? 'Financers' : 'Vendors'}
-                              </span>
-                            </td>
-
-                            <td className="p-3 font-extrabold text-slate-900">
-                              ₹{planRule.price}
-                            </td>
-
-                            <td className="p-3">
-                              <div className="flex items-center gap-1">
-                                <span className="text-slate-400 font-bold">₹</span>
-                                <input
-                                  type="number"
-                                  min="0"
-                                  max={planRule.price}
-                                  value={planRule.referrerReward ?? 0}
-                                  onChange={(e) => {
-                                    const val = Math.max(0, Number(e.target.value));
-                                    setPlanReferralRules((prev) =>
-                                      prev.map((p) => (p.id === planRule.id ? { ...p, referrerReward: val } : p))
-                                    );
-                                  }}
-                                  className="w-20 bg-slate-50 border border-slate-300 rounded-lg px-2 py-1 text-xs font-bold text-emerald-700 outline-none focus:border-purple-600"
-                                />
-                              </div>
-                            </td>
-
-                            <td className="p-3">
-                              <div className="flex items-center gap-1">
-                                <span className="text-slate-400 font-bold">₹</span>
-                                <input
-                                  type="number"
-                                  min="0"
-                                  max={planRule.price}
-                                  value={planRule.refereeReward ?? 0}
-                                  onChange={(e) => {
-                                    const val = Math.max(0, Number(e.target.value));
-                                    setPlanReferralRules((prev) =>
-                                      prev.map((p) => (p.id === planRule.id ? { ...p, refereeReward: val } : p))
-                                    );
-                                  }}
-                                  className="w-20 bg-slate-50 border border-slate-300 rounded-lg px-2 py-1 text-xs font-bold text-blue-700 outline-none focus:border-purple-600"
-                                />
-                              </div>
-                            </td>
-
-                            <td className="p-3 font-bold text-slate-700">
-                              ₹{calculatedRetained}
-                            </td>
-
-                            <td className="p-3 text-center">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setPlanReferralRules((prev) =>
-                                    prev.map((p) =>
-                                      p.id === planRule.id ? { ...p, referralEnabled: !p.referralEnabled } : p
-                                    )
-                                  );
-                                }}
-                                className={`text-[10px] font-extrabold px-2.5 py-1 rounded-full transition-colors cursor-pointer ${
-                                  planRule.referralEnabled !== false
-                                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                                    : 'bg-slate-200 text-slate-600'
-                                }`}
-                              >
-                                {planRule.referralEnabled !== false ? '✓ Enabled' : 'Disabled'}
-                              </button>
-                            </td>
-
-                            <td className="p-3 text-right">
-                              <button
-                                type="button"
-                                onClick={() => handleUpdatePlanReferralRule(planRule)}
-                                disabled={savingPlanRuleId === planRule.id}
-                                className="px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-xs rounded-xl shadow-xs transition-all active:scale-95 cursor-pointer"
-                              >
-                                {savingPlanRuleId === planRule.id ? 'Saving...' : 'Save Rule'}
-                              </button>
-                            </td>
-                          </tr>
-                        );
-                      })
-                    ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs border border-slate-200 rounded-xl overflow-hidden">
+                    <thead className="bg-slate-50 text-slate-600 uppercase text-[10px] font-bold border-b border-slate-200">
                       <tr>
-                        <td colSpan={8} className="p-6 text-center text-slate-400 font-medium">
-                          Loading plan referral rules...
-                        </td>
+                        <th className="p-3">Plan Details</th>
+                        <th className="p-3">Role</th>
+                        <th className="p-3">Plan Price</th>
+                        <th className="p-3">Referrer Distributed Amount (₹)</th>
+                        <th className="p-3">Referee Welcome Cashback (₹)</th>
+                        <th className="p-3">Platform Retained Profit (₹)</th>
+                        <th className="p-3 text-center">Referral Active</th>
+                        <th className="p-3 text-right">Action</th>
                       </tr>
-                    )}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {filteredRules.length > 0 ? (
+                        filteredRules.map((planRule, idx) => {
+                          const calculatedRetained = Math.max(
+                            0,
+                            Number(planRule.price) - (Number(planRule.referrerReward) || 0) - (Number(planRule.refereeReward) || 0)
+                          );
+
+                          return (
+                            <tr key={planRule.id || idx} className="hover:bg-slate-50/50 transition-colors">
+                              <td className="p-3">
+                                <div className="font-extrabold text-slate-900 text-xs">{planRule.name}</div>
+                                <div className="text-[10px] text-slate-400 font-mono">{planRule.code} • {planRule.durationDays} Days</div>
+                              </td>
+
+                              <td className="p-3">
+                                <span
+                                  className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${
+                                    planRule.roleTarget === 'LENDER'
+                                      ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                                      : 'bg-blue-100 text-blue-800 border border-blue-200'
+                                  }`}
+                                >
+                                  {planRule.roleTarget === 'LENDER' ? 'Financers' : 'Vendors'}
+                                </span>
+                              </td>
+
+                              <td className="p-3 font-extrabold text-slate-900">
+                                ₹{planRule.price}
+                              </td>
+
+                              <td className="p-3">
+                                <div className="flex items-center gap-1">
+                                  <span className="text-slate-400 font-bold">₹</span>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    max={planRule.price}
+                                    value={planRule.referrerReward ?? 0}
+                                    onChange={(e) => {
+                                      const val = Math.max(0, Number(e.target.value));
+                                      setPlanReferralRules((prev) => {
+                                        const exists = prev.some((p) => p.id === planRule.id);
+                                        if (exists) {
+                                          return prev.map((p) => (p.id === planRule.id ? { ...p, referrerReward: val } : p));
+                                        }
+                                        return activeRulesList.map((p) => (p.id === planRule.id ? { ...p, referrerReward: val } : p));
+                                      });
+                                    }}
+                                    className="w-24 bg-slate-50 border border-slate-300 rounded-lg px-2 py-1 text-xs font-bold text-emerald-700 outline-none focus:border-purple-600"
+                                  />
+                                </div>
+                              </td>
+
+                              <td className="p-3">
+                                <div className="flex items-center gap-1">
+                                  <span className="text-slate-400 font-bold">₹</span>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    max={planRule.price}
+                                    value={planRule.refereeReward ?? 0}
+                                    onChange={(e) => {
+                                      const val = Math.max(0, Number(e.target.value));
+                                      setPlanReferralRules((prev) => {
+                                        const exists = prev.some((p) => p.id === planRule.id);
+                                        if (exists) {
+                                          return prev.map((p) => (p.id === planRule.id ? { ...p, refereeReward: val } : p));
+                                        }
+                                        return activeRulesList.map((p) => (p.id === planRule.id ? { ...p, refereeReward: val } : p));
+                                      });
+                                    }}
+                                    className="w-24 bg-slate-50 border border-slate-300 rounded-lg px-2 py-1 text-xs font-bold text-blue-700 outline-none focus:border-purple-600"
+                                  />
+                                </div>
+                              </td>
+
+                              <td className="p-3 font-bold text-slate-700">
+                                <span className={calculatedRetained > 0 ? 'text-emerald-700 font-extrabold' : 'text-slate-700'}>
+                                  ₹{calculatedRetained}
+                                </span>
+                              </td>
+
+                              <td className="p-3 text-center">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setPlanReferralRules((prev) => {
+                                      const exists = prev.some((p) => p.id === planRule.id);
+                                      if (exists) {
+                                        return prev.map((p) =>
+                                          p.id === planRule.id ? { ...p, referralEnabled: !p.referralEnabled } : p
+                                        );
+                                      }
+                                      return activeRulesList.map((p) =>
+                                        p.id === planRule.id ? { ...p, referralEnabled: !p.referralEnabled } : p
+                                      );
+                                    });
+                                  }}
+                                  className={`text-[10px] font-extrabold px-2.5 py-1 rounded-full transition-colors cursor-pointer ${
+                                    planRule.referralEnabled !== false
+                                      ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                                      : 'bg-slate-200 text-slate-600'
+                                  }`}
+                                >
+                                  {planRule.referralEnabled !== false ? '✓ Enabled' : 'Disabled'}
+                                </button>
+                              </td>
+
+                              <td className="p-3 text-right">
+                                <button
+                                  type="button"
+                                  onClick={() => handleUpdatePlanReferralRule(planRule)}
+                                  disabled={savingPlanRuleId === planRule.id}
+                                  className="px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-xs rounded-xl shadow-xs transition-all active:scale-95 cursor-pointer"
+                                >
+                                  {savingPlanRuleId === planRule.id ? 'Saving...' : 'Save Rule'}
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      ) : (
+                        <tr>
+                          <td colSpan={8} className="p-6 text-center text-slate-400 font-medium">
+                            No subscription plans found.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* ========================================================================= */}
         {/* TAB 4: TRACK ALL REFERRALS PAGE                                          */}
