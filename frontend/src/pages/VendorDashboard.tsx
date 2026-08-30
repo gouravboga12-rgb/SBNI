@@ -685,13 +685,6 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
     }
   }, [currentVendorObj]);
 
-  const handleRemoveShopPhoto = (indexToRemove: number) => {
-    setVendorEditForm((prev) => ({
-      ...prev,
-      shopPhotos: (prev.shopPhotos || []).filter((_, i) => i !== indexToRemove),
-    }));
-  };
-
   const startEditingVendor = () => {
     if (!currentVendorObj) {
       if (onOpenAuth) onOpenAuth();
@@ -772,8 +765,21 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
       if (fileUrl) {
         setVendorEditForm((prev) => ({ ...prev, [field]: fileUrl }));
         setUploadedDocNames((prev) => ({ ...prev, [field]: fileName }));
-        setVendorSaveSuccess(`✅ Uploaded "${fileName}" to AWS! Click "Save & Apply" at the bottom to apply changes.`);
-        setTimeout(() => setVendorSaveSuccess(null), 6000);
+
+        // Auto-save to backend and localStorage immediately
+        try {
+          const pStr = localStorage.getItem('sbni_vendor_profile') || '{}';
+          const p = JSON.parse(pStr);
+          const updatedP = { ...p, [field]: fileUrl };
+          safeSetLocalStorage('sbni_vendor_profile', JSON.stringify(updatedP));
+          await updateVendorProfileApi({ [field]: fileUrl });
+          window.dispatchEvent(new CustomEvent('sbni_vendor_profile_updated'));
+        } catch (syncErr) {
+          console.error('Failed to auto-sync doc to profile:', syncErr);
+        }
+
+        setVendorSaveSuccess(`✅ Successfully updated and saved "${fileName}" on AWS!`);
+        setTimeout(() => setVendorSaveSuccess(null), 4000);
       } else {
         alert(res.message || 'Failed to upload file to AWS server.');
       }
@@ -799,12 +805,26 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
       const res = await uploadFileToEc2Api(file, 'shops', fileName, 'SHOP_PREMISES');
       const fileUrl = res.fileUrl || res.fullUrl;
       if (fileUrl) {
+        const nextPhotos = [...(vendorEditForm.shopPhotos || []), fileUrl];
         setVendorEditForm((prev) => ({
           ...prev,
-          shopPhotos: [...(prev.shopPhotos || []), fileUrl],
+          shopPhotos: nextPhotos,
         }));
-        setVendorSaveSuccess(`✅ Added shop photo "${fileName}". Click "Save & Apply" to apply.`);
-        setTimeout(() => setVendorSaveSuccess(null), 5000);
+
+        // Auto-save updated photos to backend and localStorage immediately
+        try {
+          const pStr = localStorage.getItem('sbni_vendor_profile') || '{}';
+          const p = JSON.parse(pStr);
+          const updatedP = { ...p, shopPhotos: JSON.stringify(nextPhotos) };
+          safeSetLocalStorage('sbni_vendor_profile', JSON.stringify(updatedP));
+          await updateVendorProfileApi({ shopPhotos: nextPhotos });
+          window.dispatchEvent(new CustomEvent('sbni_vendor_profile_updated'));
+        } catch (syncErr) {
+          console.error('Failed to auto-sync shop photos:', syncErr);
+        }
+
+        setVendorSaveSuccess(`✅ Added shop photo "${fileName}" and saved to your storefront!`);
+        setTimeout(() => setVendorSaveSuccess(null), 4000);
       } else {
         alert(res.message || 'Failed to upload shop photo.');
       }
@@ -814,6 +834,28 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
     } finally {
       setUploadingDocField(null);
       if (e.target) e.target.value = '';
+    }
+  };
+
+  const handleRemoveShopPhoto = async (indexToRemove: number) => {
+    const nextPhotos = (vendorEditForm.shopPhotos || []).filter((_, i) => i !== indexToRemove);
+    setVendorEditForm((prev) => ({
+      ...prev,
+      shopPhotos: nextPhotos,
+    }));
+
+    // Auto-save removal to backend and localStorage immediately
+    try {
+      const pStr = localStorage.getItem('sbni_vendor_profile') || '{}';
+      const p = JSON.parse(pStr);
+      const updatedP = { ...p, shopPhotos: JSON.stringify(nextPhotos) };
+      safeSetLocalStorage('sbni_vendor_profile', JSON.stringify(updatedP));
+      await updateVendorProfileApi({ shopPhotos: nextPhotos });
+      window.dispatchEvent(new CustomEvent('sbni_vendor_profile_updated'));
+      setVendorSaveSuccess('✅ Shop photo removed.');
+      setTimeout(() => setVendorSaveSuccess(null), 3000);
+    } catch (syncErr) {
+      console.error('Failed to sync photo removal:', syncErr);
     }
   };
 
@@ -2478,58 +2520,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                 )}
               </div>
 
-              {/* ── BOTTOM READY TO APPLY PROFILE CHANGES BAR ─────────────── */}
-              <div className="bg-[#0c1e3d] text-white rounded-3xl p-4 sm:p-5 shadow-xl border border-blue-900/60 flex flex-col sm:flex-row items-center justify-between gap-4 mt-4">
-                <div className="space-y-0.5 text-center sm:text-left">
-                  <h4 className="font-black text-sm sm:text-base text-white font-heading">
-                    Ready to apply profile changes?
-                  </h4>
-                  <p className="text-xs text-blue-200 font-medium">
-                    Your profile will immediately update across all financer matching searches.
-                  </p>
-                </div>
 
-                <div className="flex items-center gap-2.5 shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (currentVendorObj) {
-                        setVendorEditForm({
-                          name: currentVendorObj.name || '',
-                          shopName: currentVendorObj.shopName || '',
-                          phone: currentVendorObj.phone || '',
-                          email: currentVendorObj.email || '',
-                          address: currentVendorObj.address || '',
-                          category: currentVendorObj.category || 'Retail Shop Business',
-                          annualTurnover: currentVendorObj.annualTurnover || 'Under 2 Lakhs',
-                          panNumber: currentVendorObj.panNumber || '',
-                          aadhaarNumber: currentVendorObj.aadhaarNumber || '',
-                          gstNumber: currentVendorObj.gstNumber || '',
-                          panFileUrl: currentVendorObj.panFileUrl || '',
-                          aadhaarFileUrl: currentVendorObj.aadhaarFileUrl || '',
-                          businessLicenseUrl: currentVendorObj.businessLicenseUrl || '',
-                          gstFileUrl: currentVendorObj.gstFileUrl || '',
-                          shopPhotos: currentVendorObj.shopPhotos || [],
-                        });
-                      }
-                      setIsEditingVendorProfile(false);
-                    }}
-                    className="px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs transition-colors cursor-pointer"
-                  >
-                    Cancel
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={handleSaveVendorProfile}
-                    disabled={isSavingVendorProfile}
-                    className="px-6 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-black text-xs shadow-lg shadow-emerald-900/30 flex items-center gap-2 transition-all active:scale-95 cursor-pointer disabled:opacity-50"
-                  >
-                    {isSavingVendorProfile ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-                    <span>{isSavingVendorProfile ? 'Saving Changes...' : 'Save & Apply'}</span>
-                  </button>
-                </div>
-              </div>
 
               {/* ── CARD 6: REFER & EARN ─────────────────────────────────── */}
               <div
