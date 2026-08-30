@@ -139,6 +139,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showRegPassword, setShowRegPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [referralCodeInput, setReferralCodeInput] = useState('');
 
   // OTP Verification States (for Vendor & Lender Sign Up)
   const [signupOtp, setSignupOtp] = useState('');
@@ -171,6 +172,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       setSignupOtp('');
       setForgotOtp('');
       setForgotStep('REQUEST');
+
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const ref = urlParams.get('ref') || urlParams.get('referral');
+        if (ref) {
+          setReferralCodeInput(ref.trim().toUpperCase());
+          setIsRegister(true);
+          setViewStep('FORM');
+        }
+      } catch {}
     }
   }, [isOpen, initialRole, initialRegister]);
 
@@ -1445,6 +1456,28 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   )}
                 </div>
 
+                {/* Referral Code Input (Optional) */}
+                <div className="space-y-1 pt-1">
+                  <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
+                    <span>Referral Code (Optional)</span>
+                    <span className="text-[10px] text-emerald-700 font-extrabold flex items-center gap-1 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                      <Zap className="w-3 h-3 text-amber-500 fill-amber-500" /> Earn Welcome Wallet Cashback
+                    </span>
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="e.g. JPV-ABC12"
+                      value={referralCodeInput}
+                      onChange={(e) => setReferralCodeInput(e.target.value.toUpperCase())}
+                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-mono font-bold text-slate-900 placeholder-slate-400 outline-none focus:border-[#003893] uppercase tracking-wider transition-colors"
+                    />
+                  </div>
+                  <p className="text-[10px] text-slate-500">
+                    If invited by a business partner, enter their code to earn instant wallet reward on plan activation.
+                  </p>
+                </div>
+
                 {/* Submit to Send OTP */}
                 <button
                   type="submit"
@@ -1468,13 +1501,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             {/* LENDER REGISTER FORM MODE */}
             {isRegister && !isVendor && (
               <LenderRegisterForm
+                initialReferralCode={referralCodeInput}
                 onFormReady={async (lenderData) => {
                   setFormError(null);
                   setIsSubmitting(true);
                   try {
                     const otpRes = await sendSignupOtpApi(lenderData.email, 'LENDER', lenderData.name);
                     if (otpRes.success) {
-                      setPendingLenderData(lenderData);
+                      setPendingLenderData({
+                        ...lenderData,
+                        referralCode: lenderData.referralCode || referralCodeInput.trim().toUpperCase() || undefined,
+                      });
                       setOtpTargetEmail(lenderData.email);
                       setOtpTargetName(lenderData.name);
                       setOtpCountdown(60);
@@ -1954,14 +1991,17 @@ interface LenderRegisterFormProps {
   onFormReady: (data: any) => void;
   onError: (msg: string) => void;
   isSubmitting: boolean;
+  initialReferralCode?: string;
 }
 
 const LenderRegisterForm: React.FC<LenderRegisterFormProps> = ({
   onFormReady,
   onError,
   isSubmitting,
+  initialReferralCode = '',
 }) => {
   const [lAvatarPreview, setLAvatarPreview] = useState<string | null>(null);
+  const [lReferralCode, setLReferralCode] = useState(initialReferralCode || '');
   const [lName, setLName] = useState('');
   const [lInstitution, setLInstitution] = useState('');
   const [isCustomFinancerName, setIsCustomFinancerName] = useState(false);
@@ -2079,29 +2119,6 @@ const LenderRegisterForm: React.FC<LenderRegisterFormProps> = ({
     let lng = lDetectedLocation?.longitude || 78.4867;
     let placeName = lDetectedLocation?.place || lCity || 'Financial District';
 
-    // Auto forward geocode full address via Mapbox Geocoding API if not GPS detected
-    const searchAddr = `${lAddress}, ${lCity}, ${lState} ${lPincode}`.trim();
-    if (!lDetectedLocation && searchAddr.length > 3) {
-      try {
-        const geoResults = await searchPlacesMapbox(searchAddr);
-        if (geoResults && geoResults.length > 0) {
-          const top = geoResults[0];
-          lat = top.latitude;
-          lng = top.longitude;
-          if (top.place) placeName = top.place;
-        } else if (lCity.trim()) {
-          const cityResults = await searchPlacesMapbox(`${lCity}, ${lState || ''}`.trim());
-          if (cityResults && cityResults.length > 0) {
-            lat = cityResults[0].latitude;
-            lng = cityResults[0].longitude;
-            if (cityResults[0].place) placeName = cityResults[0].place;
-          }
-        }
-      } catch (geoErr) {
-        console.warn('Mapbox forward geocoding notice:', geoErr);
-      }
-    }
-
     onFormReady({
       name: lName,
       email: lEmail,
@@ -2121,6 +2138,7 @@ const LenderRegisterForm: React.FC<LenderRegisterFormProps> = ({
       lendingRadiusKm: parseFloat(lRadius) || 50,
       successRate: isCustomSuccessRate ? (customSuccessInput || '80% - 90%') : lSuccessRate,
       avatarUrl: lAvatarPreview || undefined,
+      referralCode: lReferralCode.trim().toUpperCase() || undefined,
     });
   };
 
@@ -2151,15 +2169,15 @@ const LenderRegisterForm: React.FC<LenderRegisterFormProps> = ({
   );
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-3">
+    <form onSubmit={handleSubmit} className="space-y-4">
       {/* Profile Photo Upload */}
-      <div className="flex items-center gap-4 p-3 bg-emerald-50/70 border border-emerald-200/80 rounded-2xl">
+      <div className="p-3 bg-emerald-50/70 rounded-2xl border border-emerald-200 flex items-center gap-3.5">
         <div className="relative shrink-0">
-          <div className="w-16 h-16 rounded-2xl overflow-hidden border-2 border-emerald-500 shadow-sm bg-white flex items-center justify-center">
+          <div className="w-14 h-14 rounded-2xl bg-white border-2 border-emerald-300 overflow-hidden flex items-center justify-center shadow-xs">
             {lAvatarPreview ? (
-              <img src={lAvatarPreview} alt="Profile Preview" className="w-full h-full object-cover" />
+              <img src={lAvatarPreview} alt="Preview" className="w-full h-full object-cover" />
             ) : (
-              <User className="w-8 h-8 text-emerald-500" />
+              <User className="w-7 h-7 text-emerald-600" />
             )}
           </div>
           <label
@@ -2182,10 +2200,10 @@ const LenderRegisterForm: React.FC<LenderRegisterFormProps> = ({
             htmlFor="lender-avatar-file-input"
             className="text-xs font-extrabold text-[#007a33] hover:underline cursor-pointer block truncate"
           >
-            {lAvatarPreview ? '✓ Photo Selected (Change)' : '+ Upload Profile Photo'}
+            {lAvatarPreview ? '✓ Photo Selected' : '+ Upload Photo'}
           </label>
           <p className="text-[10px] text-slate-500 font-medium mt-0.5">
-            Display your professional photo on your Money Financer profile
+            Professional photo for your profile
           </p>
         </div>
       </div>
@@ -2206,7 +2224,7 @@ const LenderRegisterForm: React.FC<LenderRegisterFormProps> = ({
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {field('Mobile Number', '+91 98200 11223', lPhone, setLPhone, 'tel')}
-        {field('Official Email ID (For OTP Verification)', 'financer@gmail.com', lEmail, setLEmail, 'email')}
+        {field('Official Email ID (For OTP)', 'financer@gmail.com', lEmail, setLEmail, 'email')}
       </div>
 
       {/* Office Address & Mapbox GPS Option */}
@@ -2221,93 +2239,102 @@ const LenderRegisterForm: React.FC<LenderRegisterFormProps> = ({
           >
             {isDetectingLocation ? (
               <>
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                <span>Detecting GPS...</span>
+                <span className="w-3 h-3 border-2 border-[#007a33] border-t-transparent rounded-full animate-spin" />
+                <span>Locating GPS...</span>
               </>
             ) : (
               <>
-                <Navigation className="w-3.5 h-3.5" />
-                <span>Auto-Detect Office GPS</span>
+                <Navigation className="w-3.5 h-3.5 text-[#007a33]" />
+                <span>Detect Office Location</span>
               </>
             )}
           </button>
         </div>
         <input
           type="text"
-          placeholder="Plot/Office No., Building, Street, Area"
+          placeholder="Building, Street, Road, Financial Belt"
           value={lAddress}
           onChange={(e) => setLAddress(e.target.value)}
           required
           className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-medium text-slate-900 outline-none focus:border-[#007a33] transition-colors"
         />
-        {lDetectedLocation && (
-          <p className="text-[10px] text-emerald-700 font-bold flex items-center gap-1">
-            <CheckCircle2 className="w-3 h-3" /> Mapbox GPS: {lDetectedLocation.latitude.toFixed(4)}, {lDetectedLocation.longitude.toFixed(4)}
-          </p>
-        )}
+
+        <div className="grid grid-cols-3 gap-2 pt-1">
+          <input
+            type="text"
+            placeholder="City"
+            value={lCity}
+            onChange={(e) => setLCity(e.target.value)}
+            required
+            className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-medium text-slate-900 outline-none focus:border-[#007a33]"
+          />
+          <input
+            type="text"
+            placeholder="State"
+            value={lState}
+            onChange={(e) => setLState(e.target.value)}
+            required
+            className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-medium text-slate-900 outline-none focus:border-[#007a33]"
+          />
+          <input
+            type="text"
+            placeholder="Pincode"
+            value={lPincode}
+            onChange={(e) => setLPincode(e.target.value)}
+            required
+            className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-medium text-slate-900 outline-none focus:border-[#007a33]"
+          />
+        </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-3">
-        {field('City', 'Mumbai', lCity, setLCity)}
-        {field('State', 'Maharashtra', lState, setLState)}
-        {field('Pincode', '400001', lPincode, setLPincode)}
-      </div>
-
-      {/* Loan Amount Range */}
-      <div>
-        <label className="block text-xs font-bold text-slate-700 mb-1">Lending Amount Range *</label>
-        <div className="grid grid-cols-2 gap-2">
-          {/* Min Loan Selector / Custom Input */}
+      {/* Lending Min / Max Range */}
+      <div className="space-y-1 pt-1">
+        <label className="block text-xs font-bold text-slate-700">Lending Loan Amount Range *</label>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
+            <span className="text-[10px] text-slate-500 font-semibold block mb-1">Minimum Amount</span>
             {!isCustomMin ? (
-              <select
-                value={lMinLoan}
-                onChange={(e) => {
-                  if (e.target.value === 'CUSTOM') {
-                    setIsCustomMin(true);
-                    setCustomMinInput(lMinLoan);
-                  } else {
-                    setLMinLoan(e.target.value);
-                  }
-                }}
-                className="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-medium text-slate-900 outline-none focus:border-[#007a33]"
-                required
-              >
-                <option value="5000">Min: ₹5,000</option>
-                <option value="10000">Min: ₹10,000</option>
-                <option value="25000">Min: ₹25,000</option>
-                <option value="50000">Min: ₹50,000</option>
-                <option value="100000">Min: ₹1 Lakh</option>
-                <option value="200000">Min: ₹2 Lakhs</option>
-                <option value="500000">Min: ₹5 Lakhs</option>
-                <option value="CUSTOM">✏️ Custom Min Amount...</option>
-              </select>
+              <div className="relative">
+                <select
+                  value={lMinLoan}
+                  onChange={(e) => {
+                    if (e.target.value === 'CUSTOM') {
+                      setIsCustomMin(true);
+                      setCustomMinInput(lMinLoan);
+                    } else {
+                      setLMinLoan(e.target.value);
+                    }
+                  }}
+                  className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-medium text-slate-900 outline-none focus:border-[#007a33]"
+                  required
+                >
+                  <option value="10000">₹10,000</option>
+                  <option value="25000">₹25,000</option>
+                  <option value="50000">₹50,000</option>
+                  <option value="100000">₹1 Lakh</option>
+                  <option value="200000">₹2 Lakh</option>
+                  <option value="CUSTOM">✏️ Enter Custom Min Amount...</option>
+                </select>
+              </div>
             ) : (
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-500">₹</span>
                 <input
                   type="number"
-                  placeholder="Min Amount"
+                  placeholder="e.g. 15000"
                   value={customMinInput}
                   onChange={(e) => {
                     setCustomMinInput(e.target.value);
                     setLMinLoan(e.target.value);
                   }}
-                  className="w-full pl-6 pr-14 py-2.5 bg-white border-2 border-[#007a33] rounded-xl text-xs font-bold text-slate-900 outline-none"
+                  className="w-full px-4 py-2.5 pr-16 bg-white border-2 border-[#007a33] rounded-xl text-xs font-bold text-slate-900 outline-none"
                   required
                   autoFocus
                 />
                 <button
                   type="button"
-                  onClick={() => {
-                    setIsCustomMin(false);
-                    setLMinLoan('10000');
-                  }}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-extrabold text-[#007a33] hover:underline"
-                  title="Switch to Presets"
-                >
-                  Presets
-                </button>
+                  onClick={() => { setIsCustomMin(false); setLMinLoan('10000'); }}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-extrabold text-[#007a33] hover:underline"
+                >Presets</button>
               </div>
             )}
             <p className="text-[10px] text-slate-400 mt-0.5 pl-1">
@@ -2315,58 +2342,50 @@ const LenderRegisterForm: React.FC<LenderRegisterFormProps> = ({
             </p>
           </div>
 
-          {/* Max Loan Selector / Custom Input */}
           <div>
+            <span className="text-[10px] text-slate-500 font-semibold block mb-1">Maximum Amount</span>
             {!isCustomMax ? (
-              <select
-                value={lMaxLoan}
-                onChange={(e) => {
-                  if (e.target.value === 'CUSTOM') {
-                    setIsCustomMax(true);
-                    setCustomMaxInput(lMaxLoan);
-                  } else {
-                    setLMaxLoan(e.target.value);
-                  }
-                }}
-                className="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-medium text-slate-900 outline-none focus:border-[#007a33]"
-                required
-              >
-                <option value="50000">Max: ₹50,000</option>
-                <option value="100000">Max: ₹1 Lakh</option>
-                <option value="200000">Max: ₹2 Lakhs</option>
-                <option value="500000">Max: ₹5 Lakhs</option>
-                <option value="1000000">Max: ₹10 Lakhs</option>
-                <option value="2000000">Max: ₹20 Lakhs</option>
-                <option value="5000000">Max: ₹50 Lakhs</option>
-                <option value="10000000">Max: ₹1 Crore</option>
-                <option value="CUSTOM">✏️ Custom Max Amount...</option>
-              </select>
+              <div className="relative">
+                <select
+                  value={lMaxLoan}
+                  onChange={(e) => {
+                    if (e.target.value === 'CUSTOM') {
+                      setIsCustomMax(true);
+                      setCustomMaxInput(lMaxLoan);
+                    } else {
+                      setLMaxLoan(e.target.value);
+                    }
+                  }}
+                  className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-medium text-slate-900 outline-none focus:border-[#007a33]"
+                  required
+                >
+                  <option value="50000">₹50,000</option>
+                  <option value="100000">₹1 Lakh</option>
+                  <option value="200000">₹2 Lakh</option>
+                  <option value="500000">₹5 Lakh</option>
+                  <option value="1000000">₹10 Lakh</option>
+                  <option value="CUSTOM">✏️ Enter Custom Max Amount...</option>
+                </select>
+              </div>
             ) : (
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-500">₹</span>
                 <input
                   type="number"
-                  placeholder="Max Amount"
+                  placeholder="e.g. 500000"
                   value={customMaxInput}
                   onChange={(e) => {
                     setCustomMaxInput(e.target.value);
                     setLMaxLoan(e.target.value);
                   }}
-                  className="w-full pl-6 pr-14 py-2.5 bg-white border-2 border-[#007a33] rounded-xl text-xs font-bold text-slate-900 outline-none"
+                  className="w-full px-4 py-2.5 pr-16 bg-white border-2 border-[#007a33] rounded-xl text-xs font-bold text-slate-900 outline-none"
                   required
                   autoFocus
                 />
                 <button
                   type="button"
-                  onClick={() => {
-                    setIsCustomMax(false);
-                    setLMaxLoan('100000');
-                  }}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-extrabold text-[#007a33] hover:underline"
-                  title="Switch to Presets"
-                >
-                  Presets
-                </button>
+                  onClick={() => { setIsCustomMax(false); setLMaxLoan('100000'); }}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-extrabold text-[#007a33] hover:underline"
+                >Presets</button>
               </div>
             )}
             <p className="text-[10px] text-slate-400 mt-0.5 pl-1">
@@ -2376,91 +2395,32 @@ const LenderRegisterForm: React.FC<LenderRegisterFormProps> = ({
         </div>
       </div>
 
-      {/* Lending Radius */}
-      <div>
-        <label className="block text-xs font-bold text-slate-700 mb-1">Lending Service Radius *</label>
-        <div className="grid grid-cols-4 gap-2">
-          {['30', '50', '70', '100'].map((km) => (
-            <button
-              key={km}
-              type="button"
-              onClick={() => setLRadius(km)}
-              className={`py-2.5 rounded-xl border text-xs font-extrabold transition-all ${
-                lRadius === km
-                  ? 'bg-[#007a33] text-white border-[#007a33] shadow-md'
-                  : 'bg-white text-slate-700 border-slate-300 hover:border-[#007a33] hover:text-[#007a33]'
-              }`}
-            >
-              {km} km
-            </button>
-          ))}
+      {/* Referral Code (Optional) */}
+      <div className="space-y-1 pt-1">
+        <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
+          <span>Referral Code (Optional)</span>
+          <span className="text-[10px] text-emerald-700 font-extrabold flex items-center gap-1 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+            <Zap className="w-3 h-3 text-amber-500 fill-amber-500" /> Earn Welcome Cashback
+          </span>
+        </label>
+        <div className="relative">
+          <input
+            type="text"
+            placeholder="e.g. JPL-ABC12"
+            value={lReferralCode}
+            onChange={(e) => setLReferralCode(e.target.value.toUpperCase())}
+            className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-mono font-bold text-slate-900 placeholder-slate-400 outline-none focus:border-[#007a33] uppercase tracking-wider transition-colors"
+          />
         </div>
-        <p className="text-[10px] text-slate-400 mt-1 pl-0.5">Area you can actively lend to shop owners</p>
-      </div>
-
-      {/* Success Rate of Lending */}
-      <div>
-        <label className="block text-xs font-bold text-slate-700 mb-1">Lending Approval Success Rate *</label>
-        {!isCustomSuccessRate ? (
-          <div className="relative">
-            <select
-              value={lSuccessRate}
-              onChange={(e) => {
-                if (e.target.value === 'CUSTOM') {
-                  setIsCustomSuccessRate(true);
-                  setCustomSuccessInput(lSuccessRate);
-                } else {
-                  setLSuccessRate(e.target.value);
-                }
-              }}
-              className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:border-[#007a33]"
-              required
-            >
-              <option value="80% - 90%">80% - 90% Success Rate (Recommended)</option>
-              <option value="85% - 95%">85% - 95% Success Rate</option>
-              <option value="90% - 98%">90% - 98% Success Rate</option>
-              <option value="75% - 85%">75% - 85% Success Rate</option>
-              <option value="95% - 100%">95% - 100% Success Rate</option>
-              <option value="CUSTOM">✏️ Custom Success Rate Percentage...</option>
-            </select>
-          </div>
-        ) : (
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="e.g. 80% - 90% or 88%"
-              value={customSuccessInput}
-              onChange={(e) => {
-                setCustomSuccessInput(e.target.value);
-                setLSuccessRate(e.target.value);
-              }}
-              className="w-full px-4 py-2.5 pr-16 bg-white border-2 border-[#007a33] rounded-xl text-xs font-bold text-slate-900 outline-none"
-              required
-              autoFocus
-            />
-            <button
-              type="button"
-              onClick={() => {
-                setIsCustomSuccessRate(false);
-                setLSuccessRate('80% - 90%');
-              }}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-extrabold text-[#007a33] hover:underline"
-            >
-              Presets
-            </button>
-          </div>
-        )}
-        <p className="text-[10px] text-slate-400 mt-1 pl-0.5">Displayed to small businesses on your financer card badge</p>
+        <p className="text-[10px] text-slate-500">
+          If invited by a partner financer or shop, enter their referral code to earn reward cashback.
+        </p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {field('Password', 'Create password', lPassword, setLPassword, 'password')}
         {field('Re-enter Password', 'Confirm password', lConfirmPassword, setLConfirmPassword, 'password')}
       </div>
-
-      {lConfirmPassword.length > 0 && lPassword !== lConfirmPassword && (
-        <p className="text-[11px] text-rose-600 font-bold">Passwords do not match.</p>
-      )}
 
       <button
         type="submit"

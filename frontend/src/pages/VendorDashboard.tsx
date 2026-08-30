@@ -65,7 +65,9 @@ import {
   Zap,
   CalendarCheck,
   Clock,
+  Gift,
 } from 'lucide-react';
+import { ReferAndEarnModal } from '../components/ReferAndEarnModal';
 
 const VENDOR_BANNER_SLIDES: BannerSlide[] = [
   {
@@ -407,6 +409,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
   const [cancellingVendorAutoPay, setCancellingVendorAutoPay] = useState(false);
   const [showVendorCancelModal, setShowVendorCancelModal] = useState(false);
   const [vendorSubFeedback, setVendorSubFeedback] = useState('');
+  const [referModalOpen, setReferModalOpen] = useState(false);
 
   const loadVendorSubscription = async () => {
     setLoadingVendorSub(true);
@@ -1078,10 +1081,10 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                 <span className="text-xs text-slate-400 font-medium">Shortcuts</span>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 md:gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 md:gap-4">
                 <div 
                   onClick={() => handleTabChange('profile')}
-                  className="card-white p-4.5 text-center flex flex-col items-center justify-center gap-2.5 cursor-pointer border border-slate-200/80 hover:border-blue-600 hover:shadow-lg transition-all group rounded-2xl bg-white"
+                  className="card-white p-4 text-center flex flex-col items-center justify-center gap-2.5 cursor-pointer border border-slate-200/80 hover:border-blue-600 hover:shadow-lg transition-all group rounded-2xl bg-white"
                 >
                   <div className="w-12 h-12 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center text-[#003893] group-hover:scale-110 group-hover:bg-[#003893] group-hover:text-white transition-all duration-300 shadow-sm">
                     <User className="w-6 h-6" />
@@ -1091,7 +1094,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
 
                 <div 
                   onClick={() => handleTabChange('requests')}
-                  className="card-white p-4.5 text-center flex flex-col items-center justify-center gap-2.5 cursor-pointer border border-slate-200/80 hover:border-blue-600 hover:shadow-lg transition-all group rounded-2xl bg-white"
+                  className="card-white p-4 text-center flex flex-col items-center justify-center gap-2.5 cursor-pointer border border-slate-200/80 hover:border-blue-600 hover:shadow-lg transition-all group rounded-2xl bg-white"
                 >
                   <div className="w-12 h-12 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center text-[#003893] group-hover:scale-110 group-hover:bg-[#003893] group-hover:text-white transition-all duration-300 shadow-sm">
                     <FileText className="w-6 h-6" />
@@ -1110,8 +1113,18 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                 </div>
 
                 <div 
+                  onClick={() => setReferModalOpen(true)}
+                  className="card-white p-4 text-center flex flex-col items-center justify-center gap-2.5 cursor-pointer border-2 border-purple-300 hover:border-purple-600 hover:shadow-xl transition-all group rounded-2xl bg-gradient-to-br from-purple-50/80 to-white shadow-md active:scale-95"
+                >
+                  <div className="w-12 h-12 rounded-2xl bg-purple-600 text-white flex items-center justify-center group-hover:scale-110 transition-all duration-300 shadow-md">
+                    <Gift className="w-6 h-6" />
+                  </div>
+                  <span className="text-xs font-extrabold text-purple-900">Refer & Earn 🎁</span>
+                </div>
+
+                <div 
                   onClick={onOpenSubscription}
-                  className="card-white p-4.5 text-center flex flex-col items-center justify-center gap-2.5 cursor-pointer border border-slate-200/80 hover:border-amber-500 hover:shadow-lg transition-all group rounded-2xl bg-white"
+                  className="card-white p-4 text-center flex flex-col items-center justify-center gap-2.5 cursor-pointer border border-slate-200/80 hover:border-amber-500 hover:shadow-lg transition-all group rounded-2xl bg-white"
                 >
                   <div className="w-12 h-12 rounded-2xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600 group-hover:scale-110 group-hover:bg-amber-500 group-hover:text-white transition-all duration-300 shadow-sm">
                     <Headphones className="w-6 h-6" />
@@ -2790,6 +2803,13 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
           </div>
         );
       })()}
+
+      {/* Refer & Earn Rewards Modal */}
+      <ReferAndEarnModal
+        isOpen={referModalOpen}
+        onClose={() => setReferModalOpen(false)}
+        userRole="VENDOR"
+      />
 
     </div>
   );

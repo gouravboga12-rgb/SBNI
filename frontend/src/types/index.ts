@@ -7,7 +7,57 @@ export interface User {
   role: Role;
   isVerified: boolean;
   name: string;
+  referralCode?: string;
+  walletBalance?: number;
   hasActiveSubscription?: boolean;
+}
+
+export interface WalletTransactionItem {
+  id: string;
+  amount: number;
+  type: 'CREDIT' | 'DEBIT';
+  source: string;
+  balanceAfter: number;
+  description?: string;
+  referenceId?: string;
+  createdAt: string;
+}
+
+export interface ReferralRecordItem {
+  id: string;
+  refereeName: string;
+  refereeRole: string;
+  referralCode: string;
+  status: string;
+  planName: string;
+  rewardAmount: number;
+  joinedAt: string;
+  rewardedAt?: string;
+}
+
+export interface ReferralInfoData {
+  referralCode: string;
+  walletBalance: number;
+  totalEarned: number;
+  totalRedeemed: number;
+  totalInvited: number;
+  completedConversions: number;
+  referrals: ReferralRecordItem[];
+  recentTransactions: WalletTransactionItem[];
+}
+
+export interface PlanReferralRule {
+  id: string;
+  name: string;
+  code: string;
+  roleTarget: string;
+  price: number;
+  durationDays: number;
+  referrerReward: number;
+  refereeReward: number;
+  adminShare: number;
+  referralEnabled: boolean;
+  isActive: boolean;
 }
 
 export interface Lender {

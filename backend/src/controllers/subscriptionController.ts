@@ -39,13 +39,108 @@ export const getRazorpayConfig = async (_req: Request, res: Response) => {
   });
 };
 
+export const processReferralRewardsForUser = async (userId: string, plan: any) => {
+  try {
+    const pendingReferral = await prisma.referralRecord.findFirst({
+      where: {
+        refereeId: userId,
+        status: 'REGISTERED',
+      },
+    });
+
+    if (!pendingReferral) return;
+
+    const referrerReward = Number(plan.referrerReward) > 0 ? Number(plan.referrerReward) : 30;
+    const refereeReward = Number(plan.refereeReward) > 0 ? Number(plan.refereeReward) : 30;
+    const adminShare =
+      Number(plan.adminShare) >= 0
+        ? Number(plan.adminShare)
+        : Math.max(0, plan.price - referrerReward - refereeReward);
+
+    await prisma.$transaction(async (tx) => {
+      // 1. Credit Referrer
+      if (referrerReward > 0 && pendingReferral.referrerId) {
+        const referrerUser = await tx.user.update({
+          where: { id: pendingReferral.referrerId },
+          data: { walletBalance: { increment: referrerReward } },
+        });
+
+        await tx.walletTransaction.create({
+          data: {
+            userId: pendingReferral.referrerId,
+            amount: referrerReward,
+            type: 'CREDIT',
+            source: 'REFERRAL_BONUS',
+            balanceAfter: referrerUser.walletBalance,
+            description: `Referral reward for partner plan subscription (${plan.name})`,
+            referenceId: pendingReferral.id,
+          },
+        });
+
+        await tx.notification.create({
+          data: {
+            userId: pendingReferral.referrerId,
+            title: '🎉 Referral Bonus Earned!',
+            message: `₹${referrerReward} has been credited to your wallet for inviting a partner who just activated ${plan.name}.`,
+            type: 'PROMO',
+          },
+        });
+      }
+
+      // 2. Credit Referee
+      if (refereeReward > 0) {
+        const refereeUser = await tx.user.update({
+          where: { id: userId },
+          data: { walletBalance: { increment: refereeReward } },
+        });
+
+        await tx.walletTransaction.create({
+          data: {
+            userId,
+            amount: refereeReward,
+            type: 'CREDIT',
+            source: 'REFEREE_WELCOME_BONUS',
+            balanceAfter: refereeUser.walletBalance,
+            description: `Welcome cashback for joining via partner referral (${plan.name})`,
+            referenceId: pendingReferral.id,
+          },
+        });
+
+        await tx.notification.create({
+          data: {
+            userId,
+            title: '🎁 Welcome Cashback Credited!',
+            message: `₹${refereeReward} has been added to your wallet for subscribing to ${plan.name} via partner invitation! Use it towards your next plan upgrade.`,
+            type: 'PROMO',
+          },
+        });
+      }
+
+      // 3. Mark Referral Record as COMPLETED
+      await tx.referralRecord.update({
+        where: { id: pendingReferral.id },
+        data: {
+          status: 'COMPLETED',
+          subscriptionPlanId: plan.id,
+          referrerReward,
+          refereeReward,
+          adminShare,
+          rewardedAt: new Date(),
+        },
+      });
+    });
+  } catch (err: any) {
+    console.error('Error processing referral rewards:', err?.message || err);
+  }
+};
+
 /**
  * Creates a Razorpay Order for one-time payment OR a Razorpay Subscription for AutoPay
  */
 export const createRazorpayOrder = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const userId = req.user?.userId;
-    const { planId, couponCode, isAutoPay } = req.body;
+    const { planId, couponCode, isAutoPay, useWallet } = req.body;
 
     if (!planId) {
       return res.status(400).json({ success: false, message: 'Plan ID is required.' });
@@ -78,6 +173,27 @@ export const createRazorpayOrder = async (req: AuthenticatedRequest, res: Respon
         discountAmount = Math.min((plan.price * coupon.discountPercentage) / 100, coupon.maxDiscountAmount);
         finalPrice = Math.max(0, plan.price - discountAmount);
       }
+    }
+
+    let walletDiscount = 0;
+    if (useWallet && userId) {
+      const user = await prisma.user.findUnique({ where: { id: userId }, select: { walletBalance: true } });
+      const currentBal = user?.walletBalance || 0;
+      if (currentBal > 0) {
+        walletDiscount = Math.min(currentBal, finalPrice);
+        finalPrice = Math.max(0, finalPrice - walletDiscount);
+      }
+    }
+
+    if (finalPrice <= 0 && walletDiscount > 0) {
+      return res.status(200).json({
+        success: true,
+        mode: 'wallet_free',
+        amount: 0,
+        walletDiscount,
+        planId: plan.id,
+        plan,
+      });
     }
 
     const amountInPaise = Math.round(finalPrice * 100);
@@ -201,6 +317,8 @@ export const verifyRazorpayPayment = async (req: AuthenticatedRequest, res: Resp
       planId,
       couponCode,
       isAutoPay,
+      useWallet,
+      walletAmountUsed,
     } = req.body;
 
     if (!razorpay_payment_id || !razorpay_signature) {
@@ -263,6 +381,34 @@ export const verifyRazorpayPayment = async (req: AuthenticatedRequest, res: Resp
         await prisma.coupon.update({
           where: { id: coupon.id },
           data: { timesUsed: { increment: 1 } },
+        });
+      }
+    }
+
+    // Process Wallet Balance deduction if applied during checkout/upgrade
+    let actualWalletDeducted = 0;
+    if (useWallet && userId) {
+      const u = await prisma.user.findUnique({ where: { id: userId }, select: { walletBalance: true } });
+      const curBal = u?.walletBalance || 0;
+      const amountToDeduct = Math.min(curBal, Number(walletAmountUsed) || 0);
+      if (amountToDeduct > 0) {
+        const updatedUser = await prisma.user.update({
+          where: { id: userId },
+          data: { walletBalance: { decrement: amountToDeduct } },
+        });
+
+        actualWalletDeducted = amountToDeduct;
+        finalPrice = Math.max(0, finalPrice - actualWalletDeducted);
+
+        await prisma.walletTransaction.create({
+          data: {
+            userId,
+            amount: amountToDeduct,
+            type: 'DEBIT',
+            source: 'UPGRADE_DISCOUNT',
+            balanceAfter: updatedUser.walletBalance,
+            description: `Applied wallet discount on ${plan ? plan.name : 'plan'} checkout`,
+          },
         });
       }
     }
@@ -342,6 +488,11 @@ export const verifyRazorpayPayment = async (req: AuthenticatedRequest, res: Resp
         type: 'SUBSCRIPTION',
       },
     });
+
+    // Asynchronously trigger referral rewards for referee & referrer
+    if (plan) {
+      await processReferralRewardsForUser(userId, plan);
+    }
 
     return res.status(200).json({
       success: true,
@@ -471,6 +622,10 @@ export const purchaseSubscriptionPlan = async (req: AuthenticatedRequest, res: R
     },
   });
 
+  if (plan && userId) {
+    await processReferralRewardsForUser(userId, plan);
+  }
+
   res.status(201).json({
     success: true,
     hasActiveSubscription: true,
@@ -481,6 +636,154 @@ export const purchaseSubscriptionPlan = async (req: AuthenticatedRequest, res: R
       payment,
     },
   });
+};
+
+/**
+ * 100% Wallet Balance Plan Activation / Upgrade
+ */
+export const activateSubscriptionWithWallet = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) {
+      return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
+
+    const { planId, couponCode } = req.body;
+    let plan = await prisma.subscriptionPlan.findFirst({
+      where: {
+        OR: [
+          { id: planId },
+          { code: planId },
+          { code: String(planId).toUpperCase() },
+        ],
+      },
+    });
+
+    if (!plan) plan = await prisma.subscriptionPlan.findFirst({ where: { isActive: true } });
+    if (!plan) return res.status(404).json({ success: false, message: 'Plan not found.' });
+
+    let finalPrice = plan.price;
+    if (couponCode) {
+      const coupon = await prisma.coupon.findUnique({ where: { code: couponCode.toUpperCase() } });
+      if (coupon && coupon.isActive && coupon.validUntil > new Date() && coupon.timesUsed < coupon.usageLimit) {
+        const discountAmount = Math.min((plan.price * coupon.discountPercentage) / 100, coupon.maxDiscountAmount);
+        finalPrice = Math.max(0, plan.price - discountAmount);
+      }
+    }
+
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    const userBalance = user?.walletBalance || 0;
+
+    if (userBalance < finalPrice) {
+      return res.status(400).json({
+        success: false,
+        message: `Insufficient wallet balance (₹${userBalance}). ₹${finalPrice} is required.`,
+      });
+    }
+
+    const durationDays = plan.durationDays || 30;
+    const startDate = new Date();
+    const endDate = new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000);
+    const invoiceNumber = 'INV-WALLET-' + Math.floor(100000 + Math.random() * 900000);
+    const transactionId = 'WAL-' + Date.now() + '-' + Math.floor(100 + Math.random() * 900);
+
+    // Cancel existing recurring mandates if any
+    try {
+      const prevSubs = await prisma.userSubscription.findMany({
+        where: { userId, status: 'ACTIVE' },
+        include: { payments: true },
+      });
+      for (const s of prevSubs) {
+        for (const p of s.payments) {
+          if (p.gatewayOrderId && p.gatewayOrderId.startsWith('sub_')) {
+            try { await razorpayInstance.subscriptions.cancel(p.gatewayOrderId, false); } catch {}
+          }
+        }
+      }
+    } catch {}
+
+    // Expire previous active subs
+    await prisma.userSubscription.updateMany({
+      where: { userId, status: 'ACTIVE' },
+      data: { status: 'EXPIRED' },
+    });
+
+    // Create new subscription
+    const subscription = await prisma.userSubscription.create({
+      data: {
+        userId,
+        planId: plan.id,
+        startDate,
+        endDate,
+        status: 'ACTIVE',
+        transactionId,
+      },
+    });
+
+    // Deduct wallet balance
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: { walletBalance: { decrement: finalPrice } },
+    });
+
+    // Record wallet transaction
+    await prisma.walletTransaction.create({
+      data: {
+        userId,
+        amount: finalPrice,
+        type: 'DEBIT',
+        source: 'SUBSCRIPTION_PAYMENT',
+        balanceAfter: updatedUser.walletBalance,
+        description: `100% Wallet payment for ${plan.name}`,
+        referenceId: subscription.id,
+      },
+    });
+
+    // Create payment record
+    const payment = await prisma.payment.create({
+      data: {
+        userId,
+        subscriptionId: subscription.id,
+        amount: finalPrice,
+        currency: 'INR',
+        status: 'SUCCESS',
+        paymentMethod: 'WALLET_BALANCE',
+        invoiceNumber,
+        gatewayOrderId: transactionId,
+        gatewayPaymentId: transactionId,
+      },
+    });
+
+    await prisma.notification.create({
+      data: {
+        userId,
+        title: 'Subscription Activated with Wallet 🎉',
+        message: `Your ${plan.name} has been activated using your wallet balance (₹${finalPrice} debited). Active until ${endDate.toLocaleDateString('en-IN')}.`,
+        type: 'SUBSCRIPTION',
+      },
+    });
+
+    // Process referral rewards for first subscription
+    await processReferralRewardsForUser(userId, plan);
+
+    return res.status(200).json({
+      success: true,
+      hasActiveSubscription: true,
+      message: `🎉 ${plan.name} activated successfully with Wallet Balance!`,
+      data: {
+        isActive: true,
+        subscription,
+        payment,
+        newWalletBalance: updatedUser.walletBalance,
+      },
+    });
+  } catch (err: any) {
+    console.error('Error activating with wallet:', err);
+    return res.status(500).json({
+      success: false,
+      message: err.message || 'Failed to activate plan with wallet.',
+    });
+  }
 };
 
 export const cancelAutoPay = async (req: AuthenticatedRequest, res: Response) => {

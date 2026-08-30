@@ -67,7 +67,9 @@ import {
   Sparkles,
   Zap,
   CalendarCheck,
+  Gift,
 } from 'lucide-react';
+import { ReferAndEarnModal } from '../components/ReferAndEarnModal';
 
 const LENDER_BANNER_SLIDES: BannerSlide[] = [
   {
@@ -269,6 +271,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
   const [nearbySearchQuery, setNearbySearchQuery] = useState('');
   const [reportsFilterStatus, setReportsFilterStatus] = useState<'PENDING' | 'ACCEPTED' | 'REJECTED' | 'FRAUD' | 'ALL'>('ALL');
   const [reportsSearchQuery, setReportsSearchQuery] = useState('');
+  const [referModalOpen, setReferModalOpen] = useState(false);
 
   const loadNearbyBusinessesList = async () => {
     await loadNearbyBusinesses();
@@ -1452,7 +1455,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
             {/* Overview Metric Cards */}
             <div className="space-y-3">
               <h3 className="font-bold text-slate-900 text-base font-heading">Overview</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
                 
                 <div className="card-white p-4 flex items-center justify-between hover:shadow-md transition-all">
                   <div>
@@ -1499,6 +1502,22 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                   </div>
                   <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600 flex-shrink-0">
                     <Clock className="w-5 h-5" />
+                  </div>
+                </div>
+
+                <div className="card-white p-4 flex items-center justify-between hover:shadow-md transition-all border-2 border-purple-200 bg-gradient-to-br from-purple-50/60 to-white">
+                  <div>
+                    <div className="text-xs text-purple-700 font-extrabold">Refer & Earn</div>
+                    <div className="text-xl font-extrabold text-purple-950 font-heading mt-0.5">₹ Rewards</div>
+                    <button
+                      onClick={() => setReferModalOpen(true)}
+                      className="text-xs text-purple-700 font-extrabold mt-1 hover:underline flex items-center gap-0.5 cursor-pointer"
+                    >
+                      <span>Invite Partners</span> <ChevronRight className="w-3 h-3" />
+                    </button>
+                  </div>
+                  <div className="w-10 h-10 rounded-xl bg-purple-600 flex items-center justify-center text-white flex-shrink-0 shadow-md">
+                    <Gift className="w-5 h-5" />
                   </div>
                 </div>
 
@@ -3859,6 +3878,13 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
           </div>
         </div>
       )}
+
+      {/* Refer & Earn Rewards Modal */}
+      <ReferAndEarnModal
+        isOpen={referModalOpen}
+        onClose={() => setReferModalOpen(false)}
+        userRole="LENDER"
+      />
 
     </div>
   );

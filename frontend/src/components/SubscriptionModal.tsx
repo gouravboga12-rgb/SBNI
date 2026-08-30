@@ -8,6 +8,8 @@ import {
   verifyRazorpayPayment,
   getRazorpayKey,
   cancelAutoPayApi,
+  fetchMyWalletApi,
+  activateSubscriptionWithWalletApi,
 } from '../services/api';
 import {
   Zap,
@@ -22,6 +24,7 @@ import {
   Repeat,
   CreditCard,
   Lock,
+  Wallet,
 } from 'lucide-react';
 
 interface SubscriptionModalProps {
@@ -49,6 +52,8 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
   const [discountPercent, setDiscountPercent] = useState(0);
   const [couponApplied, setCouponApplied] = useState(false);
   const [couponError, setCouponError] = useState('');
+  const [walletBalance, setWalletBalance] = useState<number>(0);
+  const [useWallet, setUseWallet] = useState<boolean>(false);
   const [isAutoPay, setIsAutoPay] = useState<boolean>(true);
   const [loading, setLoading] = useState(false);
   const [cancellingAutoPay, setCancellingAutoPay] = useState(false);
@@ -123,9 +128,10 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
   const loadData = async () => {
     setLoadingActiveSub(true);
     try {
-      const [plansData, subRes] = await Promise.all([
+      const [plansData, subRes, walletRes] = await Promise.all([
         fetchSubscriptionPlans(userRole),
         checkSubscriptionStatus().catch(() => ({ isActive: false, subscription: null })),
+        fetchMyWalletApi().catch(() => ({ success: false, data: null })),
       ]);
 
       const loadedPlans = Array.isArray(plansData) ? plansData : [];
@@ -134,6 +140,14 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
       const currentSub = subRes?.isActive && subRes?.subscription ? subRes.subscription : null;
       setActiveSub(currentSub);
       selectBestPlan(loadedPlans, currentSub);
+
+      if (walletRes?.success && walletRes?.data) {
+        const bal = walletRes.data.balance || 0;
+        setWalletBalance(bal);
+        if (bal > 0) {
+          setUseWallet(true);
+        }
+      }
     } catch {
       setActiveSub(null);
     } finally {
@@ -182,6 +196,13 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
     };
   };
 
+  const baseDiscountedPrice = selectedPlan
+    ? Math.max(0, selectedPlan.price - (selectedPlan.price * discountPercent) / 100)
+    : 0;
+
+  const appliedWalletDeduction = useWallet ? Math.min(walletBalance, baseDiscountedPrice) : 0;
+  const calculatedPrice = Math.max(0, baseDiscountedPrice - appliedWalletDeduction);
+
   const handleSubscribe = async (targetPlan?: SubscriptionPlan, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     const planToSubscribe = targetPlan || selectedPlan;
@@ -196,7 +217,30 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
 
     try {
       const appliedCoupon = couponApplied ? couponCode.trim().toUpperCase() : undefined;
-      const session = await createRazorpayPaymentSession(planToSubscribe.id, isAutoPay, appliedCoupon);
+
+      // 1. If 100% covered by wallet balance (₹0 payable)
+      if (useWallet && appliedWalletDeduction >= baseDiscountedPrice && baseDiscountedPrice > 0) {
+        const walRes = await activateSubscriptionWithWalletApi(planToSubscribe.id, appliedCoupon);
+        if (walRes.success) {
+          safeSetLocalStorage('sbni_subscribed', 'true');
+          safeSetLocalStorage('sbni_vendor_subscribed', 'true');
+          safeSetLocalStorage('sbni_lender_subscribed', 'true');
+          window.dispatchEvent(new Event('sbni_subscription_updated'));
+
+          setSuccessMessage(`🎉 ${planToSubscribe.name} activated successfully with Wallet Balance!`);
+          setTimeout(() => {
+            onSubscriptionSuccess();
+            onClose();
+            setSuccessMessage('');
+          }, 1500);
+          return;
+        } else {
+          throw new Error(walRes.message || 'Failed to activate plan with wallet balance.');
+        }
+      }
+
+      // 2. Standard Razorpay payment or partial wallet deduction session
+      const session = await createRazorpayPaymentSession(planToSubscribe.id, isAutoPay, appliedCoupon, useWallet);
 
       if (!session.success) {
         throw new Error(session.message || 'Unable to initiate payment session. Please try again.');
@@ -218,23 +262,21 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
 
       const options: any = {
         key: rzpKey,
-        name: 'SBNI Money',
-        description: isAutoPay
-          ? `${planToSubscribe.name} Auto-Renewal Subscription`
-          : `${planToSubscribe.name} Subscription`,
-        image: '/favicon.png',
+        name: 'JustPaisa Money App',
+        description: `${planToSubscribe.name} Membership (${isAutoPay ? 'AutoPay' : 'One-time'})`,
+        image: 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png',
         prefill: {
-          name: user.name || user.fullName || 'Member',
-          email: user.email || 'customer@sbnimoney.com',
-          contact: user.phone || user.mobileNumber || '9999999999',
+          name: user.name || 'Business Partner',
+          email: user.email || 'user@justpaisa.shop',
+          contact: user.phone || '9876543210',
         },
         theme: {
-          color: userRole === 'LENDER' ? '#059669' : '#003893',
+          color: isLender ? '#059669' : '#003893',
         },
         handler: async (response: any) => {
           try {
             setLoading(true);
-            const verificationPayload = {
+            const verifyRes = await verifyRazorpayPayment({
               razorpay_order_id: response.razorpay_order_id,
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_signature: response.razorpay_signature,
@@ -242,9 +284,9 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
               planId: planToSubscribe.id,
               couponCode: appliedCoupon,
               isAutoPay,
-            };
-
-            const verifyRes = await verifyRazorpayPayment(verificationPayload);
+              useWallet,
+              walletAmountUsed: appliedWalletDeduction,
+            });
 
             if (verifyRes.success) {
               safeSetLocalStorage('sbni_subscribed', 'true');
@@ -300,10 +342,6 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
       setErrorMessage(err.message || 'Failed to open payment gateway. Please check your connection.');
     }
   };
-
-  const calculatedPrice = selectedPlan
-    ? Math.max(0, selectedPlan.price - (selectedPlan.price * discountPercent) / 100)
-    : 0;
 
   const isLender = userRole === 'LENDER';
 
@@ -648,7 +686,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
           })}
         </div>
 
-        {/* ── AUTOPAY & COUPON SECTION ──────────────────────────────── */}
+        {/* ── AUTOPAY & COUPON & WALLET SECTION ───────────────────────── */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3 flex-shrink-0">
           {/* AutoPay / Recurring Renewal Toggle */}
           <div
@@ -737,6 +775,55 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
           </div>
         </div>
 
+        {/* ── REFERRAL WALLET BALANCE CARD (If available) ───────────────── */}
+        {walletBalance > 0 && (
+          <div
+            onClick={() => setUseWallet(!useWallet)}
+            className={`p-3 rounded-2xl border transition-all cursor-pointer flex items-center justify-between gap-3 mb-3 ${
+              useWallet
+                ? 'bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-500 shadow-xs ring-1 ring-emerald-400'
+                : 'bg-slate-50 hover:bg-slate-100 border-slate-200'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <div
+                className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                  useWallet ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-600'
+                }`}
+              >
+                <Wallet className="w-4 h-4" />
+              </div>
+              <div>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs font-extrabold text-slate-900">
+                    Apply Referral Wallet Balance
+                  </span>
+                  <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-600 text-white uppercase tracking-wider">
+                    ₹{walletBalance} Available
+                  </span>
+                </div>
+                <div className="text-[10px] text-slate-600 font-medium">
+                  {appliedWalletDeduction > 0
+                    ? `Subtracts ₹${appliedWalletDeduction} directly from your plan price`
+                    : 'Deducts available referral balance from your checkout'}
+                </div>
+              </div>
+            </div>
+
+            <div
+              className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors duration-300 shrink-0 ${
+                useWallet ? 'bg-emerald-600' : 'bg-slate-300'
+              }`}
+            >
+              <div
+                className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-300 ${
+                  useWallet ? 'translate-x-5' : 'translate-x-0'
+                }`}
+              />
+            </div>
+          </div>
+        )}
+
         {couponApplied && (
           <div className="text-xs text-emerald-700 font-bold mb-2 text-center">
             ✅ Coupon applied! 10% discount subtracted.
@@ -767,14 +854,28 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
           <div>
             <div className="flex items-center gap-1.5 text-[11px] text-slate-500 font-medium">
               <span>Total Payable Amount:</span>
+              {appliedWalletDeduction > 0 && (
+                <span className="text-[10px] text-emerald-700 font-extrabold bg-emerald-50 px-1.5 py-0.5 rounded-md border border-emerald-200">
+                  -₹{appliedWalletDeduction} Wallet Applied
+                </span>
+              )}
               <span className="inline-flex items-center gap-0.5 text-slate-400">
                 <Lock className="w-3 h-3" /> 256-Bit Razorpay Secure
               </span>
             </div>
             <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-heading flex items-baseline gap-2">
               <span>₹{calculatedPrice}</span>
+              {appliedWalletDeduction > 0 && (
+                <span className="text-xs line-through text-slate-400 font-normal">
+                  ₹{baseDiscountedPrice}
+                </span>
+              )}
               <span className="text-xs text-slate-400 font-normal">
-                {isAutoPay ? 'per cycle • AutoPay' : 'one-time'}
+                {calculatedPrice === 0
+                  ? '• 100% Free with Wallet'
+                  : isAutoPay
+                  ? 'per cycle • AutoPay'
+                  : 'one-time'}
               </span>
             </div>
           </div>
@@ -783,7 +884,9 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
             onClick={() => handleSubscribe()}
             disabled={loading}
             className={`w-full sm:w-auto py-3 px-8 text-xs sm:text-sm font-extrabold rounded-xl shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-95 ${
-              selectedPlan && isHigherTierPlan(selectedPlan)
+              calculatedPrice === 0
+                ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                : selectedPlan && isHigherTierPlan(selectedPlan)
                 ? 'bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white'
                 : isLender
                 ? 'bg-[#059669] hover:bg-[#047857] text-white'
@@ -793,7 +896,9 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
             <CreditCard className="w-4 h-4 sm:w-5 sm:h-5 text-amber-300" />
             <span>
               {loading
-                ? 'Opening Razorpay Gateway...'
+                ? 'Processing Activation...'
+                : calculatedPrice === 0
+                ? `✨ Activate ${selectedPlan?.name || 'Plan'} (Free with Wallet)`
                 : selectedPlan && isHigherTierPlan(selectedPlan)
                 ? isAutoPay
                   ? `Upgrade to ${selectedPlan.name} • ₹${calculatedPrice} AutoPay`

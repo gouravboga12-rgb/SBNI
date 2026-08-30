@@ -7,6 +7,7 @@ import {
   verifyRazorpayPayment,
   getRazorpayConfig,
   cancelAutoPay,
+  activateSubscriptionWithWallet,
 } from '../controllers/subscriptionController';
 import { authenticateUser } from '../middlewares/auth';
 import { asyncHandler } from '../middlewares/errorHandler';
@@ -17,6 +18,7 @@ router.get('/plans', asyncHandler(getSubscriptionPlans));
 router.get('/razorpay-key', asyncHandler(getRazorpayConfig));
 router.post('/create-order', authenticateUser, asyncHandler(createRazorpayOrder));
 router.post('/verify-payment', authenticateUser, asyncHandler(verifyRazorpayPayment));
+router.post('/activate-wallet', authenticateUser, asyncHandler(activateSubscriptionWithWallet));
 router.post('/cancel-autopay', authenticateUser, asyncHandler(cancelAutoPay));
 router.post('/purchase', authenticateUser, asyncHandler(purchaseSubscriptionPlan));
 router.get('/active', authenticateUser, asyncHandler(getMyActiveSubscription));

@@ -72,20 +72,29 @@ model User {
   otpExpiresAt       DateTime?
   activeRefreshToken String?
   isDeleted          Boolean            @default(false)
+  referralCode       String?            @unique
+  referredById       String?
+  referredBy         User?              @relation("UserReferrals", fields: [referredById], references: [id])
+  referrals          User[]             @relation("UserReferrals")
+  walletBalance      Float              @default(0)
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
 
-  vendorProfile      VendorProfile?
-  lenderProfile      LenderProfile?
-  kycDocuments       KYCDocument[]
-  subscriptions      UserSubscription[]
-  payments           Payment[]
-  notifications      Notification[]
-  supportTickets     SupportTicket[]
+  vendorProfile              VendorProfile?
+  lenderProfile              LenderProfile?
+  kycDocuments               KYCDocument[]
+  subscriptions              UserSubscription[]
+  payments                   Payment[]
+  notifications              Notification[]
+  supportTickets             SupportTicket[]
+  referralRecordsAsReferrer  ReferralRecord[]   @relation("ReferralReferrer")
+  referralRecordsAsReferee   ReferralRecord[]   @relation("ReferralReferee")
+  walletTransactions         WalletTransaction[]
 
   @@index([email])
   @@index([phone])
   @@index([role])
+  @@index([referralCode])
 }
 
 model VendorProfile {
@@ -188,22 +197,66 @@ model KYCDocument {
 }
 
 model SubscriptionPlan {
-  id            String             @id @default(uuid())
-  name          String             // Weekly, Monthly, Quarterly, Half-Yearly, Yearly
-  code          String             @unique // WEEKLY, MONTHLY, QUARTERLY, HALF_YEARLY, YEARLY
-  description   String
-  price         Float
-  originalPrice Float
-  durationDays  Int
-  features      String             // Stored as JSON string e.g. ["Unlock Phone Numbers", "WhatsApp Connect", "Priority Support"]
-  isActive      Boolean            @default(true)
-  isPopular     Boolean            @default(false)
-  isBestValue   Boolean            @default(false)
-  roleTarget    String             @default("VENDOR")
-  createdAt     DateTime           @default(now())
-  updatedAt     DateTime           @updatedAt
+  id              String             @id @default(uuid())
+  name            String             // Weekly, Monthly, Quarterly, Half-Yearly, Yearly
+  code            String             @unique // WEEKLY, MONTHLY, QUARTERLY, HALF_YEARLY, YEARLY
+  description     String
+  price           Float
+  originalPrice   Float
+  durationDays    Int
+  features        String             // Stored as JSON string e.g. ["Unlock Phone Numbers", "WhatsApp Connect", "Priority Support"]
+  isActive        Boolean            @default(true)
+  isPopular       Boolean            @default(false)
+  isBestValue     Boolean            @default(false)
+  roleTarget      String             @default("VENDOR")
+  referrerReward  Float              @default(0) // Amount in INR given to referrer
+  refereeReward   Float              @default(0) // Amount in INR given to referee
+  adminShare      Float              @default(0) // Amount in INR retained by platform
+  referralEnabled Boolean            @default(true)
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
 
-  subscriptions UserSubscription[]
+  subscriptions   UserSubscription[]
+  referralRecords ReferralRecord[]
+}
+
+model WalletTransaction {
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount       Float
+  type         String   // CREDIT, DEBIT
+  source       String   // REFERRAL_BONUS, REFEREE_WELCOME_BONUS, SUBSCRIPTION_PAYMENT, UPGRADE_DISCOUNT, ADMIN_ADJUSTMENT
+  balanceAfter Float
+  description  String?
+  referenceId  String?
+  createdAt    DateTime @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model ReferralRecord {
+  id                 String            @id @default(uuid())
+  referrerId         String
+  referrer           User              @relation("ReferralReferrer", fields: [referrerId], references: [id], onDelete: Cascade)
+  refereeId          String            @unique
+  referee            User              @relation("ReferralReferee", fields: [refereeId], references: [id], onDelete: Cascade)
+  referralCode       String
+  referrerReward     Float             @default(0)
+  refereeReward      Float             @default(0)
+  adminShare         Float             @default(0)
+  status             String            @default("REGISTERED") // REGISTERED, COMPLETED
+  subscriptionPlanId String?
+  subscriptionPlan   SubscriptionPlan? @relation(fields: [subscriptionPlanId], references: [id])
+  rewardedAt         DateTime?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  @@index([referrerId])
+  @@index([refereeId])
+  @@index([referralCode])
+  @@index([status])
 }
 
 model UserSubscription {

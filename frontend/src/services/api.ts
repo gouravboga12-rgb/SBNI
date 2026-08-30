@@ -320,6 +320,7 @@ export const registerVendor = async (payload: {
   latitude?: number;
   longitude?: number;
   otpCode?: string;
+  referralCode?: string;
 }): Promise<{ success: boolean; token?: string; user?: any; message?: string }> => {
   try {
     const data = await apiFetch('/auth/register', {
@@ -362,6 +363,7 @@ export async function registerLender(payload: {
   successRate?: string;
   otpCode?: string;
   avatarUrl?: string;
+  referralCode?: string;
 }): Promise<{ success: boolean; token?: string; user?: any; message?: string }> {
   try {
     const data = await apiFetch('/auth/register', {
@@ -911,10 +913,11 @@ export async function getRazorpayKey(): Promise<string> {
 export async function createRazorpayPaymentSession(
   planId: string,
   isAutoPay: boolean = false,
-  couponCode?: string
+  couponCode?: string,
+  useWallet: boolean = false
 ): Promise<{
   success: boolean;
-  mode?: 'order' | 'subscription';
+  mode?: 'order' | 'subscription' | 'wallet_free';
   orderId?: string;
   subscriptionId?: string;
   amount?: number;
@@ -922,13 +925,14 @@ export async function createRazorpayPaymentSession(
   currency?: string;
   keyId?: string;
   plan?: any;
+  walletDiscount?: number;
   message?: string;
 }> {
   try {
     const data = await apiFetch('/subscriptions/create-order', {
       method: 'POST',
       headers: authHeaders(),
-      body: JSON.stringify({ planId, isAutoPay, couponCode }),
+      body: JSON.stringify({ planId, isAutoPay, couponCode, useWallet }),
     });
     return data;
   } catch (err: any) {
@@ -944,6 +948,8 @@ export async function verifyRazorpayPayment(payload: {
   planId: string;
   couponCode?: string;
   isAutoPay?: boolean;
+  useWallet?: boolean;
+  walletAmountUsed?: number;
 }): Promise<{
   success: boolean;
   hasActiveSubscription?: boolean;
@@ -963,6 +969,29 @@ export async function verifyRazorpayPayment(payload: {
   }
 }
 
+export async function activateSubscriptionWithWalletApi(
+  planId: string,
+  couponCode?: string
+): Promise<{
+  success: boolean;
+  hasActiveSubscription?: boolean;
+  subscription?: any;
+  payment?: any;
+  newWalletBalance?: number;
+  message?: string;
+}> {
+  try {
+    const data = await apiFetch('/subscriptions/activate-wallet', {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({ planId, couponCode }),
+    });
+    return data;
+  } catch (err: any) {
+    return { success: false, message: err.message || 'Failed to activate plan with wallet.' };
+  }
+}
+
 export async function cancelAutoPayApi(): Promise<{
   success: boolean;
   message?: string;
@@ -977,6 +1006,98 @@ export async function cancelAutoPayApi(): Promise<{
     return data;
   } catch (err: any) {
     return { success: false, message: err.message || 'Failed to cancel auto-renewal.' };
+  }
+}
+
+// ================================================================
+// REFER & EARN + WALLET APIS
+// ================================================================
+
+export async function fetchMyReferralInfoApi(): Promise<{
+  success: boolean;
+  data?: any;
+  message?: string;
+}> {
+  try {
+    const data = await apiFetch('/referrals/my-info', {
+      headers: authHeaders(),
+    });
+    return data;
+  } catch (err: any) {
+    return { success: false, message: err.message };
+  }
+}
+
+export async function fetchMyWalletApi(): Promise<{
+  success: boolean;
+  data?: any;
+  message?: string;
+}> {
+  try {
+    const data = await apiFetch('/referrals/wallet', {
+      headers: authHeaders(),
+    });
+    return data;
+  } catch (err: any) {
+    return { success: false, message: err.message };
+  }
+}
+
+export async function adminFetchReferralsApi(): Promise<{
+  success: boolean;
+  data?: {
+    stats: any;
+    records: any[];
+  };
+  message?: string;
+}> {
+  try {
+    const data = await apiFetch('/referrals/admin/list', {
+      headers: authHeaders(),
+    });
+    return data;
+  } catch (err: any) {
+    return { success: false, message: err.message };
+  }
+}
+
+export async function adminFetchPlanReferralRulesApi(): Promise<{
+  success: boolean;
+  data?: any[];
+  message?: string;
+}> {
+  try {
+    const data = await apiFetch('/referrals/admin/plan-rules', {
+      headers: authHeaders(),
+    });
+    return data;
+  } catch (err: any) {
+    return { success: false, message: err.message };
+  }
+}
+
+export async function adminUpdatePlanReferralRuleApi(
+  planId: string,
+  payload: {
+    referrerReward?: number;
+    refereeReward?: number;
+    adminShare?: number;
+    referralEnabled?: boolean;
+  }
+): Promise<{
+  success: boolean;
+  data?: any;
+  message?: string;
+}> {
+  try {
+    const data = await apiFetch(`/referrals/admin/plan-rules/${planId}`, {
+      method: 'PUT',
+      headers: authHeaders(),
+      body: JSON.stringify(payload),
+    });
+    return data;
+  } catch (err: any) {
+    return { success: false, message: err.message };
   }
 }
 

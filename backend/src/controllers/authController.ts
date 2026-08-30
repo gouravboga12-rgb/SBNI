@@ -145,7 +145,7 @@ const mapLenderTypeEnum = (type?: string): LenderType => {
  * 3. REGISTER USER (Vendor or Lender)
  */
 export const registerUser = async (req: Request, res: Response) => {
-  const { email, phone, password, role, name, businessName, address, city, state, pincode, otpCode, institutionType, minLoanAmount, maxLoanAmount, lendingRadiusKm } = req.body;
+  const { email, phone, password, role, name, businessName, address, city, state, pincode, otpCode, institutionType, minLoanAmount, maxLoanAmount, lendingRadiusKm, referralCode } = req.body;
 
   if (!email || !phone || !password || !role) {
     return res.status(400).json({ success: false, message: 'Please provide email, phone, password and role.' });
@@ -185,6 +185,26 @@ export const registerUser = async (req: Request, res: Response) => {
     }
   }
 
+  // Look up referrer user if referralCode is provided
+  let referrerUser: any = null;
+  if (referralCode) {
+    try {
+      referrerUser = await prisma.user.findFirst({
+        where: {
+          referralCode: {
+            equals: String(referralCode).trim(),
+            mode: 'insensitive',
+          },
+        },
+      });
+    } catch (e) {}
+  }
+
+  // Generate unique referral code for this new user
+  const prefix = role === 'LENDER' ? 'JPL' : 'JPV';
+  const randomHex = Math.random().toString(36).substring(2, 7).toUpperCase();
+  const newReferralCode = `${prefix}-${randomHex}`;
+
   const passwordHash = await bcrypt.hash(password, 10);
   const userOtpCode = Math.floor(100000 + Math.random() * 900000).toString();
 
@@ -208,8 +228,27 @@ export const registerUser = async (req: Request, res: Response) => {
           isVerified: true,
           otpCode: userOtpCode,
           otpExpiresAt: new Date(Date.now() + 10 * 60 * 1000),
+          referralCode: newReferralCode,
+          referredById: referrerUser?.id || null,
+          walletBalance: 0,
         },
       });
+
+      // If registered through a valid referrer, create a ReferralRecord
+      if (referrerUser && referrerUser.id !== newUser.id) {
+        try {
+          await tx.referralRecord.create({
+            data: {
+              referrerId: referrerUser.id,
+              refereeId: newUser.id,
+              referralCode: String(referralCode).trim().toUpperCase(),
+              status: 'REGISTERED',
+            },
+          });
+        } catch (refRecErr: any) {
+          console.warn('Could not create ReferralRecord on signup:', refRecErr?.message);
+        }
+      }
 
       let createdProfile: any = null;
 
@@ -310,6 +349,8 @@ export const registerUser = async (req: Request, res: Response) => {
           phone: newUser.phone,
           role: newUser.role,
           isVerified: newUser.isVerified,
+          referralCode: newUser.referralCode,
+          walletBalance: newUser.walletBalance || 0,
           vendorProfile: role === 'VENDOR' ? createdProfile : undefined,
           lenderProfile: role === 'LENDER' ? createdProfile : undefined,
         },
@@ -440,6 +481,8 @@ export const loginUser = async (req: Request, res: Response) => {
         phone: user.phone,
         role: user.role,
         isVerified: user.isVerified,
+        referralCode: user.referralCode,
+        walletBalance: user.walletBalance || 0,
         vendorProfile: user.vendorProfile,
         lenderProfile: user.lenderProfile,
       },

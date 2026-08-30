@@ -65,6 +65,9 @@ import {
   adminDismissFraudReport,
   adminDeleteFraudReport,
   adminDeletePaymentApi,
+  adminFetchReferralsApi,
+  adminFetchPlanReferralRulesApi,
+  adminUpdatePlanReferralRuleApi,
   safeSetLocalStorage,
 } from '../services/api';
 import { SBNILogo } from '../components/SBNILogo';
@@ -272,7 +275,72 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
     return [];
   });
 
+  const [planReferralRules, setPlanReferralRules] = useState<any[]>([]);
+  const [savingPlanRuleId, setSavingPlanRuleId] = useState<string | null>(null);
   const [isLoadingData, setIsLoadingData] = useState(false);
+
+  const loadAdminReferralsAndRules = async () => {
+    try {
+      const [refRes, rulesRes] = await Promise.all([
+        adminFetchReferralsApi().catch(() => ({ success: false, data: null })),
+        adminFetchPlanReferralRulesApi().catch(() => ({ success: false, data: [] })),
+      ]);
+
+      if (refRes?.success && refRes.data) {
+        if (Array.isArray(refRes.data.records)) {
+          const mapped: ReferralRecord[] = refRes.data.records.map((r: any) => ({
+            id: r.id,
+            referrerName: r.referrer?.name || 'Partner',
+            referrerPhone: r.referrer?.phone || '',
+            referrerEmail: r.referrer?.email || '',
+            referrerRole: (r.referrer?.role || 'VENDOR') as 'VENDOR' | 'LENDER',
+            referralCode: r.referralCode,
+            refereeName: r.referee?.name || 'Invited User',
+            refereePhone: r.referee?.phone || '',
+            refereeEmail: r.referee?.email || '',
+            refereeRole: (r.referee?.role || 'VENDOR') as 'VENDOR' | 'LENDER',
+            refereeBusiness: r.referee?.name || (r.referee?.role === 'LENDER' ? 'Financer' : 'Shop Business'),
+            rewardAmount: r.referrerReward || 30,
+            createdAt: r.createdAt,
+            status: (r.status === 'COMPLETED' ? 'PAID' : 'PENDING_VERIFICATION') as any,
+            paidAt: r.rewardedAt,
+            payoutTxnId: r.id ? `WALLET_TXN_${r.id.substring(0, 8)}` : undefined,
+          }));
+          setReferrals(mapped);
+          safeSetLocalStorage('justpaisa_admin_live_referrals', JSON.stringify(mapped));
+        }
+      }
+
+      if (rulesRes?.success && Array.isArray(rulesRes.data)) {
+        setPlanReferralRules(rulesRes.data);
+      }
+    } catch (e) {
+      console.error('loadAdminReferralsAndRules error:', e);
+    }
+  };
+
+  const handleUpdatePlanReferralRule = async (plan: any) => {
+    setSavingPlanRuleId(plan.id);
+    try {
+      const res = await adminUpdatePlanReferralRuleApi(plan.id, {
+        referrerReward: Number(plan.referrerReward),
+        refereeReward: Number(plan.refereeReward),
+        adminShare: Number(plan.adminShare),
+        referralEnabled: plan.referralEnabled,
+      });
+
+      if (res.success) {
+        showToast(`✓ Referral reward settings saved for ${plan.name}!`);
+        loadAdminReferralsAndRules();
+      } else {
+        alert(res.message || 'Failed to update plan referral rule.');
+      }
+    } catch (err: any) {
+      alert(err.message || 'Error updating rule.');
+    } finally {
+      setSavingPlanRuleId(null);
+    }
+  };
 
   const loadAdminPayments = async () => {
     try {
@@ -821,6 +889,7 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
       loadAdminPayments();
       loadFraudReports();
       loadPlansFromDB();
+      loadAdminReferralsAndRules();
     };
     window.addEventListener('sbni_fraud_reported', handleDataSync);
     window.addEventListener('sbni_fraud_updated', handleDataSync);
@@ -846,11 +915,13 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
         loadAdminPayments(),
         loadFraudReports(),
         loadPlansFromDB(),
+        loadAdminReferralsAndRules(),
       ]);
     };
 
     ensureAdminSession();
     loadPlansFromDB();
+    loadAdminReferralsAndRules();
 
     // Auto-poll live database every 8 seconds for real-time live sync across devices
     const pollInterval = setInterval(() => {
@@ -858,6 +929,7 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
       loadAdminPayments();
       loadFraudReports();
       loadPlansFromDB();
+      loadAdminReferralsAndRules();
     }, 8000);
 
     return () => {
@@ -879,6 +951,7 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
       loadAdminPayments();
       loadFraudReports();
       loadPlansFromDB();
+      loadAdminReferralsAndRules();
     }
   }, [activeTab, isAdminAuthenticated]);
 
@@ -3146,6 +3219,165 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
                   ₹{referralVendorReward} <span className="text-[10px] text-slate-500 font-normal">(Shop)</span> / ₹{referralLenderReward} <span className="text-[10px] text-slate-500 font-normal">(Financer)</span>
                 </div>
                 <div className="text-[9px] sm:text-[10px] text-emerald-600 font-semibold">{referralDiscountPct}% Referee Discount</div>
+              </div>
+            </div>
+
+            {/* ── PLAN-WISE REFERRAL REWARDS CONFIGURATION PANEL ───────── */}
+            <div className="bg-white p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-slate-200 shadow-sm space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-bold shrink-0">
+                    <Sparkles className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-base sm:text-lg font-extrabold text-slate-900 font-heading">
+                      Plan-Wise Referral & Referee Reward Settings
+                    </h3>
+                    <p className="text-xs text-slate-500 font-medium">
+                      Configure custom Referrer wallet rewards and Referee welcome cashback amounts per subscription tier.
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={loadAdminReferralsAndRules}
+                  className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold transition-colors self-start sm:self-auto cursor-pointer"
+                  title="Reload Plan Rules"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs border border-slate-200 rounded-xl overflow-hidden">
+                  <thead className="bg-slate-50 text-slate-600 uppercase text-[10px] font-bold border-b border-slate-200">
+                    <tr>
+                      <th className="p-3">Plan Details</th>
+                      <th className="p-3">Role</th>
+                      <th className="p-3">Plan Price</th>
+                      <th className="p-3">Referrer Reward (₹)</th>
+                      <th className="p-3">Referee Cashback (₹)</th>
+                      <th className="p-3">Platform Retained (₹)</th>
+                      <th className="p-3 text-center">Referral Active</th>
+                      <th className="p-3 text-right">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {planReferralRules && planReferralRules.length > 0 ? (
+                      planReferralRules.map((planRule, idx) => {
+                        const calculatedRetained = Math.max(
+                          0,
+                          planRule.price - (Number(planRule.referrerReward) || 0) - (Number(planRule.refereeReward) || 0)
+                        );
+
+                        return (
+                          <tr key={planRule.id || idx} className="hover:bg-slate-50/50 transition-colors">
+                            <td className="p-3">
+                              <div className="font-extrabold text-slate-900 text-xs">{planRule.name}</div>
+                              <div className="text-[10px] text-slate-400 font-mono">{planRule.code} • {planRule.durationDays} Days</div>
+                            </td>
+
+                            <td className="p-3">
+                              <span
+                                className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${
+                                  planRule.roleTarget === 'LENDER'
+                                    ? 'bg-emerald-100 text-emerald-800'
+                                    : 'bg-blue-100 text-blue-800'
+                                }`}
+                              >
+                                {planRule.roleTarget === 'LENDER' ? 'Financers' : 'Vendors'}
+                              </span>
+                            </td>
+
+                            <td className="p-3 font-extrabold text-slate-900">
+                              ₹{planRule.price}
+                            </td>
+
+                            <td className="p-3">
+                              <div className="flex items-center gap-1">
+                                <span className="text-slate-400 font-bold">₹</span>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max={planRule.price}
+                                  value={planRule.referrerReward ?? 0}
+                                  onChange={(e) => {
+                                    const val = Math.max(0, Number(e.target.value));
+                                    setPlanReferralRules((prev) =>
+                                      prev.map((p) => (p.id === planRule.id ? { ...p, referrerReward: val } : p))
+                                    );
+                                  }}
+                                  className="w-20 bg-slate-50 border border-slate-300 rounded-lg px-2 py-1 text-xs font-bold text-emerald-700 outline-none focus:border-purple-600"
+                                />
+                              </div>
+                            </td>
+
+                            <td className="p-3">
+                              <div className="flex items-center gap-1">
+                                <span className="text-slate-400 font-bold">₹</span>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max={planRule.price}
+                                  value={planRule.refereeReward ?? 0}
+                                  onChange={(e) => {
+                                    const val = Math.max(0, Number(e.target.value));
+                                    setPlanReferralRules((prev) =>
+                                      prev.map((p) => (p.id === planRule.id ? { ...p, refereeReward: val } : p))
+                                    );
+                                  }}
+                                  className="w-20 bg-slate-50 border border-slate-300 rounded-lg px-2 py-1 text-xs font-bold text-blue-700 outline-none focus:border-purple-600"
+                                />
+                              </div>
+                            </td>
+
+                            <td className="p-3 font-bold text-slate-700">
+                              ₹{calculatedRetained}
+                            </td>
+
+                            <td className="p-3 text-center">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setPlanReferralRules((prev) =>
+                                    prev.map((p) =>
+                                      p.id === planRule.id ? { ...p, referralEnabled: !p.referralEnabled } : p
+                                    )
+                                  );
+                                }}
+                                className={`text-[10px] font-extrabold px-2.5 py-1 rounded-full transition-colors cursor-pointer ${
+                                  planRule.referralEnabled !== false
+                                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                                    : 'bg-slate-200 text-slate-600'
+                                }`}
+                              >
+                                {planRule.referralEnabled !== false ? '✓ Enabled' : 'Disabled'}
+                              </button>
+                            </td>
+
+                            <td className="p-3 text-right">
+                              <button
+                                type="button"
+                                onClick={() => handleUpdatePlanReferralRule(planRule)}
+                                disabled={savingPlanRuleId === planRule.id}
+                                className="px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-xs rounded-xl shadow-xs transition-all active:scale-95 cursor-pointer"
+                              >
+                                {savingPlanRuleId === planRule.id ? 'Saving...' : 'Save Rule'}
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    ) : (
+                      <tr>
+                        <td colSpan={8} className="p-6 text-center text-slate-400 font-medium">
+                          Loading plan referral rules...
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
               </div>
             </div>
 

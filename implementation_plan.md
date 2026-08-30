@@ -33,14 +33,17 @@ Implement an end-to-end **Refer and Earn** program and **Wallet Balance** system
      - `ReferralRecord` status transitions to `COMPLETED` / `REWARD_EARNED`.
      - In-App Notifications are dispatched to both users.
 
-### D. Wallet Deduction on Next Subscription Purchase
-1. In the **Subscription Modal**:
-   - The modal queries the user's live wallet balance.
-   - A toggle/checkbox allows: *"Use Wallet Balance (₹XX available)"*.
-   - If enabled, the wallet balance is deducted from the payable plan amount:
-     - E.g. Plan is ₹99, Wallet has ₹30 $\rightarrow$ User pays ₹69, ₹30 deducted from wallet.
-     - E.g. Plan is ₹99, Wallet has ₹120 $\rightarrow$ User pays ₹0, ₹99 deducted from wallet, ₹21 remaining in wallet, and plan activates immediately without external payment gateway!
-   - Backend validates wallet balance securely in a database transaction and debits the wallet.
+### D. Standard AutoPay & Wallet Balance Application on Plan Upgrades
+1. **Standard AutoPay Flow**:
+   - Initial subscription checkout with AutoPay runs standardly without complicated gateway recurring mandate modifications.
+   - Upon successful payment & plan activation, **Referrer Reward** and **Referee Reward** are immediately credited into their respective **Wallets**.
+2. **Wallet Redemption on Plan Upgrades & Renewals**:
+   - When a user (Referrer or Referee) chooses to **Upgrade Plan** (or renew/purchase a higher tier plan):
+     - In the **Subscription Modal**, if the user has available wallet balance, a toggle shows: *"Apply Wallet Balance (₹XX available)"*.
+     - The available wallet balance is deducted from the upgrade price:
+       - *Example*: Upgrading to Quarterly Plan @ ₹349 with ₹60 Wallet Balance $\rightarrow$ User pays **₹289**; ₹60 is deducted from wallet.
+       - *Example*: Upgrading with full wallet coverage (₹349 Wallet Balance) $\rightarrow$ User pays **₹0**; plan is instantly upgraded without payment gateway.
+   - On upgrade, previous AutoPay mandates are automatically replaced/cancelled in the backend to prevent duplicate recurring charges.
 
 ### E. Dedicated Admin Panel Page: Plan-Wise Referral & Referee Settings
 1. In the **Admin Dashboard**, provide a dedicated **Referral & Plan Reward Management Page / Section**:
