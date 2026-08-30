@@ -7,6 +7,7 @@ import {
   createRazorpayPaymentSession,
   verifyRazorpayPayment,
   getRazorpayKey,
+  cancelAutoPayApi,
 } from '../services/api';
 import {
   Zap,
@@ -50,10 +51,32 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
   const [couponError, setCouponError] = useState('');
   const [isAutoPay, setIsAutoPay] = useState<boolean>(true);
   const [loading, setLoading] = useState(false);
+  const [cancellingAutoPay, setCancellingAutoPay] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [activeSub, setActiveSub] = useState<any>(null);
   const [loadingActiveSub, setLoadingActiveSub] = useState(false);
+
+  const handleConfirmCancelAutoPay = async () => {
+    setCancellingAutoPay(true);
+    setErrorMessage('');
+    try {
+      const res = await cancelAutoPayApi();
+      if (res.success) {
+        setSuccessMessage(res.message || 'AutoPay cancelled. Your plan remains active until its expiration.');
+        setActiveSub((prev: any) => (prev ? { ...prev, isAutoPay: false } : prev));
+        setShowCancelConfirm(false);
+        setTimeout(() => setSuccessMessage(''), 4000);
+      } else {
+        setErrorMessage(res.message || 'Failed to cancel AutoPay.');
+      }
+    } catch (e: any) {
+      setErrorMessage(e.message || 'Error cancelling AutoPay.');
+    } finally {
+      setCancellingAutoPay(false);
+    }
+  };
 
   const loadPlans = () => {
     fetchSubscriptionPlans(userRole).then((data) => {
@@ -310,7 +333,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                 <div className="font-extrabold text-slate-900 text-sm">
                   {activeSub.plan?.name || 'Subscription Plan'}
                 </div>
-                <div className="flex flex-wrap items-center gap-3 mt-0.5">
+                <div className="flex flex-wrap items-center gap-3 mt-1">
                   <span className="flex items-center gap-1 text-[11px] text-slate-600 font-medium">
                     <CalendarCheck className="w-3 h-3 text-slate-400" />
                     Started: {formatDate(activeSub.startDate || activeSub.createdAt)}
@@ -319,29 +342,50 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                     <Clock className="w-3 h-3 text-slate-400" />
                     Valid Until: {formatDate(activeSub.endDate)}
                   </span>
+                  {activeSub.isAutoPay ? (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
+                      <Repeat className="w-3 h-3 text-emerald-600" /> AutoPay: Enabled
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-300">
+                      AutoPay: Off (Expires {formatDate(activeSub.endDate)})
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
-            <div
-              className={`shrink-0 px-4 py-2 rounded-xl text-center text-xs font-extrabold border ${
-                daysRemaining > 3
-                  ? 'bg-emerald-600 text-white border-emerald-700'
-                  : daysRemaining > 0
-                  ? 'bg-amber-500 text-white border-amber-600'
-                  : 'bg-rose-500 text-white border-rose-600'
-              }`}
-            >
-              {daysRemaining > 0 ? (
-                <>
-                  <div className="text-xl font-black leading-none">{daysRemaining}</div>
-                  <div className="text-[9px] uppercase tracking-wider">Days Left</div>
-                </>
-              ) : (
-                <>
-                  <AlertCircle className="w-4 h-4 mx-auto mb-0.5" />
-                  <div className="text-[9px]">Renew Now</div>
-                </>
+            <div className="flex items-center gap-2 shrink-0">
+              {activeSub.isAutoPay && (
+                <button
+                  type="button"
+                  onClick={() => setShowCancelConfirm(true)}
+                  disabled={cancellingAutoPay}
+                  className="px-3 py-2 text-[11px] font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-xl transition-colors cursor-pointer whitespace-nowrap"
+                >
+                  {cancellingAutoPay ? 'Cancelling...' : 'Cancel Auto-Renewal'}
+                </button>
               )}
+              <div
+                className={`px-4 py-2 rounded-xl text-center text-xs font-extrabold border ${
+                  daysRemaining > 3
+                    ? 'bg-emerald-600 text-white border-emerald-700'
+                    : daysRemaining > 0
+                    ? 'bg-amber-500 text-white border-amber-600'
+                    : 'bg-rose-500 text-white border-rose-600'
+                }`}
+              >
+                {daysRemaining > 0 ? (
+                  <>
+                    <div className="text-xl font-black leading-none">{daysRemaining}</div>
+                    <div className="text-[9px] uppercase tracking-wider">Days Left</div>
+                  </>
+                ) : (
+                  <>
+                    <AlertCircle className="w-4 h-4 mx-auto mb-0.5" />
+                    <div className="text-[9px]">Renew Now</div>
+                  </>
+                )}
+              </div>
             </div>
           </div>
         ) : (
@@ -625,6 +669,47 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
             </span>
           </button>
         </div>
+
+        {/* ── CANCEL AUTOPAY CONFIRMATION MODAL ───────────────────────── */}
+        {showCancelConfirm && (
+          <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xs">
+            <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-200 text-center space-y-4 animate-in fade-in zoom-in-95 duration-200">
+              <div className="w-14 h-14 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center mx-auto">
+                <AlertCircle className="w-7 h-7" />
+              </div>
+              <div>
+                <h3 className="text-lg font-extrabold text-slate-900 font-heading">
+                  Turn Off Auto-Renewal?
+                </h3>
+                <p className="text-xs text-slate-600 mt-2 leading-relaxed font-medium">
+                  Your subscription will not be charged again. You will continue to have full, uninterrupted platform access until{' '}
+                  <span className="font-extrabold text-slate-900">
+                    {activeSub?.endDate ? formatDate(activeSub.endDate) : 'the end of your current cycle'}
+                  </span>
+                  .
+                </p>
+              </div>
+              <div className="flex items-center gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowCancelConfirm(false)}
+                  disabled={cancellingAutoPay}
+                  className="flex-1 py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold text-xs rounded-xl transition-colors cursor-pointer"
+                >
+                  Keep AutoPay
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmCancelAutoPay}
+                  disabled={cancellingAutoPay}
+                  className="flex-1 py-2.5 px-4 bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs rounded-xl transition-colors cursor-pointer shadow-md"
+                >
+                  {cancellingAutoPay ? 'Cancelling...' : 'Yes, Turn Off'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

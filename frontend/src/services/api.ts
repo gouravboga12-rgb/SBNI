@@ -963,6 +963,23 @@ export async function verifyRazorpayPayment(payload: {
   }
 }
 
+export async function cancelAutoPayApi(): Promise<{
+  success: boolean;
+  message?: string;
+  endDate?: string;
+  isAutoPay?: boolean;
+}> {
+  try {
+    const data = await apiFetch('/subscriptions/cancel-autopay', {
+      method: 'POST',
+      headers: authHeaders(),
+    });
+    return data;
+  } catch (err: any) {
+    return { success: false, message: err.message || 'Failed to cancel auto-renewal.' };
+  }
+}
+
 export async function purchaseSubscription(
   planId: string,
   paymentDetails?: { method?: string; transactionId?: string }

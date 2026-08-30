@@ -483,6 +483,88 @@ export const purchaseSubscriptionPlan = async (req: AuthenticatedRequest, res: R
   });
 };
 
+export const cancelAutoPay = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) {
+      return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
+
+    const subscription = await prisma.userSubscription.findFirst({
+      where: {
+        userId,
+        status: 'ACTIVE',
+        endDate: { gte: new Date() },
+      },
+      include: {
+        plan: true,
+        payments: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (!subscription) {
+      return res.status(404).json({
+        success: false,
+        message: 'No active subscription found to cancel auto-renewal for.',
+      });
+    }
+
+    let cancelledMandatesCount = 0;
+    for (const p of subscription.payments) {
+      if (
+        p.gatewayOrderId &&
+        p.gatewayOrderId.startsWith('sub_') &&
+        p.paymentMethod !== 'RAZORPAY_CANCELLED_AUTOPAY'
+      ) {
+        try {
+          await razorpayInstance.subscriptions.cancel(p.gatewayOrderId, false);
+          cancelledMandatesCount++;
+        } catch (rzpErr: any) {
+          console.warn(`Could not cancel Razorpay sub ${p.gatewayOrderId}:`, rzpErr?.message);
+        }
+
+        // Mark payment as cancelled AutoPay
+        await prisma.payment.update({
+          where: { id: p.id },
+          data: { paymentMethod: 'RAZORPAY_CANCELLED_AUTOPAY' },
+        });
+      }
+    }
+
+    // Create Notification
+    const formattedEndDate = subscription.endDate.toLocaleDateString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
+
+    await prisma.notification.create({
+      data: {
+        userId,
+        title: 'AutoPay Cancelled ⏸️',
+        message: `Auto-renewal for your ${
+          subscription.plan?.name || 'membership'
+        } has been turned off. You will enjoy full platform access until ${formattedEndDate}. No further automatic debits will occur.`,
+        type: 'SUBSCRIPTION',
+      },
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: `AutoPay turned off successfully. You will have full access until ${formattedEndDate}.`,
+      endDate: subscription.endDate,
+      isAutoPay: false,
+    });
+  } catch (err: any) {
+    console.error('Error cancelling AutoPay:', err);
+    return res.status(500).json({
+      success: false,
+      message: err.message || 'Failed to cancel AutoPay. Please try again.',
+    });
+  }
+};
+
 export const getMyActiveSubscription = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const userId = req.user?.userId;
@@ -507,10 +589,17 @@ export const getMyActiveSubscription = async (req: AuthenticatedRequest, res: Re
       return res.json({
         success: true,
         hasActiveSubscription: false,
-        data: { isActive: false },
+        data: { isActive: false, isAutoPay: false },
         message: 'No active subscription found.',
       });
     }
+
+    const isAutoPay = subscription.payments.some(
+      (p) =>
+        p.gatewayOrderId &&
+        p.gatewayOrderId.startsWith('sub_') &&
+        p.paymentMethod !== 'RAZORPAY_CANCELLED_AUTOPAY'
+    );
 
     let parsedFeatures: string[] = [];
     if (subscription.plan?.features) {
@@ -530,6 +619,7 @@ export const getMyActiveSubscription = async (req: AuthenticatedRequest, res: Re
       hasActiveSubscription: true,
       data: {
         isActive: true,
+        isAutoPay,
         ...subscription,
         plan: subscription.plan
           ? {
