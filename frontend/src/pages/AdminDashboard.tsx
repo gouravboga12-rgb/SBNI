@@ -1659,7 +1659,8 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
     setEditingPlan(null);
     setPlanTargetRole(targetRole);
     setFormPlanName('');
-    setFormPlanCode(targetRole === 'VENDOR' ? 'VENDOR_CUSTOM' : 'LENDER_CUSTOM');
+    const randomSuffix = Math.random().toString(36).substring(2, 6).toUpperCase();
+    setFormPlanCode(targetRole === 'VENDOR' ? `VENDOR_PLAN_${randomSuffix}` : `LENDER_PLAN_${randomSuffix}`);
     setFormDescription('');
     setFormPrice('499');
     setFormOriginalPrice('999');
@@ -5127,7 +5128,18 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
                   type="text"
                   placeholder="e.g. Semi-Annual VIP Growth Plan"
                   value={formPlanName}
-                  onChange={(e) => setFormPlanName(e.target.value)}
+                  onChange={(e) => {
+                    const name = e.target.value;
+                    setFormPlanName(name);
+                    if (!editingPlan && name.trim()) {
+                      const slug = name
+                        .toUpperCase()
+                        .replace(/[^A-Z0-9]+/g, '_')
+                        .replace(/^_+|_+$/g, '');
+                      const prefix = planTargetRole === 'VENDOR' ? 'VENDOR_' : 'LENDER_';
+                      setFormPlanCode(slug.startsWith(prefix) ? slug : `${prefix}${slug}`);
+                    }
+                  }}
                   required
                   className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 font-medium text-slate-900 outline-none focus:border-[#003893]"
                 />
