@@ -66,6 +66,8 @@ import {
   CalendarCheck,
   Clock,
   Gift,
+  ChevronDown,
+  ChevronRight,
 } from 'lucide-react';
 import { ReferAndEarnModal } from '../components/ReferAndEarnModal';
 
@@ -410,6 +412,20 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
   const [showVendorCancelModal, setShowVendorCancelModal] = useState(false);
   const [vendorSubFeedback, setVendorSubFeedback] = useState('');
   const [referModalOpen, setReferModalOpen] = useState(false);
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+    billing: false,
+    info: false,
+    location: true,
+    kyc: false,
+    gallery: false,
+  });
+
+  const toggleSection = (secKey: string) => {
+    setExpandedSections((prev) => ({
+      ...prev,
+      [secKey]: !prev[secKey],
+    }));
+  };
 
   const loadVendorSubscription = async () => {
     setLoadingVendorSub(true);
@@ -1613,87 +1629,36 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
               </button>
             </div>
           ) : (
-            <div className="space-y-4 sm:space-y-6 max-w-4xl mx-auto">
+            <div className="space-y-4 max-w-3xl mx-auto">
               
-              {/* Header Title & Action Buttons */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div>
-                  <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 font-heading">Small Shop & Local Startup Business Profile</h2>
-                  <p className="text-xs text-slate-500 font-medium mt-0.5">
-                    Manage your registration details, verification documents, and profile photo
-                  </p>
+              {/* Save Success Banner */}
+              {vendorSaveSuccess && (
+                <div className="p-3.5 sm:p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2 shadow-xs animate-in fade-in">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+                  <span>{vendorSaveSuccess}</span>
                 </div>
-                
-                {!isEditingVendorProfile ? (
-                  <button
-                    type="button"
-                    onClick={startEditingVendor}
-                    className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-[#003893] border border-blue-200 font-extrabold text-xs flex items-center justify-center gap-2 transition-all shadow-xs active:scale-95 cursor-pointer"
-                  >
-                    <Edit3 className="w-4 h-4 text-[#003893]" />
-                    <span>Edit Profile Details</span>
-                  </button>
-                ) : (
-                  <div className="flex items-center gap-2 w-full sm:w-auto">
-                    <button
-                      type="button"
-                      onClick={() => setIsEditingVendorProfile(false)}
-                      className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-bold text-xs hover:bg-slate-100 transition-colors cursor-pointer text-center"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleSaveVendorProfile}
-                      disabled={isSavingVendorProfile}
-                      className="flex-1 sm:flex-none px-5 py-2.5 rounded-xl bg-[#003893] hover:bg-[#002366] text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-md transition-all active:scale-95 cursor-pointer"
-                    >
-                      {isSavingVendorProfile ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          <span>Saving...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Save className="w-4 h-4 text-emerald-400" />
-                          <span>Save Profile Changes</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
-                )}
-              </div>
+              )}
 
-            {/* Save Success Banner */}
-            {vendorSaveSuccess && (
-              <div className="p-3.5 sm:p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2 shadow-xs animate-in fade-in">
-                <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
-                <span>{vendorSaveSuccess}</span>
-              </div>
-            )}
-
-            {/* Profile Main Card */}
-            <div className="card-white p-4 sm:p-6 md:p-8 space-y-5 sm:space-y-6 shadow-md border border-slate-200/90 rounded-2xl sm:rounded-3xl">
-              
-              {/* Header Box with Profile Avatar Upload */}
-              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-5 pb-5 sm:pb-6 border-b border-slate-100 relative">
+              {/* ── TOP PROFILE HEADER CARD ─────────────────────────────── */}
+              <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-sm border border-slate-200/90 flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6">
                 
-                {/* User Profile Avatar with Interactive Camera Overlay */}
-                <div className="relative group shrink-0">
-                  <div className="w-20 h-20 sm:w-28 sm:h-28 rounded-3xl bg-gradient-to-br from-[#003893] to-[#001f54] text-white flex items-center justify-center font-extrabold text-2xl sm:text-3xl shadow-lg overflow-hidden border-4 border-white ring-2 ring-blue-100">
+                {/* Profile Photo with floating Camera button */}
+                <div className="relative shrink-0">
+                  <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl sm:rounded-3xl bg-blue-50 overflow-hidden shadow-xs flex items-center justify-center border-2 border-slate-100">
                     {avatarUrl ? (
                       <img src={avatarUrl} alt="Shop Business Profile" className="w-full h-full object-cover" />
                     ) : (
-                      <span>{currentVendorObj.name.charAt(0).toUpperCase()}</span>
+                      <span className="text-3xl font-black text-[#003893]">
+                        {currentVendorObj.name.charAt(0).toUpperCase()}
+                      </span>
                     )}
                   </div>
 
-                  {/* Camera Upload Button */}
-                  <label 
-                    title="Upload Profile Picture"
-                    className="absolute -bottom-1 -right-1 sm:-bottom-2 sm:-right-2 bg-[#003893] hover:bg-[#002366] text-white p-2 sm:p-2.5 rounded-full shadow-xl border-2 border-white cursor-pointer transition-all hover:scale-110 active:scale-95 flex items-center justify-center"
+                  <label
+                    title="Change Profile Photo"
+                    className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-[#003893] text-white flex items-center justify-center shadow-md border-2 border-white cursor-pointer hover:bg-blue-900 transition-all hover:scale-105 active:scale-95"
                   >
-                    <Camera className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
+                    <Camera className="w-4 h-4 text-white" />
                     <input
                       type="file"
                       accept="image/*"
@@ -1703,969 +1668,709 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                   </label>
                 </div>
 
-                {/* Vendor Identity Details */}
-                <div className="text-center sm:text-left space-y-1 flex-1 w-full">
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 justify-center sm:justify-start">
-                    <h3 className="text-xl sm:text-2xl font-extrabold text-slate-900 font-heading break-words">
+                {/* Profile Info Details */}
+                <div className="flex-1 text-center sm:text-left space-y-1.5 min-w-0">
+                  <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2.5">
+                    <h2 className="text-xl sm:text-2xl font-black text-slate-900 font-heading truncate">
                       {isEditingVendorProfile ? vendorEditForm.name || currentVendorObj.name : currentVendorObj.name}
-                    </h3>
-                    <span className="badge-verified-green w-fit mx-auto sm:mx-0 text-[10px] sm:text-xs">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Verified Shop Owner
+                    </h2>
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full shadow-2xs">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Verified Shop Owner</span>
                     </span>
                   </div>
 
-                  <div className="text-xs sm:text-sm font-semibold text-slate-700 flex flex-wrap items-center justify-center sm:justify-start gap-1.5">
-                    <Store className="w-4 h-4 text-[#003893] shrink-0" />
-                    <span className="break-words">{isEditingVendorProfile ? vendorEditForm.shopName || currentVendorObj.shopName : currentVendorObj.shopName}</span>
+                  <div className="text-xs font-semibold text-slate-600 flex items-center justify-center sm:justify-start gap-1.5 flex-wrap">
+                    <Store className="w-4 h-4 text-slate-500 shrink-0" />
+                    <span>{isEditingVendorProfile ? vendorEditForm.shopName || currentVendorObj.shopName : currentVendorObj.shopName}</span>
                     <span className="text-slate-300">•</span>
-                    <span className="text-xs text-slate-500 font-medium">
-                      {isEditingVendorProfile ? vendorEditForm.category || currentVendorObj.category : currentVendorObj.category}
+                    <span className="text-slate-500 font-medium">
+                      {isEditingVendorProfile ? vendorEditForm.category || currentVendorObj.category : currentVendorObj.category || 'Retail'}
                     </span>
                   </div>
 
-                  <p className="text-xs text-slate-400 font-medium pt-0.5">
-                    Registration ID: <span className="font-mono text-slate-700 font-bold">{currentVendorObj.shopId}</span>
-                  </p>
+                  <div className="text-xs text-slate-500 font-medium truncate">
+                    {isEditingVendorProfile ? vendorEditForm.email || currentVendorObj.email : currentVendorObj.email}
+                  </div>
 
-                  <div className="pt-2 flex items-center justify-center sm:justify-start gap-2">
-                    <label className="text-xs font-bold text-[#003893] hover:text-blue-900 cursor-pointer flex items-center gap-1 bg-blue-50 px-3 py-1.5 rounded-xl border border-blue-100 transition-colors active:scale-95">
-                      <Camera className="w-3.5 h-3.5" />
-                      <span>{avatarUrl ? 'Change Profile Photo' : 'Upload Profile Photo'}</span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleAvatarUpload}
-                        className="hidden"
-                      />
-                    </label>
+                  <div className="pt-1.5 flex items-center justify-center sm:justify-start gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!isEditingVendorProfile) {
+                          startEditingVendor();
+                          setExpandedSections((prev) => ({ ...prev, info: true }));
+                        } else {
+                          setIsEditingVendorProfile(false);
+                        }
+                      }}
+                      className="px-4 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-[#003893] border border-blue-200 font-extrabold text-xs inline-flex items-center gap-1.5 transition-all shadow-2xs active:scale-95 cursor-pointer"
+                    >
+                      <Edit3 className="w-3.5 h-3.5" />
+                      <span>{isEditingVendorProfile ? 'Cancel Edit' : 'Edit Profile'}</span>
+                    </button>
                   </div>
                 </div>
-
               </div>
 
-              {/* ── MEMBERSHIP & AUTOPAY BILLING SECTION ────────────────── */}
-              <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-slate-50 to-blue-50/40 border border-blue-200/90 shadow-sm space-y-3">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-blue-100">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-blue-100 text-[#003893] flex items-center justify-center font-extrabold shrink-0 shadow-xs">
-                      <Zap className="w-5 h-5" />
+              {/* ── ACCORDION 1: MEMBERSHIP & BILLING ─────────────────────── */}
+              <div className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200/90 shadow-sm overflow-hidden transition-all">
+                <button
+                  type="button"
+                  onClick={() => toggleSection('billing')}
+                  className="w-full p-4 sm:p-5 flex items-center justify-between gap-3 text-left hover:bg-slate-50/70 transition-colors cursor-pointer"
+                >
+                  <div className="flex items-center gap-3.5 min-w-0">
+                    <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 shadow-2xs">
+                      <Sparkles className="w-5 h-5 text-blue-600" />
                     </div>
                     <div>
-                      <div className="text-[10px] uppercase tracking-wider font-extrabold text-blue-700">
+                      <h3 className="font-extrabold text-slate-900 text-sm sm:text-base font-heading leading-tight">
                         Membership & Billing
+                      </h3>
+                      <p className="text-xs text-slate-500 font-medium leading-tight mt-0.5 truncate">
+                        View and manage your membership plan and billing details.
+                      </p>
+                    </div>
+                  </div>
+                  <ChevronDown
+                    className={`w-5 h-5 text-slate-400 shrink-0 transition-transform duration-200 ${
+                      expandedSections.billing ? 'rotate-180 text-blue-600' : ''
+                    }`}
+                  />
+                </button>
+
+                {expandedSections.billing && (
+                  <div className="p-4 sm:p-5 pt-0 border-t border-slate-100 space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-gradient-to-br from-slate-50 to-blue-50/40 border border-blue-100">
+                      <div>
+                        <div className="text-[10px] uppercase tracking-wider font-extrabold text-blue-700">
+                          Active Plan Tier
+                        </div>
+                        <div className="text-sm sm:text-base font-extrabold text-slate-900 font-heading flex items-center gap-2 mt-0.5">
+                          <span>{vendorActiveSub?.plan?.name || (vendorActiveSub ? 'Active Vendor Membership' : 'Free Discovery Tier')}</span>
+                          {vendorActiveSub?.isAutoPay && (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
+                              <Repeat className="w-3 h-3 text-emerald-600" /> AutoPay: Active
+                            </span>
+                          )}
+                        </div>
                       </div>
-                      <div className="text-sm sm:text-base font-extrabold text-slate-900 font-heading flex items-center gap-2">
-                        <span>{vendorActiveSub?.plan?.name || (vendorActiveSub ? 'Active Vendor Plan' : 'No Active Membership')}</span>
+
+                      <div className="flex items-center gap-2">
                         {vendorActiveSub?.isAutoPay && (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
-                            <Repeat className="w-3 h-3 text-emerald-600" /> AutoPay: Active
-                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setShowVendorCancelModal(true)}
+                            disabled={cancellingVendorAutoPay}
+                            className="px-3.5 py-2 text-xs font-extrabold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-xl transition-colors cursor-pointer whitespace-nowrap shadow-xs active:scale-95"
+                          >
+                            {cancellingVendorAutoPay ? 'Cancelling...' : 'Cancel AutoPay'}
+                          </button>
                         )}
-                        {!vendorActiveSub?.isAutoPay && vendorActiveSub?.endDate && (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-200 text-slate-700 border border-slate-300">
-                            AutoPay: Off
-                          </span>
-                        )}
+                        <button
+                          type="button"
+                          onClick={onOpenSubscription}
+                          className="btn-sbni-blue px-4 py-2 text-xs font-extrabold rounded-xl shadow-md transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+                        >
+                          <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                          <span>{vendorActiveSub ? 'Upgrade Plan' : 'Activate Plan'}</span>
+                        </button>
                       </div>
                     </div>
-                  </div>
 
-                  <div className="flex items-center gap-2">
-                    {vendorActiveSub?.isAutoPay && (
-                      <button
-                        type="button"
-                        onClick={() => setShowVendorCancelModal(true)}
-                        disabled={cancellingVendorAutoPay}
-                        className="px-3.5 py-2 text-xs font-extrabold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-xl transition-colors cursor-pointer whitespace-nowrap shadow-xs active:scale-95"
-                      >
-                        {cancellingVendorAutoPay ? 'Cancelling...' : 'Cancel AutoPay'}
-                      </button>
-                    )}
-
-                    <button
-                      type="button"
-                      onClick={onOpenSubscription}
-                      className="btn-sbni-blue px-4 py-2 text-xs font-extrabold rounded-xl shadow-md transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
-                    >
-                      <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                      <span>{vendorActiveSub ? 'Upgrade Plan' : 'Activate Plan'}</span>
-                    </button>
-                  </div>
-                </div>
-
-                {vendorSubFeedback && (
-                  <div className="p-3 rounded-xl bg-emerald-100 border border-emerald-300 text-emerald-900 font-bold text-xs text-center animate-bounce">
-                    {vendorSubFeedback}
-                  </div>
-                )}
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-                  <div className="p-3 rounded-xl bg-white border border-slate-200">
-                    <span className="text-slate-400 font-bold uppercase text-[9px] tracking-wider block mb-0.5">Plan Status</span>
-                    <div className="font-extrabold text-slate-900 flex items-center gap-1.5">
-                      <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-                      <span>{vendorActiveSub ? 'Active & Verified' : 'Free Discovery Mode'}</span>
-                    </div>
-                  </div>
-
-                  <div className="p-3 rounded-xl bg-white border border-slate-200">
-                    <span className="text-slate-400 font-bold uppercase text-[9px] tracking-wider block mb-0.5">Valid Until</span>
-                    <div className="font-extrabold text-slate-900 flex items-center gap-1.5">
-                      <Clock className="w-4 h-4 text-blue-600 shrink-0" />
-                      <span>{vendorActiveSub?.endDate ? new Date(vendorActiveSub.endDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}</span>
-                    </div>
-                  </div>
-
-                  <div className="p-3 rounded-xl bg-white border border-slate-200">
-                    <span className="text-slate-400 font-bold uppercase text-[9px] tracking-wider block mb-0.5">Auto-Renewal</span>
-                    <div className="font-extrabold text-slate-900 flex items-center gap-1.5">
-                      <Repeat className={`w-4 h-4 ${vendorActiveSub?.isAutoPay ? 'text-emerald-600' : 'text-slate-400'}`} />
-                      <span>{vendorActiveSub?.isAutoPay ? 'Continuous Auto-Renewal (UPI/Card)' : 'Manual Renewal'}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Cancel AutoPay Confirmation Modal for Vendor */}
-                {showVendorCancelModal && (
-                  <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xs">
-                    <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-200 text-center space-y-4 animate-in fade-in zoom-in-95 duration-200">
-                      <div className="w-14 h-14 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center mx-auto">
-                        <AlertCircle className="w-7 h-7" />
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                      <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
+                        <span className="text-slate-400 font-bold uppercase text-[9px] tracking-wider block mb-0.5">Plan Status</span>
+                        <div className="font-extrabold text-slate-900 flex items-center gap-1.5">
+                          <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                          <span>{vendorActiveSub ? 'Active & Verified' : 'Free Discovery Mode'}</span>
+                        </div>
                       </div>
-                      <div>
-                        <h3 className="text-lg font-extrabold text-slate-900 font-heading">
-                          Turn Off AutoPay?
-                        </h3>
-                        <p className="text-xs text-slate-600 mt-2 leading-relaxed font-medium">
-                          Your subscription will not be charged again. You will continue to have full, uninterrupted platform access until{' '}
-                          <span className="font-extrabold text-slate-900">
-                            {vendorActiveSub?.endDate ? new Date(vendorActiveSub.endDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'the end of your current cycle'}
+
+                      <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
+                        <span className="text-slate-400 font-bold uppercase text-[9px] tracking-wider block mb-0.5">Valid Until</span>
+                        <div className="font-extrabold text-slate-900 flex items-center gap-1.5">
+                          <Clock className="w-4 h-4 text-blue-600 shrink-0" />
+                          <span>{vendorActiveSub?.endDate ? new Date(vendorActiveSub.endDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}</span>
+                        </div>
+                      </div>
+
+                      <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
+                        <span className="text-slate-400 font-bold uppercase text-[9px] tracking-wider block mb-0.5">Auto-Renewal</span>
+                        <div className="font-extrabold text-slate-900 flex items-center gap-1.5">
+                          <Repeat className={`w-4 h-4 ${vendorActiveSub?.isAutoPay ? 'text-emerald-600' : 'text-slate-400'}`} />
+                          <span>{vendorActiveSub?.isAutoPay ? 'Recurring AutoPay Mandate' : 'Manual Renewal'}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {showVendorCancelModal && (
+                      <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-center space-y-3">
+                        <h4 className="font-extrabold text-amber-900 text-sm">Turn Off AutoPay Mandate?</h4>
+                        <p className="text-xs text-amber-800 leading-relaxed font-medium">
+                          Your active subscription will remain valid until{' '}
+                          <span className="font-bold">
+                            {vendorActiveSub?.endDate ? new Date(vendorActiveSub.endDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'cycle end'}
                           </span>
-                          .
+                          , and you will not be auto-charged again.
                         </p>
-                      </div>
-                      <div className="flex items-center gap-3 pt-2">
-                        <button
-                          type="button"
-                          onClick={() => setShowVendorCancelModal(false)}
-                          disabled={cancellingVendorAutoPay}
-                          className="flex-1 py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold text-xs rounded-xl transition-colors cursor-pointer"
-                        >
-                          Keep AutoPay
-                        </button>
-                        <button
-                          type="button"
-                          onClick={handleCancelVendorAutoPay}
-                          disabled={cancellingVendorAutoPay}
-                          className="flex-1 py-2.5 px-4 bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs rounded-xl transition-colors cursor-pointer shadow-md"
-                        >
-                          {cancellingVendorAutoPay ? 'Cancelling...' : 'Yes, Turn Off'}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* SECTION 1: Personal & Business Registration Information */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between pb-1 border-b border-slate-100">
-                  <div className="flex items-center gap-2 text-slate-900 font-extrabold text-sm sm:text-base font-heading">
-                    <User className="w-4 h-4 text-[#003893]" />
-                    <span>Personal & Business Information</span>
-                  </div>
-                  {isEditingVendorProfile && (
-                    <span className="text-[10px] sm:text-[11px] font-extrabold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200">
-                      ✏️ Edit Active
-                    </span>
-                  )}
-                </div>
-
-                {!isEditingVendorProfile ? (
-                  /* View Mode */
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-xs">
-                    
-                    {/* Full Name */}
-                    <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
-                      <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Owner / Full Name</span>
-                      <div className="font-extrabold text-slate-900 text-sm break-words">{currentVendorObj.name}</div>
-                    </div>
-
-                    {/* Phone Number / Mobile */}
-                    <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
-                      <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Phone Number / Mobile</span>
-                      <div className="font-extrabold text-slate-900 text-sm flex items-center gap-1.5 font-mono">
-                        <Phone className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                        <span>{currentVendorObj.phone}</span>
-                      </div>
-                    </div>
-
-                    {/* Gmail / Email ID */}
-                    <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
-                      <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Gmail / Email ID</span>
-                      <div className="font-extrabold text-slate-900 text-xs sm:text-sm flex items-center gap-1.5 break-all">
-                        <Mail className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                        <span>{currentVendorObj.email}</span>
-                      </div>
-                    </div>
-
-                    {/* Shop / Business Name */}
-                    <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
-                      <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Shop / Business Name</span>
-                      <div className="font-extrabold text-slate-900 text-sm flex items-center gap-1.5 break-words">
-                        <Store className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                        <span>{currentVendorObj.shopName}</span>
-                      </div>
-                    </div>
-
-                    {/* Category & Annual Income */}
-                    <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
-                      <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Business Category</span>
-                      <div className="font-extrabold text-slate-900 text-sm">{currentVendorObj.category}</div>
-                    </div>
-
-                    <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
-                      <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Annual Income</span>
-                      <div className="font-extrabold text-slate-900 text-sm">{currentVendorObj.annualTurnover || 'Under 2 Lakhs'}</div>
-                    </div>
-
-                    {/* Full Address */}
-                    <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 sm:col-span-2">
-                      <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Full Shop / Business Address</span>
-                      <div className="font-bold text-slate-800 text-xs sm:text-sm flex items-start gap-1.5 break-words">
-                        <MapPin className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
-                        <span>{currentVendorObj.address}</span>
-                      </div>
-                    </div>
-
-                  </div>
-                ) : (
-                  /* Edit Mode Inputs */
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                    
-                    {/* Full Name */}
-                    <div className="p-3.5 rounded-2xl bg-blue-50/40 border border-blue-200/80 space-y-1.5">
-                      <label className="text-slate-600 font-bold uppercase text-[10px] tracking-wider block">Owner / Full Name *</label>
-                      <input
-                        type="text"
-                        value={vendorEditForm.name}
-                        onChange={(e) => setVendorEditForm({ ...vendorEditForm, name: e.target.value })}
-                        placeholder="e.g. Gourav Boga"
-                        className="w-full px-3 py-2 bg-white rounded-xl border border-slate-300 font-bold text-slate-900 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                      />
-                    </div>
-
-                    {/* Phone Number */}
-                    <div className="p-3.5 rounded-2xl bg-blue-50/40 border border-blue-200/80 space-y-1.5">
-                      <label className="text-slate-600 font-bold uppercase text-[10px] tracking-wider block">Phone Number / Mobile *</label>
-                      <input
-                        type="tel"
-                        value={vendorEditForm.phone}
-                        onChange={(e) => setVendorEditForm({ ...vendorEditForm, phone: e.target.value })}
-                        placeholder="e.g. 7337401590"
-                        className="w-full px-3 py-2 bg-white rounded-xl border border-slate-300 font-bold text-slate-900 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none font-mono"
-                      />
-                    </div>
-
-                    {/* Email */}
-                    <div className="p-3.5 rounded-2xl bg-blue-50/40 border border-blue-200/80 space-y-1.5">
-                      <label className="text-slate-600 font-bold uppercase text-[10px] tracking-wider block">Gmail / Email ID *</label>
-                      <input
-                        type="email"
-                        value={vendorEditForm.email}
-                        onChange={(e) => setVendorEditForm({ ...vendorEditForm, email: e.target.value })}
-                        placeholder="e.g. vendor@example.com"
-                        className="w-full px-3 py-2 bg-white rounded-xl border border-slate-300 font-bold text-slate-900 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                      />
-                    </div>
-
-                    {/* Shop Name */}
-                    <div className="p-3.5 rounded-2xl bg-blue-50/40 border border-blue-200/80 space-y-1.5">
-                      <label className="text-slate-600 font-bold uppercase text-[10px] tracking-wider block">Shop / Business Name *</label>
-                      <input
-                        type="text"
-                        value={vendorEditForm.shopName}
-                        onChange={(e) => setVendorEditForm({ ...vendorEditForm, shopName: e.target.value })}
-                        placeholder="e.g. Gourav Electronics & Enterprises"
-                        className="w-full px-3 py-2 bg-white rounded-xl border border-slate-300 font-bold text-slate-900 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                      />
-                    </div>
-
-                    {/* Business Category */}
-                    <div className="p-3.5 rounded-2xl bg-blue-50/40 border border-blue-200/80 space-y-1.5">
-                      <label className="text-slate-600 font-bold uppercase text-[10px] tracking-wider block">Business Category *</label>
-                      <select
-                        value={vendorEditForm.category}
-                        onChange={(e) => setVendorEditForm({ ...vendorEditForm, category: e.target.value })}
-                        className="w-full px-3 py-2 bg-white rounded-xl border border-slate-300 font-bold text-slate-900 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                      >
-                        <option value="Retail Shop Business">Retail Shop Business</option>
-                        <option value="Wholesale & Distribution">Wholesale & Distribution</option>
-                        <option value="Food & Grocery">Food & Grocery</option>
-                        <option value="Electronics & Mobile">Electronics & Mobile</option>
-                        <option value="Textiles & Garments">Textiles & Garments</option>
-                        <option value="Manufacturing & Workshop">Manufacturing & Workshop</option>
-                        <option value="Services & Consulting">Services & Consulting</option>
-                        <option value="Local Startup Enterprise">Local Startup Enterprise</option>
-                      </select>
-                    </div>
-
-                    {/* Annual Income */}
-                    <div className="p-3.5 rounded-2xl bg-blue-50/40 border border-blue-200/80 space-y-1.5">
-                      <label className="text-slate-600 font-bold uppercase text-[10px] tracking-wider block">Annual Income</label>
-                      <select
-                        value={vendorEditForm.annualTurnover}
-                        onChange={(e) => setVendorEditForm({ ...vendorEditForm, annualTurnover: e.target.value })}
-                        className="w-full px-3 py-2 bg-white rounded-xl border border-slate-300 font-bold text-slate-900 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                      >
-                        <option value="Under 2 Lakhs">Under 2 Lakhs / year</option>
-                        <option value="2-5 Lakhs">2 - 5 Lakhs / year</option>
-                        <option value="5-10 Lakhs">5 - 10 Lakhs / year</option>
-                        <option value="10-25 Lakhs">10 - 25 Lakhs / year</option>
-                        <option value="25 Lakhs+">25 Lakhs+ / year</option>
-                      </select>
-                    </div>
-
-                    {/* Full Address */}
-                    <div className="p-3.5 rounded-2xl bg-blue-50/40 border border-blue-200/80 space-y-1.5 sm:col-span-2">
-                      <label className="text-slate-600 font-bold uppercase text-[10px] tracking-wider block">Full Shop / Business Address *</label>
-                      <textarea
-                        rows={2}
-                        value={vendorEditForm.address}
-                        onChange={(e) => setVendorEditForm({ ...vendorEditForm, address: e.target.value })}
-                        placeholder="e.g. Shop #12, Chaitanya Puri Main Road, Dilsukhnagar, Hyderabad, Telangana - 500060"
-                        className="w-full px-3 py-2 bg-white rounded-xl border border-slate-300 font-bold text-slate-900 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none"
-                      />
-                    </div>
-
-                  </div>
-                )}
-
-              </div>
-
-              {/* Mapbox Registered Shop Location & Coordinates Section */}
-              <div className="space-y-4 pt-2">
-                <div className="flex items-center justify-between flex-wrap gap-2 pb-1 border-b border-slate-100">
-                  <div className="flex items-center gap-2 text-slate-900 font-extrabold text-base font-heading">
-                    <Compass className="w-4 h-4 text-[#003893]" />
-                    <span>Registered Shop Business Location (Mapbox Verified)</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setLocationModalMode('GENERAL_LOCATION');
-                      setIsLocationModalOpen(true);
-                    }}
-                    className="px-3.5 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-[#003893] border border-blue-200 font-extrabold text-xs flex items-center gap-1.5 transition-all shadow-xs active:scale-95 cursor-pointer"
-                  >
-                    <Compass className="w-3.5 h-3.5" />
-                    <span>Update Shop Coordinates</span>
-                  </button>
-                </div>
-
-                <div className="p-4 rounded-2xl bg-gradient-to-r from-blue-50/70 to-indigo-50/70 border border-blue-200/80 space-y-3">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      <MapPin className="w-5 h-5 text-rose-500 shrink-0" />
-                      <div>
-                        <div className="font-extrabold text-slate-900 text-sm">
-                          {searchLocation.place}, {searchLocation.city}
+                        <div className="flex justify-center gap-2 pt-1">
+                          <button
+                            type="button"
+                            onClick={() => setShowVendorCancelModal(false)}
+                            className="px-4 py-1.5 bg-white border border-slate-300 text-slate-700 font-bold text-xs rounded-xl"
+                          >
+                            Keep Active
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleCancelVendorAutoPay}
+                            disabled={cancellingVendorAutoPay}
+                            className="px-4 py-1.5 bg-rose-600 text-white font-bold text-xs rounded-xl shadow-xs"
+                          >
+                            {cancellingVendorAutoPay ? 'Cancelling...' : 'Confirm Turn Off'}
+                          </button>
                         </div>
-                        <div className="text-xs text-slate-500 font-medium">
-                          {searchLocation.state}, {searchLocation.country}
-                        </div>
-                      </div>
-                    </div>
-
-                    <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
-                      ✓ Active for Financer Radius Matching
-                    </span>
-                  </div>
-
-                  <div className="pt-2 border-t border-blue-200/60 flex items-center justify-between text-[11px] text-slate-600 font-mono flex-wrap gap-2">
-                    <span>
-                      Latitude: <strong className="text-slate-900">{Number(searchLocation.latitude).toFixed(4)}</strong>, Longitude:{' '}
-                      <strong className="text-slate-900">{Number(searchLocation.longitude).toFixed(4)}</strong>
-                    </span>
-                    <a
-                      href={getGoogleMapsNavigationUrl(searchLocation.latitude, searchLocation.longitude, currentVendorObj.shopName)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-700 font-bold hover:underline flex items-center gap-1 font-sans"
-                    >
-                      <Navigation className="w-3 h-3 text-blue-600" />
-                      <span>View on Google Maps</span>
-                    </a>
-                  </div>
-                </div>
-              </div>
-
-              {/* SECTION 2: Registration Verification Documents */}
-              <div className="space-y-4 pt-2">
-                <div className="flex items-center gap-2 text-slate-900 font-extrabold text-base font-heading pb-1 border-b border-slate-100">
-                  <FileCheck className="w-4 h-4 text-emerald-600" />
-                  <span>KYC & Identity Verification Documents</span>
-                </div>
-
-                {!isEditingVendorProfile ? (
-                  /* View Mode Documents */
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
-                    
-                    {/* PAN Card Document */}
-                    {(() => {
-                      const hasPan = Boolean(currentVendorObj.panFileUrl && currentVendorObj.panFileUrl.trim().length > 10);
-                      return (
-                        <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2.5">
-                          <div className="flex items-center justify-between">
-                            <span className="font-extrabold text-slate-800 text-xs flex items-center gap-1.5">
-                              <FileText className="w-3.5 h-3.5 text-blue-600" />
-                              PAN Card
-                            </span>
-                            {hasPan ? (
-                              <span className="text-[10px] font-extrabold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md flex items-center gap-1">
-                                <CheckCircle2 className="w-3 h-3" /> Uploaded
-                              </span>
-                            ) : currentVendorObj.panNumber ? (
-                              <span className="text-[10px] font-extrabold text-blue-700 bg-blue-100 px-2 py-0.5 rounded-md">
-                                Number Added
-                              </span>
-                            ) : (
-                              <span className="text-[10px] font-extrabold text-slate-500 bg-slate-200 px-2 py-0.5 rounded-md">
-                                Not Uploaded
-                              </span>
-                            )}
-                          </div>
-                          <div className="font-mono font-bold text-slate-900 text-xs bg-white p-2 rounded-xl border border-slate-200 truncate">
-                            {currentVendorObj.panNumber || 'No PAN Provided'}
-                          </div>
-                          {hasPan ? (
-                            <button
-                              type="button"
-                              onClick={() => setPreviewDocModal({ title: `PAN Card (${currentVendorObj.panNumber || currentVendorObj.name})`, url: currentVendorObj.panFileUrl!, type: 'doc' })}
-                              className="w-full py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-extrabold text-[11px] flex items-center justify-center gap-1.5 transition-colors cursor-pointer border border-blue-200"
-                            >
-                              <Eye className="w-3.5 h-3.5" /> View PAN Document
-                            </button>
-                          ) : (
-                            <div className="text-[11px] text-slate-400 text-center py-1">No File Attached</div>
-                          )}
-                        </div>
-                      );
-                    })()}
-
-                    {/* Aadhaar Card Document */}
-                    {(() => {
-                      const hasAadhaar = Boolean(currentVendorObj.aadhaarFileUrl && currentVendorObj.aadhaarFileUrl.trim().length > 10);
-                      return (
-                        <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2.5">
-                          <div className="flex items-center justify-between">
-                            <span className="font-extrabold text-slate-800 text-xs flex items-center gap-1.5">
-                              <FileText className="w-3.5 h-3.5 text-blue-600" />
-                              Aadhaar Card
-                            </span>
-                            {hasAadhaar ? (
-                              <span className="text-[10px] font-extrabold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md flex items-center gap-1">
-                                <CheckCircle2 className="w-3 h-3" /> Uploaded
-                              </span>
-                            ) : currentVendorObj.aadhaarNumber ? (
-                              <span className="text-[10px] font-extrabold text-blue-700 bg-blue-100 px-2 py-0.5 rounded-md">
-                                Number Added
-                              </span>
-                            ) : (
-                              <span className="text-[10px] font-extrabold text-slate-500 bg-slate-200 px-2 py-0.5 rounded-md">
-                                Not Uploaded
-                              </span>
-                            )}
-                          </div>
-                          <div className="font-mono font-bold text-slate-900 text-xs bg-white p-2 rounded-xl border border-slate-200 truncate">
-                            {currentVendorObj.aadhaarNumber || 'No Aadhaar Provided'}
-                          </div>
-                          {hasAadhaar ? (
-                            <button
-                              type="button"
-                              onClick={() => setPreviewDocModal({ title: `Aadhaar Card (${currentVendorObj.aadhaarNumber || currentVendorObj.name})`, url: currentVendorObj.aadhaarFileUrl!, type: 'doc' })}
-                              className="w-full py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-extrabold text-[11px] flex items-center justify-center gap-1.5 transition-colors cursor-pointer border border-blue-200"
-                            >
-                              <Eye className="w-3.5 h-3.5" /> View Aadhaar Card
-                            </button>
-                          ) : (
-                            <div className="text-[11px] text-slate-400 text-center py-1">No File Attached</div>
-                          )}
-                        </div>
-                      );
-                    })()}
-
-                    {/* Business License / Shop Proof */}
-                    {(() => {
-                      const hasLicense = Boolean(currentVendorObj.businessLicenseUrl && currentVendorObj.businessLicenseUrl.trim().length > 10);
-                      return (
-                        <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2.5">
-                          <div className="flex items-center justify-between">
-                            <span className="font-extrabold text-slate-800 text-xs flex items-center gap-1.5">
-                              <FileText className="w-3.5 h-3.5 text-blue-600" />
-                              Business License
-                            </span>
-                            {hasLicense ? (
-                              <span className="text-[10px] font-extrabold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md flex items-center gap-1">
-                                <CheckCircle2 className="w-3 h-3" /> Uploaded
-                              </span>
-                            ) : (
-                              <span className="text-[10px] font-extrabold text-slate-500 bg-slate-200 px-2 py-0.5 rounded-md">
-                                Optional
-                              </span>
-                            )}
-                          </div>
-                          <div className="font-mono font-bold text-slate-700 text-xs bg-white p-2 rounded-xl border border-slate-200 truncate">
-                            {hasLicense ? 'Shop & Establishment Proof' : 'Not Uploaded'}
-                          </div>
-                          {hasLicense ? (
-                            <button
-                              type="button"
-                              onClick={() => setPreviewDocModal({ title: `Business License (${currentVendorObj.shopName})`, url: currentVendorObj.businessLicenseUrl!, type: 'doc' })}
-                              className="w-full py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-extrabold text-[11px] flex items-center justify-center gap-1.5 transition-colors cursor-pointer border border-blue-200"
-                            >
-                              <Eye className="w-3.5 h-3.5" /> View License Document
-                            </button>
-                          ) : (
-                            <div className="text-[11px] text-slate-400 text-center py-1">No File Attached</div>
-                          )}
-                        </div>
-                      );
-                    })()}
-
-                    {/* GST Certificate */}
-                    {(() => {
-                      const hasGst = Boolean(currentVendorObj.gstFileUrl && currentVendorObj.gstFileUrl.trim().length > 10);
-                      return (
-                        <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2.5">
-                          <div className="flex items-center justify-between">
-                            <span className="font-extrabold text-slate-800 text-xs flex items-center gap-1.5">
-                              <FileText className="w-3.5 h-3.5 text-blue-600" />
-                              GST Certificate
-                            </span>
-                            {hasGst ? (
-                              <span className="text-[10px] font-extrabold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md flex items-center gap-1">
-                                <CheckCircle2 className="w-3 h-3" /> Uploaded
-                              </span>
-                            ) : currentVendorObj.gstNumber ? (
-                              <span className="text-[10px] font-extrabold text-blue-700 bg-blue-100 px-2 py-0.5 rounded-md">
-                                GSTIN Added
-                              </span>
-                            ) : (
-                              <span className="text-[10px] font-extrabold text-slate-500 bg-slate-200 px-2 py-0.5 rounded-md">
-                                Optional
-                              </span>
-                            )}
-                          </div>
-                          <div className="font-mono font-bold text-slate-900 text-xs bg-white p-2 rounded-xl border border-slate-200 truncate">
-                            {currentVendorObj.gstNumber || 'Optional GST'}
-                          </div>
-                          {hasGst ? (
-                            <button
-                              type="button"
-                              onClick={() => setPreviewDocModal({ title: `GST Certificate (${currentVendorObj.shopName})`, url: currentVendorObj.gstFileUrl!, type: 'doc' })}
-                              className="w-full py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-extrabold text-[11px] flex items-center justify-center gap-1.5 transition-colors cursor-pointer border border-blue-200"
-                            >
-                              <Eye className="w-3.5 h-3.5" /> View GST Certificate
-                            </button>
-                          ) : (
-                            <div className="text-[11px] text-slate-400 text-center py-1">No File Attached</div>
-                          )}
-                        </div>
-                      );
-                    })()}
-
-                  </div>
-                ) : (
-                  /* Edit Mode Documents */
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                    
-                    {/* PAN Card Input & File Upload */}
-                    <div className="p-4 rounded-2xl bg-blue-50/40 border border-blue-200/80 space-y-2.5">
-                      <div className="flex items-center justify-between">
-                        <label className="font-extrabold text-slate-800 text-xs block">1. PAN Card Details *</label>
-                        {vendorEditForm.panFileUrl ? (
-                          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 flex items-center gap-1">
-                            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                            {uploadedDocNames.panFileUrl ? `✓ Attached: ${uploadedDocNames.panFileUrl}` : '✓ Document Attached'}
-                          </span>
-                        ) : (
-                          <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
-                            Required
-                          </span>
-                        )}
-                      </div>
-                      <input
-                        type="text"
-                        value={vendorEditForm.panNumber}
-                        onChange={(e) => setVendorEditForm({ ...vendorEditForm, panNumber: e.target.value.toUpperCase() })}
-                        placeholder="Enter PAN Number (e.g. ABCDE1234F)"
-                        className="w-full px-3 py-2 bg-white rounded-xl border border-slate-300 font-mono font-bold text-slate-900 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none uppercase"
-                      />
-                      
-                      {uploadingDocField === 'panFileUrl' ? (
-                        <div className="w-full py-2.5 px-3 rounded-xl bg-blue-100/80 border border-blue-300 text-[#003893] font-bold text-xs flex items-center justify-center gap-2 animate-pulse">
-                          <Loader2 className="w-4 h-4 animate-spin text-[#003893]" />
-                          <span>Uploading PAN to AWS EC2...</span>
-                        </div>
-                      ) : (
-                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                          <label className="flex-1 py-2 px-3 rounded-xl bg-white border border-dashed border-blue-400 hover:bg-blue-50/80 text-blue-700 font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-2xs">
-                            <Camera className="w-4 h-4 text-blue-600" />
-                            <span>{vendorEditForm.panFileUrl ? 'Change PAN Card' : 'Upload PAN Card Photo / PDF'}</span>
-                            <input
-                              type="file"
-                              accept="image/*,application/pdf"
-                              onClick={(e) => { (e.target as HTMLInputElement).value = ''; }}
-                              onChange={(e) => handleDocFileUpload(e, 'panFileUrl')}
-                              className="hidden"
-                            />
-                          </label>
-                          {vendorEditForm.panFileUrl && (
-                            <button
-                              type="button"
-                              onClick={() => setPreviewDocModal({ title: `PAN Card (${vendorEditForm.panNumber || 'Verified'})`, url: vendorEditForm.panFileUrl, type: 'doc' })}
-                              className="px-3 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs border border-blue-200 flex items-center justify-center gap-1 shrink-0 cursor-pointer"
-                              title="Preview PAN Document"
-                            >
-                              <Eye className="w-3.5 h-3.5" />
-                              <span>Preview</span>
-                            </button>
-                          )}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Aadhaar Card Input & File Upload */}
-                    <div className="p-3.5 sm:p-4 rounded-2xl bg-blue-50/40 border border-blue-200/80 space-y-2.5">
-                      <div className="flex items-center justify-between">
-                        <label className="font-extrabold text-slate-800 text-xs block">2. Aadhaar Card Details *</label>
-                        {vendorEditForm.aadhaarFileUrl ? (
-                          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 flex items-center gap-1">
-                            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                            {uploadedDocNames.aadhaarFileUrl ? `✓ Attached: ${uploadedDocNames.aadhaarFileUrl}` : '✓ Document Attached'}
-                          </span>
-                        ) : (
-                          <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
-                            Required
-                          </span>
-                        )}
-                      </div>
-                      <input
-                        type="text"
-                        value={vendorEditForm.aadhaarNumber}
-                        onChange={(e) => setVendorEditForm({ ...vendorEditForm, aadhaarNumber: e.target.value })}
-                        placeholder="Enter 12-Digit Aadhaar (e.g. 1234 5678 9012)"
-                        className="w-full px-3 py-2 bg-white rounded-xl border border-slate-300 font-mono font-bold text-slate-900 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                      />
-
-                      {uploadingDocField === 'aadhaarFileUrl' ? (
-                        <div className="w-full py-2.5 px-3 rounded-xl bg-blue-100/80 border border-blue-300 text-[#003893] font-bold text-xs flex items-center justify-center gap-2 animate-pulse">
-                          <Loader2 className="w-4 h-4 animate-spin text-[#003893]" />
-                          <span>Uploading Aadhaar to AWS EC2...</span>
-                        </div>
-                      ) : (
-                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                          <label className="flex-1 py-2 px-3 rounded-xl bg-white border border-dashed border-blue-400 hover:bg-blue-50/80 text-blue-700 font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-2xs">
-                            <Camera className="w-4 h-4 text-blue-600" />
-                            <span>{vendorEditForm.aadhaarFileUrl ? 'Change Aadhaar Card' : 'Upload Aadhaar Card Photo / PDF'}</span>
-                            <input
-                              type="file"
-                              accept="image/*,application/pdf"
-                              onClick={(e) => { (e.target as HTMLInputElement).value = ''; }}
-                              onChange={(e) => handleDocFileUpload(e, 'aadhaarFileUrl')}
-                              className="hidden"
-                            />
-                          </label>
-                          {vendorEditForm.aadhaarFileUrl && (
-                            <button
-                              type="button"
-                              onClick={() => setPreviewDocModal({ title: `Aadhaar Card (${vendorEditForm.aadhaarNumber || 'Verified'})`, url: vendorEditForm.aadhaarFileUrl, type: 'doc' })}
-                              className="px-3 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs border border-blue-200 flex items-center justify-center gap-1 shrink-0 cursor-pointer"
-                              title="Preview Aadhaar Document"
-                            >
-                              <Eye className="w-3.5 h-3.5" />
-                              <span>Preview</span>
-                            </button>
-                          )}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Business License / Shop Proof */}
-                    <div className="p-3.5 sm:p-4 rounded-2xl bg-blue-50/40 border border-blue-200/80 space-y-2.5">
-                      <div className="flex items-center justify-between">
-                        <label className="font-extrabold text-slate-800 text-xs block">3. Business License / Shop Act (Optional)</label>
-                        {vendorEditForm.businessLicenseUrl ? (
-                          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 flex items-center gap-1">
-                            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                            {uploadedDocNames.businessLicenseUrl ? `✓ Attached: ${uploadedDocNames.businessLicenseUrl}` : '✓ Document Attached'}
-                          </span>
-                        ) : (
-                          <span className="text-[10px] font-medium text-slate-400">Optional</span>
-                        )}
-                      </div>
-                      <p className="text-slate-500 text-[11px]">Upload Shop & Establishment license, Trade license, or Udyam MSME certificate.</p>
-                      
-                      {uploadingDocField === 'businessLicenseUrl' ? (
-                        <div className="w-full py-2.5 px-3 rounded-xl bg-blue-100/80 border border-blue-300 text-[#003893] font-bold text-xs flex items-center justify-center gap-2 animate-pulse">
-                          <Loader2 className="w-4 h-4 animate-spin text-[#003893]" />
-                          <span>Uploading License to AWS EC2...</span>
-                        </div>
-                      ) : (
-                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                          <label className="flex-1 py-2 px-3 rounded-xl bg-white border border-dashed border-blue-400 hover:bg-blue-50/80 text-blue-700 font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-2xs">
-                            <FileText className="w-4 h-4 text-blue-600" />
-                            <span>{vendorEditForm.businessLicenseUrl ? 'Change License Document' : 'Upload Business License Proof'}</span>
-                            <input
-                              type="file"
-                              accept="image/*,application/pdf"
-                              onClick={(e) => { (e.target as HTMLInputElement).value = ''; }}
-                              onChange={(e) => handleDocFileUpload(e, 'businessLicenseUrl')}
-                              className="hidden"
-                            />
-                          </label>
-                          {vendorEditForm.businessLicenseUrl && (
-                            <button
-                              type="button"
-                              onClick={() => setPreviewDocModal({ title: `Business License (${vendorEditForm.shopName})`, url: vendorEditForm.businessLicenseUrl, type: 'doc' })}
-                              className="px-3 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs border border-blue-200 flex items-center justify-center gap-1 shrink-0 cursor-pointer"
-                              title="Preview Business License"
-                            >
-                              <Eye className="w-3.5 h-3.5" />
-                              <span>Preview</span>
-                            </button>
-                          )}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* GST Certificate */}
-                    <div className="p-3.5 sm:p-4 rounded-2xl bg-blue-50/40 border border-blue-200/80 space-y-2.5">
-                      <div className="flex items-center justify-between">
-                        <label className="font-extrabold text-slate-800 text-xs block">4. GST Certificate (Optional)</label>
-                        {vendorEditForm.gstFileUrl ? (
-                          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 flex items-center gap-1">
-                            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                            {uploadedDocNames.gstFileUrl ? `✓ Attached: ${uploadedDocNames.gstFileUrl}` : '✓ Document Attached'}
-                          </span>
-                        ) : (
-                          <span className="text-[10px] font-medium text-slate-400">Optional</span>
-                        )}
-                      </div>
-                      <input
-                        type="text"
-                        value={vendorEditForm.gstNumber}
-                        onChange={(e) => setVendorEditForm({ ...vendorEditForm, gstNumber: e.target.value.toUpperCase() })}
-                        placeholder="Enter 15-Digit GSTIN (e.g. 36AAAPL1234C1Z5)"
-                        className="w-full px-3 py-2 bg-white rounded-xl border border-slate-300 font-mono font-bold text-slate-900 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none uppercase"
-                      />
-                      
-                      {uploadingDocField === 'gstFileUrl' ? (
-                        <div className="w-full py-2.5 px-3 rounded-xl bg-blue-100/80 border border-blue-300 text-[#003893] font-bold text-xs flex items-center justify-center gap-2 animate-pulse">
-                          <Loader2 className="w-4 h-4 animate-spin text-[#003893]" />
-                          <span>Uploading GST Certificate to AWS EC2...</span>
-                        </div>
-                      ) : (
-                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                          <label className="flex-1 py-2 px-3 rounded-xl bg-white border border-dashed border-blue-400 hover:bg-blue-50/80 text-blue-700 font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-2xs">
-                            <FileText className="w-4 h-4 text-blue-600" />
-                            <span>{vendorEditForm.gstFileUrl ? 'Change GST Certificate' : 'Upload GST Certificate (PDF / Image)'}</span>
-                            <input
-                              type="file"
-                              accept="image/*,application/pdf"
-                              onClick={(e) => { (e.target as HTMLInputElement).value = ''; }}
-                              onChange={(e) => handleDocFileUpload(e, 'gstFileUrl')}
-                              className="hidden"
-                            />
-                          </label>
-                          {vendorEditForm.gstFileUrl && (
-                            <button
-                              type="button"
-                              onClick={() => setPreviewDocModal({ title: `GST Certificate (${vendorEditForm.gstNumber || vendorEditForm.shopName})`, url: vendorEditForm.gstFileUrl, type: 'doc' })}
-                              className="px-3 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs border border-blue-200 flex items-center justify-center gap-1 shrink-0 cursor-pointer"
-                              title="Preview GST Certificate"
-                            >
-                              <Eye className="w-3.5 h-3.5" />
-                              <span>Preview</span>
-                            </button>
-                          )}
-                        </div>
-                      )}
-                    </div>
-
-                  </div>
-                )}
-              </div>
-
-              {/* SECTION 3: Shop Photos & Premises Gallery */}
-              <div className="space-y-4 pt-2">
-                <div className="flex items-center justify-between flex-wrap gap-2 pb-1 border-b border-slate-100">
-                  <div className="flex items-center gap-2 text-slate-900 font-extrabold text-base font-heading">
-                    <Camera className="w-4 h-4 text-indigo-600" />
-                    <span>Shop Photos & Storefront Gallery</span>
-                  </div>
-                  {isEditingVendorProfile && (
-                    uploadingDocField === 'shopPhotos' ? (
-                      <div className="px-3.5 py-1.5 rounded-xl bg-indigo-100 text-indigo-800 font-extrabold text-xs flex items-center gap-1.5 animate-pulse">
-                        <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-600" />
-                        <span>Uploading Photo to AWS...</span>
-                      </div>
-                    ) : (
-                      <label className="px-3.5 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-extrabold text-xs flex items-center gap-1.5 transition-all shadow-xs cursor-pointer active:scale-95">
-                        <Plus className="w-3.5 h-3.5" />
-                        <span>+ Add Shop Photo</span>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onClick={(e) => { (e.target as HTMLInputElement).value = ''; }}
-                          onChange={handleAddShopPhoto}
-                          className="hidden"
-                        />
-                      </label>
-                    )
-                  )}
-                </div>
-
-                {!isEditingVendorProfile ? (
-                  /* View Mode Photos */
-                  (() => {
-                    const photos: { title: string; url: string }[] = [];
-                    if (currentVendorObj.shopPhotos && currentVendorObj.shopPhotos.length > 0) {
-                      currentVendorObj.shopPhotos.forEach((img: string, i: number) => {
-                        if (img) photos.push({ title: `Storefront / Shop Photo ${i + 1}`, url: img });
-                      });
-                    }
-
-                    if (photos.length > 0) {
-                      return (
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                          {photos.map((p, i) => (
-                            <div
-                              key={i}
-                              onClick={() => setPreviewDocModal({ title: p.title, url: p.url, type: 'image' })}
-                              className="relative group rounded-2xl overflow-hidden border border-slate-200 shadow-xs cursor-pointer bg-slate-100 aspect-video sm:aspect-square"
-                            >
-                              <img
-                                src={p.url}
-                                alt={p.title}
-                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-                              />
-                              <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-bold gap-1">
-                                <Eye className="w-4 h-4" /> View
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      );
-                    }
-
-                    return (
-                      <div className="p-6 rounded-2xl bg-slate-50 border border-slate-200 text-center space-y-1 text-slate-500 text-xs">
-                        <Camera className="w-8 h-8 text-slate-400 mx-auto mb-1" />
-                        <div className="font-bold text-slate-700">No Storefront Photos Uploaded</div>
-                        <p className="text-slate-400 text-[11px]">Click "Edit Business Profile" above to attach real photos of your shop front and inventory.</p>
-                      </div>
-                    );
-                  })()
-                ) : (
-                  /* Edit Mode Photos */
-                  <div className="space-y-3">
-                    {vendorEditForm.shopPhotos && vendorEditForm.shopPhotos.length > 0 ? (
-                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                        {vendorEditForm.shopPhotos.map((photoUrl, idx) => (
-                          <div key={idx} className="relative rounded-2xl overflow-hidden border border-slate-200 aspect-video sm:aspect-square group bg-slate-100">
-                            <img src={photoUrl} alt={`Shop Photo ${idx + 1}`} className="w-full h-full object-cover" />
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setVendorEditForm((prev) => ({
-                                  ...prev,
-                                  shopPhotos: prev.shopPhotos.filter((_, i) => i !== idx),
-                                }));
-                              }}
-                              className="absolute top-1.5 right-1.5 p-1 rounded-lg bg-rose-600 text-white hover:bg-rose-700 shadow-md transition-transform active:scale-95 cursor-pointer text-[10px] font-bold"
-                              title="Delete photo"
-                            >
-                              ✕ Remove
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="p-5 rounded-2xl bg-blue-50/40 border border-dashed border-blue-300 text-center space-y-1 text-xs">
-                        <Camera className="w-6 h-6 text-blue-500 mx-auto" />
-                        <div className="font-bold text-slate-800">No Additional Shop Photos Added</div>
-                        <p className="text-slate-500 text-[11px]">Use "+ Add Shop Photo" above to upload photos of your shop exterior, billing counter, and inventory.</p>
                       </div>
                     )}
                   </div>
                 )}
               </div>
 
-              {/* Bottom Sticky Save Action Bar in Edit Mode */}
-              {isEditingVendorProfile && (
-                <div className="p-4 rounded-2xl bg-gradient-to-r from-blue-900 to-indigo-950 text-white flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shadow-lg">
-                  <div className="text-xs">
-                    <span className="font-bold text-white block">Ready to apply profile changes?</span>
-                    <span className="text-[11px] text-blue-200">Your profile will immediately update across all financer matching searches.</span>
+              {/* ── ACCORDION 2: PERSONAL & BUSINESS INFORMATION ──────────── */}
+              <div className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200/90 shadow-sm overflow-hidden transition-all">
+                <button
+                  type="button"
+                  onClick={() => toggleSection('info')}
+                  className="w-full p-4 sm:p-5 flex items-center justify-between gap-3 text-left hover:bg-slate-50/70 transition-colors cursor-pointer"
+                >
+                  <div className="flex items-center gap-3.5 min-w-0">
+                    <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 shadow-2xs">
+                      <User className="w-5 h-5 text-emerald-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-extrabold text-slate-900 text-sm sm:text-base font-heading leading-tight">
+                        Personal & Business Information
+                      </h3>
+                      <p className="text-xs text-slate-500 font-medium leading-tight mt-0.5 truncate">
+                        Manage your personal and business information.
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2 w-full sm:w-auto">
-                    <button
-                      type="button"
-                      onClick={() => setIsEditingVendorProfile(false)}
-                      className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs transition-colors cursor-pointer text-center"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleSaveVendorProfile}
-                      disabled={isSavingVendorProfile}
-                      className="flex-1 sm:flex-none px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold text-xs shadow-md transition-all active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer"
-                    >
-                      {isSavingVendorProfile ? (
-                        <>
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          <span>Saving...</span>
-                        </>
-                      ) : (
-                        <>
-                          <CheckCircle2 className="w-3.5 h-3.5 text-white" />
-                          <span>Save & Apply</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </div>
-              )}
+                  <ChevronDown
+                    className={`w-5 h-5 text-slate-400 shrink-0 transition-transform duration-200 ${
+                      expandedSections.info ? 'rotate-180 text-blue-600' : ''
+                    }`}
+                  />
+                </button>
 
-              {/* SECTION 3: Account Session & Logout */}
-              <div className="pt-6 border-t border-slate-200 space-y-4">
-                <div className="flex items-center justify-between flex-wrap gap-3">
+                {expandedSections.info && (
+                  <div className="p-4 sm:p-5 pt-0 border-t border-slate-100 space-y-4">
+                    {!isEditingVendorProfile ? (
+                      /* View Mode */
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-xs">
+                        <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
+                          <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Owner / Full Name</span>
+                          <div className="font-extrabold text-slate-900 text-sm">{currentVendorObj.name}</div>
+                        </div>
+
+                        <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
+                          <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Phone Number / Mobile</span>
+                          <div className="font-extrabold text-slate-900 text-sm flex items-center gap-1.5 font-mono">
+                            <Phone className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                            <span>{currentVendorObj.phone}</span>
+                          </div>
+                        </div>
+
+                        <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
+                          <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Gmail / Email ID</span>
+                          <div className="font-extrabold text-slate-900 text-xs sm:text-sm flex items-center gap-1.5 break-all">
+                            <Mail className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                            <span>{currentVendorObj.email}</span>
+                          </div>
+                        </div>
+
+                        <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
+                          <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Shop / Business Name</span>
+                          <div className="font-extrabold text-slate-900 text-sm flex items-center gap-1.5">
+                            <Store className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                            <span>{currentVendorObj.shopName}</span>
+                          </div>
+                        </div>
+
+                        <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
+                          <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Business Category</span>
+                          <div className="font-extrabold text-slate-900 text-sm">{currentVendorObj.category}</div>
+                        </div>
+
+                        <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
+                          <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Annual Turnover</span>
+                          <div className="font-extrabold text-slate-900 text-sm">{currentVendorObj.annualTurnover || 'Under 2 Lakhs'}</div>
+                        </div>
+
+                        <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 sm:col-span-2">
+                          <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Full Shop / Business Address</span>
+                          <div className="font-bold text-slate-800 text-xs sm:text-sm flex items-start gap-1.5 break-words">
+                            <MapPin className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
+                            <span>{currentVendorObj.address}</span>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      /* Edit Mode */
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-xs">
+                          <div className="p-3.5 rounded-2xl bg-blue-50/40 border border-blue-200/80 space-y-1.5">
+                            <label className="text-slate-600 font-bold uppercase text-[10px] tracking-wider block">Owner Name *</label>
+                            <input
+                              type="text"
+                              value={vendorEditForm.name}
+                              onChange={(e) => setVendorEditForm({ ...vendorEditForm, name: e.target.value })}
+                              className="w-full px-3 py-2 bg-white rounded-xl border border-slate-300 font-bold text-slate-900 text-xs outline-none focus:border-blue-600"
+                            />
+                          </div>
+
+                          <div className="p-3.5 rounded-2xl bg-blue-50/40 border border-blue-200/80 space-y-1.5">
+                            <label className="text-slate-600 font-bold uppercase text-[10px] tracking-wider block">Phone Number *</label>
+                            <input
+                              type="tel"
+                              value={vendorEditForm.phone}
+                              onChange={(e) => setVendorEditForm({ ...vendorEditForm, phone: e.target.value })}
+                              className="w-full px-3 py-2 bg-white rounded-xl border border-slate-300 font-bold text-slate-900 text-xs outline-none focus:border-blue-600 font-mono"
+                            />
+                          </div>
+
+                          <div className="p-3.5 rounded-2xl bg-blue-50/40 border border-blue-200/80 space-y-1.5">
+                            <label className="text-slate-600 font-bold uppercase text-[10px] tracking-wider block">Email ID *</label>
+                            <input
+                              type="email"
+                              value={vendorEditForm.email}
+                              onChange={(e) => setVendorEditForm({ ...vendorEditForm, email: e.target.value })}
+                              className="w-full px-3 py-2 bg-white rounded-xl border border-slate-300 font-bold text-slate-900 text-xs outline-none focus:border-blue-600"
+                            />
+                          </div>
+
+                          <div className="p-3.5 rounded-2xl bg-blue-50/40 border border-blue-200/80 space-y-1.5">
+                            <label className="text-slate-600 font-bold uppercase text-[10px] tracking-wider block">Shop Name *</label>
+                            <input
+                              type="text"
+                              value={vendorEditForm.shopName}
+                              onChange={(e) => setVendorEditForm({ ...vendorEditForm, shopName: e.target.value })}
+                              className="w-full px-3 py-2 bg-white rounded-xl border border-slate-300 font-bold text-slate-900 text-xs outline-none focus:border-blue-600"
+                            />
+                          </div>
+
+                          <div className="p-3.5 rounded-2xl bg-blue-50/40 border border-blue-200/80 space-y-1.5">
+                            <label className="text-slate-600 font-bold uppercase text-[10px] tracking-wider block">Business Category</label>
+                            <input
+                              type="text"
+                              value={vendorEditForm.category}
+                              onChange={(e) => setVendorEditForm({ ...vendorEditForm, category: e.target.value })}
+                              className="w-full px-3 py-2 bg-white rounded-xl border border-slate-300 font-bold text-slate-900 text-xs outline-none focus:border-blue-600"
+                            />
+                          </div>
+
+                          <div className="p-3.5 rounded-2xl bg-blue-50/40 border border-blue-200/80 space-y-1.5">
+                            <label className="text-slate-600 font-bold uppercase text-[10px] tracking-wider block">Annual Turnover</label>
+                            <input
+                              type="text"
+                              value={vendorEditForm.annualTurnover}
+                              onChange={(e) => setVendorEditForm({ ...vendorEditForm, annualTurnover: e.target.value })}
+                              className="w-full px-3 py-2 bg-white rounded-xl border border-slate-300 font-bold text-slate-900 text-xs outline-none focus:border-blue-600"
+                            />
+                          </div>
+
+                          <div className="p-3.5 rounded-2xl bg-blue-50/40 border border-blue-200/80 space-y-1.5 sm:col-span-2">
+                            <label className="text-slate-600 font-bold uppercase text-[10px] tracking-wider block">Full Shop Address *</label>
+                            <textarea
+                              rows={2}
+                              value={vendorEditForm.address}
+                              onChange={(e) => setVendorEditForm({ ...vendorEditForm, address: e.target.value })}
+                              className="w-full px-3 py-2 bg-white rounded-xl border border-slate-300 font-bold text-slate-900 text-xs outline-none focus:border-blue-600 resize-none"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="flex justify-end gap-2 pt-2">
+                          <button
+                            type="button"
+                            onClick={() => setIsEditingVendorProfile(false)}
+                            className="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 font-bold text-xs hover:bg-slate-100 cursor-pointer"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleSaveVendorProfile}
+                            disabled={isSavingVendorProfile}
+                            className="px-5 py-2 rounded-xl bg-[#003893] hover:bg-[#002669] text-white font-extrabold text-xs shadow-md transition-all active:scale-95 cursor-pointer flex items-center gap-1.5"
+                          >
+                            {isSavingVendorProfile ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                            <span>{isSavingVendorProfile ? 'Saving Changes...' : 'Save Profile Changes'}</span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* ── ACCORDION 3: REGISTERED SHOP BUSINESS LOCATION ───────── */}
+              <div className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200/90 shadow-sm overflow-hidden transition-all">
+                <button
+                  type="button"
+                  onClick={() => toggleSection('location')}
+                  className="w-full p-4 sm:p-5 flex items-center justify-between gap-3 text-left hover:bg-slate-50/70 transition-colors cursor-pointer"
+                >
+                  <div className="flex items-center gap-3.5 min-w-0">
+                    <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0 shadow-2xs">
+                      <MapPin className="w-5 h-5 text-purple-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-extrabold text-slate-900 text-sm sm:text-base font-heading leading-tight">
+                        Registered Shop Business Location
+                      </h3>
+                      <p className="text-xs text-slate-500 font-medium leading-tight mt-0.5 truncate">
+                        Manage your shop location and coordinates.
+                      </p>
+                    </div>
+                  </div>
+                  <ChevronDown
+                    className={`w-5 h-5 text-slate-400 shrink-0 transition-transform duration-200 ${
+                      expandedSections.location ? 'rotate-180 text-blue-600' : ''
+                    }`}
+                  />
+                </button>
+
+                {expandedSections.location && (
+                  <div className="p-4 sm:p-5 pt-0 border-t border-slate-100 space-y-4">
+                    {/* 3-card Sub-Grid matching the reference image! */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      
+                      {/* Card 1: My Box Verified */}
+                      <div className="p-4 rounded-2xl border border-slate-200 bg-white shadow-2xs flex flex-col justify-between space-y-2">
+                        <div className="flex items-center gap-2 text-xs font-extrabold text-slate-900">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                          <span>My Box Verified</span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 font-medium leading-tight">
+                          View verification status
+                        </p>
+                        <div className="pt-1">
+                          <span className="inline-block text-[10px] font-extrabold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                            ✓ GPS Radius Active
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Card 2: Update Shop Coordinates */}
+                      <div
+                        onClick={() => {
+                          setLocationModalMode('GENERAL_LOCATION');
+                          setIsLocationModalOpen(true);
+                        }}
+                        className="p-4 rounded-2xl border border-slate-200 bg-white hover:border-blue-400 hover:bg-blue-50/30 transition-all cursor-pointer shadow-2xs flex flex-col justify-between space-y-2 group"
+                      >
+                        <div className="flex items-center gap-2 text-xs font-extrabold text-slate-900 group-hover:text-blue-700">
+                          <Compass className="w-4 h-4 text-blue-600 shrink-0" />
+                          <span>Update Shop Coordinates</span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 font-medium leading-tight">
+                          Update location details
+                        </p>
+                        <div className="pt-1 text-[11px] font-bold text-blue-700 flex items-center gap-1">
+                          <span>Open Mapbox GPS →</span>
+                        </div>
+                      </div>
+
+                      {/* Card 3: Registered Shop Location */}
+                      <a
+                        href={getGoogleMapsNavigationUrl(searchLocation.latitude, searchLocation.longitude, currentVendorObj.shopName)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-4 rounded-2xl border border-slate-200 bg-white hover:border-purple-400 hover:bg-purple-50/30 transition-all cursor-pointer shadow-2xs flex flex-col justify-between space-y-2 group block"
+                      >
+                        <div className="flex items-center gap-2 text-xs font-extrabold text-slate-900 group-hover:text-purple-700">
+                          <Store className="w-4 h-4 text-purple-600 shrink-0" />
+                          <span>Registered Shop Location</span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 font-medium leading-tight">
+                          View shop location
+                        </p>
+                        <div className="pt-1 text-[11px] font-bold text-purple-700 flex items-center gap-1">
+                          <span>Google Maps ↗</span>
+                        </div>
+                      </a>
+
+                    </div>
+
+                    {/* Coordinates Bar */}
+                    <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-slate-600">
+                      <div>
+                        <span className="font-bold text-slate-800">{searchLocation.place}, {searchLocation.city}</span>
+                        <span className="text-slate-400"> ({searchLocation.state})</span>
+                      </div>
+                      <div className="font-mono font-bold text-slate-700 text-[11px]">
+                        GPS: {Number(searchLocation.latitude).toFixed(4)}, {Number(searchLocation.longitude).toFixed(4)}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* ── ACCORDION 4: KYC & IDENTITY VERIFICATION DOCUMENTS ───── */}
+              <div className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200/90 shadow-sm overflow-hidden transition-all">
+                <button
+                  type="button"
+                  onClick={() => toggleSection('kyc')}
+                  className="w-full p-4 sm:p-5 flex items-center justify-between gap-3 text-left hover:bg-slate-50/70 transition-colors cursor-pointer"
+                >
+                  <div className="flex items-center gap-3.5 min-w-0">
+                    <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 shadow-2xs">
+                      <FileCheck className="w-5 h-5 text-amber-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-extrabold text-slate-900 text-sm sm:text-base font-heading leading-tight">
+                        KYC & Identity Verification Documents
+                      </h3>
+                      <p className="text-xs text-slate-500 font-medium leading-tight mt-0.5 truncate">
+                        View and manage your verification documents.
+                      </p>
+                    </div>
+                  </div>
+                  <ChevronDown
+                    className={`w-5 h-5 text-slate-400 shrink-0 transition-transform duration-200 ${
+                      expandedSections.kyc ? 'rotate-180 text-blue-600' : ''
+                    }`}
+                  />
+                </button>
+
+                {expandedSections.kyc && (
+                  <div className="p-4 sm:p-5 pt-0 border-t border-slate-100 space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+                      
+                      {/* PAN Card */}
+                      <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="font-extrabold text-slate-800 text-xs">PAN Card</span>
+                          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md">
+                            {currentVendorObj.panFileUrl ? 'Uploaded' : 'Recorded'}
+                          </span>
+                        </div>
+                        <div className="font-mono font-bold text-slate-900 text-xs bg-white p-2 rounded-xl border border-slate-200 truncate">
+                          {currentVendorObj.panNumber || 'PAN Verified'}
+                        </div>
+                        {currentVendorObj.panFileUrl ? (
+                          <button
+                            type="button"
+                            onClick={() => setPreviewDocModal({ title: `PAN Card (${currentVendorObj.name})`, url: currentVendorObj.panFileUrl!, type: 'doc' })}
+                            className="w-full py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-[11px] flex items-center justify-center gap-1 transition-colors border border-blue-200"
+                          >
+                            <Eye className="w-3.5 h-3.5" /> View PAN
+                          </button>
+                        ) : (
+                          <div className="text-[10px] text-slate-400 text-center py-1">Identity Verified</div>
+                        )}
+                      </div>
+
+                      {/* Aadhaar Card */}
+                      <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="font-extrabold text-slate-800 text-xs">Aadhaar Card</span>
+                          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md">
+                            {currentVendorObj.aadhaarFileUrl ? 'Uploaded' : 'Recorded'}
+                          </span>
+                        </div>
+                        <div className="font-mono font-bold text-slate-900 text-xs bg-white p-2 rounded-xl border border-slate-200 truncate">
+                          {currentVendorObj.aadhaarNumber || 'Aadhaar Verified'}
+                        </div>
+                        {currentVendorObj.aadhaarFileUrl ? (
+                          <button
+                            type="button"
+                            onClick={() => setPreviewDocModal({ title: `Aadhaar Card (${currentVendorObj.name})`, url: currentVendorObj.aadhaarFileUrl!, type: 'doc' })}
+                            className="w-full py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-[11px] flex items-center justify-center gap-1 transition-colors border border-blue-200"
+                          >
+                            <Eye className="w-3.5 h-3.5" /> View Aadhaar
+                          </button>
+                        ) : (
+                          <div className="text-[10px] text-slate-400 text-center py-1">UIDAI Verified</div>
+                        )}
+                      </div>
+
+                      {/* Business License */}
+                      <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="font-extrabold text-slate-800 text-xs">Business License</span>
+                          <span className="text-[10px] font-bold text-slate-600 bg-slate-200 px-2 py-0.5 rounded-md">
+                            {currentVendorObj.businessLicenseUrl ? 'Uploaded' : 'Optional'}
+                          </span>
+                        </div>
+                        <div className="font-mono font-bold text-slate-700 text-xs bg-white p-2 rounded-xl border border-slate-200 truncate">
+                          {currentVendorObj.businessLicenseUrl ? 'Shop License Attached' : 'Not Attached'}
+                        </div>
+                        {currentVendorObj.businessLicenseUrl && (
+                          <button
+                            type="button"
+                            onClick={() => setPreviewDocModal({ title: `Business License (${currentVendorObj.shopName})`, url: currentVendorObj.businessLicenseUrl!, type: 'doc' })}
+                            className="w-full py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-[11px] flex items-center justify-center gap-1 transition-colors border border-blue-200"
+                          >
+                            <Eye className="w-3.5 h-3.5" /> View License
+                          </button>
+                        )}
+                      </div>
+
+                      {/* GST Certificate */}
+                      <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="font-extrabold text-slate-800 text-xs">GST Certificate</span>
+                          <span className="text-[10px] font-bold text-slate-600 bg-slate-200 px-2 py-0.5 rounded-md">
+                            {currentVendorObj.gstFileUrl ? 'Uploaded' : 'Optional'}
+                          </span>
+                        </div>
+                        <div className="font-mono font-bold text-slate-700 text-xs bg-white p-2 rounded-xl border border-slate-200 truncate">
+                          {currentVendorObj.gstNumber || (currentVendorObj.gstFileUrl ? 'GST Attached' : 'Optional')}
+                        </div>
+                        {currentVendorObj.gstFileUrl && (
+                          <button
+                            type="button"
+                            onClick={() => setPreviewDocModal({ title: `GST Certificate (${currentVendorObj.shopName})`, url: currentVendorObj.gstFileUrl!, type: 'doc' })}
+                            className="w-full py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-[11px] flex items-center justify-center gap-1 transition-colors border border-blue-200"
+                          >
+                            <Eye className="w-3.5 h-3.5" /> View GST
+                          </button>
+                        )}
+                      </div>
+
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* ── ACCORDION 5: SHOP PHOTOS & STOREFRONT GALLERY ─────────── */}
+              <div className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200/90 shadow-sm overflow-hidden transition-all">
+                <button
+                  type="button"
+                  onClick={() => toggleSection('gallery')}
+                  className="w-full p-4 sm:p-5 flex items-center justify-between gap-3 text-left hover:bg-slate-50/70 transition-colors cursor-pointer"
+                >
+                  <div className="flex items-center gap-3.5 min-w-0">
+                    <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0 shadow-2xs">
+                      <Camera className="w-5 h-5 text-rose-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-extrabold text-slate-900 text-sm sm:text-base font-heading leading-tight">
+                        Shop Photos & Storefront Gallery
+                      </h3>
+                      <p className="text-xs text-slate-500 font-medium leading-tight mt-0.5 truncate">
+                        Manage your shop photos and storefront gallery.
+                      </p>
+                    </div>
+                  </div>
+                  <ChevronDown
+                    className={`w-5 h-5 text-slate-400 shrink-0 transition-transform duration-200 ${
+                      expandedSections.gallery ? 'rotate-180 text-blue-600' : ''
+                    }`}
+                  />
+                </button>
+
+                {expandedSections.gallery && (
+                  <div className="p-4 sm:p-5 pt-0 border-t border-slate-100 space-y-4">
+                    {(() => {
+                      const photos: { title: string; url: string }[] = [];
+                      if (currentVendorObj.shopPhotos && currentVendorObj.shopPhotos.length > 0) {
+                        currentVendorObj.shopPhotos.forEach((img: string, i: number) => {
+                          if (img) photos.push({ title: `Storefront / Shop Photo ${i + 1}`, url: img });
+                        });
+                      }
+
+                      if (photos.length > 0) {
+                        return (
+                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                            {photos.map((p, i) => (
+                              <div
+                                key={i}
+                                onClick={() => setPreviewDocModal({ title: p.title, url: p.url, type: 'image' })}
+                                className="relative group rounded-2xl overflow-hidden border border-slate-200 shadow-2xs cursor-pointer bg-slate-100 aspect-video sm:aspect-square"
+                              >
+                                <img
+                                  src={p.url}
+                                  alt={p.title}
+                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                                />
+                                <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-bold gap-1">
+                                  <Eye className="w-4 h-4" /> View
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <div className="p-6 rounded-2xl bg-slate-50 border border-slate-200 text-center space-y-1 text-slate-500 text-xs">
+                          <Camera className="w-8 h-8 text-slate-400 mx-auto mb-1" />
+                          <div className="font-bold text-slate-700">No Storefront Photos Uploaded</div>
+                          <p className="text-slate-400 text-[11px]">
+                            Click "Edit Profile" above to attach real photos of your shop storefront and inventory.
+                          </p>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                )}
+              </div>
+
+              {/* ── CARD 6: REFER & EARN ─────────────────────────────────── */}
+              <div
+                onClick={() => setReferModalOpen(true)}
+                className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200/90 shadow-sm p-4 sm:p-5 flex items-center justify-between gap-3 hover:bg-purple-50/30 hover:border-purple-300 transition-all cursor-pointer group active:scale-99"
+              >
+                <div className="flex items-center gap-3.5 min-w-0">
+                  <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+                    <Gift className="w-5 h-5 text-blue-600" />
+                  </div>
                   <div>
-                    <h4 className="font-extrabold text-slate-900 text-sm font-heading">Account Session & Security</h4>
-                    <p className="text-xs text-slate-500 font-medium mt-0.5">
-                      Log out of your active Just Paisa App session on this device
+                    <h3 className="font-extrabold text-slate-900 text-sm sm:text-base font-heading leading-tight group-hover:text-purple-900">
+                      Refer & Earn
+                    </h3>
+                    <p className="text-xs text-slate-500 font-medium leading-tight mt-0.5 truncate">
+                      Refer friends and earn exciting rewards.
                     </p>
                   </div>
-                  {onLogout && (
-                    <button
-                      type="button"
-                      onClick={() => onLogout('VENDOR')}
-                      className="w-full sm:w-auto px-6 py-2.5 rounded-2xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-extrabold text-xs border border-rose-200 flex items-center justify-center gap-2 transition-all shadow-sm active:scale-95 cursor-pointer"
-                    >
-                      <LogOut className="w-4 h-4 text-rose-600" />
-                      <span>Log Out Account</span>
-                    </button>
-                  )}
                 </div>
+
+                <div className="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center group-hover:bg-purple-600 group-hover:text-white transition-colors shrink-0">
+                  <ChevronRight className="w-4 h-4" />
+                </div>
+              </div>
+
+              {/* ── CARD 7: ACCOUNT SESSION & SECURITY (LOGOUT) ─────────── */}
+              <div className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200/90 shadow-sm p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5">
+                <div>
+                  <h4 className="font-extrabold text-slate-900 text-sm sm:text-base font-heading leading-tight">
+                    Account Session & Security
+                  </h4>
+                  <p className="text-xs text-slate-500 font-medium leading-tight mt-0.5">
+                    Log out of your active JustPaisa app session on this device.
+                  </p>
+                </div>
+
+                {onLogout && (
+                  <button
+                    type="button"
+                    onClick={() => onLogout('VENDOR')}
+                    className="w-full sm:w-auto px-5 py-2 rounded-xl border border-rose-500 text-rose-600 hover:bg-rose-50 font-extrabold text-xs flex items-center justify-center gap-1.5 transition-all shadow-2xs active:scale-95 cursor-pointer"
+                  >
+                    <LogOut className="w-4 h-4 text-rose-600" />
+                    <span>Log Out</span>
+                  </button>
+                )}
               </div>
 
             </div>
-          </div>
-        )
-      )}
+          )
+        )}
 
       </div>
 

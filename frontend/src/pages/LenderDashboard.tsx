@@ -68,6 +68,7 @@ import {
   Zap,
   CalendarCheck,
   Gift,
+  ChevronDown,
 } from 'lucide-react';
 import { ReferAndEarnModal } from '../components/ReferAndEarnModal';
 
@@ -572,6 +573,20 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
     } finally {
       setLoadingLenderSub(false);
     }
+  };
+
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+    billing: false,
+    info: false,
+    location: true,
+    criteria: false,
+  });
+
+  const toggleSection = (secKey: string) => {
+    setExpandedSections((prev) => ({
+      ...prev,
+      [secKey]: !prev[secKey],
+    }));
   };
 
   useEffect(() => {
@@ -2859,603 +2874,575 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
               </button>
             </div>
           ) : (
-            <div className="space-y-4 sm:space-y-6 max-w-4xl mx-auto">
+            <div className="space-y-4 max-w-3xl mx-auto">
               
-              {/* Header Title & Edit Mode Toggle */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div>
-                  <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 font-heading">Business Money Financer Profile & Security</h2>
-                  <p className="text-xs text-slate-500 font-medium mt-0.5">
-                    Manage financer credentials, credit officer contact details, and session status
-                  </p>
-                </div>
-
-                {!isEditingLenderProfile ? (
-                  <button
-                    type="button"
-                    onClick={startEditingLender}
-                    className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-[#003893] border border-blue-200 font-extrabold text-xs flex items-center justify-center gap-2 transition-all shadow-xs active:scale-95 cursor-pointer"
-                  >
-                    <Edit3 className="w-4 h-4 text-[#003893]" />
-                    <span>Edit Financer Profile</span>
-                  </button>
-                ) : (
-                  <div className="flex items-center gap-2 w-full sm:w-auto">
-                    <button
-                      type="button"
-                      onClick={() => setIsEditingLenderProfile(false)}
-                      className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-bold text-xs hover:bg-slate-100 transition-colors cursor-pointer text-center"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleSaveLenderProfile}
-                      disabled={isSavingLenderProfile}
-                      className="flex-1 sm:flex-none px-5 py-2.5 rounded-xl bg-[#003893] hover:bg-[#002366] text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-md transition-all active:scale-95 cursor-pointer"
-                    >
-                      {isSavingLenderProfile ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          <span>Saving...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Save className="w-4 h-4 text-emerald-400" />
-                          <span>Save Financer Details</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
-                )}
-              </div>
-
-            {/* Save Success Banner */}
-            {lenderSaveSuccess && (
-              <div className="p-3.5 sm:p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2 shadow-xs animate-in fade-in">
-                <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
-                <span>{lenderSaveSuccess}</span>
-              </div>
-            )}
-
-            {/* ── LENDER MEMBERSHIP & AUTOPAY BILLING SECTION ─────────────── */}
-            <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-emerald-50/50 to-slate-50 border border-emerald-200/90 shadow-sm space-y-3">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-emerald-100">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-extrabold shrink-0 shadow-xs">
-                    <Zap className="w-5 h-5 text-emerald-700" />
-                  </div>
-                  <div>
-                    <div className="text-[10px] uppercase tracking-wider font-extrabold text-emerald-700">
-                      Financer Membership & Billing
-                    </div>
-                    <div className="text-sm sm:text-base font-extrabold text-slate-900 font-heading flex items-center gap-2">
-                      <span>{lenderActiveSub?.plan?.name || (lenderActiveSub ? 'Active Financer Plan' : 'No Active Membership')}</span>
-                      {lenderActiveSub?.isAutoPay && (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
-                          <Repeat className="w-3 h-3 text-emerald-600" /> AutoPay: Active
-                        </span>
-                      )}
-                      {!lenderActiveSub?.isAutoPay && lenderActiveSub?.endDate && (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-200 text-slate-700 border border-slate-300">
-                          AutoPay: Off
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  {lenderActiveSub?.isAutoPay && (
-                    <button
-                      type="button"
-                      onClick={() => setShowLenderCancelModal(true)}
-                      disabled={cancellingLenderAutoPay}
-                      className="px-3.5 py-2 text-xs font-extrabold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-xl transition-colors cursor-pointer whitespace-nowrap shadow-xs active:scale-95"
-                    >
-                      {cancellingLenderAutoPay ? 'Cancelling...' : 'Cancel AutoPay'}
-                    </button>
-                  )}
-
-                  <button
-                    type="button"
-                    onClick={onOpenSubscription}
-                    className="btn-sbni-green px-4 py-2 text-xs font-extrabold rounded-xl shadow-md transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
-                  >
-                    <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                    <span>{lenderActiveSub ? 'Upgrade Plan' : 'Activate Plan'}</span>
-                  </button>
-                </div>
-              </div>
-
-              {lenderSubFeedback && (
-                <div className="p-3 rounded-xl bg-emerald-100 border border-emerald-300 text-emerald-900 font-bold text-xs text-center animate-bounce">
-                  {lenderSubFeedback}
+              {/* Save Success Banner */}
+              {lenderSaveSuccess && (
+                <div className="p-3.5 sm:p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2 shadow-xs animate-in fade-in">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+                  <span>{lenderSaveSuccess}</span>
                 </div>
               )}
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-                <div className="p-3 rounded-xl bg-white border border-slate-200">
-                  <span className="text-slate-400 font-bold uppercase text-[9px] tracking-wider block mb-0.5">Plan Status</span>
-                  <div className="font-extrabold text-slate-900 flex items-center gap-1.5">
-                    <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <span>{lenderActiveSub ? 'Verified Financer Active' : 'Free Preview Mode'}</span>
+              {/* ── TOP PROFILE HEADER CARD ─────────────────────────────── */}
+              <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-sm border border-slate-200/90 flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6">
+                
+                {/* Profile Photo with floating Camera button */}
+                <div className="relative shrink-0">
+                  <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl sm:rounded-3xl bg-blue-50 overflow-hidden shadow-xs flex items-center justify-center border-2 border-slate-100">
+                    {lenderAvatarUrl ? (
+                      <img src={lenderAvatarUrl} alt="Financer Profile" className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-3xl font-black text-[#003893]">
+                        {currentUserObj?.institutionName ? currentUserObj.institutionName.charAt(0).toUpperCase() : 'F'}
+                      </span>
+                    )}
                   </div>
+
+                  <label
+                    title="Change Profile Photo"
+                    className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-[#003893] text-white flex items-center justify-center shadow-md border-2 border-white cursor-pointer hover:bg-blue-900 transition-all hover:scale-105 active:scale-95"
+                  >
+                    <Camera className="w-4 h-4 text-white" />
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleAvatarChange}
+                      className="hidden"
+                    />
+                  </label>
                 </div>
 
-                <div className="p-3 rounded-xl bg-white border border-slate-200">
-                  <span className="text-slate-400 font-bold uppercase text-[9px] tracking-wider block mb-0.5">Valid Until</span>
-                  <div className="font-extrabold text-slate-900 flex items-center gap-1.5">
-                    <Clock className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <span>{lenderActiveSub?.endDate ? new Date(lenderActiveSub.endDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}</span>
+                {/* Profile Info Details */}
+                <div className="flex-1 text-center sm:text-left space-y-1.5 min-w-0">
+                  <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2.5">
+                    <h2 className="text-xl sm:text-2xl font-black text-slate-900 font-heading truncate">
+                      {isEditingLenderProfile ? lenderEditForm.institutionName || currentUserObj.name : currentUserObj.name}
+                    </h2>
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full shadow-2xs">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Verified Financer</span>
+                    </span>
                   </div>
-                </div>
 
-                <div className="p-3 rounded-xl bg-white border border-slate-200">
-                  <span className="text-slate-400 font-bold uppercase text-[9px] tracking-wider block mb-0.5">Auto-Renewal</span>
-                  <div className="font-extrabold text-slate-900 flex items-center gap-1.5">
-                    <Repeat className={`w-4 h-4 ${lenderActiveSub?.isAutoPay ? 'text-emerald-600' : 'text-slate-400'}`} />
-                    <span>{lenderActiveSub?.isAutoPay ? 'Continuous Auto-Renewal (UPI/Card)' : 'Manual Renewal'}</span>
+                  <div className="text-xs font-semibold text-slate-600 flex items-center justify-center sm:justify-start gap-1.5 flex-wrap">
+                    <Building2 className="w-4 h-4 text-slate-500 shrink-0" />
+                    <span>{isEditingLenderProfile ? lenderEditForm.contactPerson || currentUserObj.contactPerson : currentUserObj.contactPerson}</span>
+                    <span className="text-slate-300">•</span>
+                    <span className="text-slate-500 font-medium">
+                      Money Financer
+                    </span>
+                  </div>
+
+                  <div className="text-xs text-slate-500 font-medium truncate">
+                    {isEditingLenderProfile ? lenderEditForm.email || currentUserObj.email : currentUserObj.email}
+                  </div>
+
+                  <div className="pt-1.5 flex items-center justify-center sm:justify-start gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!isEditingLenderProfile) {
+                          startEditingLender();
+                          setExpandedSections((prev) => ({ ...prev, info: true }));
+                        } else {
+                          setIsEditingLenderProfile(false);
+                        }
+                      }}
+                      className="px-4 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-[#003893] border border-blue-200 font-extrabold text-xs inline-flex items-center gap-1.5 transition-all shadow-2xs active:scale-95 cursor-pointer"
+                    >
+                      <Edit3 className="w-3.5 h-3.5" />
+                      <span>{isEditingLenderProfile ? 'Cancel Edit' : 'Edit Profile'}</span>
+                    </button>
                   </div>
                 </div>
               </div>
 
-              {/* Cancel AutoPay Confirmation Modal for Lender */}
-              {showLenderCancelModal && (
-                <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xs">
-                  <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-200 text-center space-y-4 animate-in fade-in zoom-in-95 duration-200">
-                    <div className="w-14 h-14 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center mx-auto">
-                      <AlertCircle className="w-7 h-7" />
+              {/* ── ACCORDION 1: MEMBERSHIP & BILLING ─────────────────────── */}
+              <div className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200/90 shadow-sm overflow-hidden transition-all">
+                <button
+                  type="button"
+                  onClick={() => toggleSection('billing')}
+                  className="w-full p-4 sm:p-5 flex items-center justify-between gap-3 text-left hover:bg-slate-50/70 transition-colors cursor-pointer"
+                >
+                  <div className="flex items-center gap-3.5 min-w-0">
+                    <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 shadow-2xs">
+                      <Sparkles className="w-5 h-5 text-blue-600" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-extrabold text-slate-900 font-heading">
-                        Turn Off Financer AutoPay?
+                      <h3 className="font-extrabold text-slate-900 text-sm sm:text-base font-heading leading-tight">
+                        Membership & Billing
                       </h3>
-                      <p className="text-xs text-slate-600 mt-2 leading-relaxed font-medium">
-                        Your subscription will not be charged again. You will continue to have full access to verified shop leads until{' '}
-                        <span className="font-extrabold text-slate-900">
-                          {lenderActiveSub?.endDate ? new Date(lenderActiveSub.endDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'the end of your current cycle'}
-                        </span>
-                        .
+                      <p className="text-xs text-slate-500 font-medium leading-tight mt-0.5 truncate">
+                        View and manage your membership plan and billing details.
                       </p>
                     </div>
-                    <div className="flex items-center gap-3 pt-2">
-                      <button
-                        type="button"
-                        onClick={() => setShowLenderCancelModal(false)}
-                        disabled={cancellingLenderAutoPay}
-                        className="flex-1 py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold text-xs rounded-xl transition-colors cursor-pointer"
-                      >
-                        Keep AutoPay
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleCancelLenderAutoPay}
-                        disabled={cancellingLenderAutoPay}
-                        className="flex-1 py-2.5 px-4 bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs rounded-xl transition-colors cursor-pointer shadow-md"
-                      >
-                        {cancellingLenderAutoPay ? 'Cancelling...' : 'Yes, Turn Off'}
-                      </button>
-                    </div>
                   </div>
-                </div>
-              )}
-            </div>
-
-            <div className="card-white p-4 sm:p-6 md:p-8 space-y-5 sm:space-y-6 shadow-md border border-slate-200/90 rounded-2xl sm:rounded-3xl">
-              
-              {/* Header Box */}
-              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-5 pb-5 sm:pb-6 border-b border-slate-100">
-                <div className="relative group shrink-0">
-                  <div className="w-20 h-20 sm:w-28 sm:h-28 rounded-3xl overflow-hidden shadow-lg border-4 border-white ring-2 ring-emerald-100 bg-emerald-50 flex items-center justify-center">
-                    <img
-                      src={lenderAvatarUrl || 'https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=200'}
-                      alt="Business Financer Profile"
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <label
-                    htmlFor="lender-profile-avatar-input"
-                    className="absolute -bottom-1 -right-1 p-2 rounded-full bg-[#007a33] text-white hover:bg-[#005e27] cursor-pointer shadow-md transition-transform active:scale-95 flex items-center justify-center"
-                    title="Change Profile Photo"
-                  >
-                    <Camera className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                  </label>
-                  <input
-                    id="lender-profile-avatar-input"
-                    type="file"
-                    accept="image/*"
-                    onChange={handleAvatarChange}
-                    className="hidden"
+                  <ChevronDown
+                    className={`w-5 h-5 text-slate-400 shrink-0 transition-transform duration-200 ${
+                      expandedSections.billing ? 'rotate-180 text-blue-600' : ''
+                    }`}
                   />
-                </div>
+                </button>
 
-                <div className="text-center sm:text-left space-y-1 flex-1 w-full">
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 justify-center sm:justify-start">
-                    <h3 className="text-xl sm:text-2xl font-extrabold text-slate-900 font-heading break-words">
-                      {isEditingLenderProfile ? lenderEditForm.institutionName || currentUserObj.name : currentUserObj.name}
-                    </h3>
-                    <span className="badge-verified-green w-fit mx-auto sm:mx-0 text-[10px] sm:text-xs">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Verified Business Financer
-                    </span>
-                  </div>
-                  <div className="text-xs sm:text-sm font-semibold text-slate-700 flex flex-wrap items-center justify-center sm:justify-start gap-1.5">
-                    <Building2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <span>Money Financer</span>
-                    <span className="text-slate-300">•</span>
-                    <span className="text-xs text-slate-500 font-medium">
-                      Credit Officer: {isEditingLenderProfile ? lenderEditForm.contactPerson || currentUserObj.contactPerson : currentUserObj.contactPerson}
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-400 font-medium pt-0.5">
-                    Registration No: <span className="font-mono text-slate-700 font-bold">{isEditingLenderProfile ? lenderEditForm.regNo || currentUserObj.regNo : currentUserObj.regNo}</span>
-                  </p>
-
-                  <div className="pt-2 flex items-center justify-center sm:justify-start gap-2">
-                    <label
-                      htmlFor="lender-profile-avatar-input"
-                      className="text-xs font-bold text-[#007a33] hover:text-emerald-900 cursor-pointer flex items-center gap-1 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-100 transition-colors active:scale-95"
-                    >
-                      <Camera className="w-3.5 h-3.5" />
-                      <span>{lenderAvatarUrl ? 'Change Profile Photo' : 'Upload Profile Photo'}</span>
-                    </label>
-                  </div>
-                </div>
-              </div>
-
-              {/* Credit Officer Details Section */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between pb-1 border-b border-slate-100">
-                  <h4 className="font-extrabold text-slate-900 text-sm sm:text-base font-heading">Credit Officer Account Information</h4>
-                  {isEditingLenderProfile && (
-                    <span className="text-[10px] sm:text-[11px] font-extrabold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200">
-                      ✏️ Edit Active
-                    </span>
-                  )}
-                </div>
-
-                {!isEditingLenderProfile ? (
-                  /* View Mode */
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-xs">
-                    <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
-                      <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Chief Credit Officer</span>
-                      <div className="font-extrabold text-slate-900 text-sm break-words">{currentUserObj.contactPerson}</div>
-                    </div>
-                    <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
-                      <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Mobile / WhatsApp</span>
-                      <div className="font-extrabold text-slate-900 text-sm flex items-center gap-1.5 font-mono">
-                        <Phone className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                        <span>{currentUserObj.phone}</span>
+                {expandedSections.billing && (
+                  <div className="p-4 sm:p-5 pt-0 border-t border-slate-100 space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-gradient-to-br from-slate-50 to-blue-50/40 border border-blue-100">
+                      <div>
+                        <div className="text-[10px] uppercase tracking-wider font-extrabold text-blue-700">
+                          Active Financer Tier
+                        </div>
+                        <div className="text-sm sm:text-base font-extrabold text-slate-900 font-heading flex items-center gap-2 mt-0.5">
+                          <span>{lenderActiveSub?.plan?.name || (lenderActiveSub ? 'Verified Financer Membership' : 'Free Preview Mode')}</span>
+                          {lenderActiveSub?.isAutoPay && (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
+                              <Repeat className="w-3 h-3 text-emerald-600" /> AutoPay: Active
+                            </span>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                    <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
-                      <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Email Address</span>
-                      <div className="font-extrabold text-slate-900 text-xs sm:text-sm flex items-center gap-1.5 break-all">
-                        <Mail className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                        <span>{currentUserObj.email}</span>
-                      </div>
-                    </div>
-                    <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
-                      <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Office Location</span>
-                      <div className="font-extrabold text-slate-900 text-xs sm:text-sm flex items-center gap-1.5 break-words">
-                        <MapPin className="w-3.5 h-3.5 text-rose-500 shrink-0" />
-                        <span>{currentUserObj.city}, {currentUserObj.state}</span>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  /* Edit Mode Inputs */
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                    
-                    {/* Institution Name */}
-                    <div className="p-3.5 rounded-2xl bg-blue-50/40 border border-blue-200/80 space-y-1.5">
-                      <label className="text-slate-600 font-bold uppercase text-[10px] tracking-wider block">Financer Institution Name *</label>
-                      <input
-                        type="text"
-                        value={lenderEditForm.institutionName}
-                        onChange={(e) => setLenderEditForm({ ...lenderEditForm, institutionName: e.target.value })}
-                        placeholder="e.g. Gourav Money Financer"
-                        className="w-full px-3 py-2 bg-white rounded-xl border border-slate-300 font-bold text-slate-900 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                      />
-                    </div>
 
-                    {/* Chief Credit Officer */}
-                    <div className="p-3.5 rounded-2xl bg-blue-50/40 border border-blue-200/80 space-y-1.5">
-                      <label className="text-slate-600 font-bold uppercase text-[10px] tracking-wider block">Chief Credit Officer Name *</label>
-                      <input
-                        type="text"
-                        value={lenderEditForm.contactPerson}
-                        onChange={(e) => setLenderEditForm({ ...lenderEditForm, contactPerson: e.target.value })}
-                        placeholder="e.g. Gourav Boga"
-                        className="w-full px-3 py-2 bg-white rounded-xl border border-slate-300 font-bold text-slate-900 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                      />
-                    </div>
-
-                    {/* Mobile / WhatsApp */}
-                    <div className="p-3.5 rounded-2xl bg-blue-50/40 border border-blue-200/80 space-y-1.5">
-                      <label className="text-slate-600 font-bold uppercase text-[10px] tracking-wider block">Mobile / WhatsApp Number *</label>
-                      <input
-                        type="tel"
-                        value={lenderEditForm.phone}
-                        onChange={(e) => setLenderEditForm({ ...lenderEditForm, phone: e.target.value })}
-                        placeholder="e.g. 7337401590"
-                        className="w-full px-3 py-2 bg-white rounded-xl border border-slate-300 font-mono font-bold text-slate-900 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                      />
-                    </div>
-
-                    {/* Email */}
-                    <div className="p-3.5 rounded-2xl bg-blue-50/40 border border-blue-200/80 space-y-1.5">
-                      <label className="text-slate-600 font-bold uppercase text-[10px] tracking-wider block">Email Address *</label>
-                      <input
-                        type="email"
-                        value={lenderEditForm.email}
-                        onChange={(e) => setLenderEditForm({ ...lenderEditForm, email: e.target.value })}
-                        placeholder="e.g. financer@example.com"
-                        className="w-full px-3 py-2 bg-white rounded-xl border border-slate-300 font-bold text-slate-900 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                      />
-                    </div>
-
-                    {/* Registration No */}
-                    <div className="p-3.5 rounded-2xl bg-blue-50/40 border border-blue-200/80 space-y-1.5">
-                      <label className="text-slate-600 font-bold uppercase text-[10px] tracking-wider block">Registration Number</label>
-                      <input
-                        type="text"
-                        value={lenderEditForm.regNo}
-                        onChange={(e) => setLenderEditForm({ ...lenderEditForm, regNo: e.target.value })}
-                        placeholder="e.g. REG-572787"
-                        className="w-full px-3 py-2 bg-white rounded-xl border border-slate-300 font-mono font-bold text-slate-900 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                      />
-                    </div>
-
-                    {/* City & State */}
-                    <div className="p-3.5 rounded-2xl bg-blue-50/40 border border-blue-200/80 space-y-1.5">
-                      <label className="text-slate-600 font-bold uppercase text-[10px] tracking-wider block">City & State *</label>
-                      <div className="grid grid-cols-2 gap-2">
-                        <input
-                          type="text"
-                          value={lenderEditForm.city}
-                          onChange={(e) => setLenderEditForm({ ...lenderEditForm, city: e.target.value })}
-                          placeholder="City"
-                          className="w-full px-3 py-2 bg-white rounded-xl border border-slate-300 font-bold text-slate-900 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                        />
-                        <input
-                          type="text"
-                          value={lenderEditForm.state}
-                          onChange={(e) => setLenderEditForm({ ...lenderEditForm, state: e.target.value })}
-                          placeholder="State"
-                          className="w-full px-3 py-2 bg-white rounded-xl border border-slate-300 font-bold text-slate-900 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                        />
+                      <div className="flex items-center gap-2">
+                        {lenderActiveSub?.isAutoPay && (
+                          <button
+                            type="button"
+                            onClick={() => setShowLenderCancelModal(true)}
+                            disabled={cancellingLenderAutoPay}
+                            className="px-3.5 py-2 text-xs font-extrabold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-xl transition-colors cursor-pointer whitespace-nowrap shadow-xs active:scale-95"
+                          >
+                            {cancellingLenderAutoPay ? 'Cancelling...' : 'Cancel AutoPay'}
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={onOpenSubscription}
+                          className="btn-sbni-green px-4 py-2 text-xs font-extrabold rounded-xl shadow-md transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+                        >
+                          <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                          <span>{lenderActiveSub ? 'Upgrade Plan' : 'Activate Plan'}</span>
+                        </button>
                       </div>
                     </div>
 
-                    {/* Street Address */}
-                    <div className="p-3.5 rounded-2xl bg-blue-50/40 border border-blue-200/80 space-y-1.5 sm:col-span-2">
-                      <label className="text-slate-600 font-bold uppercase text-[10px] tracking-wider block">Full Office Address</label>
-                      <textarea
-                        rows={2}
-                        value={lenderEditForm.address}
-                        onChange={(e) => setLenderEditForm({ ...lenderEditForm, address: e.target.value })}
-                        placeholder="e.g. Suite 402, Financial Plaza, Main Road, Hyderabad, Telangana - 500060"
-                        className="w-full px-3 py-2 bg-white rounded-xl border border-slate-300 font-bold text-slate-900 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none"
-                      />
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                      <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
+                        <span className="text-slate-400 font-bold uppercase text-[9px] tracking-wider block mb-0.5">Plan Status</span>
+                        <div className="font-extrabold text-slate-900 flex items-center gap-1.5">
+                          <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                          <span>{lenderActiveSub ? 'Verified Financer Active' : 'Free Discovery Tier'}</span>
+                        </div>
+                      </div>
+
+                      <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
+                        <span className="text-slate-400 font-bold uppercase text-[9px] tracking-wider block mb-0.5">Valid Until</span>
+                        <div className="font-extrabold text-slate-900 flex items-center gap-1.5">
+                          <Clock className="w-4 h-4 text-blue-600 shrink-0" />
+                          <span>{lenderActiveSub?.endDate ? new Date(lenderActiveSub.endDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}</span>
+                        </div>
+                      </div>
+
+                      <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
+                        <span className="text-slate-400 font-bold uppercase text-[9px] tracking-wider block mb-0.5">Auto-Renewal</span>
+                        <div className="font-extrabold text-slate-900 flex items-center gap-1.5">
+                          <Repeat className={`w-4 h-4 ${lenderActiveSub?.isAutoPay ? 'text-emerald-600' : 'text-slate-400'}`} />
+                          <span>{lenderActiveSub?.isAutoPay ? 'Recurring AutoPay Mandate' : 'Manual Renewal'}</span>
+                        </div>
+                      </div>
                     </div>
 
+                    {showLenderCancelModal && (
+                      <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-center space-y-3">
+                        <h4 className="font-extrabold text-amber-900 text-sm">Turn Off Financer AutoPay?</h4>
+                        <p className="text-xs text-amber-800 leading-relaxed font-medium">
+                          Your active subscription will remain valid until{' '}
+                          <span className="font-bold">
+                            {lenderActiveSub?.endDate ? new Date(lenderActiveSub.endDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'cycle end'}
+                          </span>
+                          , and you will not be auto-charged again.
+                        </p>
+                        <div className="flex justify-center gap-2 pt-1">
+                          <button
+                            type="button"
+                            onClick={() => setShowLenderCancelModal(false)}
+                            className="px-4 py-1.5 bg-white border border-slate-300 text-slate-700 font-bold text-xs rounded-xl cursor-pointer"
+                          >
+                            Keep Active
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleCancelLenderAutoPay}
+                            disabled={cancellingLenderAutoPay}
+                            className="px-4 py-1.5 bg-rose-600 text-white font-bold text-xs rounded-xl shadow-xs cursor-pointer"
+                          >
+                            {cancellingLenderAutoPay ? 'Cancelling...' : 'Confirm Turn Off'}
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
-
               </div>
 
-              {/* Lending Portfolio Limits & Success Rate Section */}
-              <div className="space-y-3 border-t border-slate-100 pt-4">
-                <h4 className="font-extrabold text-slate-900 text-sm font-heading">Lending Portfolio Ticket Size & Success Rate</h4>
-                
-                {!isEditingLenderProfile ? (
-                  /* View Mode */
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                    <div className="p-3.5 rounded-2xl bg-emerald-50/60 border border-emerald-200">
-                      <span className="text-slate-500 font-medium block">Approved Minimum Ticket Size</span>
-                      <span className="font-extrabold text-emerald-900 text-sm mt-0.5 block">
-                        ₹ {Number(currentUserObj.minLoan).toLocaleString('en-IN')}
-                      </span>
+              {/* ── ACCORDION 2: PERSONAL & BUSINESS INFORMATION ──────────── */}
+              <div className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200/90 shadow-sm overflow-hidden transition-all">
+                <button
+                  type="button"
+                  onClick={() => toggleSection('info')}
+                  className="w-full p-4 sm:p-5 flex items-center justify-between gap-3 text-left hover:bg-slate-50/70 transition-colors cursor-pointer"
+                >
+                  <div className="flex items-center gap-3.5 min-w-0">
+                    <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 shadow-2xs">
+                      <User className="w-5 h-5 text-emerald-600" />
                     </div>
-                    <div className="p-3.5 rounded-2xl bg-blue-50/60 border border-blue-200">
-                      <span className="text-slate-500 font-medium block">Approved Maximum Ticket Size</span>
-                      <span className="font-extrabold text-blue-900 text-sm mt-0.5 block">
-                        ₹ {Number(currentUserObj.maxLoan).toLocaleString('en-IN')}
-                      </span>
-                    </div>
-                    <div className="p-3.5 rounded-2xl bg-emerald-50/70 border border-emerald-200/90 sm:col-span-2">
-                      <span className="text-slate-500 font-medium block">Lending Approval Success Rate</span>
-                      <span className="font-extrabold text-emerald-800 text-sm mt-1 flex items-center gap-1.5">
-                        <TrendingUp className="w-4 h-4 text-emerald-600" />
-                        <span>{currentUserObj.successRate || '80% - 90%'} Success Rate on Borrowing Money</span>
-                      </span>
+                    <div>
+                      <h3 className="font-extrabold text-slate-900 text-sm sm:text-base font-heading leading-tight">
+                        Personal & Business Information
+                      </h3>
+                      <p className="text-xs text-slate-500 font-medium leading-tight mt-0.5 truncate">
+                        Manage your personal and business information.
+                      </p>
                     </div>
                   </div>
-                ) : (
-                  /* Edit Mode Inputs */
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                    <div className="p-3.5 rounded-2xl bg-blue-50/40 border border-blue-200/80 space-y-1.5">
-                      <label className="text-slate-600 font-bold uppercase text-[10px] tracking-wider block">Min Ticket Size (₹) *</label>
-                      <input
-                        type="number"
-                        value={lenderEditForm.minLoan}
-                        onChange={(e) => setLenderEditForm({ ...lenderEditForm, minLoan: Number(e.target.value) })}
-                        placeholder="5000"
-                        className="w-full px-3 py-2 bg-white rounded-xl border border-slate-300 font-bold text-slate-900 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                      />
-                    </div>
-                    <div className="p-3.5 rounded-2xl bg-blue-50/40 border border-blue-200/80 space-y-1.5">
-                      <label className="text-slate-600 font-bold uppercase text-[10px] tracking-wider block">Max Ticket Size (₹) *</label>
-                      <input
-                        type="number"
-                        value={lenderEditForm.maxLoan}
-                        onChange={(e) => setLenderEditForm({ ...lenderEditForm, maxLoan: Number(e.target.value) })}
-                        placeholder="100000"
-                        className="w-full px-3 py-2 bg-white rounded-xl border border-slate-300 font-bold text-slate-900 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                      />
-                    </div>
+                  <ChevronDown
+                    className={`w-5 h-5 text-slate-400 shrink-0 transition-transform duration-200 ${
+                      expandedSections.info ? 'rotate-180 text-blue-600' : ''
+                    }`}
+                  />
+                </button>
 
-                    <div className="p-3.5 rounded-2xl bg-blue-50/40 border border-blue-200/80 space-y-1.5 sm:col-span-2">
-                      <label className="text-slate-600 font-bold uppercase text-[10px] tracking-wider block">Lending Approval Success Rate *</label>
-                      <select
-                        value={['80% - 90%', '85% - 95%', '90% - 98%', '75% - 85%', '95% - 100%'].includes(lenderEditForm.successRate) ? lenderEditForm.successRate : 'CUSTOM'}
-                        onChange={(e) => {
-                          if (e.target.value !== 'CUSTOM') {
-                            setLenderEditForm({ ...lenderEditForm, successRate: e.target.value });
-                          } else {
-                            setLenderEditForm({ ...lenderEditForm, successRate: 'Custom Rate' });
-                          }
-                        }}
-                        className="w-full px-3 py-2 bg-white rounded-xl border border-slate-300 font-bold text-slate-900 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                {expandedSections.info && (
+                  <div className="p-4 sm:p-5 pt-0 border-t border-slate-100 space-y-4">
+                    {!isEditingLenderProfile ? (
+                      /* View Mode */
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-xs">
+                        <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
+                          <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Financer / Institution Name</span>
+                          <div className="font-extrabold text-slate-900 text-sm">{currentUserObj.name}</div>
+                        </div>
+
+                        <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
+                          <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Contact Officer Name</span>
+                          <div className="font-extrabold text-slate-900 text-sm">{currentUserObj.contactPerson}</div>
+                        </div>
+
+                        <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
+                          <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Official Mobile / Phone</span>
+                          <div className="font-extrabold text-slate-900 text-sm flex items-center gap-1.5 font-mono">
+                            <Phone className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                            <span>{currentUserObj.phone}</span>
+                          </div>
+                        </div>
+
+                        <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
+                          <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Official Email Address</span>
+                          <div className="font-extrabold text-slate-900 text-xs sm:text-sm flex items-center gap-1.5 break-all">
+                            <Mail className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                            <span>{currentUserObj.email}</span>
+                          </div>
+                        </div>
+
+                        <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
+                          <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Registration Number</span>
+                          <div className="font-extrabold text-slate-900 text-sm font-mono">{currentUserObj.regNo || 'REG-SBNI-FIN'}</div>
+                        </div>
+
+                        <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
+                          <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Approval Success Rate</span>
+                          <div className="font-extrabold text-slate-900 text-sm">{currentUserObj.successRate || '85% - 95%'}</div>
+                        </div>
+
+                        <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 sm:col-span-2">
+                          <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Office / Branch Address</span>
+                          <div className="font-bold text-slate-800 text-xs sm:text-sm flex items-start gap-1.5 break-words">
+                            <MapPin className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
+                            <span>{currentUserObj.address || `${currentUserObj.city}, ${currentUserObj.state}`}</span>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      /* Edit Mode */
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-xs">
+                          <div className="p-3.5 rounded-2xl bg-blue-50/40 border border-blue-200/80 space-y-1.5">
+                            <label className="text-slate-600 font-bold uppercase text-[10px] tracking-wider block">Financer Name *</label>
+                            <input
+                              type="text"
+                              value={lenderEditForm.institutionName}
+                              onChange={(e) => setLenderEditForm({ ...lenderEditForm, institutionName: e.target.value })}
+                              className="w-full px-3 py-2 bg-white rounded-xl border border-slate-300 font-bold text-slate-900 text-xs outline-none focus:border-blue-600"
+                            />
+                          </div>
+
+                          <div className="p-3.5 rounded-2xl bg-blue-50/40 border border-blue-200/80 space-y-1.5">
+                            <label className="text-slate-600 font-bold uppercase text-[10px] tracking-wider block">Contact Officer *</label>
+                            <input
+                              type="text"
+                              value={lenderEditForm.contactPerson}
+                              onChange={(e) => setLenderEditForm({ ...lenderEditForm, contactPerson: e.target.value })}
+                              className="w-full px-3 py-2 bg-white rounded-xl border border-slate-300 font-bold text-slate-900 text-xs outline-none focus:border-blue-600"
+                            />
+                          </div>
+
+                          <div className="p-3.5 rounded-2xl bg-blue-50/40 border border-blue-200/80 space-y-1.5">
+                            <label className="text-slate-600 font-bold uppercase text-[10px] tracking-wider block">Phone Number *</label>
+                            <input
+                              type="tel"
+                              value={lenderEditForm.phone}
+                              onChange={(e) => setLenderEditForm({ ...lenderEditForm, phone: e.target.value })}
+                              className="w-full px-3 py-2 bg-white rounded-xl border border-slate-300 font-bold text-slate-900 text-xs outline-none focus:border-blue-600 font-mono"
+                            />
+                          </div>
+
+                          <div className="p-3.5 rounded-2xl bg-blue-50/40 border border-blue-200/80 space-y-1.5">
+                            <label className="text-slate-600 font-bold uppercase text-[10px] tracking-wider block">Email ID *</label>
+                            <input
+                              type="email"
+                              value={lenderEditForm.email}
+                              onChange={(e) => setLenderEditForm({ ...lenderEditForm, email: e.target.value })}
+                              className="w-full px-3 py-2 bg-white rounded-xl border border-slate-300 font-bold text-slate-900 text-xs outline-none focus:border-blue-600"
+                            />
+                          </div>
+
+                          <div className="p-3.5 rounded-2xl bg-blue-50/40 border border-blue-200/80 space-y-1.5 sm:col-span-2">
+                            <label className="text-slate-600 font-bold uppercase text-[10px] tracking-wider block">Full Branch Address *</label>
+                            <textarea
+                              rows={2}
+                              value={lenderEditForm.address}
+                              onChange={(e) => setLenderEditForm({ ...lenderEditForm, address: e.target.value })}
+                              className="w-full px-3 py-2 bg-white rounded-xl border border-slate-300 font-bold text-slate-900 text-xs outline-none focus:border-blue-600 resize-none"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="flex justify-end gap-2 pt-2">
+                          <button
+                            type="button"
+                            onClick={() => setIsEditingLenderProfile(false)}
+                            className="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 font-bold text-xs hover:bg-slate-100 cursor-pointer"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleSaveLenderProfile}
+                            disabled={isSavingLenderProfile}
+                            className="px-5 py-2 rounded-xl bg-[#003893] hover:bg-[#002669] text-white font-extrabold text-xs shadow-md transition-all active:scale-95 cursor-pointer flex items-center gap-1.5"
+                          >
+                            {isSavingLenderProfile ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                            <span>{isSavingLenderProfile ? 'Saving Changes...' : 'Save Profile Changes'}</span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* ── ACCORDION 3: REGISTERED LENDING AREA & SERVICE RADIUS ─── */}
+              <div className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200/90 shadow-sm overflow-hidden transition-all">
+                <button
+                  type="button"
+                  onClick={() => toggleSection('location')}
+                  className="w-full p-4 sm:p-5 flex items-center justify-between gap-3 text-left hover:bg-slate-50/70 transition-colors cursor-pointer"
+                >
+                  <div className="flex items-center gap-3.5 min-w-0">
+                    <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0 shadow-2xs">
+                      <MapPin className="w-5 h-5 text-purple-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-extrabold text-slate-900 text-sm sm:text-base font-heading leading-tight">
+                        Registered Lending Area & Service Radius
+                      </h3>
+                      <p className="text-xs text-slate-500 font-medium leading-tight mt-0.5 truncate">
+                        Manage your shop location and coordinates.
+                      </p>
+                    </div>
+                  </div>
+                  <ChevronDown
+                    className={`w-5 h-5 text-slate-400 shrink-0 transition-transform duration-200 ${
+                      expandedSections.location ? 'rotate-180 text-blue-600' : ''
+                    }`}
+                  />
+                </button>
+
+                {expandedSections.location && (
+                  <div className="p-4 sm:p-5 pt-0 border-t border-slate-100 space-y-4">
+                    {/* 3-card Sub-Grid matching the reference image! */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      
+                      {/* Card 1: My Box Verified */}
+                      <div className="p-4 rounded-2xl border border-slate-200 bg-white shadow-2xs flex flex-col justify-between space-y-2">
+                        <div className="flex items-center gap-2 text-xs font-extrabold text-slate-900">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                          <span>My Box Verified</span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 font-medium leading-tight">
+                          View verification status
+                        </p>
+                        <div className="pt-1">
+                          <span className="inline-block text-[10px] font-extrabold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                            ✓ {lenderLocation.lendingRadiusKm || 50} KM Service Radius
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Card 2: Update Coordinates */}
+                      <div
+                        onClick={() => setIsLocationModalOpen(true)}
+                        className="p-4 rounded-2xl border border-slate-200 bg-white hover:border-blue-400 hover:bg-blue-50/30 transition-all cursor-pointer shadow-2xs flex flex-col justify-between space-y-2 group"
                       >
-                        <option value="80% - 90%">80% - 90% Success Rate (Recommended)</option>
-                        <option value="85% - 95%">85% - 95% Success Rate</option>
-                        <option value="90% - 98%">90% - 98% Success Rate</option>
-                        <option value="75% - 85%">75% - 85% Success Rate</option>
-                        <option value="95% - 100%">95% - 100% Success Rate</option>
-                        <option value="CUSTOM">✏️ Custom Success Rate Percentage...</option>
-                      </select>
-                      {!['80% - 90%', '85% - 95%', '90% - 98%', '75% - 85%', '95% - 100%'].includes(lenderEditForm.successRate) && (
-                        <input
-                          type="text"
-                          placeholder="e.g. 88% or 80% - 90%"
-                          value={lenderEditForm.successRate === 'Custom Rate' ? '' : lenderEditForm.successRate}
-                          onChange={(e) => setLenderEditForm({ ...lenderEditForm, successRate: e.target.value })}
-                          className="w-full mt-1.5 px-3 py-2 bg-white rounded-xl border-2 border-[#003893] font-bold text-slate-900 text-xs focus:outline-none"
-                          autoFocus
-                        />
-                      )}
+                        <div className="flex items-center gap-2 text-xs font-extrabold text-slate-900 group-hover:text-blue-700">
+                          <Compass className="w-4 h-4 text-blue-600 shrink-0" />
+                          <span>Update Coordinates</span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 font-medium leading-tight">
+                          Update location details
+                        </p>
+                        <div className="pt-1 text-[11px] font-bold text-blue-700 flex items-center gap-1">
+                          <span>Set Service Area →</span>
+                        </div>
+                      </div>
+
+                      {/* Card 3: Registered Office Location */}
+                      <a
+                        href={getGoogleMapsNavigationUrl(lenderLocation.latitude, lenderLocation.longitude, currentUserObj.name)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-4 rounded-2xl border border-slate-200 bg-white hover:border-purple-400 hover:bg-purple-50/30 transition-all cursor-pointer shadow-2xs flex flex-col justify-between space-y-2 group block"
+                      >
+                        <div className="flex items-center gap-2 text-xs font-extrabold text-slate-900 group-hover:text-purple-700">
+                          <Building2 className="w-4 h-4 text-purple-600 shrink-0" />
+                          <span>Office Branch Location</span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 font-medium leading-tight">
+                          View branch on map
+                        </p>
+                        <div className="pt-1 text-[11px] font-bold text-purple-700 flex items-center gap-1">
+                          <span>Google Maps ↗</span>
+                        </div>
+                      </a>
+
+                    </div>
+
+                    {/* Coordinates Bar */}
+                    <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-slate-600">
+                      <div>
+                        <span className="font-bold text-slate-800">{lenderLocation.place}, {lenderLocation.city}</span>
+                        <span className="text-slate-400"> ({lenderLocation.state})</span>
+                      </div>
+                      <div className="font-mono font-bold text-slate-700 text-[11px]">
+                        GPS: {Number(lenderLocation.latitude).toFixed(4)}, {Number(lenderLocation.longitude).toFixed(4)}
+                      </div>
                     </div>
                   </div>
                 )}
               </div>
 
-              {/* Mapbox Lending Area & Service Radius Section */}
-              <div className="space-y-4 border-t border-slate-100 pt-5">
-                <div className="flex items-center justify-between flex-wrap gap-2">
+              {/* ── ACCORDION 4: LENDING CRITERIA & TICKET SIZES ─────────── */}
+              <div className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200/90 shadow-sm overflow-hidden transition-all">
+                <button
+                  type="button"
+                  onClick={() => toggleSection('criteria')}
+                  className="w-full p-4 sm:p-5 flex items-center justify-between gap-3 text-left hover:bg-slate-50/70 transition-colors cursor-pointer"
+                >
+                  <div className="flex items-center gap-3.5 min-w-0">
+                    <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 shadow-2xs">
+                      <TrendingUp className="w-5 h-5 text-amber-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-extrabold text-slate-900 text-sm sm:text-base font-heading leading-tight">
+                        KYC & Lending Criteria Settings
+                      </h3>
+                      <p className="text-xs text-slate-500 font-medium leading-tight mt-0.5 truncate">
+                        View and manage your verification documents.
+                      </p>
+                    </div>
+                  </div>
+                  <ChevronDown
+                    className={`w-5 h-5 text-slate-400 shrink-0 transition-transform duration-200 ${
+                      expandedSections.criteria ? 'rotate-180 text-blue-600' : ''
+                    }`}
+                  />
+                </button>
+
+                {expandedSections.criteria && (
+                  <div className="p-4 sm:p-5 pt-0 border-t border-slate-100 space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                      <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
+                        <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block">Min Ticket Loan</span>
+                        <div className="font-extrabold text-slate-900 text-sm">
+                          ₹{Number(currentUserObj.minLoan || 10000).toLocaleString('en-IN')}
+                        </div>
+                      </div>
+
+                      <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
+                        <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block">Max Ticket Loan</span>
+                        <div className="font-extrabold text-slate-900 text-sm">
+                          ₹{Number(currentUserObj.maxLoan || 500000).toLocaleString('en-IN')}
+                        </div>
+                      </div>
+
+                      <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
+                        <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block">Coverage Radius</span>
+                        <div className="font-extrabold text-slate-900 text-sm">
+                          {lenderLocation.lendingRadiusKm || 50} KM
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* ── CARD 5: REFER & EARN ─────────────────────────────────── */}
+              <div
+                onClick={() => setReferModalOpen(true)}
+                className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200/90 shadow-sm p-4 sm:p-5 flex items-center justify-between gap-3 hover:bg-purple-50/30 hover:border-purple-300 transition-all cursor-pointer group active:scale-99"
+              >
+                <div className="flex items-center gap-3.5 min-w-0">
+                  <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+                    <Gift className="w-5 h-5 text-blue-600" />
+                  </div>
                   <div>
-                    <h4 className="font-extrabold text-slate-900 text-sm font-heading flex items-center gap-1.5">
-                      <Compass className="w-4 h-4 text-[#003893]" />
-                      <span>Lending Area & Geographic Service Radius</span>
-                    </h4>
-                    <p className="text-xs text-slate-500 font-medium mt-0.5">
-                      Set your office coordinates and active loan coverage radius using Mapbox
+                    <h3 className="font-extrabold text-slate-900 text-sm sm:text-base font-heading leading-tight group-hover:text-purple-900">
+                      Refer & Earn
+                    </h3>
+                    <p className="text-xs text-slate-500 font-medium leading-tight mt-0.5 truncate">
+                      Refer friends and earn exciting rewards.
                     </p>
                   </div>
+                </div>
+
+                <div className="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center group-hover:bg-purple-600 group-hover:text-white transition-colors shrink-0">
+                  <ChevronRight className="w-4 h-4" />
+                </div>
+              </div>
+
+              {/* ── CARD 6: ACCOUNT SESSION & SECURITY (LOGOUT) ─────────── */}
+              <div className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200/90 shadow-sm p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5">
+                <div>
+                  <h4 className="font-extrabold text-slate-900 text-sm sm:text-base font-heading leading-tight">
+                    Account Session & Security
+                  </h4>
+                  <p className="text-xs text-slate-500 font-medium leading-tight mt-0.5">
+                    Log out of your active JustPaisa app session on this device.
+                  </p>
+                </div>
+
+                {onLogout && (
                   <button
                     type="button"
-                    onClick={() => setIsLocationModalOpen(true)}
-                    className="px-4 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-[#003893] border border-blue-200 font-extrabold text-xs flex items-center gap-1.5 transition-all shadow-xs active:scale-95 cursor-pointer"
+                    onClick={() => onLogout('LENDER')}
+                    className="w-full sm:w-auto px-5 py-2 rounded-xl border border-rose-500 text-rose-600 hover:bg-rose-50 font-extrabold text-xs flex items-center justify-center gap-1.5 transition-all shadow-2xs active:scale-95 cursor-pointer"
                   >
-                    <Compass className="w-3.5 h-3.5" />
-                    <span>Edit Lending Area & Radius</span>
+                    <LogOut className="w-4 h-4 text-rose-600" />
+                    <span>Log Out</span>
                   </button>
-                </div>
-
-                {locationSuccessMsg && (
-                  <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-[#007a33] text-xs font-bold flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <span>{locationSuccessMsg}</span>
-                  </div>
                 )}
-
-                <div className="p-4 rounded-2xl bg-gradient-to-r from-blue-50/70 to-indigo-50/70 border border-blue-200/80 space-y-3">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      <MapPin className="w-5 h-5 text-rose-500 shrink-0" />
-                      <div>
-                        <div className="font-extrabold text-slate-900 text-sm">
-                          {lenderLocation.place}, {lenderLocation.city}
-                        </div>
-                        <div className="text-xs text-slate-500 font-medium">
-                          {lenderLocation.state}, {lenderLocation.country}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <span className="bg-[#003893] text-white px-3 py-1 rounded-full text-xs font-black shadow-xs">
-                        ⚡ {lenderLocation.lendingRadiusKm} KM Service Radius
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="pt-2 border-t border-blue-200/60 flex items-center justify-between text-[11px] text-slate-600 font-mono flex-wrap gap-2">
-                    <span>
-                      GPS: <strong>{Number(lenderLocation.latitude).toFixed(4)}</strong>,{' '}
-                      <strong>{Number(lenderLocation.longitude).toFixed(4)}</strong>
-                    </span>
-                    <span className="text-emerald-700 font-bold font-sans">
-                      ✓ Active & matching small businesses within {lenderLocation.lendingRadiusKm} KM
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Bottom Sticky Save Action Bar in Edit Mode */}
-              {isEditingLenderProfile && (
-                <div className="p-4 rounded-2xl bg-gradient-to-r from-slate-900 to-blue-950 text-white flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shadow-lg">
-                  <div className="text-xs">
-                    <span className="font-bold text-white block">Ready to apply financer profile changes?</span>
-                    <span className="text-[11px] text-blue-200">Your profile, avatar photo, and ticket limits will instantly update across the platform.</span>
-                  </div>
-                  <div className="flex items-center gap-2 w-full sm:w-auto">
-                    <button
-                      type="button"
-                      onClick={() => setIsEditingLenderProfile(false)}
-                      className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs transition-colors cursor-pointer text-center"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleSaveLenderProfile}
-                      disabled={isSavingLenderProfile}
-                      className="flex-1 sm:flex-none px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold text-xs shadow-md transition-all active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer"
-                    >
-                      {isSavingLenderProfile ? (
-                        <>
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          <span>Saving...</span>
-                        </>
-                      ) : (
-                        <>
-                          <CheckCircle2 className="w-3.5 h-3.5 text-white" />
-                          <span>Save & Apply</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* SECTION: Account Session & Logout */}
-              <div className="pt-6 border-t border-slate-200 space-y-4">
-                <div className="flex items-center justify-between flex-wrap gap-3">
-                  <div>
-                    <h4 className="font-extrabold text-slate-900 text-sm font-heading">Account Session & Security</h4>
-                    <p className="text-xs text-slate-500 font-medium mt-0.5">
-                      Log out of your active Just Paisa App session on this device
-                    </p>
-                  </div>
-                  {onLogout && (
-                    <button
-                      type="button"
-                      onClick={() => onLogout('LENDER')}
-                      className="w-full sm:w-auto px-6 py-2.5 rounded-2xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-extrabold text-xs border border-rose-200 flex items-center justify-center gap-2 transition-all shadow-sm active:scale-95 cursor-pointer"
-                    >
-                      <LogOut className="w-4 h-4 text-rose-600" />
-                      <span>Log Out Account</span>
-                    </button>
-                  )}
-                </div>
               </div>
 
             </div>
-          </div>
-        )
-      )}
+          )
+        )}
 
       </div>
 
