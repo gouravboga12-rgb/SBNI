@@ -198,9 +198,10 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
     | 'fraud_reports'
     | 'vendor_revenue'
     | 'lender_revenue'
+    | 'referrals'
+    | 'referral_rules'
     | 'vendor_subs'
     | 'lender_subs'
-    | 'referrals'
     | 'audits'
   >('overview');
 
@@ -1876,10 +1877,20 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
       badgeColor: 'bg-emerald-100 text-[#007a33]',
     },
     {
-      id: 'referrals' as const,
-      label: 'Referrals',
-      fullLabel: 'Manage Referrals',
+      id: 'referral_rules' as const,
+      label: 'Manage Referrals',
+      fullLabel: 'Manage Referrals (Plan Rules)',
       icon: Gift,
+      activeClass: 'bg-gradient-to-r from-purple-700 to-indigo-700 text-white shadow-md',
+      pillActiveClass: 'bg-purple-700 text-white shadow-sm',
+      badge: planReferralRules.length > 0 ? planReferralRules.length : undefined,
+      badgeColor: 'bg-purple-100 text-purple-700',
+    },
+    {
+      id: 'referrals' as const,
+      label: 'Track Referrals',
+      fullLabel: 'Track All Referrals',
+      icon: Users,
       activeClass: 'bg-gradient-to-r from-purple-700 to-indigo-700 text-white shadow-md',
       pillActiveClass: 'bg-purple-700 text-white shadow-sm',
       badge: referralStats.totalInvites,
@@ -2360,17 +2371,25 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
                   <Gift className="w-5 h-5" />
                 </div>
                 <h3 className="text-lg font-extrabold font-heading text-white">
-                  Manage Referrals & Payouts
+                  Referral System & Rewards
                 </h3>
                 <p className="text-xs text-purple-200 font-medium">
-                  Audit user referral links, track signups, reward amounts, and approve commission payouts.
+                  Configure plan-wise referrer rewards & referee cashbacks, or track all live partner referrals and commission payouts.
                 </p>
-                <button
-                  onClick={() => setActiveTab('referrals')}
-                  className="py-2.5 px-4 bg-purple-600 text-white hover:bg-purple-700 font-extrabold text-xs rounded-xl transition-all shadow-md active:scale-95 border border-purple-400"
-                >
-                  Open Referrals Manager ➔
-                </button>
+                <div className="flex flex-wrap gap-2 pt-1">
+                  <button
+                    onClick={() => setActiveTab('referral_rules')}
+                    className="py-2 px-3 bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-xs rounded-xl transition-all shadow-md active:scale-95 border border-purple-400 cursor-pointer"
+                  >
+                    Manage Rules ➔
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('referrals')}
+                    className="py-2 px-3 bg-white/10 hover:bg-white/20 text-white font-extrabold text-xs rounded-xl transition-all shadow-md active:scale-95 border border-white/20 cursor-pointer"
+                  >
+                    Track All Referrals ➔
+                  </button>
+                </div>
               </div>
 
               <div className="bg-gradient-to-br from-rose-900 via-rose-950 to-slate-900 text-white p-6 rounded-3xl shadow-lg space-y-3">
@@ -3129,9 +3148,9 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
         )}
 
         {/* ========================================================================= */}
-        {/* TAB 4: MANAGE REFERRALS PAGE                                             */}
+        {/* TAB: MANAGE REFERRALS (PLAN-WISE REWARDS CONFIGURATION ONLY)              */}
         {/* ========================================================================= */}
-        {activeTab === 'referrals' && (
+        {activeTab === 'referral_rules' && (
           <div className="space-y-6">
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200">
@@ -3141,84 +3160,74 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
                     <Gift className="w-5 h-5" />
                   </div>
                   <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-heading tracking-tight">
-                    Manage Referrals & Partner Commissions
+                    Manage Referrals
                   </h1>
                 </div>
                 <p className="text-xs text-slate-500 font-medium mt-0.5">
-                  Track user referral codes, monitor invited signups, and process commission payouts
+                  Configure custom Referrer wallet rewards and Referee welcome cashback amounts per subscription tier
                 </p>
               </div>
 
               <div className="flex items-center gap-2.5">
                 <button
                   onClick={() => setReferralSettingsModalOpen(true)}
-                  className="px-4 py-2.5 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-300 font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 active:scale-95"
+                  className="px-4 py-2.5 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-300 font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer"
                 >
-                  <Sliders className="w-4 h-4 text-purple-600" /> Referral Settings
+                  <Sliders className="w-4 h-4 text-purple-600" /> Global Referral Settings
                 </button>
                 <button
-                  onClick={() => exportToCsv(filteredReferrals, 'JustPaisa_Referrals_Report')}
-                  className="px-4 py-2.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 active:scale-95"
+                  type="button"
+                  onClick={loadAdminReferralsAndRules}
+                  className="px-4 py-2.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer"
+                  title="Reload Plan Rules"
                 >
-                  <Download className="w-4 h-4 text-purple-600" /> Export CSV
+                  <RefreshCw className="w-4 h-4 text-purple-600" /> Reload Rules
                 </button>
               </div>
             </div>
 
-            {/* Calculated KPI Cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
-              <div className="bg-gradient-to-br from-purple-700 to-indigo-800 text-white p-3.5 sm:p-4 rounded-2xl shadow-md space-y-1">
-                <div className="text-[9px] sm:text-[10px] text-purple-200 font-extrabold uppercase tracking-wider">
-                  Total Invites
-                </div>
-                <div className="text-base sm:text-xl lg:text-2xl font-extrabold font-heading truncate">
-                  {referralStats.totalInvites}
-                </div>
-                <div className="text-[9px] sm:text-[10px] text-purple-200 font-medium">Generated Links</div>
-              </div>
-
+            {/* Quick Summary Highlights for Settings */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
               <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-xs space-y-1">
                 <div className="text-[9px] sm:text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">
-                  Rewards Paid Out
+                  Configured Plans
                 </div>
-                <div className="text-base sm:text-xl lg:text-2xl font-extrabold text-emerald-600 font-heading truncate">
-                  ₹{referralStats.totalPaidAmount.toLocaleString('en-IN')}
+                <div className="text-base sm:text-xl font-extrabold text-purple-700 font-heading truncate">
+                  {planReferralRules.length} Tiers
                 </div>
                 <div className="text-[9px] sm:text-[10px] text-slate-400 font-medium">
-                  {referralStats.paidCount} Successful
+                  {planReferralRules.filter((p) => p.referralEnabled !== false).length} Active Rules
                 </div>
               </div>
 
               <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-xs space-y-1">
                 <div className="text-[9px] sm:text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">
-                  Pending Payouts
+                  Default Shop Reward
                 </div>
-                <div className="text-base sm:text-xl lg:text-2xl font-extrabold text-amber-600 font-heading truncate">
-                  ₹{referralStats.pendingPayoutAmount.toLocaleString('en-IN')}
+                <div className="text-base sm:text-xl font-extrabold text-slate-800 font-heading truncate">
+                  ₹{referralVendorReward}
                 </div>
-                <div className="text-[9px] sm:text-[10px] text-slate-400 font-medium">
-                  {referralStats.readyCount} Awaiting Action
-                </div>
+                <div className="text-[9px] sm:text-[10px] text-emerald-600 font-medium">Per Vendor Signup</div>
               </div>
 
               <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-xs space-y-1">
                 <div className="text-[9px] sm:text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">
-                  Conversion Rate
+                  Default Financer Reward
                 </div>
-                <div className="text-base sm:text-xl lg:text-2xl font-extrabold text-purple-700 font-heading truncate">
-                  {referralStats.conversionRate}%
+                <div className="text-base sm:text-xl font-extrabold text-slate-800 font-heading truncate">
+                  ₹{referralLenderReward}
                 </div>
-                <div className="text-[9px] sm:text-[10px] text-slate-400 font-medium">Verified Signups</div>
+                <div className="text-[9px] sm:text-[10px] text-emerald-600 font-medium">Per Lender Signup</div>
               </div>
 
-              <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-xs space-y-1 col-span-2 sm:col-span-1">
+              <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-xs space-y-1">
                 <div className="text-[9px] sm:text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">
-                  Commission Rate
+                  Referee Discount
                 </div>
-                <div className="text-xs sm:text-sm font-extrabold text-slate-800 truncate">
-                  ₹{referralVendorReward} <span className="text-[10px] text-slate-500 font-normal">(Shop)</span> / ₹{referralLenderReward} <span className="text-[10px] text-slate-500 font-normal">(Financer)</span>
+                <div className="text-base sm:text-xl font-extrabold text-purple-700 font-heading truncate">
+                  {referralDiscountPct}% OFF
                 </div>
-                <div className="text-[9px] sm:text-[10px] text-emerald-600 font-semibold">{referralDiscountPct}% Referee Discount</div>
+                <div className="text-[9px] sm:text-[10px] text-slate-400 font-medium">Checkout Welcome Benefit</div>
               </div>
             </div>
 
@@ -3238,15 +3247,6 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
                     </p>
                   </div>
                 </div>
-
-                <button
-                  type="button"
-                  onClick={loadAdminReferralsAndRules}
-                  className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold transition-colors self-start sm:self-auto cursor-pointer"
-                  title="Reload Plan Rules"
-                >
-                  <RefreshCw className="w-4 h-4" />
-                </button>
               </div>
 
               <div className="overflow-x-auto">
@@ -3378,6 +3378,104 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
                     )}
                   </tbody>
                 </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ========================================================================= */}
+        {/* TAB 4: TRACK ALL REFERRALS PAGE                                          */}
+        {/* ========================================================================= */}
+        {activeTab === 'referrals' && (
+          <div className="space-y-6">
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200">
+              <div>
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-bold">
+                    <Users className="w-5 h-5" />
+                  </div>
+                  <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-heading tracking-tight">
+                    Track All Referrals & Partner Commissions
+                  </h1>
+                </div>
+                <p className="text-xs text-slate-500 font-medium mt-0.5">
+                  Track user referral codes, monitor invited signups, search & filter records, and process commission payouts
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2.5">
+                <button
+                  onClick={() => exportToCsv(filteredReferrals, 'JustPaisa_Referrals_Report')}
+                  className="px-4 py-2.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer"
+                >
+                  <Download className="w-4 h-4 text-purple-600" /> Export CSV
+                </button>
+                <button
+                  type="button"
+                  onClick={loadAdminReferralsAndRules}
+                  className="px-4 py-2.5 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-300 font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer"
+                  title="Refresh Live Data"
+                >
+                  <RefreshCw className="w-4 h-4 text-purple-600" /> Refresh Data
+                </button>
+              </div>
+            </div>
+
+            {/* Calculated KPI Cards */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
+              <div className="bg-gradient-to-br from-purple-700 to-indigo-800 text-white p-3.5 sm:p-4 rounded-2xl shadow-md space-y-1">
+                <div className="text-[9px] sm:text-[10px] text-purple-200 font-extrabold uppercase tracking-wider">
+                  Total Invites
+                </div>
+                <div className="text-base sm:text-xl lg:text-2xl font-extrabold font-heading truncate">
+                  {referralStats.totalInvites}
+                </div>
+                <div className="text-[9px] sm:text-[10px] text-purple-200 font-medium">Generated Links</div>
+              </div>
+
+              <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-xs space-y-1">
+                <div className="text-[9px] sm:text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">
+                  Rewards Paid Out
+                </div>
+                <div className="text-base sm:text-xl lg:text-2xl font-extrabold text-emerald-600 font-heading truncate">
+                  ₹{referralStats.totalPaidAmount.toLocaleString('en-IN')}
+                </div>
+                <div className="text-[9px] sm:text-[10px] text-slate-400 font-medium">
+                  {referralStats.paidCount} Successful
+                </div>
+              </div>
+
+              <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-xs space-y-1">
+                <div className="text-[9px] sm:text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">
+                  Pending Payouts
+                </div>
+                <div className="text-base sm:text-xl lg:text-2xl font-extrabold text-amber-600 font-heading truncate">
+                  ₹{referralStats.pendingPayoutAmount.toLocaleString('en-IN')}
+                </div>
+                <div className="text-[9px] sm:text-[10px] text-slate-400 font-medium">
+                  {referralStats.readyCount} Awaiting Action
+                </div>
+              </div>
+
+              <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-xs space-y-1">
+                <div className="text-[9px] sm:text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">
+                  Conversion Rate
+                </div>
+                <div className="text-base sm:text-xl lg:text-2xl font-extrabold text-purple-700 font-heading truncate">
+                  {referralStats.conversionRate}%
+                </div>
+                <div className="text-[9px] sm:text-[10px] text-slate-400 font-medium">Verified Signups</div>
+              </div>
+
+              <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-xs space-y-1 col-span-2 sm:col-span-1">
+                <div className="text-[9px] sm:text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">
+                  Commission Rate
+                </div>
+                <div className="text-xs sm:text-sm font-extrabold text-slate-800 truncate">
+                  ₹{referralVendorReward} <span className="text-[10px] text-slate-500 font-normal">(Shop)</span> / ₹{referralLenderReward} <span className="text-[10px] text-slate-500 font-normal">(Financer)</span>
+                </div>
+                <div className="text-[9px] sm:text-[10px] text-emerald-600 font-semibold">{referralDiscountPct}% Referee Discount</div>
               </div>
             </div>
 
