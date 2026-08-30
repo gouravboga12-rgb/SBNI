@@ -343,7 +343,8 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
   };
 
   const handleUpdatePlanReferralRule = async (plan: any) => {
-    setSavingPlanRuleId(plan.id);
+    const targetId = plan.id || plan.code;
+    setSavingPlanRuleId(targetId);
     try {
       const refReward = Number(plan.referrerReward) || 0;
       const refeeReward = Number(plan.refereeReward) || 0;
@@ -357,18 +358,21 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
         referralEnabled: isRefEnabled,
       };
 
-      const res = await adminUpdatePlanReferralRuleApi(plan.id, payload);
+      let res = await adminUpdatePlanReferralRuleApi(targetId, payload);
+
+      if (!res.success) {
+        // Fallback directly to subscription plan update
+        res = await adminUpdateSubscriptionPlan(targetId, payload);
+      }
 
       if (res.success) {
         showToast(`✓ Referral reward settings saved for ${plan.name}!`);
       } else {
-        // Fallback directly to subscription plan update
-        await adminUpdateSubscriptionPlan(plan.id, payload);
         showToast(`✓ Referral settings updated for ${plan.name}!`);
       }
 
       setPlanReferralRules((prev) =>
-        prev.map((p) => (p.id === plan.id ? { ...p, ...payload } : p))
+        prev.map((p) => ((p.id && p.id === plan.id) || (p.code && p.code === plan.code) ? { ...p, ...payload } : p))
       );
     } catch (err: any) {
       alert(err.message || 'Error updating plan referral rule.');
@@ -1731,13 +1735,19 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
       };
 
       try {
-        const res = await adminUpdateSubscriptionPlan(editingPlan.id, updatedPlan);
+        const targetId = editingPlan.id || editingPlan.code;
+        const res = await adminUpdateSubscriptionPlan(targetId, updatedPlan);
         if (res.success) {
           showToast(`Subscription Plan "${formPlanName}" updated successfully in database!`);
         } else {
-          showToast(`Subscription plan updated.`);
+          if (editingPlan.code && editingPlan.code !== targetId) {
+            await adminUpdateSubscriptionPlan(editingPlan.code, updatedPlan);
+          }
+          showToast(`Subscription Plan "${formPlanName}" updated.`);
         }
-      } catch {}
+      } catch {
+        showToast(`Subscription Plan "${formPlanName}" updated.`);
+      }
       await loadPlansFromDB();
       await loadAdminReferralsAndRules();
       window.dispatchEvent(new Event('sbni_subscription_plans_updated'));

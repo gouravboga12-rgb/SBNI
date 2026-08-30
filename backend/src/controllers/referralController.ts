@@ -322,8 +322,17 @@ export const updatePlanReferralRule = async (req: AuthenticatedRequest, res: Res
       return res.status(400).json({ success: false, message: 'Plan ID is required.' });
     }
 
-    const plan = await prisma.subscriptionPlan.findUnique({
-      where: { id: planId },
+    const cleanCode = String(planId).toUpperCase().replace(/\s+/g, '_');
+    const plan = await prisma.subscriptionPlan.findFirst({
+      where: {
+        OR: [
+          { id: planId },
+          { code: planId },
+          { code: cleanCode },
+          { code: `VENDOR_${cleanCode}` },
+          { code: `LENDER_${cleanCode}` },
+        ],
+      },
     });
 
     if (!plan) {
@@ -336,7 +345,7 @@ export const updatePlanReferralRule = async (req: AuthenticatedRequest, res: Res
       Number(adminShare) >= 0 ? Number(adminShare) : Math.max(0, plan.price - refReward - refeeReward);
 
     const updatedPlan = await prisma.subscriptionPlan.update({
-      where: { id: planId },
+      where: { id: plan.id },
       data: {
         referrerReward: refReward,
         refereeReward: refeeReward,
