@@ -3268,12 +3268,6 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
 
                 <div className="flex flex-wrap items-center gap-2.5">
                   <button
-                    onClick={() => setReferralSettingsModalOpen(true)}
-                    className="px-4 py-2.5 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-300 font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer"
-                  >
-                    <Sliders className="w-4 h-4 text-purple-600" /> Global Defaults
-                  </button>
-                  <button
                     type="button"
                     onClick={handleSaveAllPlanRules}
                     disabled={isSavingAllRules}
@@ -4980,115 +4974,6 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
           </div>
         )}
       </main>
-
-      {/* ========================================================================= */}
-      {/* MODAL: REFERRAL CAMPAIGN SETTINGS                                        */}
-      {/* ========================================================================= */}
-      {referralSettingsModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-          <div className="w-full max-w-md bg-white border border-slate-200 rounded-3xl p-5 sm:p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div className="flex items-center gap-2">
-                <Gift className="w-5 h-5 text-purple-600" />
-                <h3 className="text-base font-extrabold text-slate-900 font-heading">
-                  Referral Campaign Rules
-                </h3>
-              </div>
-              <button
-                onClick={() => setReferralSettingsModalOpen(false)}
-                className="text-slate-400 hover:text-slate-700 p-1"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="space-y-3 text-xs">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Vendor Signup Reward (₹) *
-                </label>
-                <input
-                  type="number"
-                  value={referralVendorReward}
-                  onChange={(e) => setReferralVendorReward(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 outline-none focus:border-purple-600"
-                  placeholder="200"
-                />
-                <p className="text-[10px] text-slate-500 mt-0.5">
-                  Amount credited to partner when invited shop owner joins
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Financer Signup Reward (₹) *
-                </label>
-                <input
-                  type="number"
-                  value={referralLenderReward}
-                  onChange={(e) => setReferralLenderReward(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 outline-none focus:border-purple-600"
-                  placeholder="500"
-                />
-                <p className="text-[10px] text-slate-500 mt-0.5">
-                  Amount credited when invited financer registers & verifies
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Referee Welcome Discount (% OFF) *
-                </label>
-                <input
-                  type="number"
-                  value={referralDiscountPct}
-                  onChange={(e) => setReferralDiscountPct(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 outline-none focus:border-purple-600"
-                  placeholder="15"
-                />
-                <p className="text-[10px] text-slate-500 mt-0.5">
-                  Discount applied on their first subscription purchase
-                </p>
-              </div>
-
-              <div className="flex items-center justify-between p-3 bg-purple-50 rounded-2xl border border-purple-200">
-                <span className="font-bold text-purple-900">Program Status</span>
-                <button
-                  type="button"
-                  onClick={() => setReferralProgramActive(!referralProgramActive)}
-                  className={`px-3 py-1 rounded-full text-[10px] font-extrabold ${
-                    referralProgramActive
-                      ? 'bg-emerald-600 text-white'
-                      : 'bg-slate-400 text-white'
-                  }`}
-                >
-                  {referralProgramActive ? 'ACTIVE' : 'PAUSED'}
-                </button>
-              </div>
-
-              <div className="flex gap-2 pt-3">
-                <button
-                  type="button"
-                  onClick={() => setReferralSettingsModalOpen(false)}
-                  className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold rounded-xl transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setReferralSettingsModalOpen(false);
-                    showToast('✅ Referral campaign settings updated successfully!');
-                  }}
-                  className="flex-1 py-2.5 bg-purple-700 hover:bg-purple-800 text-white font-extrabold rounded-xl shadow-md transition-all active:scale-95"
-                >
-                  Save Settings
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* ========================================================================= */}
       {/* MODAL: CREATE / EDIT SUBSCRIPTION PLAN                                    */}
