@@ -315,10 +315,11 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
       }
 
       if (rulesRes?.success && Array.isArray(rulesRes.data) && rulesRes.data.length > 0) {
-        setPlanReferralRules(rulesRes.data);
+        const activeRules = rulesRes.data.filter((p: any) => p.isActive !== false);
+        setPlanReferralRules(activeRules);
       } else {
         // Fallback to loaded vendorPlans & lenderPlans
-        const combined = [...vendorPlans, ...lenderPlans];
+        const combined = [...vendorPlans, ...lenderPlans].filter((p) => p.isActive !== false);
         if (combined.length > 0) {
           const mapped = combined.map((p) => ({
             id: p.id,
@@ -331,7 +332,7 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
             refereeReward: (p as any).refereeReward !== undefined ? Number((p as any).refereeReward) : 0,
             adminShare: (p as any).adminShare !== undefined ? Number((p as any).adminShare) : Math.max(0, Number(p.price) - (p.roleTarget === 'LENDER' ? 500 : 200)),
             referralEnabled: (p as any).referralEnabled !== false,
-            isActive: p.isActive !== false,
+            isActive: true,
           }));
           setPlanReferralRules(mapped);
         }
@@ -1940,7 +1941,9 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
       icon: Gift,
       activeClass: 'bg-gradient-to-r from-purple-700 to-indigo-700 text-white shadow-md',
       pillActiveClass: 'bg-purple-700 text-white shadow-sm',
-      badge: planReferralRules.length > 0 ? planReferralRules.length : undefined,
+      badge: (planReferralRules.filter((p) => p.isActive !== false).length > 0
+        ? planReferralRules.filter((p) => p.isActive !== false).length
+        : (vendorPlans.filter((p) => p.isActive !== false).length + lenderPlans.filter((p) => p.isActive !== false).length)) || undefined,
       badgeColor: 'bg-purple-100 text-purple-700',
     },
     {
@@ -3209,7 +3212,7 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
         {/* ========================================================================= */}
         {activeTab === 'referral_rules' && (() => {
           // Derive active rules list with fallback to live vendor & lender plans
-          const activeRulesList = planReferralRules.length > 0
+          const activeRulesList = (planReferralRules.length > 0
             ? planReferralRules
             : [...vendorPlans, ...lenderPlans].map((p) => ({
                 id: p.id,
@@ -3223,7 +3226,8 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
                 adminShare: (p as any).adminShare !== undefined ? Number((p as any).adminShare) : Math.max(0, Number(p.price) - (p.roleTarget === 'LENDER' ? 500 : 200)),
                 referralEnabled: (p as any).referralEnabled !== false,
                 isActive: p.isActive !== false,
-              }));
+              }))
+          ).filter((p) => p.isActive !== false);
 
           const filteredRules = activeRulesList.filter((r) => {
             if (planRulesRoleFilter === 'ALL') return true;

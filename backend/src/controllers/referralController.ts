@@ -279,6 +279,7 @@ export const getAdminReferrals = async (_req: AuthenticatedRequest, res: Respons
 export const getPlanReferralRules = async (_req: AuthenticatedRequest, res: Response) => {
   try {
     const plans = await prisma.subscriptionPlan.findMany({
+      where: { isActive: true },
       orderBy: [{ roleTarget: 'asc' }, { price: 'asc' }],
     });
 
