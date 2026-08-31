@@ -70,6 +70,7 @@ import {
   adminUpdatePlanReferralRuleApi,
   safeSetLocalStorage,
 } from '../services/api';
+import { initSocket, onSocketEvent } from '../services/socketService';
 import { SBNILogo } from '../components/SBNILogo';
 
 interface VendorData {
@@ -986,17 +987,47 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
     loadPlansFromDB();
     loadAdminReferralsAndRules();
 
-    // Auto-poll live database every 8 seconds for real-time live sync across devices
-    const pollInterval = setInterval(() => {
+    // ⚡ Real-Time WebSocket Push Subscriptions (Zero page refresh needed)
+    initSocket();
+
+    const unsubLeadNew = onSocketEvent('lead:new', () => {
       loadAdminVendorsAndLenders();
-      loadAdminPayments();
+    });
+
+    const unsubLeadStatus = onSocketEvent('lead:status_updated', () => {
+      loadAdminVendorsAndLenders();
+    });
+
+    const unsubFraud = onSocketEvent('fraud:alert', () => {
       loadFraudReports();
+      loadAdminVendorsAndLenders();
+    });
+
+    const unsubLender = onSocketEvent('lender:updated', () => {
+      loadAdminVendorsAndLenders();
+    });
+
+    const unsubVendor = onSocketEvent('vendor:updated', () => {
+      loadAdminVendorsAndLenders();
+    });
+
+    const unsubSub = onSocketEvent('subscription:updated', () => {
+      loadAdminPayments();
       loadPlansFromDB();
+    });
+
+    const unsubWallet = onSocketEvent('wallet:updated', () => {
       loadAdminReferralsAndRules();
-    }, 8000);
+    });
 
     return () => {
-      clearInterval(pollInterval);
+      unsubLeadNew();
+      unsubLeadStatus();
+      unsubFraud();
+      unsubLender();
+      unsubVendor();
+      unsubSub();
+      unsubWallet();
       window.removeEventListener('sbni_admin_auth_expired', handleAuthExpired);
       window.removeEventListener('sbni_fraud_reported', handleDataSync);
       window.removeEventListener('sbni_fraud_updated', handleDataSync);

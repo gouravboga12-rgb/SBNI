@@ -15,6 +15,7 @@ import {
   cancelAutoPayApi,
   getToken,
 } from '../services/api';
+import { initSocket, onSocketEvent } from '../services/socketService';
 import { LocationPickerModal } from '../components/LocationPickerModal';
 import { getGoogleMapsNavigationUrl } from '../services/mapboxService';
 import {
@@ -1050,6 +1051,28 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
       );
     };
 
+    // ⚡ Real-Time WebSocket Push Subscriptions (Zero page refresh needed)
+    initSocket();
+
+    const unsubLeadNew = onSocketEvent('lead:new', (data) => {
+      console.log('⚡ [Real-Time Socket] Incoming new loan application / enquiry:', data);
+      loadVendorRequests();
+    });
+
+    const unsubLeadStatus = onSocketEvent('lead:status_updated', (data) => {
+      console.log('⚡ [Real-Time Socket] Lead status update received:', data);
+      loadVendorRequests();
+    });
+
+    const unsubLeadDeleted = onSocketEvent('lead:deleted', (data) => {
+      console.log('⚡ [Real-Time Socket] Lead deletion received:', data);
+      loadVendorRequests();
+    });
+
+    const unsubVendorUpdated = onSocketEvent('vendor:updated', () => {
+      loadNearbyBusinesses();
+    });
+
     window.addEventListener('sbni_request_submitted', handleSync);
     window.addEventListener('sbni_subscription_updated', handleSync);
     window.addEventListener('sbni_vendor_deleted', handleSync);
@@ -1058,6 +1081,10 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
     window.addEventListener('storage', handleSync);
 
     return () => {
+      unsubLeadNew();
+      unsubLeadStatus();
+      unsubLeadDeleted();
+      unsubVendorUpdated();
       window.removeEventListener('sbni_request_submitted', handleSync);
       window.removeEventListener('sbni_subscription_updated', handleSync);
       window.removeEventListener('sbni_vendor_deleted', handleSync);

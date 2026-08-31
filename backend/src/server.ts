@@ -1,10 +1,13 @@
+import http from 'http';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
+import path from 'path';
 import apiRouter from './routes';
 import { globalErrorHandler } from './middlewares/errorHandler';
+import { initSocketServer } from './services/socketService';
 
 dotenv.config();
 
@@ -48,11 +51,10 @@ app.get('/health', (req, res) => {
   res.json({
     status: 'online',
     platform: 'SBNI Money App - Enterprise FinTech Loan Marketplace API',
+    realtime: 'Socket.IO Real-Time Engine Active',
     timestamp: new Date().toISOString(),
   });
 });
-
-import path from 'path';
 
 // Serve uploaded files statically from EC2 disk
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
@@ -63,10 +65,15 @@ app.use('/api/v1', apiRouter);
 // Global Error Handler
 app.use(globalErrorHandler);
 
-// Start Express Server
-app.listen(PORT, () => {
-  console.log(`🚀 SBNI Money App API Backend running on http://localhost:${PORT}`);
+// Create HTTP Server & Attach Socket.IO
+const httpServer = http.createServer(app);
+initSocketServer(httpServer);
+
+// Start Server
+httpServer.listen(PORT, () => {
+  console.log(`🚀 SBNI Money App API Backend + Real-Time Engine running on http://localhost:${PORT}`);
   console.log(`📡 Environment: ${process.env.NODE_ENV || 'development'}`);
 });
 
+export { app, httpServer };
 export default app;

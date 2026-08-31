@@ -20,6 +20,7 @@ import {
   cancelAutoPayApi,
   getToken,
 } from '../services/api';
+import { initSocket, onSocketEvent } from '../services/socketService';
 import {
   downloadDocumentFile,
   resolveDocumentUrl,
@@ -292,9 +293,43 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
   useEffect(() => {
     loadVendorApplications();
 
+    // ⚡ Real-Time WebSocket Push Subscriptions (Zero page refresh needed)
+    initSocket();
+
+    const unsubLeadStatus = onSocketEvent('lead:status_updated', (data) => {
+      console.log('⚡ [Real-Time Socket] Loan Application status updated:', data);
+      loadVendorApplications();
+      window.dispatchEvent(new CustomEvent('sbni_application_status_changed', { detail: data }));
+    });
+
+    const unsubLeadDeleted = onSocketEvent('lead:deleted', (data) => {
+      console.log('⚡ [Real-Time Socket] Loan Application deleted:', data);
+      loadVendorApplications();
+    });
+
+    const unsubLenderUpdated = onSocketEvent('lender:updated', () => {
+      console.log('⚡ [Real-Time Socket] Financers / Lenders updated:');
+      window.dispatchEvent(new CustomEvent('sbni_lender_profile_updated'));
+    });
+
+    const unsubWalletUpdated = onSocketEvent('wallet:updated', (data) => {
+      console.log('⚡ [Real-Time Socket] Wallet Balance updated:', data);
+      window.dispatchEvent(new CustomEvent('sbni_wallet_updated', { detail: data }));
+    });
+
+    const unsubKycUpdated = onSocketEvent('kyc:status_updated', (data) => {
+      console.log('⚡ [Real-Time Socket] KYC Status updated:', data);
+      window.dispatchEvent(new CustomEvent('sbni_vendor_profile_updated', { detail: data }));
+    });
+
     window.addEventListener('sbni_request_submitted', loadVendorApplications);
     window.addEventListener('storage', loadVendorApplications);
     return () => {
+      unsubLeadStatus();
+      unsubLeadDeleted();
+      unsubLenderUpdated();
+      unsubWalletUpdated();
+      unsubKycUpdated();
       window.removeEventListener('sbni_request_submitted', loadVendorApplications);
       window.removeEventListener('storage', loadVendorApplications);
     };

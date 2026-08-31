@@ -3,6 +3,7 @@ import prisma from '../config/prisma';
 import { AuthenticatedRequest } from '../middlewares/auth';
 import { LenderType } from '@prisma/client';
 import { calculateDistanceKm } from '../utils/distance';
+import { emitToUser, emitToRole, emitToAdmin } from '../services/socketService';
 
 const mapLenderTypeEnum = (type?: string): LenderType => {
   if (!type) return 'NBFC';
@@ -137,6 +138,10 @@ export const updateLenderProfile = async (req: AuthenticatedRequest, res: Respon
       logoUrl: effectiveAvatar,
     },
   });
+
+  // Real-time broadcast lender profile update to all vendors and admin
+  emitToRole('VENDOR', 'lender:updated', { lender: profile });
+  emitToAdmin('lender:updated', { lender: profile });
 
   res.json({ success: true, message: 'Lender institution profile and lending area updated successfully.', data: profile });
 };
@@ -349,7 +354,53 @@ export const ingestLead = async (req: AuthenticatedRequest, res: Response) => {
         notes: leadNotes,
         vendorSnapshot: JSON.stringify(snap),
       },
+      include: {
+        vendor: {
+          select: {
+            id: true,
+            userId: true,
+            businessName: true,
+            ownerName: true,
+            annualTurnover: true,
+            category: true,
+            city: true,
+            state: true,
+            address: true,
+            isFraud: true,
+            avatarUrl: true,
+            panFileUrl: true,
+            aadhaarFileUrl: true,
+            businessLicenseUrl: true,
+            gstFileUrl: true,
+            shopPhotos: true,
+            user: { select: { email: true, phone: true, isVerified: true } },
+          },
+        },
+      },
     });
+
+    // Real-time broadcast to lender's private room & admin room
+    try {
+      const targetLender = await prisma.lenderProfile.findFirst({
+        where: {
+          OR: [
+            { id: lenderId },
+            { userId: lenderId },
+            { registrationNumber: lenderId },
+            { institutionName: lenderId },
+          ],
+        },
+        select: { userId: true, id: true, institutionName: true },
+      });
+
+      if (targetLender?.userId) {
+        emitToUser(targetLender.userId, 'lead:new', lead);
+      }
+      emitToUser(lenderId, 'lead:new', lead);
+      emitToAdmin('lead:new', lead);
+    } catch (socketErr) {
+      console.warn('Socket broadcast error in ingestLead:', socketErr);
+    }
 
     res.status(201).json({
       success: true,
@@ -423,10 +474,42 @@ export const updateLeadStatus = async (req: AuthenticatedRequest, res: Response)
       return res.status(400).json({ success: false, message: 'Status is required.' });
     }
 
+    const existingLead = await (prisma as any).financingLead.findUnique({
+      where: { id: leadId },
+      include: {
+        vendor: { select: { userId: true } },
+      },
+    });
+
     const lead = await (prisma as any).financingLead.update({
       where: { id: leadId },
       data: { status },
+      include: {
+        vendor: {
+          select: {
+            id: true,
+            userId: true,
+            businessName: true,
+            ownerName: true,
+            user: { select: { email: true, phone: true } },
+          },
+        },
+      },
     });
+
+    // Real-time broadcast: notify vendor of status update instantly without refresh
+    try {
+      if (existingLead?.vendor?.userId) {
+        emitToUser(existingLead.vendor.userId, 'lead:status_updated', {
+          leadId,
+          status,
+          lead,
+        });
+      }
+      emitToAdmin('lead:status_updated', { leadId, status, lead });
+    } catch (socketErr) {
+      console.warn('Socket broadcast error in updateLeadStatus:', socketErr);
+    }
 
     res.json({
       success: true,
@@ -441,11 +524,30 @@ export const updateLeadStatus = async (req: AuthenticatedRequest, res: Response)
 export const deleteLead = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { leadId } = req.params;
+
+    const existingLead = await (prisma as any).financingLead.findUnique({
+      where: { id: leadId },
+      include: {
+        vendor: { select: { userId: true } },
+      },
+    });
+
     await (prisma as any).financingLead.deleteMany({
       where: {
         id: leadId,
       },
     });
+
+    // Real-time broadcast deletion
+    try {
+      if (existingLead?.vendor?.userId) {
+        emitToUser(existingLead.vendor.userId, 'lead:deleted', { leadId });
+      }
+      emitToAdmin('lead:deleted', { leadId });
+    } catch (socketErr) {
+      console.warn('Socket broadcast error in deleteLead:', socketErr);
+    }
+
     res.json({
       success: true,
       message: 'Financing request deleted successfully.',
