@@ -31,7 +31,11 @@ test_*.js
 
 # Screenshot / Scratch artifacts
 image copy*.png
-*.png
+image*.png
+!mobile-expo/assets/*
+!frontend/src/assets/*
+!frontend/public/*
+!frontend/public/banners/*
 
 # System files
 .DS_Store
