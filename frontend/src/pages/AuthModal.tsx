@@ -43,6 +43,7 @@ import {
   Compass,
   Navigation,
   Edit3,
+  LogOut,
   Loader2,
 } from 'lucide-react';
 import { getBrowserLocation, reverseGeocodeMapbox, searchPlacesMapbox } from '../services/mapboxService';
@@ -55,6 +56,8 @@ interface AuthModalProps {
   initialRole?: Role;
   initialRegister?: boolean;
   subscribeIntent?: boolean;
+  currentUser?: any;
+  onLogout?: (roleTarget?: 'VENDOR' | 'LENDER') => void;
 }
 
 export const AuthModal: React.FC<AuthModalProps> = ({
@@ -64,6 +67,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   initialRole = 'VENDOR',
   initialRegister = false,
   subscribeIntent = false,
+  currentUser,
+  onLogout,
 }) => {
   const [role, setRole] = useState<Role>(initialRole);
   const [isRegister, setIsRegister] = useState(initialRegister);
@@ -730,8 +735,45 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               </div>
             </div>
 
+            {/* Active Session Restriction Guard */}
+            {currentUser && (
+              <div className="p-4 rounded-2xl bg-amber-50 border-2 border-amber-300 text-amber-950 space-y-2.5 shadow-sm">
+                <div className="flex items-start gap-2.5">
+                  <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                  <div className="text-xs space-y-1">
+                    <div className="font-extrabold text-amber-900 text-sm">
+                      Active {currentUser.role === 'VENDOR' ? 'Small Shop Business' : 'Business Financer'} Session Detected
+                    </div>
+                    <p className="text-amber-800 font-medium leading-relaxed">
+                      You are currently signed in as <strong>{currentUser.name || currentUser.fullName || currentUser.email}</strong>. Once an account is active on this device, no other account can be accessed until you fully log out of your current session.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (onLogout) onLogout(currentUser.role);
+                      onClose();
+                    }}
+                    className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer active:scale-95"
+                  >
+                    <LogOut className="w-3.5 h-3.5" />
+                    <span>Log Out Current Session</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="px-4 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 font-bold text-xs transition-colors cursor-pointer"
+                  >
+                    Stay Logged In
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Subscribe Intent Alert Banner */}
-            {subscribeIntent && (
+            {subscribeIntent && !currentUser && (
               <div className="p-4 rounded-2xl bg-amber-50 border-2 border-amber-300 text-amber-900 flex items-start gap-3 shadow-xs animate-in fade-in duration-300">
                 <div className="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center font-bold shrink-0 mt-0.5 shadow-xs">
                   <Zap className="w-4.5 h-4.5 fill-current" />
@@ -901,6 +943,43 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 </p>
               </div>
             </div>
+
+            {/* Active Session Restriction Guard in Form View */}
+            {currentUser && (
+              <div className="p-4 rounded-2xl bg-amber-50 border-2 border-amber-300 text-amber-950 space-y-2.5 shadow-sm">
+                <div className="flex items-start gap-2.5">
+                  <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                  <div className="text-xs space-y-1">
+                    <div className="font-extrabold text-amber-900 text-sm">
+                      Active {currentUser.role === 'VENDOR' ? 'Small Shop Business' : 'Business Financer'} Session Detected
+                    </div>
+                    <p className="text-amber-800 font-medium leading-relaxed">
+                      You are currently signed in as <strong>{currentUser.name || currentUser.fullName || currentUser.email}</strong>. Logging into or registering a new account requires logging out of your active account first.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (onLogout) onLogout(currentUser.role);
+                      onClose();
+                    }}
+                    className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer active:scale-95"
+                  >
+                    <LogOut className="w-3.5 h-3.5" />
+                    <span>Log Out Active Account</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="px-4 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 font-bold text-xs transition-colors cursor-pointer"
+                  >
+                    Stay Logged In
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Error Banner */}
             {formError && (

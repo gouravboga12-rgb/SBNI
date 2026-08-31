@@ -376,6 +376,8 @@ export function App() {
         onAuthSuccess={handleAuthSuccess}
         initialRole={authRole}
         subscribeIntent={authSubscribeIntent}
+        currentUser={currentUser}
+        onLogout={handleLogout}
       />
 
       {/* Subscription Modal */}

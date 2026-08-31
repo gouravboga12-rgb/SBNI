@@ -598,14 +598,12 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
 
   const currentVendorObj = (() => {
     const token = getToken();
-    if (!currentUser && !token) return null;
+    if (!currentUser || !token) return null;
     try {
-      const uStr = localStorage.getItem('sbni_user');
-      const pStr = localStorage.getItem('sbni_vendor_profile');
-      const u = currentUser || (uStr ? JSON.parse(uStr) : null);
-      const profile = liveVendorProfile || u?.vendorProfile || (pStr ? JSON.parse(pStr) : null);
+      const u = currentUser;
+      const profile = liveVendorProfile || u?.vendorProfile || null;
 
-      if (!u && !profile) return null;
+      if (!u || !profile) return null;
 
       let rawName = profile?.ownerName || profile?.fullName || u?.vendorProfile?.ownerName || u?.name || u?.fullName;
       if (!rawName || rawName === 'Registered Vendor' || rawName === 'Business Owner' || rawName === 'Owner Name') {
