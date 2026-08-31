@@ -3,6 +3,39 @@ import crypto from 'crypto';
 import prisma from '../config/prisma';
 import { AuthenticatedRequest } from '../middlewares/auth';
 import razorpayInstance, { razorpayKeyId, razorpayKeySecret } from '../config/razorpay';
+import { emitToUser, emitToAdmin } from '../services/socketService';
+
+/**
+ * Calculates new subscription start and end dates by stacking validity
+ * on top of any existing unexpired active subscription.
+ * Example: 7-day plan with 2 days remaining + 30-day plan = 32 days remaining from now.
+ */
+export const calculateStackedSubscriptionDates = async (
+  userId: string,
+  newPlanDurationDays: number
+): Promise<{ startDate: Date; endDate: Date }> => {
+  const now = new Date();
+
+  // Find latest active unexpired subscription
+  const existingActiveSub = await prisma.userSubscription.findFirst({
+    where: {
+      userId,
+      status: 'ACTIVE',
+      endDate: { gt: now },
+    },
+    orderBy: { endDate: 'desc' },
+  });
+
+  let baseDate = now;
+  if (existingActiveSub && existingActiveSub.endDate && new Date(existingActiveSub.endDate) > now) {
+    baseDate = new Date(existingActiveSub.endDate);
+  }
+
+  const startDate = now;
+  const endDate = new Date(baseDate.getTime() + newPlanDurationDays * 24 * 60 * 60 * 1000);
+
+  return { startDate, endDate };
+};
 
 export const getSubscriptionPlans = async (req: Request, res: Response) => {
   const role = req.query.role as string;
@@ -537,8 +570,8 @@ export const verifyRazorpayPayment = async (req: AuthenticatedRequest, res: Resp
       }
     }
 
-    const startDate = new Date();
-    const endDate = new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000);
+    // Calculate stacked validity dates (add new duration to remaining days of current active plan)
+    const { startDate, endDate } = await calculateStackedSubscriptionDates(userId, durationDays);
     const invoiceNumber = 'INV-SBNI-' + Math.floor(100000 + Math.random() * 900000);
 
     // 1. Cancel previous Razorpay recurring mandates (if any) to prevent double charging on upgrades/switches
@@ -574,7 +607,7 @@ export const verifyRazorpayPayment = async (req: AuthenticatedRequest, res: Resp
       data: { status: 'EXPIRED' },
     });
 
-    // 3. Create new active UserSubscription with upgraded validity
+    // 3. Create new active UserSubscription with stacked validity
     const subscription = await prisma.userSubscription.create({
       data: {
         userId,
@@ -600,6 +633,12 @@ export const verifyRazorpayPayment = async (req: AuthenticatedRequest, res: Resp
         gatewayPaymentId: razorpay_payment_id,
       },
     });
+
+    // Real-time broadcast
+    try {
+      emitToUser(userId, 'subscription:updated', { subscription, payment });
+      emitToAdmin('subscription:updated', { subscription, payment });
+    } catch (sErr) {}
 
     // Create In-App Notification
     await prisma.notification.create({
@@ -682,8 +721,8 @@ export const purchaseSubscriptionPlan = async (req: AuthenticatedRequest, res: R
     }
   }
 
-  const startDate = new Date();
-  const endDate = new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000);
+  // Calculate stacked validity dates
+  const { startDate, endDate } = await calculateStackedSubscriptionDates(userId!, durationDays);
   const transactionId = 'TXN-' + Date.now() + '-' + Math.floor(1000 + Math.random() * 9000);
   const invoiceNumber = 'INV-SBNI-' + Math.floor(100000 + Math.random() * 900000);
   // 1. Cancel previous Razorpay recurring mandates (if any)
@@ -710,7 +749,7 @@ export const purchaseSubscriptionPlan = async (req: AuthenticatedRequest, res: R
     data: { status: 'EXPIRED' },
   });
 
-  // 3. Create new active user subscription
+  // 3. Create new active user subscription with stacked validity
   const subscription = await prisma.userSubscription.create({
     data: {
       userId: userId!,
@@ -808,8 +847,8 @@ export const activateSubscriptionWithWallet = async (req: AuthenticatedRequest, 
     }
 
     const durationDays = plan.durationDays || 30;
-    const startDate = new Date();
-    const endDate = new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000);
+    // Calculate stacked validity dates (add new duration to remaining days of current active plan)
+    const { startDate, endDate } = await calculateStackedSubscriptionDates(userId, durationDays);
     const invoiceNumber = 'INV-WALLET-' + Math.floor(100000 + Math.random() * 900000);
     const transactionId = 'WAL-' + Date.now() + '-' + Math.floor(100 + Math.random() * 900);
 
@@ -834,7 +873,7 @@ export const activateSubscriptionWithWallet = async (req: AuthenticatedRequest, 
       data: { status: 'EXPIRED' },
     });
 
-    // Create new subscription
+    // Create new subscription with stacked validity
     const subscription = await prisma.userSubscription.create({
       data: {
         userId,

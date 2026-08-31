@@ -522,6 +522,28 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
           </p>
         </div>
 
+        {/* ── VALIDITY STACKING NOTIFICATION BANNER ── */}
+        {daysRemaining > 0 && selectedPlan && (
+          <div className="mb-4 p-3 rounded-2xl bg-gradient-to-r from-emerald-50 via-teal-50 to-blue-50 border border-emerald-300 flex flex-col sm:flex-row items-center justify-between gap-2.5 text-xs animate-in fade-in duration-200">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-black text-xs shrink-0 shadow-xs">
+                +{selectedPlan.durationDays}d
+              </div>
+              <div>
+                <span className="font-extrabold text-slate-900">
+                  ⚡ Validity Stacking Active:
+                </span>{' '}
+                <span className="text-slate-600 font-medium">
+                  Your remaining <strong className="text-emerald-700 font-bold">{daysRemaining} days</strong> will be added to this {selectedPlan.durationDays}-day plan.
+                </span>
+              </div>
+            </div>
+            <div className="shrink-0 font-extrabold text-emerald-800 bg-white px-3 py-1 rounded-xl border border-emerald-200 shadow-2xs">
+              Total: {daysRemaining + selectedPlan.durationDays} Days Active
+            </div>
+          </div>
+        )}
+
         {/* 5 Plans Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mb-4">
           {plans.map((plan) => {

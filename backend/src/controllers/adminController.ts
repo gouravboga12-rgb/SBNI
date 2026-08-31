@@ -1,6 +1,8 @@
 import { Request, Response } from 'express';
 import prisma from '../config/prisma';
 import { AuthenticatedRequest } from '../middlewares/auth';
+import { calculateStackedSubscriptionDates } from './subscriptionController';
+import { emitToUser, emitToAdmin } from '../services/socketService';
 
 export const getAdminDashboardStats = async (req: AuthenticatedRequest, res: Response) => {
   const [
@@ -540,9 +542,15 @@ export const grantManualSubscription = async (req: AuthenticatedRequest, res: Re
   }
 
   const days = durationDays || plan.durationDays;
-  const startDate = new Date();
-  const endDate = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
+  // Calculate stacked validity dates
+  const { startDate, endDate } = await calculateStackedSubscriptionDates(userId, days);
   const transactionId = 'ADMIN_GRANT_' + Date.now();
+
+  // Expire previous active records
+  await prisma.userSubscription.updateMany({
+    where: { userId, status: 'ACTIVE' },
+    data: { status: 'EXPIRED' },
+  });
 
   const sub = await prisma.userSubscription.create({
     data: {
@@ -555,7 +563,7 @@ export const grantManualSubscription = async (req: AuthenticatedRequest, res: Re
     },
   });
 
-  await prisma.payment.create({
+  const payment = await prisma.payment.create({
     data: {
       userId,
       subscriptionId: sub.id,
@@ -566,7 +574,13 @@ export const grantManualSubscription = async (req: AuthenticatedRequest, res: Re
     },
   });
 
-  res.json({ success: true, message: `Subscription (${plan.name}) granted to user until ${endDate.toISOString().split('T')[0]}.`, data: sub });
+  // Real-time broadcast
+  try {
+    emitToUser(userId, 'subscription:updated', { subscription: sub, payment });
+    emitToAdmin('subscription:updated', { subscription: sub, payment });
+  } catch (sErr) {}
+
+  res.json({ success: true, message: `Subscription (${plan.name}) granted to user with stacked validity until ${endDate.toISOString().split('T')[0]}.`, data: sub });
 };
 
 // Subscription Plans CRUD
