@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Lender } from '../types';
 import { Phone, MessageCircle, CheckCircle2, SendHorizontal, Lock, Zap, TrendingUp, Coins, MapPin } from 'lucide-react';
 import { ingestLeadApi, safeSetLocalStorage, fetchVendorMyLeadsApi } from '../services/api';
+import { LenderContactConsentModal } from './LenderContactConsentModal';
 
 interface LenderCardProps {
   lender: Lender;
@@ -44,6 +45,16 @@ export const LenderCard: React.FC<LenderCardProps> = ({ lender, onOpenSubscripti
   };
 
   const [hasApplied, setHasApplied] = useState(() => checkHasApplied(lender.id));
+  const [consentAction, setConsentAction] = useState<'CALL' | 'WHATSAPP' | null>(null);
+
+  const checkHasConsent = (id: string) => {
+    try {
+      if (localStorage.getItem(`sbni_consent_${id}`) === 'true') return true;
+      if (lender.registrationNumber && localStorage.getItem(`sbni_consent_${lender.registrationNumber}`) === 'true') return true;
+      if (checkHasApplied(id)) return true;
+    } catch (e) {}
+    return false;
+  };
 
   const checkSubscription = () => {
     try {
@@ -326,10 +337,11 @@ export const LenderCard: React.FC<LenderCardProps> = ({ lender, onOpenSubscripti
       return;
     }
 
-    // If already applied, do not re-send application details; only redirect to call
-    const alreadyApplied = hasApplied || checkHasApplied(lender.id);
-    if (!alreadyApplied) {
-      recordLenderRequest('CALL');
+    // Check if consent has already been given for this lender
+    const hasConsent = checkHasConsent(lender.id);
+    if (!hasConsent) {
+      setConsentAction('CALL');
+      return;
     }
 
     if (lender.phone) {
@@ -351,10 +363,11 @@ export const LenderCard: React.FC<LenderCardProps> = ({ lender, onOpenSubscripti
       return;
     }
 
-    // If already applied, do not re-send application details; only redirect to WhatsApp
-    const alreadyApplied = hasApplied || checkHasApplied(lender.id);
-    if (!alreadyApplied) {
-      recordLenderRequest('WHATSAPP');
+    // Check if consent has already been given for this lender
+    const hasConsent = checkHasConsent(lender.id);
+    if (!hasConsent) {
+      setConsentAction('WHATSAPP');
+      return;
     }
 
     if (lender.whatsAppUrl) {
@@ -363,6 +376,35 @@ export const LenderCard: React.FC<LenderCardProps> = ({ lender, onOpenSubscripti
       const cleanPhone = lender.phone.replace(/\D/g, '');
       const msg = encodeURIComponent(`Hello ${lender.institutionName}, I am interested in business financing for my shop.`);
       window.open(`https://wa.me/91${cleanPhone}?text=${msg}`, '_blank');
+    }
+  };
+
+  const handleConfirmConsent = () => {
+    const action = consentAction || 'CALL';
+    setConsentAction(null);
+
+    // 1. Store user consent persistently so confirmation modal does not appear repeatedly for this lender
+    safeSetLocalStorage(`sbni_consent_${lender.id}`, 'true');
+    if (lender.registrationNumber) {
+      safeSetLocalStorage(`sbni_consent_${lender.registrationNumber}`, 'true');
+    }
+
+    // 2. Share required customer & KYC details with the lender
+    recordLenderRequest(action);
+
+    // 3. Initiate the requested communication channel
+    if (action === 'CALL') {
+      if (lender.phone) {
+        window.location.href = `tel:${lender.phone}`;
+      }
+    } else if (action === 'WHATSAPP') {
+      if (lender.whatsAppUrl) {
+        window.open(lender.whatsAppUrl, '_blank');
+      } else if (lender.phone) {
+        const cleanPhone = lender.phone.replace(/\D/g, '');
+        const msg = encodeURIComponent(`Hello ${lender.institutionName}, I am interested in business financing for my shop.`);
+        window.open(`https://wa.me/91${cleanPhone}?text=${msg}`, '_blank');
+      }
     }
   };
 
@@ -522,6 +564,15 @@ export const LenderCard: React.FC<LenderCardProps> = ({ lender, onOpenSubscripti
           </button>
         )}
       </div>
+
+      {/* Consent Confirmation Popup */}
+      <LenderContactConsentModal
+        isOpen={consentAction !== null}
+        onClose={() => setConsentAction(null)}
+        lender={lender}
+        actionType={consentAction || 'CALL'}
+        onConfirm={handleConfirmConsent}
+      />
 
     </div>
   );
