@@ -914,7 +914,8 @@ export async function createRazorpayPaymentSession(
   planId: string,
   isAutoPay: boolean = false,
   couponCode?: string,
-  useWallet: boolean = false
+  useWallet: boolean = false,
+  referralCode?: string
 ): Promise<{
   success: boolean;
   mode?: 'order' | 'subscription' | 'wallet_free';
@@ -929,10 +930,11 @@ export async function createRazorpayPaymentSession(
   message?: string;
 }> {
   try {
+    const effectiveRef = referralCode || localStorage.getItem('sbni_referral_code') || undefined;
     const data = await apiFetch('/subscriptions/create-order', {
       method: 'POST',
       headers: authHeaders(),
-      body: JSON.stringify({ planId, isAutoPay, couponCode, useWallet }),
+      body: JSON.stringify({ planId, isAutoPay, couponCode, useWallet, referralCode: effectiveRef }),
     });
     return data;
   } catch (err: any) {
@@ -950,6 +952,7 @@ export async function verifyRazorpayPayment(payload: {
   isAutoPay?: boolean;
   useWallet?: boolean;
   walletAmountUsed?: number;
+  referralCode?: string;
 }): Promise<{
   success: boolean;
   hasActiveSubscription?: boolean;
@@ -958,10 +961,11 @@ export async function verifyRazorpayPayment(payload: {
   message?: string;
 }> {
   try {
+    const effectiveRef = payload.referralCode || localStorage.getItem('sbni_referral_code') || undefined;
     const data = await apiFetch('/subscriptions/verify-payment', {
       method: 'POST',
       headers: authHeaders(),
-      body: JSON.stringify(payload),
+      body: JSON.stringify({ ...payload, referralCode: effectiveRef }),
     });
     return data;
   } catch (err: any) {
@@ -971,7 +975,8 @@ export async function verifyRazorpayPayment(payload: {
 
 export async function activateSubscriptionWithWalletApi(
   planId: string,
-  couponCode?: string
+  couponCode?: string,
+  referralCode?: string
 ): Promise<{
   success: boolean;
   hasActiveSubscription?: boolean;
@@ -981,10 +986,11 @@ export async function activateSubscriptionWithWalletApi(
   message?: string;
 }> {
   try {
+    const effectiveRef = referralCode || localStorage.getItem('sbni_referral_code') || undefined;
     const data = await apiFetch('/subscriptions/activate-wallet', {
       method: 'POST',
       headers: authHeaders(),
-      body: JSON.stringify({ planId, couponCode }),
+      body: JSON.stringify({ planId, couponCode, referralCode: effectiveRef }),
     });
     return data;
   } catch (err: any) {

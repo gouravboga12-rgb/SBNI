@@ -39,7 +39,7 @@ export const getRazorpayConfig = async (_req: Request, res: Response) => {
   });
 };
 
-export const processReferralRewardsForUser = async (userId: string, plan: any) => {
+export const processReferralRewardsForUser = async (userId: string, plan: any, explicitReferralCode?: string) => {
   try {
     let pendingReferral = await prisma.referralRecord.findFirst({
       where: {
@@ -48,7 +48,7 @@ export const processReferralRewardsForUser = async (userId: string, plan: any) =
       },
     });
 
-    // Fallback: If no pending ReferralRecord exists, check if user is linked via referredById
+    // Fallback 1: If no pending ReferralRecord exists, check if user is linked via referredById
     if (!pendingReferral) {
       const user = await prisma.user.findUnique({
         where: { id: userId },
@@ -66,7 +66,7 @@ export const processReferralRewardsForUser = async (userId: string, plan: any) =
             select: { id: true, referralCode: true },
           });
 
-          if (referrer) {
+          if (referrer && referrer.id !== userId) {
             pendingReferral = await prisma.referralRecord.create({
               data: {
                 referrerId: referrer.id,
@@ -76,6 +76,49 @@ export const processReferralRewardsForUser = async (userId: string, plan: any) =
               },
             });
           }
+        }
+      }
+    }
+
+    // Fallback 2: If still no pending ReferralRecord, check explicitReferralCode passed from checkout/session
+    if (!pendingReferral && explicitReferralCode) {
+      const cleanCode = String(explicitReferralCode).trim();
+      let matchedReferrer = await prisma.user.findFirst({
+        where: {
+          OR: [
+            { referralCode: { equals: cleanCode, mode: 'insensitive' } },
+            { phone: cleanCode },
+            { email: { equals: cleanCode.toLowerCase(), mode: 'insensitive' } },
+          ],
+        },
+      });
+
+      if (!matchedReferrer && ['JUSTPAISA', 'SBNI', 'PARTNER', 'WELCOME', 'ADMIN'].includes(cleanCode.toUpperCase())) {
+        matchedReferrer = (await prisma.user.findFirst({ where: { role: 'SUPER_ADMIN' } })) ||
+                          (await prisma.user.findFirst({ where: { role: 'VENDOR' } }));
+      }
+
+      if (matchedReferrer && matchedReferrer.id !== userId) {
+        // Link user to referrer
+        await prisma.user.update({
+          where: { id: userId },
+          data: { referredById: matchedReferrer.id },
+        });
+
+        // Check if there is already any completed record
+        const existingRecord = await prisma.referralRecord.findFirst({
+          where: { refereeId: userId },
+        });
+
+        if (!existingRecord) {
+          pendingReferral = await prisma.referralRecord.create({
+            data: {
+              referrerId: matchedReferrer.id,
+              refereeId: userId,
+              referralCode: matchedReferrer.referralCode || cleanCode.toUpperCase(),
+              status: 'REGISTERED',
+            },
+          });
         }
       }
     }
@@ -572,7 +615,8 @@ export const verifyRazorpayPayment = async (req: AuthenticatedRequest, res: Resp
 
     // Asynchronously trigger referral rewards for referee & referrer
     if (plan) {
-      await processReferralRewardsForUser(userId, plan);
+      const referralCodeFromReq = req.body?.referralCode || req.body?.ref || req.query?.ref;
+      await processReferralRewardsForUser(userId, plan, referralCodeFromReq);
     }
 
     return res.status(200).json({
@@ -704,7 +748,8 @@ export const purchaseSubscriptionPlan = async (req: AuthenticatedRequest, res: R
   });
 
   if (plan && userId) {
-    await processReferralRewardsForUser(userId, plan);
+    const referralCodeFromReq = req.body?.referralCode || req.body?.ref || req.query?.ref;
+    await processReferralRewardsForUser(userId, plan, referralCodeFromReq);
   }
 
   res.status(201).json({
@@ -845,7 +890,8 @@ export const activateSubscriptionWithWallet = async (req: AuthenticatedRequest, 
     });
 
     // Process referral rewards for first subscription
-    await processReferralRewardsForUser(userId, plan);
+    const referralCodeFromReq = req.body?.referralCode || req.body?.ref || req.query?.ref;
+    await processReferralRewardsForUser(userId, plan, referralCodeFromReq);
 
     return res.status(200).json({
       success: true,

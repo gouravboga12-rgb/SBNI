@@ -187,16 +187,25 @@ export const registerUser = async (req: Request, res: Response) => {
 
   // Look up referrer user if referralCode is provided
   let referrerUser: any = null;
-  if (referralCode) {
+  const rawRefCode = referralCode || req.body?.refCode || req.body?.ref || req.query?.ref;
+  if (rawRefCode) {
+    const cleanCode = String(rawRefCode).trim();
     try {
       referrerUser = await prisma.user.findFirst({
         where: {
-          referralCode: {
-            equals: String(referralCode).trim(),
-            mode: 'insensitive',
-          },
+          OR: [
+            { referralCode: { equals: cleanCode, mode: 'insensitive' } },
+            { phone: cleanCode },
+            { email: { equals: cleanCode.toLowerCase(), mode: 'insensitive' } },
+          ],
         },
       });
+
+      // If generic promo code like JUSTPAISA or ADMIN, link to Super Admin or first partner
+      if (!referrerUser && ['JUSTPAISA', 'SBNI', 'PARTNER', 'WELCOME', 'ADMIN'].includes(cleanCode.toUpperCase())) {
+        referrerUser = (await prisma.user.findFirst({ where: { role: 'SUPER_ADMIN' } })) ||
+                       (await prisma.user.findFirst({ where: { role: 'VENDOR' } }));
+      }
     } catch (e) {}
   }
 
@@ -241,7 +250,7 @@ export const registerUser = async (req: Request, res: Response) => {
             data: {
               referrerId: referrerUser.id,
               refereeId: newUser.id,
-              referralCode: String(referralCode).trim().toUpperCase(),
+              referralCode: referrerUser.referralCode || String(rawRefCode).trim().toUpperCase(),
               status: 'REGISTERED',
             },
           });
@@ -460,6 +469,22 @@ export const loginUser = async (req: Request, res: Response) => {
       (user as any).vendorProfile = newVp;
     } catch (e) {
       console.error('Error auto-creating missing vendor profile on login:', e);
+    }
+  }
+
+  // Auto-heal missing referral code if any
+  if (!user.referralCode) {
+    try {
+      const prefix = user.role === 'LENDER' ? 'JPL' : 'JPV';
+      const randomHex = Math.random().toString(36).substring(2, 7).toUpperCase();
+      const generatedCode = `${prefix}-${randomHex}`;
+      const updatedUser = await prisma.user.update({
+        where: { id: user.id },
+        data: { referralCode: generatedCode },
+      });
+      user.referralCode = updatedUser.referralCode;
+    } catch (e) {
+      console.error('Error auto-generating missing referral code on login:', e);
     }
   }
 
