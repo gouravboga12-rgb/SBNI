@@ -181,14 +181,8 @@ export interface FraudReportItem {
 
 export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void }) {
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(true);
-  const [adminEmail, setAdminEmail] = useState(() => {
-    try {
-      const u = JSON.parse(localStorage.getItem('sbni_admin_user') || localStorage.getItem('sbni_user') || '{}');
-      if (u?.email) return u.email;
-    } catch {}
-    return 'srinivaspolepalli10@gmail.com';
-  });
-  const [adminPassword, setAdminPassword] = useState('Srinivas@10');
+  const [adminEmail, setAdminEmail] = useState('');
+  const [adminPassword, setAdminPassword] = useState('');
   const [loginError, setLoginError] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
@@ -1855,7 +1849,7 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
             </div>
           )}
 
-          <form onSubmit={handleAdminLogin} className="relative z-10 space-y-4">
+          <form onSubmit={handleAdminLogin} className="relative z-10 space-y-4" autoComplete="off">
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">
                 Admin Email ID *
@@ -1864,8 +1858,9 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
                 type="email"
                 value={adminEmail}
                 onChange={(e) => setAdminEmail(e.target.value)}
+                autoComplete="off"
                 className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-xs sm:text-sm font-medium text-slate-900 focus:outline-none focus:border-[#003893] transition-colors"
-                placeholder="admin@sbnimoney.com"
+                placeholder="Enter Super Admin email"
                 required
               />
             </div>
@@ -1878,8 +1873,9 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
                 type="password"
                 value={adminPassword}
                 onChange={(e) => setAdminPassword(e.target.value)}
+                autoComplete="new-password"
                 className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-xs sm:text-sm font-medium text-slate-900 focus:outline-none focus:border-[#003893] transition-colors"
-                placeholder="••••••••••••"
+                placeholder="Enter password"
                 required
               />
             </div>
