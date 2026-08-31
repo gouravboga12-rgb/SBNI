@@ -72,6 +72,7 @@ import {
   ChevronDown,
 } from 'lucide-react';
 import { ReferAndEarnModal } from '../components/ReferAndEarnModal';
+import { LenderLocationPromptModal } from '../components/LenderLocationPromptModal';
 
 const LENDER_BANNER_SLIDES: BannerSlide[] = [
   {
@@ -690,7 +691,20 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
   });
 
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
+  const [isLocationPromptOpen, setIsLocationPromptOpen] = useState(false);
   const [locationSuccessMsg, setLocationSuccessMsg] = useState<string | null>(null);
+
+  // Auto-prompt location confirmation once per session for authenticated lenders
+  useEffect(() => {
+    if (currentUser && (currentUser.role === 'LENDER' || currentUserObj)) {
+      try {
+        const prompted = sessionStorage.getItem('sbni_lender_loc_prompted');
+        if (!prompted) {
+          setIsLocationPromptOpen(true);
+        }
+      } catch (e) {}
+    }
+  }, [currentUser, currentUserObj]);
 
   const handleSaveLenderLocation = async (loc: {
     place: string;
@@ -699,15 +713,17 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
     country: string;
     latitude: number;
     longitude: number;
+    address?: string;
     lendingRadiusKm?: number;
   }) => {
     const updated = {
       place: loc.place || loc.city,
       city: loc.city,
       state: loc.state,
-      country: loc.country,
+      country: loc.country || 'India',
       latitude: loc.latitude,
       longitude: loc.longitude,
+      address: loc.address || `${loc.place || loc.city}, ${loc.city}`,
       lendingRadiusKm: loc.lendingRadiusKm || 50,
     };
     setLenderLocation(updated);
@@ -718,6 +734,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
       const parsed = JSON.parse(pStr);
       const merged = { ...parsed, ...updated };
       safeSetLocalStorage('sbni_lender_profile', JSON.stringify(merged));
+      sessionStorage.setItem('sbni_lender_loc_prompted', 'true');
     } catch (e) {}
 
     // Save to AWS Backend
@@ -725,6 +742,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
       await updateLenderProfileApi(updated);
       setLocationSuccessMsg(`✅ Lending area updated to ${loc.place || loc.city}, ${loc.city} (${updated.lendingRadiusKm} KM radius)`);
       setTimeout(() => setLocationSuccessMsg(null), 4000);
+      window.dispatchEvent(new CustomEvent('sbni_lender_profile_updated'));
       loadNearbyBusinessesList();
     } catch (e) {
       console.error('Failed to sync lender profile location to backend:', e);
@@ -1401,8 +1419,39 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
         
         {/* TAB 1: HOME DASHBOARD */}
         {!selectedVendor && activeTab === 'home' && (
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             <BannerCarousel slides={LENDER_BANNER_SLIDES} autoScrollIntervalMs={4000} />
+
+            {/* ── LENDING LOCATION & SERVICE HUB QUICK BAR (HOMEPAGE) ──── */}
+            <div className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200 shadow-sm p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-gradient-to-r from-blue-50/60 via-white to-emerald-50/50">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-blue-100 text-[#003893] flex items-center justify-center shrink-0 shadow-xs">
+                  <MapPin className="w-5 h-5 text-rose-600" />
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-[10px] uppercase font-extrabold tracking-wider text-blue-800 bg-blue-100/80 px-2 py-0.5 rounded-md">
+                      Office Lending Hub
+                    </span>
+                    <span className="text-xs font-bold text-slate-500">
+                      • {lenderLocation.lendingRadiusKm || 50} km Coverage Radius
+                    </span>
+                  </div>
+                  <div className="text-sm sm:text-base font-extrabold text-slate-900 font-heading truncate mt-0.5">
+                    {lenderLocation.place || lenderLocation.city}, {lenderLocation.state}
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsLocationPromptOpen(true)}
+                className="px-4 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-[#003893] border-2 border-[#003893] font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-all cursor-pointer whitespace-nowrap active:scale-95 shrink-0"
+              >
+                <Compass className="w-4 h-4 text-[#003893]" />
+                <span>Change Office Location</span>
+              </button>
+            </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
               
@@ -3891,6 +3940,14 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
         onClose={() => setReferModalOpen(false)}
         userRole="LENDER"
         userName={currentUser?.name || currentUserObj?.name || 'Partner'}
+      />
+
+      {/* Lender Office Location Confirmation & Radius Modal (Post-Login & On-Demand) */}
+      <LenderLocationPromptModal
+        isOpen={isLocationPromptOpen}
+        onClose={() => setIsLocationPromptOpen(false)}
+        currentLocation={lenderLocation}
+        onSaveLocation={handleSaveLenderLocation}
       />
 
     </div>
