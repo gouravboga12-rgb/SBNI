@@ -326,7 +326,7 @@ export const PolicyModal: React.FC<PolicyModalProps> = ({
                   4. Refund Request Process & SLA
                 </h4>
                 <p>
-                  To request a refund for an eligible transaction, send an email to <a href="mailto:support@justpaisa.com" className="text-indigo-700 font-bold underline">support@justpaisa.com</a> with your Payment ID (e.g. <code>pay_...</code>) and Registered Mobile Number.
+                  To request a refund for an eligible transaction, send an email to <a href="mailto:srinivaspolepalli10@gmail.com" className="text-indigo-700 font-bold underline">srinivaspolepalli10@gmail.com</a> with your Payment ID (e.g. <code>pay_...</code>) and Registered Mobile Number.
                   Approved refunds are processed to the original payment method within <strong>5 to 7 business days</strong>.
                 </p>
               </section>

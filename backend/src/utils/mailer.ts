@@ -240,3 +240,195 @@ export async function sendForgotPasswordOtpEmail({
     html,
   });
 }
+
+export interface SubscriptionInvoiceMailParams {
+  to: string;
+  userName?: string;
+  businessName?: string;
+  role?: string;
+  planName: string;
+  planDurationDays: number;
+  amount: number;
+  invoiceNumber: string;
+  paymentId?: string;
+  paymentMethod?: string;
+  startDate: Date;
+  endDate: Date;
+  isAutoPay?: boolean;
+}
+
+/**
+ * Generates and sends an official Tax / Subscription Invoice email to the purchasing user
+ */
+export async function sendSubscriptionInvoiceEmail({
+  to,
+  userName = 'Valued Partner',
+  businessName,
+  role = 'VENDOR',
+  planName,
+  planDurationDays,
+  amount,
+  invoiceNumber,
+  paymentId = 'N/A',
+  paymentMethod = 'Online Payment',
+  startDate,
+  endDate,
+  isAutoPay = false,
+}: SubscriptionInvoiceMailParams) {
+  const isVendor = role === 'VENDOR';
+  const roleLabel = isVendor ? 'Small Shop / Startup Business' : 'Business Money Financer';
+  const primaryColor = isVendor ? '#003893' : '#007a33';
+  const issueDateStr = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+  const startStr = new Date(startDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+  const endStr = new Date(endDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JustPaisa Tax Invoice - ${invoiceNumber}</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #1e293b;">
+  <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #f1f5f9; padding: 32px 10px;">
+    <tr>
+      <td align="center">
+        <table width="100%" max-width="620" style="max-width: 620px; background-color: #ffffff; border-radius: 20px; overflow: hidden; box-shadow: 0 12px 30px rgba(0,0,0,0.07); border: 1px solid #e2e8f0;">
+          
+          <!-- Header Banner -->
+          <tr>
+            <td style="background: linear-gradient(135deg, ${primaryColor} 0%, #0f172a 100%); padding: 32px 30px; text-align: left;">
+              <table width="100%" border="0" cellspacing="0" cellpadding="0">
+                <tr>
+                  <td>
+                    <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 800; letter-spacing: -0.5px;">JustPaisa</h1>
+                    <p style="margin: 4px 0 0; color: #93c5fd; font-size: 12px; font-weight: 500;">Financial Marketplace & Enterprise Network</p>
+                  </td>
+                  <td align="right">
+                    <div style="background: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255, 255, 255, 0.25); border-radius: 12px; padding: 8px 16px; text-align: right;">
+                      <span style="display: block; color: #e2e8f0; font-size: 10px; text-transform: uppercase; font-weight: 700; letter-spacing: 1px;">TAX INVOICE</span>
+                      <span style="display: block; color: #ffffff; font-size: 13px; font-weight: 800; font-family: monospace;">${invoiceNumber}</span>
+                    </div>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Success Alert Card -->
+          <tr>
+            <td style="padding: 24px 30px 0;">
+              <div style="background-color: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 14px; padding: 14px 18px; color: #065f46; font-size: 13px; font-weight: 600;">
+                🎉 <strong>Payment Successful & Access Unlocked!</strong> Your subscription for <strong>${planName}</strong> is now active until <strong>${endStr}</strong>.
+              </div>
+            </td>
+          </tr>
+
+          <!-- Billed Details -->
+          <tr>
+            <td style="padding: 24px 30px 12px;">
+              <table width="100%" border="0" cellspacing="0" cellpadding="0">
+                <tr>
+                  <td width="55%" valign="top" style="padding-right: 15px;">
+                    <span style="display: block; font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Billed To:</span>
+                    <strong style="display: block; font-size: 14px; color: #0f172a;">${userName}</strong>
+                    ${businessName ? `<span style="display: block; font-size: 12px; color: #475569; margin-top: 2px;">${businessName}</span>` : ''}
+                    <span style="display: block; font-size: 12px; color: #475569; margin-top: 2px;">${to}</span>
+                    <span style="display: inline-block; margin-top: 6px; padding: 2px 8px; background-color: #f1f5f9; border-radius: 6px; font-size: 11px; font-weight: 600; color: #475569;">${roleLabel}</span>
+                  </td>
+                  <td width="45%" valign="top" style="text-align: right;">
+                    <span style="display: block; font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Invoice Info:</span>
+                    <span style="display: block; font-size: 12px; color: #475569;">Date of Issue: <strong>${issueDateStr}</strong></span>
+                    <span style="display: block; font-size: 12px; color: #475569; margin-top: 2px;">Payment Method: <strong>${paymentMethod}</strong></span>
+                    <span style="display: block; font-size: 11px; color: #64748b; font-family: monospace; margin-top: 2px;">Ref: ${paymentId}</span>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Subscription Itemization Table -->
+          <tr>
+            <td style="padding: 12px 30px;">
+              <table width="100%" border="0" cellspacing="0" cellpadding="0" style="border-collapse: collapse; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
+                <thead>
+                  <tr style="background-color: #f8fafc; border-bottom: 2px solid #e2e8f0;">
+                    <th align="left" style="padding: 12px 14px; font-size: 11px; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">Service Description</th>
+                    <th align="center" style="padding: 12px 14px; font-size: 11px; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">Validity</th>
+                    <th align="right" style="padding: 12px 14px; font-size: 11px; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td style="padding: 16px 14px; border-bottom: 1px solid #e2e8f0;">
+                      <strong style="display: block; font-size: 13px; color: #0f172a;">${planName}</strong>
+                      <span style="display: block; font-size: 11px; color: #64748b; margin-top: 3px;">
+                        • Unlocked Direct Financer & Lender Contacts<br>
+                        • Verified KYC Reports & WhatsApp Connect<br>
+                        • Zero Middleman Commission Guarantee
+                        ${isAutoPay ? '<br>• Auto-Renewal / AutoPay Active' : ''}
+                      </span>
+                    </td>
+                    <td align="center" style="padding: 16px 14px; border-bottom: 1px solid #e2e8f0; font-size: 12px; color: #334155;">
+                      <strong>${planDurationDays} Days</strong><br>
+                      <span style="font-size: 10px; color: #64748b;">${startStr} to ${endStr}</span>
+                    </td>
+                    <td align="right" style="padding: 16px 14px; border-bottom: 1px solid #e2e8f0; font-size: 14px; font-weight: 800; color: #0f172a;">
+                      ₹${amount}
+                    </td>
+                  </tr>
+                  <tr style="background-color: #f8fafc;">
+                    <td colspan="2" align="right" style="padding: 12px 14px; font-size: 12px; font-weight: 700; color: #475569;">Subtotal:</td>
+                    <td align="right" style="padding: 12px 14px; font-size: 12px; font-weight: 700; color: #0f172a;">₹${amount}</td>
+                  </tr>
+                  <tr style="background-color: #f8fafc;">
+                    <td colspan="2" align="right" style="padding: 6px 14px; font-size: 11px; font-weight: 600; color: #64748b;">GST (18% Included):</td>
+                    <td align="right" style="padding: 6px 14px; font-size: 11px; font-weight: 600; color: #64748b;">₹${Math.round(amount * 0.18)}</td>
+                  </tr>
+                  <tr style="background-color: #eff6ff; border-top: 2px solid #bfdbfe;">
+                    <td colspan="2" align="right" style="padding: 14px 14px; font-size: 13px; font-weight: 800; color: #1e3a8a;">Total Paid (INR):</td>
+                    <td align="right" style="padding: 14px 14px; font-size: 16px; font-weight: 900; color: #1e3a8a;">₹${amount}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Contact & Support Info -->
+          <tr>
+            <td style="padding: 16px 30px 24px;">
+              <div style="background-color: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 12px; padding: 14px 18px; font-size: 11px; color: #64748b; line-height: 1.6;">
+                <strong>Need Help or Have Billing Questions?</strong><br>
+                Contact our 24/7 FinTech Help Desk at <a href="mailto:srinivaspolepalli10@gmail.com" style="color: ${primaryColor}; font-weight: 700; text-decoration: none;">srinivaspolepalli10@gmail.com</a> or Toll Free <strong>+91 1800 123 4567</strong>.<br>
+                JustPaisa App • BKC Financial Tower 4, Mumbai - 400051.
+              </div>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background-color: #0f172a; padding: 20px 30px; text-align: center; color: #94a3b8; font-size: 11px;">
+              <p style="margin: 0 0 6px 0; color: #e2e8f0; font-weight: 600;">Thank you for your business with JustPaisa!</p>
+              <p style="margin: 0;">This is an electronically generated tax invoice and does not require a physical signature.</p>
+              <p style="margin: 6px 0 0; color: #64748b; font-size: 10px;">
+                Developed by <a href="https://www.codtechitsolutions.com/" target="_blank" style="color: #38bdf8; text-decoration: none; font-weight: 700;">CODTECH IT SOLUTIONS</a>
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `;
+
+  return sendEmail({
+    to,
+    subject: `🧾 Tax Invoice #${invoiceNumber} - JustPaisa Subscription (${planName})`,
+    html,
+  });
+}
+

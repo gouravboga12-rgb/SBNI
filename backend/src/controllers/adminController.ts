@@ -3,6 +3,7 @@ import prisma from '../config/prisma';
 import { AuthenticatedRequest } from '../middlewares/auth';
 import { calculateStackedSubscriptionDates } from './subscriptionController';
 import { emitToUser, emitToAdmin } from '../services/socketService';
+import { sendSubscriptionInvoiceEmail } from '../utils/mailer';
 
 export const getAdminDashboardStats = async (req: AuthenticatedRequest, res: Response) => {
   const [
@@ -579,6 +580,36 @@ export const grantManualSubscription = async (req: AuthenticatedRequest, res: Re
     emitToUser(userId, 'subscription:updated', { subscription: sub, payment });
     emitToAdmin('subscription:updated', { subscription: sub, payment });
   } catch (sErr) {}
+
+  // Send official Tax / Subscription Invoice to user's registered email
+  try {
+    const purchasingUser = await prisma.user.findUnique({
+      where: { id: userId },
+      include: { vendorProfile: true, lenderProfile: true },
+    });
+
+    if (purchasingUser && purchasingUser.email) {
+      const uName = (purchasingUser as any).name || purchasingUser.vendorProfile?.ownerName || purchasingUser.lenderProfile?.contactPersonName || purchasingUser.lenderProfile?.institutionName || 'Valued Partner';
+      const bName = purchasingUser.vendorProfile?.businessName || purchasingUser.lenderProfile?.institutionName;
+      sendSubscriptionInvoiceEmail({
+        to: purchasingUser.email,
+        userName: uName,
+        businessName: bName,
+        role: purchasingUser.role,
+        planName: plan.name,
+        planDurationDays: days,
+        amount: plan.price,
+        invoiceNumber: payment.invoiceNumber || ('INV-GRANT-' + Date.now()),
+        paymentId: transactionId,
+        paymentMethod: 'Admin Courtesy Grant',
+        startDate,
+        endDate,
+        isAutoPay: false,
+      }).catch((e) => console.error('[Invoice Mail Error]:', e.message));
+    }
+  } catch (mailErr: any) {
+    console.error('Failed to trigger subscription invoice email:', mailErr?.message);
+  }
 
   res.json({ success: true, message: `Subscription (${plan.name}) granted to user with stacked validity until ${endDate.toISOString().split('T')[0]}.`, data: sub });
 };

@@ -59,11 +59,11 @@ export const SupportModal: React.FC<SupportModalProps> = ({ isOpen, onClose }) =
               </div>
               <div>
                 <div className="text-xs font-bold text-slate-900">Official Email Desk</div>
-                <div className="text-xs font-bold text-slate-600">support@justpaisa.com</div>
+                <div className="text-xs font-bold text-slate-600">srinivaspolepalli10@gmail.com</div>
               </div>
             </div>
             <a
-              href="mailto:support@justpaisa.com"
+              href="mailto:srinivaspolepalli10@gmail.com"
               className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-colors"
             >
               Send Email

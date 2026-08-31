@@ -4,6 +4,7 @@ import prisma from '../config/prisma';
 import { AuthenticatedRequest } from '../middlewares/auth';
 import razorpayInstance, { razorpayKeyId, razorpayKeySecret } from '../config/razorpay';
 import { emitToUser, emitToAdmin } from '../services/socketService';
+import { sendSubscriptionInvoiceEmail } from '../utils/mailer';
 
 /**
  * Calculates new subscription start and end dates by stacking validity
@@ -652,6 +653,39 @@ export const verifyRazorpayPayment = async (req: AuthenticatedRequest, res: Resp
       },
     });
 
+    // Send official Tax / Subscription Invoice to user's registered email
+    try {
+      const purchasingUser = await prisma.user.findUnique({
+        where: { id: userId },
+        include: {
+          vendorProfile: true,
+          lenderProfile: true,
+        },
+      });
+
+      if (purchasingUser && purchasingUser.email) {
+        const uName = (purchasingUser as any).name || purchasingUser.vendorProfile?.ownerName || purchasingUser.lenderProfile?.contactPersonName || purchasingUser.lenderProfile?.institutionName || 'Valued Partner';
+        const bName = purchasingUser.vendorProfile?.businessName || purchasingUser.lenderProfile?.institutionName;
+        sendSubscriptionInvoiceEmail({
+          to: purchasingUser.email,
+          userName: uName,
+          businessName: bName,
+          role: purchasingUser.role,
+          planName: plan ? plan.name : 'Subscription Membership',
+          planDurationDays: durationDays,
+          amount: finalPrice,
+          invoiceNumber,
+          paymentId: razorpay_payment_id,
+          paymentMethod: isAutoPay || razorpay_subscription_id ? 'Razorpay AutoPay' : 'Razorpay UPI / Card',
+          startDate,
+          endDate,
+          isAutoPay: !!(isAutoPay || razorpay_subscription_id),
+        }).catch((e) => console.error('[Invoice Mail Error]:', e.message));
+      }
+    } catch (mailErr: any) {
+      console.error('Failed to trigger subscription invoice email:', mailErr?.message);
+    }
+
     // Asynchronously trigger referral rewards for referee & referrer
     if (plan) {
       const referralCodeFromReq = req.body?.referralCode || req.body?.ref || req.query?.ref;
@@ -785,6 +819,36 @@ export const purchaseSubscriptionPlan = async (req: AuthenticatedRequest, res: R
       type: 'SUBSCRIPTION',
     },
   });
+
+  // Send official Tax / Subscription Invoice to user's registered email
+  try {
+    const purchasingUser = await prisma.user.findUnique({
+      where: { id: userId! },
+      include: { vendorProfile: true, lenderProfile: true },
+    });
+
+    if (purchasingUser && purchasingUser.email) {
+      const uName = (purchasingUser as any).name || purchasingUser.vendorProfile?.ownerName || purchasingUser.lenderProfile?.contactPersonName || purchasingUser.lenderProfile?.institutionName || 'Valued Partner';
+      const bName = purchasingUser.vendorProfile?.businessName || purchasingUser.lenderProfile?.institutionName;
+      sendSubscriptionInvoiceEmail({
+        to: purchasingUser.email,
+        userName: uName,
+        businessName: bName,
+        role: purchasingUser.role,
+        planName: plan ? plan.name : 'Subscription Membership',
+        planDurationDays: durationDays,
+        amount: finalPrice,
+        invoiceNumber,
+        paymentId: 'PAY-' + transactionId,
+        paymentMethod: paymentMethod || 'Online Payment',
+        startDate,
+        endDate,
+        isAutoPay: false,
+      }).catch((e) => console.error('[Invoice Mail Error]:', e.message));
+    }
+  } catch (mailErr: any) {
+    console.error('Failed to trigger subscription invoice email:', mailErr?.message);
+  }
 
   if (plan && userId) {
     const referralCodeFromReq = req.body?.referralCode || req.body?.ref || req.query?.ref;
@@ -927,6 +991,36 @@ export const activateSubscriptionWithWallet = async (req: AuthenticatedRequest, 
         type: 'SUBSCRIPTION',
       },
     });
+
+    // Send official Tax / Subscription Invoice to user's registered email
+    try {
+      const purchasingUser = await prisma.user.findUnique({
+        where: { id: userId },
+        include: { vendorProfile: true, lenderProfile: true },
+      });
+
+      if (purchasingUser && purchasingUser.email) {
+        const uName = (purchasingUser as any).name || purchasingUser.vendorProfile?.ownerName || purchasingUser.lenderProfile?.contactPersonName || purchasingUser.lenderProfile?.institutionName || 'Valued Partner';
+        const bName = purchasingUser.vendorProfile?.businessName || purchasingUser.lenderProfile?.institutionName;
+        sendSubscriptionInvoiceEmail({
+          to: purchasingUser.email,
+          userName: uName,
+          businessName: bName,
+          role: purchasingUser.role,
+          planName: plan.name,
+          planDurationDays: durationDays,
+          amount: finalPrice,
+          invoiceNumber,
+          paymentId: transactionId,
+          paymentMethod: 'Wallet Balance (100%)',
+          startDate,
+          endDate,
+          isAutoPay: false,
+        }).catch((e) => console.error('[Invoice Mail Error]:', e.message));
+      }
+    } catch (mailErr: any) {
+      console.error('Failed to trigger subscription invoice email:', mailErr?.message);
+    }
 
     // Process referral rewards for first subscription
     const referralCodeFromReq = req.body?.referralCode || req.body?.ref || req.query?.ref;

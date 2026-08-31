@@ -91,8 +91,10 @@ export const Footer: React.FC = () => {
             <h4 className="font-bold text-white text-sm font-heading mb-4">Help Desk & Support</h4>
             <ul className="space-y-3">
               <li className="flex items-center gap-2">
-                <Mail className="w-4 h-4 text-cyan-400" />
-                <span>support@justpaisa.com</span>
+                <Mail className="w-4 h-4 text-cyan-400 shrink-0" />
+                <a href="mailto:srinivaspolepalli10@gmail.com" className="hover:text-cyan-400 transition-colors break-all">
+                  srinivaspolepalli10@gmail.com
+                </a>
               </li>
               <li className="flex items-center gap-2">
                 <Phone className="w-4 h-4 text-emerald-400" />
