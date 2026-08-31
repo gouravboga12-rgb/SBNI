@@ -180,7 +180,14 @@ export interface FraudReportItem {
 }
 
 export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void }) {
-  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(true);
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(() => {
+    try {
+      const token = localStorage.getItem('sbni_admin_token');
+      return !!token;
+    } catch {
+      return false;
+    }
+  });
   const [adminEmail, setAdminEmail] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
   const [loginError, setLoginError] = useState('');
@@ -958,16 +965,13 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
     window.addEventListener('storage', handleDataSync);
 
     const ensureAdminSession = async () => {
-      try {
-        const loginRes = await adminLoginApi('srinivaspolepalli10@gmail.com', 'Srinivas@10');
-        if (loginRes.success) {
-          setIsAdminAuthenticated(true);
-        } else {
-          const adminToken = localStorage.getItem('sbni_admin_token');
-          if (adminToken) setIsAdminAuthenticated(true);
-        }
-      } catch {}
+      const adminToken = localStorage.getItem('sbni_admin_token');
+      if (!adminToken) {
+        setIsAdminAuthenticated(false);
+        return;
+      }
 
+      setIsAdminAuthenticated(true);
       await Promise.allSettled([
         loadAdminVendorsAndLenders(),
         loadAdminPayments(),
@@ -978,8 +982,6 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
     };
 
     ensureAdminSession();
-    loadPlansFromDB();
-    loadAdminReferralsAndRules();
 
     // ⚡ Real-Time WebSocket Push Subscriptions (Zero page refresh needed)
     initSocket();
