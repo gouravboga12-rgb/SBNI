@@ -37,6 +37,16 @@ image*.png
 !frontend/public/*
 !frontend/public/banners/*
 
+# Android & Gradle outputs
+.gradle/
+*/.gradle/
+*/*/.gradle/
+android/app/build/
+*/android/app/build/
+*/android/.gradle/
+.expo/
+*/.expo/
+
 # System files
 .DS_Store
 Thumbs.db
