@@ -43,9 +43,6 @@
       ]
     ],
     "extra": {
-      "eas": {
-        "projectId": "justpaisa-app-expo"
-      },
       "apiUrl": "https://testcodtech.shop/api",
       "wsUrl": "https://testcodtech.shop"
     }
