@@ -1252,100 +1252,58 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
               </div>
             </div>
 
-            {/* Main Content Area: Left (Featured Lenders Grid) & Right (Recent Activity Sidebar) */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              
-              {/* Left Column (2 Cols on Desktop): Business Money Financers (Lenders) Grid */}
-              <div className="lg:col-span-2 space-y-4">
-                <div className="flex items-center justify-between flex-wrap gap-2">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-extrabold text-slate-900 text-lg font-heading">Recommended Business Money Financers (Lenders)</h3>
-                    <span className="text-[10px] font-extrabold text-white bg-emerald-600 px-2 py-0.5 rounded-full shadow-xs animate-pulse">⚡ Nearby</span>
-                  </div>
-                  <button
-                    onClick={() => handleTabChange('lenders')}
-                    className="text-xs text-blue-700 font-bold hover:underline flex items-center gap-1 cursor-pointer"
-                  >
-                    <span>View All ({currentLendersList.length})</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </button>
+            {/* Main Content Area: Recommended Business Money Financers (Lenders) */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div className="flex items-center gap-2">
+                  <h3 className="font-extrabold text-slate-900 text-lg font-heading">Recommended Business Money Financers (Lenders)</h3>
+                  <span className="text-[10px] font-extrabold text-white bg-emerald-600 px-2 py-0.5 rounded-full shadow-xs animate-pulse">⚡ Nearby</span>
                 </div>
-
-                <div className="space-y-3">
-                  {isLoadingLenders ? (
-                    <div className="card-white p-8 text-center text-xs text-slate-500 font-medium space-y-2">
-                      <div className="w-6 h-6 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin mx-auto" />
-                      <div>Discovering nearby verified financers with Mapbox GPS...</div>
-                    </div>
-                  ) : currentLendersList.filter((l) => Number(l.distanceKm) <= (Number(l.lendingRadiusKm) || 50)).length === 0 ? (
-                    <div className="card-white p-8 text-center rounded-2xl border border-slate-200/90 shadow-sm space-y-3">
-                      <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto">
-                        <Users className="w-6 h-6" />
-                      </div>
-                      <h4 className="font-extrabold text-slate-900 text-sm">No Financers Located within Service Radius</h4>
-                      <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                        No active financers found within their service radius of {searchLocation.place}, {searchLocation.city}. Expand your location search or explore all financers.
-                      </p>
-                      <button
-                        onClick={() => handleTabChange('lenders')}
-                        className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs shadow-sm transition-all cursor-pointer"
-                      >
-                        Explore All Financers ({currentLendersList.length})
-                      </button>
-                    </div>
-                  ) : (
-                    currentLendersList
-                      .filter((l) => Number(l.distanceKm) <= (Number(l.lendingRadiusKm) || 50))
-                      .slice(0, 3)
-                      .map((lender) => (
-                        <LenderCard
-                          key={lender.id}
-                          lender={lender}
-                          onOpenSubscription={onOpenSubscription}
-                          onRequestLoan={handleRequestLoan}
-                        />
-                      ))
-                  )}
-                </div>
+                <button
+                  onClick={() => handleTabChange('lenders')}
+                  className="text-xs text-blue-700 font-bold hover:underline flex items-center gap-1 cursor-pointer"
+                >
+                  <span>View All ({currentLendersList.length})</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
               </div>
 
-              {/* Right Column (1 Col on Desktop): Recent Activity & Protection Banner */}
-              <div className="space-y-4">
-                {/* Recent Activity: Hidden on mobile view as requested */}
-                <div className="hidden md:block space-y-4">
-                  <h3 className="font-bold text-slate-900 text-lg font-heading">Recent Activity</h3>
-
-                  <div className="card-white p-4 space-y-3 shadow-sm">
-                    <div className="flex items-center justify-between text-xs pb-3 border-b border-slate-100">
-                      <div>
-                        <div className="font-bold text-slate-900 text-sm">Enquiry request submitted</div>
-                        <div className="text-slate-500 text-xs mt-0.5">Working Capital • 02 May 2024</div>
-                      </div>
-                      <span className="badge-pending-amber">Pending</span>
-                    </div>
-
-                    <div className="flex items-center justify-between text-xs pt-1">
-                      <div>
-                        <div className="font-bold text-slate-900 text-sm">Profile verified successfully</div>
-                        <div className="text-slate-500 text-xs mt-0.5">Vendor Verification • 30 Apr 2024</div>
-                      </div>
-                      <span className="badge-verified-green">Completed</span>
-                    </div>
+              <div className="space-y-3">
+                {isLoadingLenders ? (
+                  <div className="card-white p-8 text-center text-xs text-slate-500 font-medium space-y-2">
+                    <div className="w-6 h-6 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin mx-auto" />
+                    <div>Discovering nearby verified financers with Mapbox GPS...</div>
                   </div>
-                </div>
-
-                {/* Protection Guarantee Banner */}
-                <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-900 flex items-start gap-3 font-medium shadow-sm">
-                  <ShieldCheck className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <div className="font-bold text-slate-900 mb-0.5">100% Verified Business Money Financers</div>
-                    <p className="text-slate-600 leading-relaxed text-[11px]">
-                      All registered business money financers & credit partners undergo strict compliance verification. Your data is encrypted & safe.
+                ) : currentLendersList.filter((l) => Number(l.distanceKm) <= (Number(l.lendingRadiusKm) || 50)).length === 0 ? (
+                  <div className="card-white p-8 text-center rounded-2xl border border-slate-200/90 shadow-sm space-y-3">
+                    <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto">
+                      <Users className="w-6 h-6" />
+                    </div>
+                    <h4 className="font-extrabold text-slate-900 text-sm">No Financers Located within Service Radius</h4>
+                    <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                      No active financers found within their service radius of {searchLocation.place}, {searchLocation.city}. Expand your location search or explore all financers.
                     </p>
+                    <button
+                      onClick={() => handleTabChange('lenders')}
+                      className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs shadow-sm transition-all cursor-pointer"
+                    >
+                      Explore All Financers ({currentLendersList.length})
+                    </button>
                   </div>
-                </div>
+                ) : (
+                  currentLendersList
+                    .filter((l) => Number(l.distanceKm) <= (Number(l.lendingRadiusKm) || 50))
+                    .slice(0, 4)
+                    .map((lender) => (
+                      <LenderCard
+                        key={lender.id}
+                        lender={lender}
+                        onOpenSubscription={onOpenSubscription}
+                        onRequestLoan={handleRequestLoan}
+                      />
+                    ))
+                )}
               </div>
-
             </div>
 
           </div>
