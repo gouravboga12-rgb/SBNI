@@ -15,7 +15,6 @@ import {
   Zap,
   Check,
   X,
-  Ticket,
   Sparkles,
   ShieldCheck,
   CalendarCheck,
@@ -48,10 +47,6 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
 }) => {
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
-  const [couponCode, setCouponCode] = useState('');
-  const [discountPercent, setDiscountPercent] = useState(0);
-  const [couponApplied, setCouponApplied] = useState(false);
-  const [couponError, setCouponError] = useState('');
   const [walletBalance, setWalletBalance] = useState<number>(0);
   const [useWallet, setUseWallet] = useState<boolean>(false);
   const [isAutoPay, setIsAutoPay] = useState<boolean>(true);
@@ -172,16 +167,6 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
 
   if (!isOpen) return null;
 
-  const handleApplyCoupon = () => {
-    if (couponCode.trim().toUpperCase() === 'WELCOME10') {
-      setDiscountPercent(10);
-      setCouponApplied(true);
-      setCouponError('');
-    } else {
-      setCouponError('Invalid coupon code. Try WELCOME10');
-    }
-  };
-
   const getUserDetails = () => {
     try {
       const rawUser = localStorage.getItem('sbni_user');
@@ -196,12 +181,9 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
     };
   };
 
-  const baseDiscountedPrice = selectedPlan
-    ? Math.max(0, selectedPlan.price - (selectedPlan.price * discountPercent) / 100)
-    : 0;
-
-  const appliedWalletDeduction = useWallet ? Math.min(walletBalance, baseDiscountedPrice) : 0;
-  const calculatedPrice = Math.max(0, baseDiscountedPrice - appliedWalletDeduction);
+  const basePrice = selectedPlan ? selectedPlan.price : 0;
+  const appliedWalletDeduction = useWallet ? Math.min(walletBalance, basePrice) : 0;
+  const calculatedPrice = Math.max(0, basePrice - appliedWalletDeduction);
 
   const handleSubscribe = async (targetPlan?: SubscriptionPlan, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
@@ -216,11 +198,9 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
     setSuccessMessage('');
 
     try {
-      const appliedCoupon = couponApplied ? couponCode.trim().toUpperCase() : undefined;
-
       // 1. If 100% covered by wallet balance (₹0 payable)
-      if (useWallet && appliedWalletDeduction >= baseDiscountedPrice && baseDiscountedPrice > 0) {
-        const walRes = await activateSubscriptionWithWalletApi(planToSubscribe.id, appliedCoupon);
+      if (useWallet && appliedWalletDeduction >= basePrice && basePrice > 0) {
+        const walRes = await activateSubscriptionWithWalletApi(planToSubscribe.id);
         if (walRes.success) {
           safeSetLocalStorage('sbni_subscribed', 'true');
           safeSetLocalStorage('sbni_vendor_subscribed', 'true');
@@ -240,7 +220,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
       }
 
       // 2. Standard Razorpay payment or partial wallet deduction session
-      const session = await createRazorpayPaymentSession(planToSubscribe.id, isAutoPay, appliedCoupon, useWallet);
+      const session = await createRazorpayPaymentSession(planToSubscribe.id, isAutoPay, undefined, useWallet);
 
       if (!session.success) {
         throw new Error(session.message || 'Unable to initiate payment session. Please try again.');
@@ -282,7 +262,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
               razorpay_signature: response.razorpay_signature,
               razorpay_subscription_id: response.razorpay_subscription_id || session.subscriptionId,
               planId: planToSubscribe.id,
-              couponCode: appliedCoupon,
+              couponCode: undefined,
               isAutoPay,
               useWallet,
               walletAmountUsed: appliedWalletDeduction,
@@ -546,7 +526,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mb-4">
           {plans.map((plan) => {
             const isSelected = selectedPlan?.id === plan.id;
-            const planPrice = Math.max(0, plan.price - (plan.price * discountPercent) / 100);
+            const planPrice = plan.price;
             const isCurrent = isCurrentActivePlan(plan);
             const isHigher = isHigherTierPlan(plan);
             const isLower = isLowerTierPlan(plan);
@@ -616,13 +596,9 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
 
                   <div className="flex items-baseline gap-1 mb-1.5">
                     <span className="text-xl sm:text-2xl font-extrabold text-slate-900 font-heading">
-                      ₹{planPrice}
+                      ₹{plan.price}
                     </span>
-                    {discountPercent > 0 ? (
-                      <span className="text-[10px] text-slate-400 line-through">₹{plan.price}</span>
-                    ) : (
-                      <span className="text-[10px] text-slate-400 line-through">₹{plan.originalPrice}</span>
-                    )}
+                    <span className="text-[10px] text-slate-400 line-through">₹{plan.originalPrice}</span>
                   </div>
 
                   <p className="text-[10px] text-slate-500 mb-2.5 leading-tight min-h-[24px]">
@@ -686,92 +662,59 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
           })}
         </div>
 
-        {/* ── AUTOPAY & COUPON & WALLET SECTION ───────────────────────── */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3 flex-shrink-0">
-          {/* AutoPay / Recurring Renewal Toggle */}
-          <div
-            onClick={() => setIsAutoPay(!isAutoPay)}
-            className={`p-3 rounded-2xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
-              isAutoPay
-                ? isLender
-                  ? 'bg-emerald-50/90 border-emerald-500 shadow-sm'
-                  : 'bg-blue-50/90 border-blue-500 shadow-sm'
-                : 'bg-slate-50 hover:bg-slate-100 border-slate-200'
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <div
-                className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
-                  isAutoPay
-                    ? isLender
-                      ? 'bg-emerald-600 text-white'
-                      : 'bg-blue-600 text-white'
-                    : 'bg-slate-200 text-slate-600'
-                }`}
-              >
-                <Repeat className={`w-4 h-4 ${isAutoPay ? 'animate-spin' : ''}`} style={{ animationDuration: '6s' }} />
-              </div>
-              <div>
-                <div className="flex items-center gap-1.5">
-                  <span className="text-xs font-extrabold text-slate-900">Enable AutoPay (Auto-Renew)</span>
-                  <span
-                    className={`text-[9px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-wider ${
-                      isAutoPay
-                        ? 'bg-emerald-600 text-white'
-                        : 'bg-slate-200 text-slate-600'
-                    }`}
-                  >
-                    UPI / Card
-                  </span>
-                </div>
-                <div className="text-[10px] text-slate-500 font-medium">
-                  Continuous platform access • Cancel or pause anytime in 1-click
-                </div>
-              </div>
-            </div>
-
-            {/* Switch UI */}
+        {/* ── AUTOPAY TOGGLE CARD ───────────────────────────────── */}
+        <div
+          onClick={() => setIsAutoPay(!isAutoPay)}
+          className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between gap-3 mb-3 ${
+            isAutoPay
+              ? isLender
+                ? 'bg-emerald-50/90 border-emerald-500 shadow-xs'
+                : 'bg-blue-50/90 border-blue-500 shadow-xs'
+              : 'bg-slate-50 hover:bg-slate-100 border-slate-200'
+          }`}
+        >
+          <div className="flex items-center gap-3">
             <div
-              className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors duration-300 shrink-0 ${
-                isAutoPay ? (isLender ? 'bg-emerald-600' : 'bg-blue-600') : 'bg-slate-300'
+              className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                isAutoPay
+                  ? isLender
+                    ? 'bg-emerald-600 text-white'
+                    : 'bg-blue-600 text-white'
+                  : 'bg-slate-200 text-slate-600'
               }`}
             >
-              <div
-                className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-300 ${
-                  isAutoPay ? 'translate-x-5' : 'translate-x-0'
-                }`}
-              />
+              <Repeat className={`w-4 h-4 ${isAutoPay ? 'animate-spin' : ''}`} style={{ animationDuration: '6s' }} />
+            </div>
+            <div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs font-extrabold text-slate-900">Enable AutoPay (Auto-Renew)</span>
+                <span
+                  className={`text-[9px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-wider ${
+                    isAutoPay
+                      ? 'bg-emerald-600 text-white'
+                      : 'bg-slate-200 text-slate-600'
+                  }`}
+                >
+                  UPI / Card
+                </span>
+              </div>
+              <div className="text-[10px] text-slate-500 font-medium">
+                Continuous platform access • Cancel or pause anytime in 1-click
+              </div>
             </div>
           </div>
 
-          {/* Coupon Code Section */}
-          <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-2.5">
-            <div className="flex items-center gap-2.5">
-              <Ticket className="w-4 h-4 text-indigo-600 flex-shrink-0" />
-              <div>
-                <div className="text-xs font-bold text-slate-900">Have a Coupon?</div>
-                <div className="text-[10px] text-slate-500 font-medium">
-                  Use code <span className="text-blue-700 font-bold">WELCOME10</span> (10% off)
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <input
-                type="text"
-                placeholder="WELCOME10"
-                value={couponCode}
-                onChange={(e) => setCouponCode(e.target.value)}
-                className="bg-white border border-slate-300 text-slate-900 text-xs px-2.5 py-1.5 rounded-xl uppercase outline-none focus:border-blue-600 w-full sm:w-28 text-center font-bold"
-              />
-              <button
-                type="button"
-                onClick={handleApplyCoupon}
-                className="bg-slate-800 hover:bg-slate-900 text-white py-1.5 px-3 rounded-xl text-xs font-bold whitespace-nowrap transition-colors cursor-pointer"
-              >
-                Apply
-              </button>
-            </div>
+          {/* Switch UI */}
+          <div
+            className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors duration-300 shrink-0 ${
+              isAutoPay ? (isLender ? 'bg-emerald-600' : 'bg-blue-600') : 'bg-slate-300'
+            }`}
+          >
+            <div
+              className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-300 ${
+                isAutoPay ? 'translate-x-5' : 'translate-x-0'
+              }`}
+            />
           </div>
         </div>
 
@@ -824,16 +767,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
           </div>
         )}
 
-        {couponApplied && (
-          <div className="text-xs text-emerald-700 font-bold mb-2 text-center">
-            ✅ Coupon applied! 10% discount subtracted.
-          </div>
-        )}
-        {couponError && (
-          <div className="text-xs text-rose-600 font-bold mb-2 text-center">
-            {couponError}
-          </div>
-        )}
+
 
         {/* Feedback Alerts */}
         {errorMessage && (
@@ -867,7 +801,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
               <span>₹{calculatedPrice}</span>
               {appliedWalletDeduction > 0 && (
                 <span className="text-xs line-through text-slate-400 font-normal">
-                  ₹{baseDiscountedPrice}
+                  ₹{basePrice}
                 </span>
               )}
               <span className="text-xs text-slate-400 font-normal">
