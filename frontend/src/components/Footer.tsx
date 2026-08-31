@@ -13,7 +13,7 @@ export const Footer: React.FC = () => {
   };
 
   return (
-    <footer className="bg-slate-950 border-t border-slate-800 text-slate-400 text-xs py-12">
+    <footer className="bg-slate-950 border-t border-slate-800 text-slate-400 text-xs pt-12 pb-36 sm:pb-40">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
@@ -113,14 +113,14 @@ export const Footer: React.FC = () => {
         </div>
 
         {/* Bottom Footer Bar */}
-        <div className="pt-6 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4 text-center">
-          <p>© 2026 Just Paisa App. All Rights Reserved. Production Enterprise FinTech Release.</p>
+        <div className="pt-8 border-t border-slate-800/80 flex flex-col items-center justify-between gap-4 text-center">
           
-          <div className="flex flex-wrap items-center justify-center gap-3 text-xs">
+          {/* Policy Links */}
+          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs font-semibold">
             <button
               type="button"
               onClick={() => openPolicy('privacy')}
-              className="text-slate-400 hover:text-cyan-400 transition-colors cursor-pointer"
+              className="text-slate-300 hover:text-cyan-400 transition-colors cursor-pointer"
             >
               Privacy Policy
             </button>
@@ -128,7 +128,7 @@ export const Footer: React.FC = () => {
             <button
               type="button"
               onClick={() => openPolicy('terms')}
-              className="text-slate-400 hover:text-cyan-400 transition-colors cursor-pointer"
+              className="text-slate-300 hover:text-cyan-400 transition-colors cursor-pointer"
             >
               Terms & Conditions
             </button>
@@ -136,23 +136,37 @@ export const Footer: React.FC = () => {
             <button
               type="button"
               onClick={() => openPolicy('refund')}
-              className="text-slate-400 hover:text-cyan-400 transition-colors cursor-pointer"
+              className="text-slate-300 hover:text-cyan-400 transition-colors cursor-pointer"
             >
-              Refund Policy
+              Refund & Cancellation Policy
             </button>
-            <span className="text-slate-700 hidden sm:inline">•</span>
-            <span>
+            <span className="text-slate-700">•</span>
+            <button
+              type="button"
+              onClick={() => openPolicy('disclaimer')}
+              className="text-slate-300 hover:text-cyan-400 transition-colors cursor-pointer"
+            >
+              Marketplace Disclaimer
+            </button>
+          </div>
+
+          {/* Copyright & Developed By */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-2 text-xs text-slate-400">
+            <p>© 2026 Just Paisa App. All Rights Reserved.</p>
+            <span className="hidden sm:inline text-slate-600">•</span>
+            <p>
               Developed by{' '}
               <a
                 href="https://www.codtechitsolutions.com/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-cyan-400 hover:text-cyan-300 font-extrabold underline underline-offset-2 transition-colors cursor-pointer"
+                className="text-cyan-400 hover:text-cyan-300 font-extrabold underline underline-offset-4 transition-colors cursor-pointer"
               >
                 CODTECH IT SOLUTIONS
               </a>
-            </span>
+            </p>
           </div>
+
         </div>
 
       </div>
