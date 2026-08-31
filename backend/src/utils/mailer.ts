@@ -400,8 +400,7 @@ export async function sendSubscriptionInvoiceEmail({
             <td style="padding: 16px 30px 24px;">
               <div style="background-color: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 12px; padding: 14px 18px; font-size: 11px; color: #64748b; line-height: 1.6;">
                 <strong>Need Help or Have Billing Questions?</strong><br>
-                Contact our 24/7 FinTech Help Desk at <a href="mailto:srinivaspolepalli10@gmail.com" style="color: ${primaryColor}; font-weight: 700; text-decoration: none;">srinivaspolepalli10@gmail.com</a> or Toll Free <strong>+91 1800 123 4567</strong>.<br>
-                JustPaisa App • BKC Financial Tower 4, Mumbai - 400051.
+                Contact our FinTech Help Desk at <a href="mailto:srinivaspolepalli10@gmail.com" style="color: ${primaryColor}; font-weight: 700; text-decoration: none;">srinivaspolepalli10@gmail.com</a>.
               </div>
             </td>
           </tr>
