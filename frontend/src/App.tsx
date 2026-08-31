@@ -38,8 +38,16 @@ export function App() {
   const [authSubscribeIntent, setAuthSubscribeIntent] = useState<boolean>(false);
   const [isLoadingUser, setIsLoadingUser] = useState(true);
 
-  // Listen for admin route changes
+  // Listen for admin route changes and capture referral query param
   useEffect(() => {
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const ref = urlParams.get('ref') || urlParams.get('referral');
+      if (ref && ref.trim()) {
+        localStorage.setItem('sbni_referral_code', ref.trim().toUpperCase());
+      }
+    } catch {}
+
     const handleLocationCheck = () => {
       setIsAdminRoute(window.location.pathname.startsWith('/admin'));
     };

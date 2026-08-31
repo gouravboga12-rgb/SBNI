@@ -175,11 +175,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
       try {
         const urlParams = new URLSearchParams(window.location.search);
-        const ref = urlParams.get('ref') || urlParams.get('referral');
+        const ref = urlParams.get('ref') || urlParams.get('referral') || localStorage.getItem('sbni_referral_code');
         if (ref) {
-          setReferralCodeInput(ref.trim().toUpperCase());
+          const cleanRef = ref.trim().toUpperCase();
+          setReferralCodeInput(cleanRef);
           setIsRegister(true);
           setViewStep('FORM');
+          try {
+            localStorage.setItem('sbni_referral_code', cleanRef);
+          } catch {}
         }
       } catch {}
     }
@@ -325,6 +329,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           licenseFile,
           shopPhotoFile,
           liveSelfieFile,
+          referralCode: referralCodeInput.trim().toUpperCase() || undefined,
         });
         setOtpTargetEmail(email);
         setOtpTargetName(fullName);
@@ -361,6 +366,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           return;
         }
 
+        const effectiveReferralCode =
+          pendingVendorData.referralCode ||
+          referralCodeInput.trim().toUpperCase() ||
+          localStorage.getItem('sbni_referral_code') ||
+          undefined;
+
         const result = await registerVendor({
           name: pendingVendorData.name,
           email: pendingVendorData.email,
@@ -375,6 +386,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           latitude: pendingVendorData.latitude,
           longitude: pendingVendorData.longitude,
           otpCode: signupOtp.trim(),
+          referralCode: effectiveReferralCode,
         });
 
         if (result.success && result.user) {
@@ -480,6 +492,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           fullUser.vendorProfile = cleanProfile;
           safeSetLocalStorage('sbni_user', JSON.stringify(fullUser));
           safeSetLocalStorage('sbni_vendor_profile', JSON.stringify(cleanProfile));
+          try { localStorage.removeItem('sbni_referral_code'); } catch {}
 
           onAuthSuccess(fullUser);
           onClose();
@@ -494,8 +507,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           return;
         }
 
+        const effectiveReferralCode =
+          pendingLenderData.referralCode ||
+          referralCodeInput.trim().toUpperCase() ||
+          localStorage.getItem('sbni_referral_code') ||
+          undefined;
+
         const result = await registerLender({
           ...pendingLenderData,
+          referralCode: effectiveReferralCode,
           successRate: pendingLenderData.successRate || '80% - 90%',
           otpCode: signupOtp.trim(),
         });
@@ -538,6 +558,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
           safeSetLocalStorage('sbni_user', JSON.stringify(userWithProfile));
           safeSetLocalStorage('sbni_lender_profile', JSON.stringify(userWithProfile.lenderProfile));
+          try { localStorage.removeItem('sbni_referral_code'); } catch {}
           onAuthSuccess(userWithProfile);
           onClose();
         } else {

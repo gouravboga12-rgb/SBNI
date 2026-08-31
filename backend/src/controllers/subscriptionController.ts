@@ -41,44 +41,102 @@ export const getRazorpayConfig = async (_req: Request, res: Response) => {
 
 export const processReferralRewardsForUser = async (userId: string, plan: any) => {
   try {
-    const pendingReferral = await prisma.referralRecord.findFirst({
+    let pendingReferral = await prisma.referralRecord.findFirst({
       where: {
         refereeId: userId,
         status: 'REGISTERED',
       },
     });
 
+    // Fallback: If no pending ReferralRecord exists, check if user is linked via referredById
+    if (!pendingReferral) {
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { id: true, referredById: true },
+      });
+
+      if (user?.referredById) {
+        const existingRecord = await prisma.referralRecord.findFirst({
+          where: { refereeId: userId },
+        });
+
+        if (!existingRecord) {
+          const referrer = await prisma.user.findUnique({
+            where: { id: user.referredById },
+            select: { id: true, referralCode: true },
+          });
+
+          if (referrer) {
+            pendingReferral = await prisma.referralRecord.create({
+              data: {
+                referrerId: referrer.id,
+                refereeId: user.id,
+                referralCode: referrer.referralCode || 'PARTNER',
+                status: 'REGISTERED',
+              },
+            });
+          }
+        }
+      }
+    }
+
     if (!pendingReferral) return;
 
-    if (plan.referralEnabled === false) {
+    // Fetch fresh plan data from DB to guarantee latest Admin configured settings
+    let dbPlan = plan;
+    if (plan?.id) {
+      const freshPlan = await prisma.subscriptionPlan.findUnique({
+        where: { id: plan.id },
+      });
+      if (freshPlan) dbPlan = freshPlan;
+    }
+
+    if (dbPlan.referralEnabled === false) {
       await prisma.referralRecord.update({
         where: { id: pendingReferral.id },
         data: {
           status: 'COMPLETED',
-          subscriptionPlanId: plan.id,
+          subscriptionPlanId: dbPlan.id,
           referrerReward: 0,
           refereeReward: 0,
-          adminShare: Number(plan.price) || 0,
+          adminShare: Number(dbPlan.price) || 0,
           rewardedAt: new Date(),
         },
       });
       return;
     }
 
-    const referrerReward =
-      plan.referrerReward !== undefined && plan.referrerReward !== null
-        ? Math.max(0, Number(plan.referrerReward))
-        : (plan.roleTarget === 'LENDER' ? 500 : 200);
+    const planPrice = Number(dbPlan.price) || 0;
+    const isLender = dbPlan.roleTarget === 'LENDER';
 
-    const refereeReward =
-      plan.refereeReward !== undefined && plan.refereeReward !== null
-        ? Math.max(0, Number(plan.refereeReward))
-        : 0;
+    // Prioritize Admin configured reward from database
+    let referrerReward = 0;
+    if (typeof dbPlan.referrerReward === 'number' && dbPlan.referrerReward > 0) {
+      referrerReward = dbPlan.referrerReward;
+    } else if (dbPlan.referrerReward === 0 && (dbPlan.refereeReward !== undefined && dbPlan.refereeReward !== null)) {
+      referrerReward = 0; // Explicitly set to 0 by Admin
+    } else {
+      referrerReward = isLender
+        ? Math.max(50, Math.round(planPrice * 0.20))
+        : Math.max(30, Math.round(planPrice * 0.15));
+    }
+
+    // Prioritize Admin configured referee cashback from database
+    let refereeReward = 0;
+    if (typeof dbPlan.refereeReward === 'number' && dbPlan.refereeReward > 0) {
+      refereeReward = dbPlan.refereeReward;
+    } else if (dbPlan.refereeReward === 0 && (dbPlan.referrerReward !== undefined && dbPlan.referrerReward !== null)) {
+      refereeReward = 0; // Explicitly set to 0 by Admin
+    } else {
+      refereeReward = isLender
+        ? Math.max(25, Math.round(planPrice * 0.10))
+        : Math.max(15, Math.round(planPrice * 0.10));
+    }
 
     const adminShare =
-      plan.adminShare !== undefined && plan.adminShare !== null && Number(plan.adminShare) >= 0
-        ? Number(plan.adminShare)
-        : Math.max(0, Number(plan.price) - referrerReward - refereeReward);
+      typeof dbPlan.adminShare === 'number' && dbPlan.adminShare >= 0
+        ? dbPlan.adminShare
+        : Math.max(0, planPrice - referrerReward - refereeReward);
 
     await prisma.$transaction(async (tx) => {
       // 1. Credit Referrer
@@ -95,7 +153,7 @@ export const processReferralRewardsForUser = async (userId: string, plan: any) =
             type: 'CREDIT',
             source: 'REFERRAL_BONUS',
             balanceAfter: referrerUser.walletBalance,
-            description: `Referral reward for partner plan subscription (${plan.name})`,
+            description: `Referral reward for partner plan subscription (${dbPlan.name})`,
             referenceId: pendingReferral.id,
           },
         });
@@ -104,7 +162,7 @@ export const processReferralRewardsForUser = async (userId: string, plan: any) =
           data: {
             userId: pendingReferral.referrerId,
             title: '🎉 Referral Bonus Earned!',
-            message: `₹${referrerReward} has been credited to your wallet for inviting a partner who just activated ${plan.name}.`,
+            message: `₹${referrerReward} has been credited to your wallet for inviting a partner who just activated ${dbPlan.name}.`,
             type: 'PROMO',
           },
         });
@@ -124,7 +182,7 @@ export const processReferralRewardsForUser = async (userId: string, plan: any) =
             type: 'CREDIT',
             source: 'REFEREE_WELCOME_BONUS',
             balanceAfter: refereeUser.walletBalance,
-            description: `Welcome cashback for joining via partner referral (${plan.name})`,
+            description: `Welcome cashback for joining via partner referral (${dbPlan.name})`,
             referenceId: pendingReferral.id,
           },
         });
@@ -133,7 +191,7 @@ export const processReferralRewardsForUser = async (userId: string, plan: any) =
           data: {
             userId,
             title: '🎁 Welcome Cashback Credited!',
-            message: `₹${refereeReward} has been added to your wallet for subscribing to ${plan.name} via partner invitation! Use it towards your next plan upgrade.`,
+            message: `₹${refereeReward} has been added to your wallet for subscribing to ${dbPlan.name} via partner invitation! Use it towards your next plan upgrade.`,
             type: 'PROMO',
           },
         });
@@ -144,7 +202,7 @@ export const processReferralRewardsForUser = async (userId: string, plan: any) =
         where: { id: pendingReferral.id },
         data: {
           status: 'COMPLETED',
-          subscriptionPlanId: plan.id,
+          subscriptionPlanId: dbPlan.id,
           referrerReward,
           refereeReward,
           adminShare,
