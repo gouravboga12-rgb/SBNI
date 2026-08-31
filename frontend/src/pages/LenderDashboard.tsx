@@ -226,7 +226,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
 
   const [currentUserObj, setCurrentUserObj] = useState<any>(() => resolveInitialLenderDetails(currentUser));
   const [lenderAvatarUrl, setLenderAvatarUrl] = useState<string>(() => {
-    try { localStorage.removeItem('sbni_lender_avatar'); } catch (e) {}
+    try { localStorage.removeItem('sbni_lender_avatar'); } catch (e) { }
     const direct = currentUser?.lenderProfile?.logoUrl || currentUser?.lenderProfile?.avatarUrl;
     if (direct) return direct;
     if (currentUser?.email) {
@@ -451,7 +451,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
     let pObj: any = {};
     try {
       pObj = JSON.parse(localStorage.getItem('sbni_lender_profile') || '{}');
-    } catch (e) {}
+    } catch (e) { }
 
     setLenderEditForm({
       institutionName: currentUserObj.name,
@@ -502,7 +502,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
       try {
         u = JSON.parse(localStorage.getItem('sbni_user') || '{}');
         lp = JSON.parse(localStorage.getItem('sbni_lender_profile') || '{}');
-      } catch (e) {}
+      } catch (e) { }
 
       const mergedUser = {
         ...u,
@@ -678,7 +678,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
           };
         }
       }
-    } catch (e) {}
+    } catch (e) { }
     return {
       place: 'Office Area',
       city: 'Hyderabad',
@@ -702,7 +702,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
         if (!prompted) {
           setIsLocationPromptOpen(true);
         }
-      } catch (e) {}
+      } catch (e) { }
     }
   }, [currentUser, currentUserObj]);
 
@@ -735,7 +735,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
       const merged = { ...parsed, ...updated };
       safeSetLocalStorage('sbni_lender_profile', JSON.stringify(merged));
       sessionStorage.setItem('sbni_lender_loc_prompted', 'true');
-    } catch (e) {}
+    } catch (e) { }
 
     // Save to AWS Backend
     try {
@@ -808,7 +808,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
           }));
         }
       }
-    } catch (e) {}
+    } catch (e) { }
 
     // 2. Real AWS Backend leads submitted to this lender
     let awsReqs: VendorVerificationRequest[] = [];
@@ -828,7 +828,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
               if (lead.vendorSnapshot) {
                 snapshot = typeof lead.vendorSnapshot === 'string' ? JSON.parse(lead.vendorSnapshot) : lead.vendorSnapshot;
               }
-            } catch {}
+            } catch { }
 
             const kycDocs = v.user?.kycDocuments || [];
             const panDoc = kycDocs.find((d: any) => d.docType === 'PAN');
@@ -848,7 +848,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                 if (vId && sf[vId]) { delete sf[vId]; sfChanged = true; }
                 if (vEmail && sf[vEmail]) { delete sf[vEmail]; sfChanged = true; }
                 if (sfChanged) safeSetLocalStorage('sbni_fraud_vendors', JSON.stringify(sf));
-              } catch {}
+              } catch { }
             }
 
             let shopPhotoUrl: string | null = snapshot.shopPhotoUrl || null;
@@ -860,7 +860,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                   shopPhotoUrl = spArr[0];
                   if (shopImages.length === 0) shopImages = spArr;
                 }
-              } catch {}
+              } catch { }
             }
 
             return {
@@ -924,9 +924,9 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
     const a =
       Math.sin(dLat / 2) * Math.sin(dLat / 2) +
       Math.cos((lat1 * Math.PI) / 180) *
-        Math.cos((lat2 * Math.PI) / 180) *
-        Math.sin(dLon / 2) *
-        Math.sin(dLon / 2);
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return Math.round(R * c * 10) / 10;
   };
@@ -1103,7 +1103,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
       if (adminVendorMatch) {
         return !!adminVendorMatch.isFraud;
       }
-    } catch {}
+    } catch { }
 
     return false;
   };
@@ -1170,7 +1170,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
           safeSetLocalStorage('sbni_vendor_requests', JSON.stringify(updatedList));
         }
       }
-    } catch (e) {}
+    } catch (e) { }
 
     // Synchronize to backend if backend lead
     updateLeadStatusApi(id, newStatus).catch((err) => console.error('Failed to sync status to backend:', err));
@@ -1229,7 +1229,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
       );
 
       // 2. Call backend API to delete lead from PostgreSQL RDS
-      await deleteLenderLeadApi(id).catch(() => {});
+      await deleteLenderLeadApi(id).catch(() => { });
 
       // 3. Update localStorage sbni_vendor_requests
       try {
@@ -1245,7 +1245,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
             safeSetLocalStorage('sbni_vendor_requests', JSON.stringify(updatedList));
           }
         }
-      } catch (e) {}
+      } catch (e) { }
 
       // 4. Clear vendor applied markers for this lender
       try {
@@ -1269,7 +1269,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
             }
           }
         }
-      } catch (e) {}
+      } catch (e) { }
 
       // 5. Update deleted ids list so it never re-appears across reloads
       try {
@@ -1279,7 +1279,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
           if (!delList.includes(item)) delList.push(item);
         });
         safeSetLocalStorage('sbni_deleted_leads', JSON.stringify(delList));
-      } catch (e) {}
+      } catch (e) { }
 
       // 6. If selectedVendor is this request, close the view
       if (selectedVendor && (selectedVendor.id === id || selectedVendor.vendorName === targetName)) {
@@ -1416,7 +1416,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
   return (
     <div className="bg-slate-50 min-h-screen pb-28 md:pb-28">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 md:pt-6">
-        
+
         {/* TAB 1: HOME DASHBOARD */}
         {!selectedVendor && activeTab === 'home' && (
           <div className="space-y-4 sm:space-y-6">
@@ -1454,7 +1454,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
-              
+
               {currentUserObj ? (
                 <div className="card-blue-header p-5 md:p-6 shadow-lg relative overflow-hidden flex items-center justify-between lg:col-span-2 min-h-[160px]">
                   <div className="space-y-2 z-10">
@@ -1539,7 +1539,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
             <div className="space-y-3">
               <h3 className="font-bold text-slate-900 text-base font-heading">Overview</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-                
+
                 <div className="card-white p-4 flex items-center justify-between hover:shadow-md transition-all">
                   <div>
                     <div className="text-xs text-slate-500 font-medium">Total Shop Businesses</div>
@@ -1609,7 +1609,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
 
             {/* Recent Verification Requests on Home */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              
+
               <div className="lg:col-span-2 space-y-4">
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <h3 className="font-extrabold text-slate-900 text-base md:text-lg font-heading splash-text-effect">
@@ -1804,19 +1804,17 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                   return (
                     <div
                       key={biz.id}
-                      className={`card-white p-5 space-y-4 hover:shadow-xl transition-all border rounded-3xl flex flex-col justify-between group relative overflow-hidden ${
-                        isBizFraud
+                      className={`card-white p-5 space-y-4 hover:shadow-xl transition-all border rounded-3xl flex flex-col justify-between group relative overflow-hidden ${isBizFraud
                           ? 'border-rose-400 bg-rose-50/20 ring-2 ring-rose-200'
                           : 'border-slate-200'
-                      }`}
+                        }`}
                     >
                       <div className="space-y-3">
                         {/* Header Box */}
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex items-center gap-3 min-w-0">
-                            <div className={`w-12 h-12 rounded-2xl border overflow-hidden flex items-center justify-center font-extrabold shrink-0 shadow-xs ${
-                              isBizFraud ? 'bg-rose-100 border-rose-300 text-rose-700' : 'bg-slate-100 border-slate-200 text-slate-700'
-                            }`}>
+                            <div className={`w-12 h-12 rounded-2xl border overflow-hidden flex items-center justify-center font-extrabold shrink-0 shadow-xs ${isBizFraud ? 'bg-rose-100 border-rose-300 text-rose-700' : 'bg-slate-100 border-slate-200 text-slate-700'
+                              }`}>
                               {biz.avatarUrl ? (
                                 <img src={biz.avatarUrl} alt={biz.shopName} className="w-full h-full object-cover" />
                               ) : (
@@ -1824,9 +1822,8 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                               )}
                             </div>
                             <div className="min-w-0">
-                              <h4 className={`font-extrabold text-base font-heading transition-colors truncate ${
-                                isBizFraud ? 'text-rose-900 group-hover:text-rose-700' : 'text-slate-900 group-hover:text-emerald-700'
-                              }`}>
+                              <h4 className={`font-extrabold text-base font-heading transition-colors truncate ${isBizFraud ? 'text-rose-900 group-hover:text-rose-700' : 'text-slate-900 group-hover:text-emerald-700'
+                                }`}>
                                 {biz.shopName}
                               </h4>
                               <div className="text-xs text-slate-500 font-medium truncate">Owner: {biz.vendorName}</div>
@@ -1860,11 +1857,10 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                             <MapPin className="w-3.5 h-3.5 text-rose-500 shrink-0" />
                             <span>{biz.distanceKm} KM away • {biz.place}, {biz.city}</span>
                           </div>
-                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md shrink-0 ${
-                            biz.distanceKm <= (Number(lenderLocation.lendingRadiusKm) || 50)
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md shrink-0 ${biz.distanceKm <= (Number(lenderLocation.lendingRadiusKm) || 50)
                               ? 'text-emerald-700 bg-emerald-50'
                               : 'text-amber-700 bg-amber-50'
-                          }`}>
+                            }`}>
                             {biz.distanceKm <= (Number(lenderLocation.lendingRadiusKm) || 50) ? 'Inside Radius' : 'Outside Radius'}
                           </span>
                         </div>
@@ -1972,11 +1968,10 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                   <div className="flex items-center bg-slate-200/80 p-1 rounded-2xl w-max flex-nowrap gap-1">
                     <button
                       onClick={() => setReportsFilterStatus('ALL')}
-                      className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
-                        reportsFilterStatus === 'ALL'
+                      className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap shrink-0 ${reportsFilterStatus === 'ALL'
                           ? 'bg-slate-900 text-white shadow-md'
                           : 'text-slate-700 hover:text-slate-900 hover:bg-slate-300/60'
-                      }`}
+                        }`}
                     >
                       <FileText className="w-3.5 h-3.5" />
                       <span>All ({requests.length})</span>
@@ -1984,11 +1979,10 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
 
                     <button
                       onClick={() => setReportsFilterStatus('PENDING')}
-                      className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
-                        reportsFilterStatus === 'PENDING'
+                      className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap shrink-0 ${reportsFilterStatus === 'PENDING'
                           ? 'bg-amber-500 text-white shadow-md'
                           : 'text-slate-700 hover:text-slate-900 hover:bg-slate-300/60'
-                      }`}
+                        }`}
                     >
                       <Clock className="w-3.5 h-3.5" />
                       <span>Pending Requests ({pendingCount})</span>
@@ -1996,11 +1990,10 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
 
                     <button
                       onClick={() => setReportsFilterStatus('ACCEPTED')}
-                      className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
-                        reportsFilterStatus === 'ACCEPTED'
+                      className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap shrink-0 ${reportsFilterStatus === 'ACCEPTED'
                           ? 'bg-emerald-600 text-white shadow-md'
                           : 'text-slate-700 hover:text-slate-900 hover:bg-slate-300/60'
-                      }`}
+                        }`}
                     >
                       <CheckCircle2 className="w-3.5 h-3.5" />
                       <span>Accepted Requests ({acceptedCount})</span>
@@ -2008,11 +2001,10 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
 
                     <button
                       onClick={() => setReportsFilterStatus('REJECTED')}
-                      className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
-                        reportsFilterStatus === 'REJECTED'
+                      className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap shrink-0 ${reportsFilterStatus === 'REJECTED'
                           ? 'bg-rose-600 text-white shadow-md'
                           : 'text-slate-700 hover:text-slate-900 hover:bg-slate-300/60'
-                      }`}
+                        }`}
                     >
                       <XCircle className="w-3.5 h-3.5" />
                       <span>Rejected ({rejectedCount})</span>
@@ -2020,225 +2012,224 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
 
                     <button
                       onClick={() => setReportsFilterStatus('FRAUD')}
-                      className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
-                        reportsFilterStatus === 'FRAUD'
+                      className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap shrink-0 ${reportsFilterStatus === 'FRAUD'
                           ? 'bg-rose-700 text-white shadow-md'
                           : 'text-rose-700 hover:text-rose-900 hover:bg-rose-100/60'
-                      }`}
+                        }`}
                     >
                       <AlertTriangle className="w-3.5 h-3.5" />
                       <span>Fraud Alert Reports ({fraudCount})</span>
                     </button>
                   </div>
                 </div>
-            </div>
-
-            {/* Action Feedback Banner */}
-            {actionFeedback && (
-              <div className="p-4 rounded-2xl bg-emerald-100 border border-emerald-300 text-emerald-900 text-sm font-bold text-center animate-bounce">
-                {actionFeedback}
               </div>
-            )}
 
-            {/* Search Input for Reports */}
-            <div className="relative">
-              <Search className="w-5 h-5 text-slate-400 absolute left-4 top-3.5" />
-              <input
-                type="text"
-                placeholder="Search vendor name, shop name, city, or phone number..."
-                value={reportsSearchQuery}
-                onChange={(e) => setReportsSearchQuery(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 rounded-2xl text-xs md:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-sm"
-              />
-            </div>
+              {/* Action Feedback Banner */}
+              {actionFeedback && (
+                <div className="p-4 rounded-2xl bg-emerald-100 border border-emerald-300 text-emerald-900 text-sm font-bold text-center animate-bounce">
+                  {actionFeedback}
+                </div>
+              )}
 
-            {/* Requests Cards & Table */}
-            {filteredReports.length === 0 ? (
-              <div className="card-white p-12 text-center rounded-3xl border border-slate-200/90 shadow-sm space-y-4 max-w-xl mx-auto my-8">
-                <div className="w-16 h-16 rounded-2xl bg-blue-50 border border-blue-200 flex items-center justify-center mx-auto text-blue-600">
-                  <Users className="w-8 h-8" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-extrabold text-slate-900 font-heading">
-                    {reportsFilterStatus === 'PENDING' && 'No Pending Requests'}
-                    {reportsFilterStatus === 'ACCEPTED' && 'No Accepted Requests Yet'}
-                    {reportsFilterStatus === 'REJECTED' && 'No Rejected Requests'}
-                    {reportsFilterStatus === 'FRAUD' && 'No Fraud Alert Reports'}
-                    {reportsFilterStatus === 'ALL' && 'No Requests Found'}
-                  </h3>
-                  <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1.5 leading-relaxed">
-                    {reportsFilterStatus === 'PENDING' && 'When small shop businesses apply for financing, call you, or send WhatsApp inquiries, they will appear here.'}
-                    {reportsFilterStatus === 'ACCEPTED' && 'Requests you accept will appear here. Accepted vendors can navigate directly to your office on Google Maps.'}
-                    {reportsFilterStatus === 'REJECTED' && 'Requests you reject will be stored here for audit history.'}
-                    {reportsFilterStatus === 'FRAUD' && 'Vendors that are reported or flagged for fraudulent activity will be listed here.'}
-                    {reportsFilterStatus === 'ALL' && 'No requests match your current search filters.'}
-                  </p>
-                </div>
+              {/* Search Input for Reports */}
+              <div className="relative">
+                <Search className="w-5 h-5 text-slate-400 absolute left-4 top-3.5" />
+                <input
+                  type="text"
+                  placeholder="Search vendor name, shop name, city, or phone number..."
+                  value={reportsSearchQuery}
+                  onChange={(e) => setReportsSearchQuery(e.target.value)}
+                  className="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 rounded-2xl text-xs md:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-sm"
+                />
               </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredReports.map((vendor) => {
-                  const isAccepted = vendor.status === 'Accepted' || vendor.status === 'Verified';
-                  const isRejected = vendor.status === 'Rejected';
 
-                  return (
-                    <div
-                      key={vendor.id}
-                      className="card-white p-5 space-y-4 hover:shadow-xl transition-all border border-slate-200 rounded-3xl flex flex-col justify-between group relative overflow-hidden"
-                    >
-                      <div className="space-y-3">
-                        {/* Top Header with Avatar & Badges */}
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="flex items-center gap-3 min-w-0">
-                            <div className="w-12 h-12 rounded-2xl bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center font-extrabold text-slate-700 shrink-0 shadow-xs">
-                              {vendor.avatarUrl || vendor.liveSelfieUrl ? (
-                                <img src={vendor.avatarUrl || vendor.liveSelfieUrl} alt={vendor.vendorName} className="w-full h-full object-cover" />
+              {/* Requests Cards & Table */}
+              {filteredReports.length === 0 ? (
+                <div className="card-white p-12 text-center rounded-3xl border border-slate-200/90 shadow-sm space-y-4 max-w-xl mx-auto my-8">
+                  <div className="w-16 h-16 rounded-2xl bg-blue-50 border border-blue-200 flex items-center justify-center mx-auto text-blue-600">
+                    <Users className="w-8 h-8" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-extrabold text-slate-900 font-heading">
+                      {reportsFilterStatus === 'PENDING' && 'No Pending Requests'}
+                      {reportsFilterStatus === 'ACCEPTED' && 'No Accepted Requests Yet'}
+                      {reportsFilterStatus === 'REJECTED' && 'No Rejected Requests'}
+                      {reportsFilterStatus === 'FRAUD' && 'No Fraud Alert Reports'}
+                      {reportsFilterStatus === 'ALL' && 'No Requests Found'}
+                    </h3>
+                    <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1.5 leading-relaxed">
+                      {reportsFilterStatus === 'PENDING' && 'When small shop businesses apply for financing, call you, or send WhatsApp inquiries, they will appear here.'}
+                      {reportsFilterStatus === 'ACCEPTED' && 'Requests you accept will appear here. Accepted vendors can navigate directly to your office on Google Maps.'}
+                      {reportsFilterStatus === 'REJECTED' && 'Requests you reject will be stored here for audit history.'}
+                      {reportsFilterStatus === 'FRAUD' && 'Vendors that are reported or flagged for fraudulent activity will be listed here.'}
+                      {reportsFilterStatus === 'ALL' && 'No requests match your current search filters.'}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {filteredReports.map((vendor) => {
+                    const isAccepted = vendor.status === 'Accepted' || vendor.status === 'Verified';
+                    const isRejected = vendor.status === 'Rejected';
+
+                    return (
+                      <div
+                        key={vendor.id}
+                        className="card-white p-5 space-y-4 hover:shadow-xl transition-all border border-slate-200 rounded-3xl flex flex-col justify-between group relative overflow-hidden"
+                      >
+                        <div className="space-y-3">
+                          {/* Top Header with Avatar & Badges */}
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className="w-12 h-12 rounded-2xl bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center font-extrabold text-slate-700 shrink-0 shadow-xs">
+                                {vendor.avatarUrl || vendor.liveSelfieUrl ? (
+                                  <img src={vendor.avatarUrl || vendor.liveSelfieUrl} alt={vendor.vendorName} className="w-full h-full object-cover" />
+                                ) : (
+                                  <span>{vendor.vendorName.charAt(0).toUpperCase()}</span>
+                                )}
+                              </div>
+                              <div className="min-w-0">
+                                <h4 className="font-extrabold text-slate-900 text-base font-heading group-hover:text-emerald-700 transition-colors truncate">
+                                  {vendor.vendorName}
+                                </h4>
+                                <div className="text-xs text-slate-500 font-medium truncate">{vendor.shopName}</div>
+                              </div>
+                            </div>
+
+                            <div className="shrink-0 flex items-center gap-1.5">
+                              {checkVendorIsFraud(vendor) ? (
+                                <span className="px-2 py-0.5 rounded-full bg-rose-600 text-white font-extrabold text-[9px] uppercase shadow-sm animate-pulse">
+                                  🚨 FRAUD
+                                </span>
+                              ) : isAccepted ? (
+                                <span className="badge-verified-green">✓ Accepted</span>
+                              ) : isRejected ? (
+                                <span className="px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-700 font-extrabold text-[10px]">
+                                  ✗ Rejected
+                                </span>
                               ) : (
-                                <span>{vendor.vendorName.charAt(0).toUpperCase()}</span>
+                                <span className="badge-pending-amber">⏳ Pending</span>
                               )}
-                            </div>
-                            <div className="min-w-0">
-                              <h4 className="font-extrabold text-slate-900 text-base font-heading group-hover:text-emerald-700 transition-colors truncate">
-                                {vendor.vendorName}
-                              </h4>
-                              <div className="text-xs text-slate-500 font-medium truncate">{vendor.shopName}</div>
+
+                              {/* Delete Request Button */}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  promptDeleteRequest(vendor);
+                                }}
+                                className="p-1.5 rounded-xl bg-slate-100 hover:bg-rose-50 text-slate-400 hover:text-rose-600 border border-slate-200 hover:border-rose-200 transition-all cursor-pointer shadow-xs active:scale-90"
+                                title="Delete Financing Request"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
                             </div>
                           </div>
 
-                          <div className="shrink-0 flex items-center gap-1.5">
-                            {checkVendorIsFraud(vendor) ? (
-                              <span className="px-2 py-0.5 rounded-full bg-rose-600 text-white font-extrabold text-[9px] uppercase shadow-sm animate-pulse">
-                                🚨 FRAUD
-                              </span>
-                            ) : isAccepted ? (
-                              <span className="badge-verified-green">✓ Accepted</span>
-                            ) : isRejected ? (
-                              <span className="px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-700 font-extrabold text-[10px]">
-                                ✗ Rejected
-                              </span>
+                          {/* Inquiry Source Badge */}
+                          <div className="p-2.5 rounded-xl bg-blue-50/70 border border-blue-200/80 text-xs text-slate-700 font-medium flex items-center gap-2">
+                            {vendor.inquiryType === 'PHONE_CALL' ? (
+                              <Phone className="w-4 h-4 text-blue-600 shrink-0" />
+                            ) : vendor.inquiryType === 'WHATSAPP' ? (
+                              <MessageCircle className="w-4 h-4 text-emerald-600 shrink-0" />
                             ) : (
-                              <span className="badge-pending-amber">⏳ Pending</span>
+                              <FileText className="w-4 h-4 text-blue-600 shrink-0" />
                             )}
-
-                            {/* Delete Request Button */}
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                promptDeleteRequest(vendor);
-                              }}
-                              className="p-1.5 rounded-xl bg-slate-100 hover:bg-rose-50 text-slate-400 hover:text-rose-600 border border-slate-200 hover:border-rose-200 transition-all cursor-pointer shadow-xs active:scale-90"
-                              title="Delete Financing Request"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
+                            <span className="text-[11px] font-semibold text-slate-800 line-clamp-1">
+                              {vendor.inquiryMessage || (vendor.inquiryType === 'PHONE_CALL' ? '📞 Vendor initiated a Phone Call inquiry' : vendor.inquiryType === 'WHATSAPP' ? '💬 Vendor sent a WhatsApp inquiry' : '📝 Loan Application submitted')}
+                            </span>
                           </div>
-                        </div>
 
-                        {/* Inquiry Source Badge */}
-                        <div className="p-2.5 rounded-xl bg-blue-50/70 border border-blue-200/80 text-xs text-slate-700 font-medium flex items-center gap-2">
-                          {vendor.inquiryType === 'PHONE_CALL' ? (
-                            <Phone className="w-4 h-4 text-blue-600 shrink-0" />
-                          ) : vendor.inquiryType === 'WHATSAPP' ? (
-                            <MessageCircle className="w-4 h-4 text-emerald-600 shrink-0" />
-                          ) : (
-                            <FileText className="w-4 h-4 text-blue-600 shrink-0" />
-                          )}
-                          <span className="text-[11px] font-semibold text-slate-800 line-clamp-1">
-                            {vendor.inquiryMessage || (vendor.inquiryType === 'PHONE_CALL' ? '📞 Vendor initiated a Phone Call inquiry' : vendor.inquiryType === 'WHATSAPP' ? '💬 Vendor sent a WhatsApp inquiry' : '📝 Loan Application submitted')}
-                          </span>
-                        </div>
-
-                        {/* Business Summary Info */}
-                        <div className="space-y-1.5 text-xs border-t border-slate-100 pt-2.5">
-                          <div className="flex justify-between text-slate-600">
-                            <span>Location:</span>
-                            <span className="font-bold text-slate-800">{vendor.city}, {vendor.state}</span>
-                          </div>
-                          <div className="flex justify-between text-slate-600">
-                            <span>Annual Income:</span>
-                            <span className="font-bold text-slate-800">{vendor.annualTurnover || vendor.annualIncome || 'Under 2 Lakhs'}</span>
-                          </div>
-                          <div className="flex justify-between text-slate-600">
-                            <span>Mobile Contact:</span>
-                            <span className="font-mono font-bold text-slate-800">{vendor.mobileNumber}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Action Buttons Section */}
-                      <div className="pt-3 border-t border-slate-100 space-y-2">
-                        <button
-                          onClick={() => handleVendorSelect(vendor)}
-                          className="w-full py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-extrabold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-                        >
-                          <Eye className="w-3.5 h-3.5 text-slate-600" />
-                          <span>Inspect All 6 KYC Files & Photos</span>
-                        </button>
-
-                        {/* Action buttons depending on state */}
-                        {!isAccepted && !isRejected && (
-                          <div className="grid grid-cols-2 gap-2">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleApprove(vendor.id);
-                              }}
-                              className="py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs flex items-center justify-center gap-1 shadow-xs transition-all active:scale-95 cursor-pointer"
-                            >
-                              <CheckCircle2 className="w-3.5 h-3.5" />
-                              <span>Accept Request</span>
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleReject(vendor.id);
-                              }}
-                              className="py-2 px-3 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-extrabold text-xs flex items-center justify-center gap-1 transition-all active:scale-95 cursor-pointer"
-                            >
-                              <XCircle className="w-3.5 h-3.5" />
-                              <span>Reject</span>
-                            </button>
-                          </div>
-                        )}
-
-                        {isAccepted && (
-                          <div className="space-y-1.5">
-                            <div className="text-[11px] text-emerald-800 bg-emerald-50 p-2 rounded-xl border border-emerald-200 text-center font-semibold">
-                              ✓ Accepted · Vendor Office Navigation Unlocked
+                          {/* Business Summary Info */}
+                          <div className="space-y-1.5 text-xs border-t border-slate-100 pt-2.5">
+                            <div className="flex justify-between text-slate-600">
+                              <span>Location:</span>
+                              <span className="font-bold text-slate-800">{vendor.city}, {vendor.state}</span>
                             </div>
+                            <div className="flex justify-between text-slate-600">
+                              <span>Annual Income:</span>
+                              <span className="font-bold text-slate-800">{vendor.annualTurnover || vendor.annualIncome || 'Under 2 Lakhs'}</span>
+                            </div>
+                            <div className="flex justify-between text-slate-600">
+                              <span>Mobile Contact:</span>
+                              <span className="font-mono font-bold text-slate-800">{vendor.mobileNumber}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Action Buttons Section */}
+                        <div className="pt-3 border-t border-slate-100 space-y-2">
+                          <button
+                            onClick={() => handleVendorSelect(vendor)}
+                            className="w-full py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-extrabold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                          >
+                            <Eye className="w-3.5 h-3.5 text-slate-600" />
+                            <span>Inspect All 6 KYC Files & Photos</span>
+                          </button>
+
+                          {/* Action buttons depending on state */}
+                          {!isAccepted && !isRejected && (
+                            <div className="grid grid-cols-2 gap-2">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleApprove(vendor.id);
+                                }}
+                                className="py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs flex items-center justify-center gap-1 shadow-xs transition-all active:scale-95 cursor-pointer"
+                              >
+                                <CheckCircle2 className="w-3.5 h-3.5" />
+                                <span>Accept Request</span>
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleReject(vendor.id);
+                                }}
+                                className="py-2 px-3 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-extrabold text-xs flex items-center justify-center gap-1 transition-all active:scale-95 cursor-pointer"
+                              >
+                                <XCircle className="w-3.5 h-3.5" />
+                                <span>Reject</span>
+                              </button>
+                            </div>
+                          )}
+
+                          {isAccepted && (
+                            <div className="space-y-1.5">
+                              <div className="text-[11px] text-emerald-800 bg-emerald-50 p-2 rounded-xl border border-emerald-200 text-center font-semibold">
+                                ✓ Accepted · Vendor Office Navigation Unlocked
+                              </div>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setReportingFraudVendor(vendor);
+                                }}
+                                className="w-full py-2 px-3 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-extrabold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer"
+                              >
+                                <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
+                                <span>Report Fraud Account</span>
+                              </button>
+                            </div>
+                          )}
+
+                          {isRejected && (
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                setReportingFraudVendor(vendor);
+                                handleReopen(vendor.id);
                               }}
-                              className="w-full py-2 px-3 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-extrabold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer"
+                              className="w-full py-2 px-3 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 font-extrabold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer"
                             >
-                              <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
-                              <span>Report Fraud Account</span>
+                              <span>↺ Move Back to Pending</span>
                             </button>
-                          </div>
-                        )}
-
-                        {isRejected && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleReopen(vendor.id);
-                            }}
-                            className="w-full py-2 px-3 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 font-extrabold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer"
-                          >
-                            <span>↺ Move Back to Pending</span>
-                          </button>
-                        )}
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        )
-      )}
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )
+        )}
 
         {/* VIEW: VENDOR VERIFICATION REVIEW PAGE */}
         {selectedVendor && (
@@ -2290,10 +2281,10 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
 
             {/* Grid Layout: Left Column (Vendor Profile & Basic Info) + Right Column (Shop Details & Docs) */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              
+
               {/* Left Column (5 cols on lg) */}
               <div className="lg:col-span-5 space-y-6">
-                
+
                 {/* Vendor Profile Header Summary */}
                 <div className="card-white p-5 flex items-center justify-between">
                   <div className="flex items-center gap-4">
@@ -2396,9 +2387,8 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                       const panFileName = `PAN_Card_${(selectedVendor.panNumber || selectedVendor.vendorName).replace(/\s+/g, '_')}`;
 
                       return (
-                        <div className={`p-3.5 rounded-xl border transition-all ${
-                          isInspected ? 'bg-emerald-50/40 border-emerald-300' : 'bg-slate-50 border-slate-200 hover:border-blue-300'
-                        }`}>
+                        <div className={`p-3.5 rounded-xl border transition-all ${isInspected ? 'bg-emerald-50/40 border-emerald-300' : 'bg-slate-50 border-slate-200 hover:border-blue-300'
+                          }`}>
                           <div className="flex items-center justify-between gap-2 flex-wrap mb-2.5">
                             <div>
                               <div className="font-bold text-slate-900 flex items-center gap-2 text-sm">
@@ -2462,11 +2452,10 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                               <button
                                 type="button"
                                 onClick={() => markDocInspected(selectedVendor.id, 'pan')}
-                                className={`flex-1 py-1.5 px-3 rounded-lg font-extrabold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                                  isInspected
+                                className={`flex-1 py-1.5 px-3 rounded-lg font-extrabold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer ${isInspected
                                     ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
                                     : 'bg-slate-200 hover:bg-slate-300 text-slate-800'
-                                }`}
+                                  }`}
                               >
                                 <span>{isInspected ? '✓ PAN Record Inspected' : '✓ Mark PAN Inspected'}</span>
                               </button>
@@ -2483,9 +2472,8 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                       const aadhaarFileName = `Aadhaar_Card_${(selectedVendor.aadhaarNumber || selectedVendor.vendorName).replace(/\s+/g, '_')}`;
 
                       return (
-                        <div className={`p-3.5 rounded-xl border transition-all ${
-                          isInspected ? 'bg-emerald-50/40 border-emerald-300' : 'bg-slate-50 border-slate-200 hover:border-blue-300'
-                        }`}>
+                        <div className={`p-3.5 rounded-xl border transition-all ${isInspected ? 'bg-emerald-50/40 border-emerald-300' : 'bg-slate-50 border-slate-200 hover:border-blue-300'
+                          }`}>
                           <div className="flex items-center justify-between gap-2 flex-wrap mb-2.5">
                             <div>
                               <div className="font-bold text-slate-900 flex items-center gap-2 text-sm">
@@ -2549,11 +2537,10 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                               <button
                                 type="button"
                                 onClick={() => markDocInspected(selectedVendor.id, 'aadhaar')}
-                                className={`flex-1 py-1.5 px-3 rounded-lg font-extrabold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                                  isInspected
+                                className={`flex-1 py-1.5 px-3 rounded-lg font-extrabold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer ${isInspected
                                     ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
                                     : 'bg-slate-200 hover:bg-slate-300 text-slate-800'
-                                }`}
+                                  }`}
                               >
                                 <span>{isInspected ? '✓ Aadhaar Record Inspected' : '✓ Mark Aadhaar Inspected'}</span>
                               </button>
@@ -2569,7 +2556,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
 
               {/* Right Column (7 cols on lg) */}
               <div className="lg:col-span-7 space-y-6">
-                
+
                 {/* Horizontal Step Tracker */}
                 <div className="card-white p-4 flex items-center justify-between text-xs font-semibold">
                   <div className="flex flex-col items-center text-emerald-600">
@@ -2726,11 +2713,10 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                         <button
                           type="button"
                           onClick={() => markDocInspected(selectedVendor.id, 'shopPhotos')}
-                          className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                            isDocInspected(selectedVendor.id, 'shopPhotos')
+                          className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${isDocInspected(selectedVendor.id, 'shopPhotos')
                               ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
                               : 'bg-slate-200 hover:bg-slate-300 text-slate-700'
-                          }`}
+                            }`}
                         >
                           {isDocInspected(selectedVendor.id, 'shopPhotos') ? '✓ Premises Acknowledged' : '✓ Acknowledge (No Photos)'}
                         </button>
@@ -2896,21 +2882,20 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                       handleApprove(selectedVendor.id);
                     }}
                     disabled={checkVendorIsFraud(selectedVendor)}
-                    className={`py-3 px-4 text-xs md:text-sm justify-center font-extrabold flex items-center gap-2 rounded-xl transition-all cursor-pointer ${
-                      checkVendorIsFraud(selectedVendor)
+                    className={`py-3 px-4 text-xs md:text-sm justify-center font-extrabold flex items-center gap-2 rounded-xl transition-all cursor-pointer ${checkVendorIsFraud(selectedVendor)
                         ? 'bg-rose-900/40 text-rose-300 border border-rose-800 cursor-not-allowed opacity-60'
                         : (selectedVendor.status === 'Accepted' || selectedVendor.status === 'Verified')
-                        ? 'bg-emerald-600 text-white shadow-md'
-                        : 'btn-sbni-green shadow-lg'
-                    }`}
+                          ? 'bg-emerald-600 text-white shadow-md'
+                          : 'btn-sbni-green shadow-lg'
+                      }`}
                   >
                     <CheckCircle2 className="w-4 h-4" />
                     <span>
                       {checkVendorIsFraud(selectedVendor)
                         ? 'Disabled (Fraud Account)'
                         : (selectedVendor.status === 'Accepted' || selectedVendor.status === 'Verified')
-                        ? '✓ Request Accepted'
-                        : 'Accept & Approve Request'}
+                          ? '✓ Request Accepted'
+                          : 'Accept & Approve Request'}
                     </span>
                   </button>
                 </div>
@@ -2943,7 +2928,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
             </div>
           ) : (
             <div className="space-y-3.5 sm:space-y-4 max-w-3xl mx-auto pb-28 sm:pb-16">
-              
+
               {/* Save Success Banner */}
               {lenderSaveSuccess && (
                 <div className="p-3.5 sm:p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2 shadow-xs animate-in fade-in">
@@ -2954,7 +2939,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
 
               {/* ── TOP PROFILE HEADER CARD ─────────────────────────────── */}
               <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-sm border border-slate-200/90 flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6">
-                
+
                 {/* Profile Photo with floating Camera button */}
                 <div className="relative shrink-0">
                   <div className="w-20 h-20 sm:w-28 sm:h-28 rounded-2xl sm:rounded-3xl bg-blue-50 overflow-hidden shadow-xs flex items-center justify-center border-2 border-slate-100">
@@ -3047,9 +3032,8 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                     </div>
                   </div>
                   <ChevronDown
-                    className={`w-4 h-4 sm:w-5 sm:h-5 text-slate-400 shrink-0 transition-transform duration-200 ${
-                      expandedSections.billing ? 'rotate-180 text-blue-600' : ''
-                    }`}
+                    className={`w-4 h-4 sm:w-5 sm:h-5 text-slate-400 shrink-0 transition-transform duration-200 ${expandedSections.billing ? 'rotate-180 text-blue-600' : ''
+                      }`}
                   />
                 </button>
 
@@ -3172,9 +3156,8 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                     </div>
                   </div>
                   <ChevronDown
-                    className={`w-4 h-4 sm:w-5 sm:h-5 text-slate-400 shrink-0 transition-transform duration-200 ${
-                      expandedSections.info ? 'rotate-180 text-blue-600' : ''
-                    }`}
+                    className={`w-4 h-4 sm:w-5 sm:h-5 text-slate-400 shrink-0 transition-transform duration-200 ${expandedSections.info ? 'rotate-180 text-blue-600' : ''
+                      }`}
                   />
                 </button>
 
@@ -3327,9 +3310,8 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                     </div>
                   </div>
                   <ChevronDown
-                    className={`w-4 h-4 sm:w-5 sm:h-5 text-slate-400 shrink-0 transition-transform duration-200 ${
-                      expandedSections.location ? 'rotate-180 text-blue-600' : ''
-                    }`}
+                    className={`w-4 h-4 sm:w-5 sm:h-5 text-slate-400 shrink-0 transition-transform duration-200 ${expandedSections.location ? 'rotate-180 text-blue-600' : ''
+                      }`}
                   />
                 </button>
 
@@ -3337,7 +3319,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                   <div className="p-3.5 sm:p-5 pt-0 border-t border-slate-100 space-y-4">
                     {/* 3-card Sub-Grid matching the reference image! */}
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
-                      
+
                       {/* Card 1: My Box Verified */}
                       <div className="p-3.5 sm:p-4 rounded-2xl border border-slate-200 bg-white shadow-2xs flex flex-col justify-between space-y-2">
                         <div className="flex items-center gap-2 text-xs font-extrabold text-slate-900">
@@ -3427,9 +3409,8 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                     </div>
                   </div>
                   <ChevronDown
-                    className={`w-4 h-4 sm:w-5 sm:h-5 text-slate-400 shrink-0 transition-transform duration-200 ${
-                      expandedSections.criteria ? 'rotate-180 text-blue-600' : ''
-                    }`}
+                    className={`w-4 h-4 sm:w-5 sm:h-5 text-slate-400 shrink-0 transition-transform duration-200 ${expandedSections.criteria ? 'rotate-180 text-blue-600' : ''
+                      }`}
                   />
                 </button>
 
@@ -3529,9 +3510,8 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
       <div className="fixed bottom-0 sm:bottom-5 inset-x-0 z-30 bg-white/95 backdrop-blur-md border-t sm:border border-slate-200/90 py-1.5 sm:py-3.5 px-2 sm:px-10 flex items-center justify-between sm:justify-around w-full max-w-md sm:max-w-3xl lg:max-w-4xl mx-auto shadow-2xl rounded-t-2xl sm:rounded-3xl transition-all">
         <button
           onClick={handleHomeClick}
-          className={`flex-1 sm:flex-initial flex flex-col items-center justify-center gap-0.5 sm:gap-1 text-[10px] sm:text-xs font-extrabold py-1 px-1 sm:px-6 rounded-xl sm:rounded-2xl transition-all whitespace-nowrap cursor-pointer ${
-            activeTab === 'home' ? 'text-[#059669] bg-emerald-50/90 shadow-2xs' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
-          }`}
+          className={`flex-1 sm:flex-initial flex flex-col items-center justify-center gap-0.5 sm:gap-1 text-[10px] sm:text-xs font-extrabold py-1 px-1 sm:px-6 rounded-xl sm:rounded-2xl transition-all whitespace-nowrap cursor-pointer ${activeTab === 'home' ? 'text-[#059669] bg-emerald-50/90 shadow-2xs' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
+            }`}
         >
           <Home className="w-5 h-5 sm:w-6 sm:h-6 text-[#059669]" />
           <span>Home</span>
@@ -3539,9 +3519,8 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
 
         <button
           onClick={handleBusinessesClick}
-          className={`flex-1 sm:flex-initial flex flex-col items-center justify-center gap-0.5 sm:gap-1 text-[10px] sm:text-xs font-extrabold py-1 px-1 sm:px-6 rounded-xl sm:rounded-2xl transition-all whitespace-nowrap cursor-pointer ${
-            activeTab === 'businesses' ? 'text-[#059669] bg-emerald-50/90 shadow-2xs' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
-          }`}
+          className={`flex-1 sm:flex-initial flex flex-col items-center justify-center gap-0.5 sm:gap-1 text-[10px] sm:text-xs font-extrabold py-1 px-1 sm:px-6 rounded-xl sm:rounded-2xl transition-all whitespace-nowrap cursor-pointer ${activeTab === 'businesses' ? 'text-[#059669] bg-emerald-50/90 shadow-2xs' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
+            }`}
         >
           <Users className="w-5 h-5 sm:w-6 sm:h-6 text-slate-600" />
           <span>Businesses</span>
@@ -3553,23 +3532,22 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
             onClick={() => setReferModalOpen(true)}
             title="Refer & Earn Wallet Rewards"
             aria-label="Refer and Earn"
-            className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gradient-to-tr from-[#003893] via-blue-600 to-[#007a33] hover:from-[#002b70] hover:to-[#005e27] text-white flex items-center justify-center shadow-xl hover:scale-110 transition-all border-3 sm:border-4 border-white cursor-pointer relative group"
+            className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gradient-to-tr from-emerald-600 via-teal-600 to-[#007a33] hover:from-emerald-700 hover:to-teal-800 text-white flex items-center justify-center shadow-xl hover:scale-110 transition-all border-3 sm:border-4 border-white cursor-pointer relative group"
           >
             <Gift className="w-5 h-5 sm:w-7 sm:h-7 text-white drop-shadow-sm group-hover:rotate-12 transition-transform" />
-            <span className="absolute -top-1 -right-1 w-3.5 h-3.5 sm:w-4 sm:h-4 bg-amber-400 text-slate-950 text-[8px] sm:text-[9px] font-black rounded-full flex items-center justify-center border-2 border-white shadow-xs">
+            <span className="absolute -top-1 -right-1 w-3.5 h-3.5 sm:w-4 sm:h-4 bg-[#003893] text-white text-[8px] sm:text-[9px] font-black rounded-full flex items-center justify-center border-2 border-white shadow-xs">
               ₹
             </span>
           </button>
-          <span className="text-[9px] sm:text-[10px] font-extrabold text-[#007a33] mt-0.5 tracking-tight">
+          <span className="text-[9px] sm:text-[10px] font-extrabold text-[#059669] mt-0.5 tracking-tight">
             Refer & Earn
           </span>
         </div>
 
         <button
           onClick={() => handleReportsClick('ALL')}
-          className={`flex-1 sm:flex-initial flex flex-col items-center justify-center gap-0.5 sm:gap-1 text-[10px] sm:text-xs font-extrabold py-1 px-1 sm:px-6 rounded-xl sm:rounded-2xl transition-all whitespace-nowrap cursor-pointer ${
-            activeTab === 'reports' ? 'text-[#059669] bg-emerald-50/90 shadow-2xs' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
-          }`}
+          className={`flex-1 sm:flex-initial flex flex-col items-center justify-center gap-0.5 sm:gap-1 text-[10px] sm:text-xs font-extrabold py-1 px-1 sm:px-6 rounded-xl sm:rounded-2xl transition-all whitespace-nowrap cursor-pointer ${activeTab === 'reports' ? 'text-[#059669] bg-emerald-50/90 shadow-2xs' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
+            }`}
         >
           <FileText className="w-5 h-5 sm:w-6 sm:h-6 text-slate-600" />
           <span>Reports</span>
@@ -3577,9 +3555,8 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
 
         <button
           onClick={handleProfileClick}
-          className={`flex-1 sm:flex-initial flex flex-col items-center justify-center gap-0.5 sm:gap-1 text-[10px] sm:text-xs font-extrabold py-1 px-1 sm:px-6 rounded-xl sm:rounded-2xl transition-all whitespace-nowrap cursor-pointer ${
-            activeTab === 'profile' ? 'text-[#059669] bg-emerald-50/90 shadow-2xs' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
-          }`}
+          className={`flex-1 sm:flex-initial flex flex-col items-center justify-center gap-0.5 sm:gap-1 text-[10px] sm:text-xs font-extrabold py-1 px-1 sm:px-6 rounded-xl sm:rounded-2xl transition-all whitespace-nowrap cursor-pointer ${activeTab === 'profile' ? 'text-[#059669] bg-emerald-50/90 shadow-2xs' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
+            }`}
         >
           <User className="w-5 h-5 sm:w-6 sm:h-6 text-slate-600" />
           <span>Profile</span>

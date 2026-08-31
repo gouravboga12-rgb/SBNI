@@ -105,8 +105,8 @@ export const ReferAndEarnModal: React.FC<ReferAndEarnModalProps> = ({
 
         {/* Modal Header */}
         <div className="text-center max-w-xl mx-auto space-y-1 pt-1 pr-6 sm:pr-0">
-          <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-gradient-to-r from-amber-500/10 via-indigo-500/10 to-blue-500/10 border border-amber-300/80 text-amber-900 text-[10px] sm:text-[11px] font-extrabold shadow-xs">
-            <Gift className="w-3 h-3 text-amber-600 animate-bounce" />
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-[#003893] text-[10px] sm:text-[11px] font-extrabold shadow-xs">
+            <Gift className="w-3.5 h-3.5 text-[#003893] animate-bounce" />
             <span>JustPaisa Partner Refer & Earn</span>
           </div>
 
