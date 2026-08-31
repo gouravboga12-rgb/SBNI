@@ -2874,7 +2874,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
               </button>
             </div>
           ) : (
-            <div className="space-y-4 max-w-3xl mx-auto">
+            <div className="space-y-3.5 sm:space-y-4 max-w-3xl mx-auto pb-28 sm:pb-16">
               
               {/* Save Success Banner */}
               {lenderSaveSuccess && (
@@ -2885,15 +2885,15 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
               )}
 
               {/* ── TOP PROFILE HEADER CARD ─────────────────────────────── */}
-              <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-sm border border-slate-200/90 flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6">
+              <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-sm border border-slate-200/90 flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6">
                 
                 {/* Profile Photo with floating Camera button */}
                 <div className="relative shrink-0">
-                  <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl sm:rounded-3xl bg-blue-50 overflow-hidden shadow-xs flex items-center justify-center border-2 border-slate-100">
+                  <div className="w-20 h-20 sm:w-28 sm:h-28 rounded-2xl sm:rounded-3xl bg-blue-50 overflow-hidden shadow-xs flex items-center justify-center border-2 border-slate-100">
                     {lenderAvatarUrl ? (
                       <img src={lenderAvatarUrl} alt="Financer Profile" className="w-full h-full object-cover" />
                     ) : (
-                      <span className="text-3xl font-black text-[#003893]">
+                      <span className="text-2xl sm:text-3xl font-black text-[#003893]">
                         {currentUserObj?.institutionName ? currentUserObj.institutionName.charAt(0).toUpperCase() : 'F'}
                       </span>
                     )}
@@ -2901,9 +2901,9 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
 
                   <label
                     title="Change Profile Photo"
-                    className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-[#003893] text-white flex items-center justify-center shadow-md border-2 border-white cursor-pointer hover:bg-blue-900 transition-all hover:scale-105 active:scale-95"
+                    className="absolute -bottom-1 -right-1 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#003893] text-white flex items-center justify-center shadow-md border-2 border-white cursor-pointer hover:bg-blue-900 transition-all hover:scale-105 active:scale-95"
                   >
-                    <Camera className="w-4 h-4 text-white" />
+                    <Camera className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
                     <input
                       type="file"
                       accept="image/*"
@@ -2914,27 +2914,27 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                 </div>
 
                 {/* Profile Info Details */}
-                <div className="flex-1 text-center sm:text-left space-y-1.5 min-w-0">
-                  <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2.5">
-                    <h2 className="text-xl sm:text-2xl font-black text-slate-900 font-heading truncate">
+                <div className="flex-1 text-center sm:text-left space-y-1.5 min-w-0 w-full">
+                  <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                    <h2 className="text-lg sm:text-2xl font-black text-slate-900 font-heading truncate max-w-full">
                       {isEditingLenderProfile ? lenderEditForm.institutionName || currentUserObj.name : currentUserObj.name}
                     </h2>
-                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full shadow-2xs">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                    <span className="inline-flex items-center gap-1 text-[10px] sm:text-[11px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full shadow-2xs">
+                      <CheckCircle2 className="w-3 h-3 text-emerald-600" />
                       <span>Verified Financer</span>
                     </span>
                   </div>
 
                   <div className="text-xs font-semibold text-slate-600 flex items-center justify-center sm:justify-start gap-1.5 flex-wrap">
-                    <Building2 className="w-4 h-4 text-slate-500 shrink-0" />
-                    <span>{isEditingLenderProfile ? lenderEditForm.contactPerson || currentUserObj.contactPerson : currentUserObj.contactPerson}</span>
+                    <Building2 className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                    <span className="truncate max-w-[200px] sm:max-w-none">{isEditingLenderProfile ? lenderEditForm.contactPerson || currentUserObj.contactPerson : currentUserObj.contactPerson}</span>
                     <span className="text-slate-300">•</span>
                     <span className="text-slate-500 font-medium">
                       Money Financer
                     </span>
                   </div>
 
-                  <div className="text-xs text-slate-500 font-medium truncate">
+                  <div className="text-xs text-slate-500 font-medium truncate break-all">
                     {isEditingLenderProfile ? lenderEditForm.email || currentUserObj.email : currentUserObj.email}
                   </div>
 
@@ -2949,7 +2949,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                           setIsEditingLenderProfile(false);
                         }
                       }}
-                      className="px-4 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-[#003893] border border-blue-200 font-extrabold text-xs inline-flex items-center gap-1.5 transition-all shadow-2xs active:scale-95 cursor-pointer"
+                      className="px-3.5 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-[#003893] border border-blue-200 font-extrabold text-xs inline-flex items-center gap-1.5 transition-all shadow-2xs active:scale-95 cursor-pointer"
                     >
                       <Edit3 className="w-3.5 h-3.5" />
                       <span>{isEditingLenderProfile ? 'Cancel Edit' : 'Edit Profile'}</span>
@@ -2963,36 +2963,36 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                 <button
                   type="button"
                   onClick={() => toggleSection('billing')}
-                  className="w-full p-4 sm:p-5 flex items-center justify-between gap-3 text-left hover:bg-slate-50/70 transition-colors cursor-pointer"
+                  className="w-full p-3.5 sm:p-5 flex items-center justify-between gap-2.5 sm:gap-3 text-left hover:bg-slate-50/70 transition-colors cursor-pointer"
                 >
-                  <div className="flex items-center gap-3.5 min-w-0">
-                    <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 shadow-2xs">
-                      <Sparkles className="w-5 h-5 text-blue-600" />
+                  <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0 flex-1">
+                    <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 shadow-2xs">
+                      <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
                     </div>
-                    <div>
-                      <h3 className="font-extrabold text-slate-900 text-sm sm:text-base font-heading leading-tight">
+                    <div className="min-w-0 flex-1">
+                      <h3 className="font-extrabold text-slate-900 text-xs sm:text-base font-heading leading-tight truncate">
                         Membership & Billing
                       </h3>
-                      <p className="text-xs text-slate-500 font-medium leading-tight mt-0.5 truncate">
+                      <p className="text-[11px] sm:text-xs text-slate-500 font-medium leading-tight mt-0.5 truncate">
                         View and manage your membership plan and billing details.
                       </p>
                     </div>
                   </div>
                   <ChevronDown
-                    className={`w-5 h-5 text-slate-400 shrink-0 transition-transform duration-200 ${
+                    className={`w-4 h-4 sm:w-5 sm:h-5 text-slate-400 shrink-0 transition-transform duration-200 ${
                       expandedSections.billing ? 'rotate-180 text-blue-600' : ''
                     }`}
                   />
                 </button>
 
                 {expandedSections.billing && (
-                  <div className="p-4 sm:p-5 pt-0 border-t border-slate-100 space-y-4">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-gradient-to-br from-slate-50 to-blue-50/40 border border-blue-100">
+                  <div className="p-3.5 sm:p-5 pt-0 border-t border-slate-100 space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 sm:p-4 rounded-2xl bg-gradient-to-br from-slate-50 to-blue-50/40 border border-blue-100">
                       <div>
                         <div className="text-[10px] uppercase tracking-wider font-extrabold text-blue-700">
                           Active Financer Tier
                         </div>
-                        <div className="text-sm sm:text-base font-extrabold text-slate-900 font-heading flex items-center gap-2 mt-0.5">
+                        <div className="text-xs sm:text-base font-extrabold text-slate-900 font-heading flex flex-wrap items-center gap-1.5 mt-0.5">
                           <span>{lenderActiveSub?.plan?.name || (lenderActiveSub ? 'Verified Financer Membership' : 'Free Preview Mode')}</span>
                           {lenderActiveSub?.isAutoPay && (
                             <span className="inline-flex items-center gap-1 text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
@@ -3002,7 +3002,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         {lenderActiveSub?.isAutoPay && (
                           <button
                             type="button"
@@ -3024,7 +3024,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3 text-xs">
                       <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
                         <span className="text-slate-400 font-bold uppercase text-[9px] tracking-wider block mb-0.5">Plan Status</span>
                         <div className="font-extrabold text-slate-900 flex items-center gap-1.5">
@@ -3088,44 +3088,44 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                 <button
                   type="button"
                   onClick={() => toggleSection('info')}
-                  className="w-full p-4 sm:p-5 flex items-center justify-between gap-3 text-left hover:bg-slate-50/70 transition-colors cursor-pointer"
+                  className="w-full p-3.5 sm:p-5 flex items-center justify-between gap-2.5 sm:gap-3 text-left hover:bg-slate-50/70 transition-colors cursor-pointer"
                 >
-                  <div className="flex items-center gap-3.5 min-w-0">
-                    <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 shadow-2xs">
-                      <User className="w-5 h-5 text-emerald-600" />
+                  <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0 flex-1">
+                    <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 shadow-2xs">
+                      <User className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600" />
                     </div>
-                    <div>
-                      <h3 className="font-extrabold text-slate-900 text-sm sm:text-base font-heading leading-tight">
+                    <div className="min-w-0 flex-1">
+                      <h3 className="font-extrabold text-slate-900 text-xs sm:text-base font-heading leading-tight truncate">
                         Personal & Business Information
                       </h3>
-                      <p className="text-xs text-slate-500 font-medium leading-tight mt-0.5 truncate">
+                      <p className="text-[11px] sm:text-xs text-slate-500 font-medium leading-tight mt-0.5 truncate">
                         Manage your personal and business information.
                       </p>
                     </div>
                   </div>
                   <ChevronDown
-                    className={`w-5 h-5 text-slate-400 shrink-0 transition-transform duration-200 ${
+                    className={`w-4 h-4 sm:w-5 sm:h-5 text-slate-400 shrink-0 transition-transform duration-200 ${
                       expandedSections.info ? 'rotate-180 text-blue-600' : ''
                     }`}
                   />
                 </button>
 
                 {expandedSections.info && (
-                  <div className="p-4 sm:p-5 pt-0 border-t border-slate-100 space-y-4">
+                  <div className="p-3.5 sm:p-5 pt-0 border-t border-slate-100 space-y-4">
                     {!isEditingLenderProfile ? (
                       /* View Mode */
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-xs">
-                        <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-4 text-xs">
+                        <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
                           <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Financer / Institution Name</span>
-                          <div className="font-extrabold text-slate-900 text-sm">{currentUserObj.name}</div>
+                          <div className="font-extrabold text-slate-900 text-sm truncate">{currentUserObj.name}</div>
                         </div>
 
-                        <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
+                        <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
                           <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Contact Officer Name</span>
-                          <div className="font-extrabold text-slate-900 text-sm">{currentUserObj.contactPerson}</div>
+                          <div className="font-extrabold text-slate-900 text-sm truncate">{currentUserObj.contactPerson}</div>
                         </div>
 
-                        <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
+                        <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
                           <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Official Mobile / Phone</span>
                           <div className="font-extrabold text-slate-900 text-sm flex items-center gap-1.5 font-mono">
                             <Phone className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
@@ -3133,7 +3133,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                           </div>
                         </div>
 
-                        <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
+                        <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
                           <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Official Email Address</span>
                           <div className="font-extrabold text-slate-900 text-xs sm:text-sm flex items-center gap-1.5 break-all">
                             <Mail className="w-3.5 h-3.5 text-blue-600 shrink-0" />
@@ -3141,17 +3141,17 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                           </div>
                         </div>
 
-                        <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
+                        <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
                           <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Registration Number</span>
                           <div className="font-extrabold text-slate-900 text-sm font-mono">{currentUserObj.regNo || 'REG-SBNI-FIN'}</div>
                         </div>
 
-                        <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
+                        <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
                           <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Approval Success Rate</span>
                           <div className="font-extrabold text-slate-900 text-sm">{currentUserObj.successRate || '85% - 95%'}</div>
                         </div>
 
-                        <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 sm:col-span-2">
+                        <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 sm:col-span-2">
                           <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block mb-1">Office / Branch Address</span>
                           <div className="font-bold text-slate-800 text-xs sm:text-sm flex items-start gap-1.5 break-words">
                             <MapPin className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
@@ -3243,35 +3243,35 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                 <button
                   type="button"
                   onClick={() => toggleSection('location')}
-                  className="w-full p-4 sm:p-5 flex items-center justify-between gap-3 text-left hover:bg-slate-50/70 transition-colors cursor-pointer"
+                  className="w-full p-3.5 sm:p-5 flex items-center justify-between gap-2.5 sm:gap-3 text-left hover:bg-slate-50/70 transition-colors cursor-pointer"
                 >
-                  <div className="flex items-center gap-3.5 min-w-0">
-                    <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0 shadow-2xs">
-                      <MapPin className="w-5 h-5 text-purple-600" />
+                  <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0 flex-1">
+                    <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0 shadow-2xs">
+                      <MapPin className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600" />
                     </div>
-                    <div>
-                      <h3 className="font-extrabold text-slate-900 text-sm sm:text-base font-heading leading-tight">
+                    <div className="min-w-0 flex-1">
+                      <h3 className="font-extrabold text-slate-900 text-xs sm:text-base font-heading leading-tight truncate">
                         Registered Lending Area & Service Radius
                       </h3>
-                      <p className="text-xs text-slate-500 font-medium leading-tight mt-0.5 truncate">
+                      <p className="text-[11px] sm:text-xs text-slate-500 font-medium leading-tight mt-0.5 truncate">
                         Manage your shop location and coordinates.
                       </p>
                     </div>
                   </div>
                   <ChevronDown
-                    className={`w-5 h-5 text-slate-400 shrink-0 transition-transform duration-200 ${
+                    className={`w-4 h-4 sm:w-5 sm:h-5 text-slate-400 shrink-0 transition-transform duration-200 ${
                       expandedSections.location ? 'rotate-180 text-blue-600' : ''
                     }`}
                   />
                 </button>
 
                 {expandedSections.location && (
-                  <div className="p-4 sm:p-5 pt-0 border-t border-slate-100 space-y-4">
+                  <div className="p-3.5 sm:p-5 pt-0 border-t border-slate-100 space-y-4">
                     {/* 3-card Sub-Grid matching the reference image! */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
                       
                       {/* Card 1: My Box Verified */}
-                      <div className="p-4 rounded-2xl border border-slate-200 bg-white shadow-2xs flex flex-col justify-between space-y-2">
+                      <div className="p-3.5 sm:p-4 rounded-2xl border border-slate-200 bg-white shadow-2xs flex flex-col justify-between space-y-2">
                         <div className="flex items-center gap-2 text-xs font-extrabold text-slate-900">
                           <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                           <span>My Box Verified</span>
@@ -3289,7 +3289,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                       {/* Card 2: Update Coordinates */}
                       <div
                         onClick={() => setIsLocationModalOpen(true)}
-                        className="p-4 rounded-2xl border border-slate-200 bg-white hover:border-blue-400 hover:bg-blue-50/30 transition-all cursor-pointer shadow-2xs flex flex-col justify-between space-y-2 group"
+                        className="p-3.5 sm:p-4 rounded-2xl border border-slate-200 bg-white hover:border-blue-400 hover:bg-blue-50/30 transition-all cursor-pointer shadow-2xs flex flex-col justify-between space-y-2 group"
                       >
                         <div className="flex items-center gap-2 text-xs font-extrabold text-slate-900 group-hover:text-blue-700">
                           <Compass className="w-4 h-4 text-blue-600 shrink-0" />
@@ -3308,7 +3308,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                         href={getGoogleMapsNavigationUrl(lenderLocation.latitude, lenderLocation.longitude, currentUserObj.name)}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="p-4 rounded-2xl border border-slate-200 bg-white hover:border-purple-400 hover:bg-purple-50/30 transition-all cursor-pointer shadow-2xs flex flex-col justify-between space-y-2 group block"
+                        className="p-3.5 sm:p-4 rounded-2xl border border-slate-200 bg-white hover:border-purple-400 hover:bg-purple-50/30 transition-all cursor-pointer shadow-2xs flex flex-col justify-between space-y-2 group block"
                       >
                         <div className="flex items-center gap-2 text-xs font-extrabold text-slate-900 group-hover:text-purple-700">
                           <Building2 className="w-4 h-4 text-purple-600 shrink-0" />
@@ -3325,12 +3325,12 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                     </div>
 
                     {/* Coordinates Bar */}
-                    <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-slate-600">
+                    <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 text-xs text-slate-600">
                       <div>
                         <span className="font-bold text-slate-800">{lenderLocation.place}, {lenderLocation.city}</span>
                         <span className="text-slate-400"> ({lenderLocation.state})</span>
                       </div>
-                      <div className="font-mono font-bold text-slate-700 text-[11px]">
+                      <div className="font-mono font-bold text-slate-700 text-[11px] break-all">
                         GPS: {Number(lenderLocation.latitude).toFixed(4)}, {Number(lenderLocation.longitude).toFixed(4)}
                       </div>
                     </div>
@@ -3343,46 +3343,46 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                 <button
                   type="button"
                   onClick={() => toggleSection('criteria')}
-                  className="w-full p-4 sm:p-5 flex items-center justify-between gap-3 text-left hover:bg-slate-50/70 transition-colors cursor-pointer"
+                  className="w-full p-3.5 sm:p-5 flex items-center justify-between gap-2.5 sm:gap-3 text-left hover:bg-slate-50/70 transition-colors cursor-pointer"
                 >
-                  <div className="flex items-center gap-3.5 min-w-0">
-                    <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 shadow-2xs">
-                      <TrendingUp className="w-5 h-5 text-amber-600" />
+                  <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0 flex-1">
+                    <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 shadow-2xs">
+                      <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600" />
                     </div>
-                    <div>
-                      <h3 className="font-extrabold text-slate-900 text-sm sm:text-base font-heading leading-tight">
+                    <div className="min-w-0 flex-1">
+                      <h3 className="font-extrabold text-slate-900 text-xs sm:text-base font-heading leading-tight truncate">
                         KYC & Lending Criteria Settings
                       </h3>
-                      <p className="text-xs text-slate-500 font-medium leading-tight mt-0.5 truncate">
+                      <p className="text-[11px] sm:text-xs text-slate-500 font-medium leading-tight mt-0.5 truncate">
                         View and manage your verification documents.
                       </p>
                     </div>
                   </div>
                   <ChevronDown
-                    className={`w-5 h-5 text-slate-400 shrink-0 transition-transform duration-200 ${
+                    className={`w-4 h-4 sm:w-5 sm:h-5 text-slate-400 shrink-0 transition-transform duration-200 ${
                       expandedSections.criteria ? 'rotate-180 text-blue-600' : ''
                     }`}
                   />
                 </button>
 
                 {expandedSections.criteria && (
-                  <div className="p-4 sm:p-5 pt-0 border-t border-slate-100 space-y-4">
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-                      <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
+                  <div className="p-3.5 sm:p-5 pt-0 border-t border-slate-100 space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3 text-xs">
+                      <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
                         <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block">Min Ticket Loan</span>
                         <div className="font-extrabold text-slate-900 text-sm">
                           ₹{Number(currentUserObj.minLoan || 10000).toLocaleString('en-IN')}
                         </div>
                       </div>
 
-                      <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
+                      <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
                         <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block">Max Ticket Loan</span>
                         <div className="font-extrabold text-slate-900 text-sm">
                           ₹{Number(currentUserObj.maxLoan || 500000).toLocaleString('en-IN')}
                         </div>
                       </div>
 
-                      <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
+                      <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
                         <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider block">Coverage Radius</span>
                         <div className="font-extrabold text-slate-900 text-sm">
                           {lenderLocation.lendingRadiusKm || 50} KM
@@ -3396,34 +3396,34 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
               {/* ── CARD 5: REFER & EARN ─────────────────────────────────── */}
               <div
                 onClick={() => setReferModalOpen(true)}
-                className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200/90 shadow-sm p-4 sm:p-5 flex items-center justify-between gap-3 hover:bg-purple-50/30 hover:border-purple-300 transition-all cursor-pointer group active:scale-99"
+                className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200/90 shadow-sm p-3.5 sm:p-5 flex items-center justify-between gap-2.5 sm:gap-3 hover:bg-purple-50/30 hover:border-purple-300 transition-all cursor-pointer group active:scale-99"
               >
-                <div className="flex items-center gap-3.5 min-w-0">
-                  <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
-                    <Gift className="w-5 h-5 text-blue-600" />
+                <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0 flex-1">
+                  <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+                    <Gift className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
                   </div>
-                  <div>
-                    <h3 className="font-extrabold text-slate-900 text-sm sm:text-base font-heading leading-tight group-hover:text-purple-900">
+                  <div className="min-w-0 flex-1">
+                    <h3 className="font-extrabold text-slate-900 text-xs sm:text-base font-heading leading-tight group-hover:text-purple-900 truncate">
                       Refer & Earn
                     </h3>
-                    <p className="text-xs text-slate-500 font-medium leading-tight mt-0.5 truncate">
+                    <p className="text-[11px] sm:text-xs text-slate-500 font-medium leading-tight mt-0.5 truncate">
                       Refer friends and earn exciting rewards.
                     </p>
                   </div>
                 </div>
 
-                <div className="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center group-hover:bg-purple-600 group-hover:text-white transition-colors shrink-0">
+                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center group-hover:bg-purple-600 group-hover:text-white transition-colors shrink-0">
                   <ChevronRight className="w-4 h-4" />
                 </div>
               </div>
 
               {/* ── CARD 6: ACCOUNT SESSION & SECURITY (LOGOUT) ─────────── */}
-              <div className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200/90 shadow-sm p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5">
-                <div>
-                  <h4 className="font-extrabold text-slate-900 text-sm sm:text-base font-heading leading-tight">
+              <div className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200/90 shadow-sm p-3.5 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <h4 className="font-extrabold text-slate-900 text-xs sm:text-base font-heading leading-tight">
                     Account Session & Security
                   </h4>
-                  <p className="text-xs text-slate-500 font-medium leading-tight mt-0.5">
+                  <p className="text-[11px] sm:text-xs text-slate-500 font-medium leading-tight mt-0.5">
                     Log out of your active JustPaisa app session on this device.
                   </p>
                 </div>
@@ -3432,7 +3432,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                   <button
                     type="button"
                     onClick={() => onLogout('LENDER')}
-                    className="w-full sm:w-auto px-5 py-2 rounded-xl border border-rose-500 text-rose-600 hover:bg-rose-50 font-extrabold text-xs flex items-center justify-center gap-1.5 transition-all shadow-2xs active:scale-95 cursor-pointer"
+                    className="w-full sm:w-auto px-4 sm:px-5 py-2.5 rounded-xl border border-rose-500 text-rose-600 hover:bg-rose-50 font-extrabold text-xs flex items-center justify-center gap-1.5 transition-all shadow-2xs active:scale-95 cursor-pointer shrink-0"
                   >
                     <LogOut className="w-4 h-4 text-rose-600" />
                     <span>Log Out</span>
