@@ -1,8 +1,17 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { SBNILogo } from './SBNILogo';
-import { ShieldCheck, Mail, Phone, MapPin } from 'lucide-react';
+import { ShieldCheck, Mail, Phone, MapPin, FileText, Lock, RefreshCcw, AlertTriangle } from 'lucide-react';
+import { PolicyModal, PolicyTab } from './PolicyModal';
 
 export const Footer: React.FC = () => {
+  const [policyModalOpen, setPolicyModalOpen] = useState(false);
+  const [policyTab, setPolicyTab] = useState<PolicyTab>('terms');
+
+  const openPolicy = (tab: PolicyTab) => {
+    setPolicyTab(tab);
+    setPolicyModalOpen(true);
+  };
+
   return (
     <footer className="bg-slate-950 border-t border-slate-800 text-slate-400 text-xs py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -30,14 +39,50 @@ export const Footer: React.FC = () => {
             </ul>
           </div>
 
-          {/* Compliance & Legal */}
+          {/* Compliance & Legal Policies */}
           <div>
             <h4 className="font-bold text-white text-sm font-heading mb-4">Compliance & Policies</h4>
             <ul className="space-y-2.5">
-              <li><a href="#terms" className="hover:text-cyan-400 transition-colors">Terms of Service</a></li>
-              <li><a href="#privacy" className="hover:text-cyan-400 transition-colors">Privacy Policy</a></li>
-              <li><a href="#disclaimer" className="hover:text-cyan-400 transition-colors">Marketplace Disclaimer</a></li>
-              <li><a href="#refund" className="hover:text-cyan-400 transition-colors">Subscription Refund Policy</a></li>
+              <li>
+                <button
+                  type="button"
+                  onClick={() => openPolicy('terms')}
+                  className="hover:text-cyan-400 transition-colors cursor-pointer text-left flex items-center gap-1.5"
+                >
+                  <FileText className="w-3.5 h-3.5 text-slate-500" />
+                  Terms & Conditions
+                </button>
+              </li>
+              <li>
+                <button
+                  type="button"
+                  onClick={() => openPolicy('privacy')}
+                  className="hover:text-cyan-400 transition-colors cursor-pointer text-left flex items-center gap-1.5"
+                >
+                  <Lock className="w-3.5 h-3.5 text-slate-500" />
+                  Privacy Policy
+                </button>
+              </li>
+              <li>
+                <button
+                  type="button"
+                  onClick={() => openPolicy('refund')}
+                  className="hover:text-cyan-400 transition-colors cursor-pointer text-left flex items-center gap-1.5"
+                >
+                  <RefreshCcw className="w-3.5 h-3.5 text-slate-500" />
+                  Refund & Cancellation Policy
+                </button>
+              </li>
+              <li>
+                <button
+                  type="button"
+                  onClick={() => openPolicy('disclaimer')}
+                  className="hover:text-cyan-400 transition-colors cursor-pointer text-left flex items-center gap-1.5"
+                >
+                  <AlertTriangle className="w-3.5 h-3.5 text-slate-500" />
+                  Marketplace Disclaimer
+                </button>
+              </li>
             </ul>
           </div>
 
@@ -67,9 +112,35 @@ export const Footer: React.FC = () => {
           <strong className="text-slate-200">Regulatory Disclaimer:</strong> Just Paisa App is strictly a technology platform facilitating vendor-lender discovery and communication. Just Paisa App is not a bank, non-banking financial company (NBFC), recovery agent, or credit institution. Just Paisa App does not offer credit approvals, process applications, disburse funds, or compute credit scores. All financial arrangements and business agreements take place directly between independent users.
         </div>
 
+        {/* Bottom Footer Bar */}
         <div className="pt-6 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4 text-center">
           <p>© 2026 Just Paisa App. All Rights Reserved. Production Enterprise FinTech Release.</p>
+          
           <div className="flex flex-wrap items-center justify-center gap-3 text-xs">
+            <button
+              type="button"
+              onClick={() => openPolicy('privacy')}
+              className="text-slate-400 hover:text-cyan-400 transition-colors cursor-pointer"
+            >
+              Privacy Policy
+            </button>
+            <span className="text-slate-700">•</span>
+            <button
+              type="button"
+              onClick={() => openPolicy('terms')}
+              className="text-slate-400 hover:text-cyan-400 transition-colors cursor-pointer"
+            >
+              Terms & Conditions
+            </button>
+            <span className="text-slate-700">•</span>
+            <button
+              type="button"
+              onClick={() => openPolicy('refund')}
+              className="text-slate-400 hover:text-cyan-400 transition-colors cursor-pointer"
+            >
+              Refund Policy
+            </button>
+            <span className="text-slate-700 hidden sm:inline">•</span>
             <span>
               Developed by{' '}
               <a
@@ -81,14 +152,17 @@ export const Footer: React.FC = () => {
                 CODTECH IT SOLUTIONS
               </a>
             </span>
-            <span className="text-slate-600 hidden sm:inline">•</span>
-            <a href="/admin" className="text-slate-500 hover:text-cyan-400 font-bold transition-colors">
-              Super Admin Portal (/admin)
-            </a>
           </div>
         </div>
 
       </div>
+
+      {/* Interactive Policy Modal */}
+      <PolicyModal
+        isOpen={policyModalOpen}
+        onClose={() => setPolicyModalOpen(false)}
+        initialTab={policyTab}
+      />
     </footer>
   );
 };
