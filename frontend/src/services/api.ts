@@ -496,18 +496,32 @@ export async function fetchCurrentUser(): Promise<any | null> {
 }
 
 export function logoutUser(): void {
-  localStorage.removeItem('sbni_token');
-  localStorage.removeItem('sbni_refresh_token');
-  localStorage.removeItem('sbni_user');
-  localStorage.removeItem('sbni_vendor_profile');
-  localStorage.removeItem('sbni_lender_profile');
-  localStorage.removeItem('sbni_vendor_avatar');
-  localStorage.removeItem('sbni_lender_avatar');
-  localStorage.removeItem('sbni_subscribed');
-  localStorage.removeItem('sbni_vendor_subscribed');
-  localStorage.removeItem('sbni_lender_subscribed');
-  localStorage.removeItem('sbni_vendor_requests');
+  try {
+    localStorage.removeItem('sbni_token');
+    localStorage.removeItem('sbni_refresh_token');
+    localStorage.removeItem('sbni_user');
+    localStorage.removeItem('sbni_vendor_profile');
+    localStorage.removeItem('sbni_lender_profile');
+    localStorage.removeItem('sbni_vendor_avatar');
+    localStorage.removeItem('sbni_lender_avatar');
+    localStorage.removeItem('sbni_subscribed');
+    localStorage.removeItem('sbni_vendor_subscribed');
+    localStorage.removeItem('sbni_lender_subscribed');
+    localStorage.removeItem('sbni_vendor_requests');
+    localStorage.removeItem('sbni_referral_code');
+    
+    // Clear any email-scoped avatar or profile caches
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const key = localStorage.key(i);
+      if (key && (key.startsWith('sbni_vendor_avatar_') || key.startsWith('sbni_lender_avatar_'))) {
+        localStorage.removeItem(key);
+      }
+    }
+  } catch (e) {}
+
   window.dispatchEvent(new Event('sbni_auth_changed'));
+  window.dispatchEvent(new Event('sbni_vendor_profile_updated'));
+  window.dispatchEvent(new Event('sbni_lender_profile_updated'));
   window.dispatchEvent(new Event('sbni_subscription_updated'));
 }
 

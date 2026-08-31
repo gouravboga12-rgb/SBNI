@@ -105,18 +105,25 @@ export function App() {
   useEffect(() => {
     const handleProfileSync = () => {
       try {
+        const token = getToken();
         const u = localStorage.getItem('sbni_user');
-        if (u) {
+        if (token && u) {
           setCurrentUser(JSON.parse(u));
+        } else {
+          setCurrentUser(null);
         }
-      } catch {}
+      } catch {
+        setCurrentUser(null);
+      }
     };
     window.addEventListener('sbni_vendor_profile_updated', handleProfileSync);
     window.addEventListener('sbni_lender_profile_updated', handleProfileSync);
+    window.addEventListener('sbni_auth_changed', handleProfileSync);
     window.addEventListener('storage', handleProfileSync);
     return () => {
       window.removeEventListener('sbni_vendor_profile_updated', handleProfileSync);
       window.removeEventListener('sbni_lender_profile_updated', handleProfileSync);
+      window.removeEventListener('sbni_auth_changed', handleProfileSync);
       window.removeEventListener('storage', handleProfileSync);
     };
   }, []);
@@ -259,7 +266,7 @@ export function App() {
 
   const handleLogout = (roleTarget?: 'VENDOR' | 'LENDER') => {
     const targetRole = roleTarget || currentRole;
-    // Clear all auth data from localStorage
+    // Clear all auth data from localStorage and memory
     logoutUser();
     localStorage.removeItem('sbni_subscribed');
     localStorage.removeItem('sbni_vendor_subscribed');
@@ -272,7 +279,7 @@ export function App() {
     setAuthSubscribeIntent(false);
     setVendorActiveTab('home');
     setLenderActiveTab('home');
-    setAuthModalOpen(true);
+    setAuthModalOpen(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 

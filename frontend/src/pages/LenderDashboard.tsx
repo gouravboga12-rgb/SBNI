@@ -13,6 +13,7 @@ import {
   uploadFileToEc2Api,
   checkSubscriptionStatus,
   cancelAutoPayApi,
+  getToken,
 } from '../services/api';
 import { LocationPickerModal } from '../components/LocationPickerModal';
 import { getGoogleMapsNavigationUrl } from '../services/mapboxService';
@@ -107,7 +108,7 @@ interface LenderDashboardProps {
 }
 
 function resolveInitialLenderDetails(currentUser: any) {
-  if (!currentUser) return null;
+  if (!currentUser || !getToken()) return null;
   try {
     const u = currentUser;
     const profile = u.lenderProfile || (() => {
@@ -234,6 +235,13 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
   });
 
   useEffect(() => {
+    const token = getToken();
+    if (!currentUser || !token) {
+      setCurrentUserObj(null);
+      setLenderAvatarUrl('https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=200');
+      return;
+    }
+
     setCurrentUserObj(resolveInitialLenderDetails(currentUser));
     const direct = currentUser?.lenderProfile?.logoUrl || currentUser?.lenderProfile?.avatarUrl;
     const userKey = currentUser?.email ? `sbni_lender_avatar_${currentUser.email}` : null;
@@ -244,6 +252,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
 
     // Live query fresh database profile for this authenticated lender
     const fetchFreshProfile = async () => {
+      if (!getToken()) return;
       try {
         const res = await getMyProfileApi();
         if (res.success && res.data) {
@@ -266,6 +275,16 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
       }
     };
     fetchFreshProfile();
+
+    const handleAuthChange = () => {
+      if (!getToken()) {
+        setCurrentUserObj(null);
+      }
+    };
+    window.addEventListener('sbni_auth_changed', handleAuthChange);
+    return () => {
+      window.removeEventListener('sbni_auth_changed', handleAuthChange);
+    };
   }, [currentUser]);
 
   const [nearbyBusinesses, setNearbyBusinesses] = useState<any[]>([]);

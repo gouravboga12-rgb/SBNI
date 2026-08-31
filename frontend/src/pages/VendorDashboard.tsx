@@ -18,6 +18,7 @@ import {
   uploadFileToEc2Api,
   checkSubscriptionStatus,
   cancelAutoPayApi,
+  getToken,
 } from '../services/api';
 import {
   downloadDocumentFile,
@@ -311,6 +312,11 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
   // Fetch live vendor profile from backend on mount and via continuous interval
   useEffect(() => {
     async function loadFreshVendorProfile() {
+      const token = getToken();
+      if (!token) {
+        setLiveVendorProfile(null);
+        return;
+      }
       try {
         const res = await getMyProfileApi();
         if (res?.success && res?.data) {
@@ -361,25 +367,50 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
       }
     }
 
-    loadFreshVendorProfile();
-    const interval = setInterval(loadFreshVendorProfile, 4000);
+    if (currentUser && getToken()) {
+      loadFreshVendorProfile();
+    } else {
+      setLiveVendorProfile(null);
+    }
+    
+    const interval = setInterval(() => {
+      if (getToken()) {
+        loadFreshVendorProfile();
+      }
+    }, 4000);
 
     const handleLenderSync = () => {
-      loadFreshVendorProfile();
-      loadNearbyLenders();
+      if (getToken()) {
+        loadFreshVendorProfile();
+        loadNearbyLenders();
+      } else {
+        setLiveVendorProfile(null);
+      }
     };
+    const handleAuthChange = () => {
+      if (!getToken()) {
+        setLiveVendorProfile(null);
+        setAvatarUrl(null);
+        setVendorApplications([]);
+      } else {
+        loadFreshVendorProfile();
+      }
+    };
+
     window.addEventListener('sbni_lender_profile_updated', handleLenderSync);
     window.addEventListener('sbni_vendor_profile_updated', handleLenderSync);
     window.addEventListener('sbni_fraud_updated', handleLenderSync);
+    window.addEventListener('sbni_auth_changed', handleAuthChange);
     window.addEventListener('storage', handleLenderSync);
     return () => {
       clearInterval(interval);
       window.removeEventListener('sbni_lender_profile_updated', handleLenderSync);
       window.removeEventListener('sbni_vendor_profile_updated', handleLenderSync);
       window.removeEventListener('sbni_fraud_updated', handleLenderSync);
+      window.removeEventListener('sbni_auth_changed', handleAuthChange);
       window.removeEventListener('storage', handleLenderSync);
     };
-  }, []);
+  }, [currentUser]);
 
   // Load Lenders based on current Search Coordinates (strictly radius matched by backend)
   const loadNearbyLenders = async (lat = searchLocation.latitude, lng = searchLocation.longitude, place = searchLocation.place, city = searchLocation.city) => {
@@ -566,11 +597,13 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
   const [showPassword, setShowPassword] = useState(false);
 
   const currentVendorObj = (() => {
+    const token = getToken();
+    if (!currentUser && !token) return null;
     try {
       const uStr = localStorage.getItem('sbni_user');
       const pStr = localStorage.getItem('sbni_vendor_profile');
-      const u = uStr ? JSON.parse(uStr) : currentUser;
-      const profile = liveVendorProfile || (pStr ? JSON.parse(pStr) : (u?.vendorProfile || null));
+      const u = currentUser || (uStr ? JSON.parse(uStr) : null);
+      const profile = liveVendorProfile || u?.vendorProfile || (pStr ? JSON.parse(pStr) : null);
 
       if (!u && !profile) return null;
 
