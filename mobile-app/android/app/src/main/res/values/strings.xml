@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Just Paisa</string>
+    <string name="title_activity_main">Just Paisa</string>
+    <string name="package_name">com.justpaisa.app</string>
+    <string name="custom_url_scheme">com.justpaisa.app</string>
+</resources>

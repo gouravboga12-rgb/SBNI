@@ -9,8 +9,12 @@
     "dev:frontend": "npm run dev --prefix frontend",
     "dev:backend": "npm run dev --prefix backend",
     "dev:admin": "npm run dev --prefix admin",
+    "dev:mobile": "npm run dev --prefix mobile-app",
     "build:frontend": "npm run build --prefix frontend",
     "build:backend": "npm run build --prefix backend",
-    "build:admin": "npm run build --prefix admin"
+    "build:admin": "npm run build --prefix admin",
+    "build:mobile": "npm run build --prefix mobile-app",
+    "mobile:sync": "npm run cap:sync --prefix mobile-app",
+    "mobile:open": "npm run cap:open --prefix mobile-app"
   }
 }
