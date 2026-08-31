@@ -74,29 +74,37 @@ export const getMyReferralInfo = async (req: AuthenticatedRequest, res: Response
       orderBy: { createdAt: 'desc' },
     });
 
-    // Compute metrics
-    const totalInvited = referralRecords.length;
-    const completedConversions = referralRecords.filter((r) => r.status === 'COMPLETED').length;
-    const totalEarned = referralRecords
-      .filter((r) => r.status === 'COMPLETED')
-      .reduce((sum, r) => sum + (r.referrerReward || 0), 0);
-
     // Fetch wallet transactions
     const walletTransactions = await prisma.walletTransaction.findMany({
       where: { userId },
       orderBy: { createdAt: 'desc' },
-      take: 20,
+      take: 50,
     });
+
+    const totalEarnedCredits = walletTransactions
+      .filter((t) => t.type === 'CREDIT')
+      .reduce((sum, t) => sum + t.amount, 0);
+
+    const totalReferralRewards = referralRecords
+      .filter((r) => r.status === 'COMPLETED')
+      .reduce((sum, r) => sum + (r.referrerReward || 0), 0);
+
+    const totalEarned = Math.max(totalEarnedCredits, totalReferralRewards);
 
     const totalRedeemed = walletTransactions
       .filter((t) => t.type === 'DEBIT')
       .reduce((sum, t) => sum + t.amount, 0);
+
+    // Compute metrics
+    const totalInvited = referralRecords.length;
+    const completedConversions = referralRecords.filter((r) => r.status === 'COMPLETED').length;
 
     const formattedReferrals = referralRecords.map((r) => {
       const refName =
         r.referee?.vendorProfile?.businessName ||
         r.referee?.vendorProfile?.ownerName ||
         r.referee?.lenderProfile?.institutionName ||
+        r.referee?.lenderProfile?.contactPersonName ||
         r.referee?.email ||
         'New Registered User';
 

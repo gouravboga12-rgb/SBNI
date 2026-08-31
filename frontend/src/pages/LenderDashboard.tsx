@@ -3890,6 +3890,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
         isOpen={referModalOpen}
         onClose={() => setReferModalOpen(false)}
         userRole="LENDER"
+        userName={currentUser?.name || currentUserObj?.name || 'Partner'}
       />
 
     </div>

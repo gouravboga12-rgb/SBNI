@@ -12,7 +12,6 @@ import {
   Users,
   Award,
   Sparkles,
-  ArrowUpRight,
   TrendingUp,
   X,
   Clock,
@@ -20,6 +19,8 @@ import {
   History,
   MessageCircle,
   Zap,
+  ArrowDownLeft,
+  ArrowUpRight,
 } from 'lucide-react';
 
 interface ReferAndEarnModalProps {
@@ -79,41 +80,34 @@ export const ReferAndEarnModal: React.FC<ReferAndEarnModalProps> = ({
     window.open(`https://wa.me/?text=${message}`, '_blank');
   };
 
-  const handleNativeShare = async () => {
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: 'Join JustPaisa - FinTech Loan Marketplace',
-          text: `Use my partner referral code ${referralCode} to sign up on JustPaisa and earn reward cashback for plan upgrades!`,
-          url: referralLink,
-        });
-      } catch (e) {}
-    } else {
-      handleCopyLink();
-    }
-  };
-
-  const isLender = userRole === 'LENDER';
+  const totalEarned = data?.totalEarned || 0;
+  const totalRedeemed = data?.totalRedeemed || 0;
+  const walletBalance = data?.walletBalance || 0;
+  const totalInvited = data?.totalInvited || 0;
+  const completedConversions = data?.completedConversions || 0;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/80 backdrop-blur-sm overflow-y-auto">
-      <div className="relative w-full max-w-3xl bg-white p-5 sm:p-7 rounded-3xl border border-slate-200 shadow-2xl my-auto max-h-[92vh] flex flex-col overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
-        {/* Close Button */}
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/80 backdrop-blur-md overflow-y-auto">
+      <div className="relative w-full max-w-3xl bg-white p-4 sm:p-7 rounded-3xl border border-slate-200 shadow-2xl my-auto max-h-[92vh] flex flex-col overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
+        
+        {/* Top-Right Close X Button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 z-10 p-2 rounded-full bg-slate-100 border border-slate-200 text-slate-500 hover:text-slate-900 hover:bg-slate-200 transition-colors cursor-pointer"
+          className="absolute top-4 right-4 z-10 p-2 rounded-full bg-slate-100 border border-slate-200 text-slate-500 hover:text-slate-900 hover:bg-slate-200 transition-colors cursor-pointer shadow-xs"
+          title="Close Modal"
+          aria-label="Close"
         >
           <X className="w-5 h-5" />
         </button>
 
         {/* Modal Header */}
-        <div className="text-center max-w-xl mx-auto mb-5 space-y-2 flex-shrink-0">
-          <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-gradient-to-r from-amber-500/10 via-indigo-500/10 to-blue-500/10 border border-amber-300/80 text-amber-900 text-xs font-extrabold shadow-xs">
-            <Gift className="w-4 h-4 text-amber-600 animate-bounce" />
+        <div className="text-center max-w-xl mx-auto mb-4 sm:mb-5 space-y-1.5 flex-shrink-0">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-amber-500/10 via-indigo-500/10 to-blue-500/10 border border-amber-300/80 text-amber-900 text-[11px] font-extrabold shadow-xs">
+            <Gift className="w-3.5 h-3.5 text-amber-600 animate-bounce" />
             <span>JustPaisa Partner Refer & Earn Program</span>
           </div>
 
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-heading">
+          <h2 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-slate-900 font-heading">
             Invite Partners &{' '}
             <span className="bg-gradient-to-r from-blue-700 via-indigo-600 to-emerald-600 bg-clip-text text-transparent">
               Earn Wallet Rewards
@@ -121,90 +115,111 @@ export const ReferAndEarnModal: React.FC<ReferAndEarnModalProps> = ({
           </h2>
 
           <p className="text-xs sm:text-sm text-slate-600 font-medium">
-            Invite fellow shop owners and money financers to JustPaisa. When they activate a plan, you both earn instant wallet balance to use on plan upgrades!
+            Invite fellow shop owners and financers. When they activate a plan, you both earn instant wallet balance to discount plan upgrades!
           </p>
         </div>
 
-        {/* ── WALLET STATS BAR ─────────────────────────────────────── */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5 flex-shrink-0">
-          <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-700 text-white shadow-md shadow-emerald-600/15 relative overflow-hidden flex flex-col justify-between">
+        {/* ── 4-METRIC STATS GRID (AVAILABLE, EARNED, REDEEMED, INVITED) ── */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3 mb-4 sm:mb-5 flex-shrink-0">
+          
+          {/* 1. Available Balance */}
+          <div className="p-3 sm:p-3.5 rounded-2xl bg-gradient-to-br from-emerald-600 to-teal-800 text-white shadow-md shadow-emerald-600/15 flex flex-col justify-between">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] uppercase tracking-wider font-extrabold text-emerald-100">
-                Available Wallet Balance
+              <span className="text-[9px] sm:text-[10px] uppercase tracking-wider font-extrabold text-emerald-100">
+                Available Wallet
               </span>
-              <Wallet className="w-5 h-5 text-emerald-200" />
+              <Wallet className="w-4 h-4 text-emerald-200 shrink-0" />
             </div>
-            <div className="my-2">
-              <div className="text-3xl font-black font-heading">
-                ₹{loading ? '...' : (data?.walletBalance || 0).toLocaleString('en-IN')}
+            <div className="mt-2 mb-1">
+              <div className="text-xl sm:text-2xl font-black font-heading">
+                ₹{loading ? '...' : walletBalance.toLocaleString('en-IN')}
               </div>
-              <div className="text-[10px] text-emerald-100 font-medium flex items-center gap-1 mt-0.5">
-                <Sparkles className="w-3 h-3 text-amber-300" /> Use balance on your next plan upgrade
-              </div>
-            </div>
-          </div>
-
-          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col justify-between">
-            <div className="flex items-center justify-between text-slate-500 text-xs font-bold">
-              <span>Total Rewards Earned</span>
-              <Award className="w-4 h-4 text-indigo-600" />
-            </div>
-            <div className="my-2">
-              <div className="text-2xl font-black text-slate-900 font-heading">
-                ₹{loading ? '...' : (data?.totalEarned || 0).toLocaleString('en-IN')}
-              </div>
-              <div className="text-[10px] text-slate-500 font-medium flex items-center gap-1">
-                <TrendingUp className="w-3 h-3 text-emerald-600" /> From {data?.completedConversions || 0} active subscriptions
+              <div className="text-[9px] text-emerald-100 font-medium truncate mt-0.5">
+                Ready for plan discount
               </div>
             </div>
           </div>
 
-          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col justify-between">
-            <div className="flex items-center justify-between text-slate-500 text-xs font-bold">
-              <span>Total Invited Partners</span>
-              <Users className="w-4 h-4 text-blue-600" />
+          {/* 2. Total Earned */}
+          <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col justify-between">
+            <div className="flex items-center justify-between text-slate-500 text-[10px] sm:text-xs font-bold">
+              <span>Total Earned</span>
+              <Award className="w-4 h-4 text-indigo-600 shrink-0" />
             </div>
-            <div className="my-2">
-              <div className="text-2xl font-black text-slate-900 font-heading">
-                {loading ? '...' : data?.totalInvited || 0}
+            <div className="mt-2 mb-1">
+              <div className="text-lg sm:text-xl font-black text-slate-900 font-heading">
+                ₹{loading ? '...' : totalEarned.toLocaleString('en-IN')}
               </div>
-              <div className="text-[10px] text-slate-500 font-medium flex items-center gap-1">
-                <CheckCircle2 className="w-3 h-3 text-blue-600" /> Registered via your link
+              <div className="text-[9px] text-slate-500 font-medium truncate flex items-center gap-0.5 mt-0.5">
+                <TrendingUp className="w-2.5 h-2.5 text-emerald-600 shrink-0" /> Lifetime cashback
               </div>
             </div>
           </div>
+
+          {/* 3. Total Redeemed / Used */}
+          <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col justify-between">
+            <div className="flex items-center justify-between text-slate-500 text-[10px] sm:text-xs font-bold">
+              <span>Rewards Used</span>
+              <ArrowDownLeft className="w-4 h-4 text-rose-500 shrink-0" />
+            </div>
+            <div className="mt-2 mb-1">
+              <div className="text-lg sm:text-xl font-black text-slate-900 font-heading">
+                ₹{loading ? '...' : totalRedeemed.toLocaleString('en-IN')}
+              </div>
+              <div className="text-[9px] text-slate-500 font-medium truncate mt-0.5">
+                Used on subscriptions
+              </div>
+            </div>
+          </div>
+
+          {/* 4. Invited Partners */}
+          <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col justify-between">
+            <div className="flex items-center justify-between text-slate-500 text-[10px] sm:text-xs font-bold">
+              <span>Invited Partners</span>
+              <Users className="w-4 h-4 text-blue-600 shrink-0" />
+            </div>
+            <div className="mt-2 mb-1">
+              <div className="text-lg sm:text-xl font-black text-slate-900 font-heading">
+                {loading ? '...' : totalInvited}
+              </div>
+              <div className="text-[9px] text-slate-500 font-medium truncate flex items-center gap-0.5 mt-0.5">
+                <CheckCircle2 className="w-2.5 h-2.5 text-blue-600 shrink-0" /> {completedConversions} subscribed
+              </div>
+            </div>
+          </div>
+
         </div>
 
         {/* ── SHARE BOX ─────────────────────────────────────────────── */}
-        <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-slate-50 to-blue-50/50 border border-blue-200 mb-5 flex-shrink-0 space-y-3">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div className="p-3.5 sm:p-4 rounded-2xl bg-gradient-to-br from-slate-50 to-blue-50/50 border border-blue-200 mb-4 sm:mb-5 flex-shrink-0 space-y-2.5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
             <div>
               <div className="text-xs font-extrabold text-slate-900 flex items-center gap-1.5">
-                <Share2 className="w-4 h-4 text-blue-700" />
-                <span>Your Exclusive Partner Invite Link</span>
+                <Share2 className="w-4 h-4 text-blue-700 shrink-0" />
+                <span>Your Exclusive Partner Referral Link</span>
               </div>
               <div className="text-[11px] text-slate-500 font-medium">
-                Share this link or referral code with your friends and business contacts.
+                Share this link or code with fellow business owners and financers.
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-extrabold px-3 py-1 rounded-xl bg-white border border-slate-300 text-slate-900 font-mono tracking-wider">
+            <div className="flex items-center gap-1.5 self-start sm:self-auto">
+              <span className="text-xs font-black px-2.5 py-1 rounded-xl bg-white border border-slate-300 text-blue-950 font-mono tracking-wider shadow-2xs">
                 {referralCode}
               </span>
               <button
                 type="button"
                 onClick={handleCopyCode}
-                className="p-1.5 rounded-xl bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 transition-colors cursor-pointer"
-                title="Copy Code"
+                className="p-1.5 rounded-xl bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 transition-colors cursor-pointer shadow-2xs"
+                title="Copy Referral Code"
               >
-                {copiedCode ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
+                {copiedCode ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
               </button>
             </div>
           </div>
 
           <div className="flex flex-col sm:flex-row items-center gap-2">
-            <div className="flex-1 w-full bg-white border border-slate-300 px-3.5 py-2.5 rounded-xl text-xs text-slate-700 font-mono font-medium truncate select-all">
+            <div className="flex-1 w-full bg-white border border-slate-300 px-3 py-2 rounded-xl text-xs text-slate-700 font-mono font-medium truncate select-all">
               {referralLink}
             </div>
 
@@ -212,98 +227,100 @@ export const ReferAndEarnModal: React.FC<ReferAndEarnModalProps> = ({
               <button
                 type="button"
                 onClick={handleCopyLink}
-                className="btn-sbni-blue flex-1 sm:flex-initial py-2.5 px-4 text-xs font-extrabold rounded-xl shadow-sm flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap active:scale-95"
+                className="btn-sbni-blue flex-1 sm:flex-initial py-2 px-3.5 text-xs font-extrabold rounded-xl shadow-xs flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap active:scale-95"
               >
-                {copiedLink ? <Check className="w-4 h-4 text-emerald-300" /> : <Copy className="w-4 h-4" />}
+                {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-300" /> : <Copy className="w-3.5 h-3.5" />}
                 <span>{copiedLink ? 'Copied!' : 'Copy Link'}</span>
               </button>
 
               <button
                 type="button"
                 onClick={handleWhatsAppShare}
-                className="py-2.5 px-4 rounded-xl bg-[#25D366] hover:bg-[#20bd5a] text-white font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all cursor-pointer whitespace-nowrap active:scale-95"
+                className="py-2 px-3.5 rounded-xl bg-[#25D366] hover:bg-[#20bd5a] text-white font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-all cursor-pointer whitespace-nowrap active:scale-95"
               >
-                <MessageCircle className="w-4 h-4 fill-white" />
+                <MessageCircle className="w-3.5 h-3.5 fill-white" />
                 <span>Share WhatsApp</span>
               </button>
             </div>
           </div>
         </div>
 
-        {/* ── 3-STEP "HOW IT WORKS" ─────────────────────────────────── */}
-        <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 mb-5 flex-shrink-0">
-          <div className="text-xs font-extrabold text-slate-900 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+        {/* ── 3-STEP HOW IT WORKS ───────────────────────────────────── */}
+        <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-50 border border-slate-200 mb-4 sm:mb-5 flex-shrink-0">
+          <div className="text-[11px] font-extrabold text-slate-900 uppercase tracking-wider mb-2 flex items-center gap-1.5">
             <Zap className="w-3.5 h-3.5 text-amber-600" /> How It Works
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-            <div className="flex items-start gap-2.5">
-              <div className="w-6 h-6 rounded-full bg-blue-600 text-white font-black flex items-center justify-center shrink-0 text-xs">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
+            <div className="flex items-start gap-2">
+              <div className="w-5 h-5 rounded-full bg-blue-600 text-white font-black flex items-center justify-center shrink-0 text-[10px]">
                 1
               </div>
               <div>
-                <div className="font-extrabold text-slate-900">Share Your Link</div>
-                <div className="text-[11px] text-slate-500 leading-tight mt-0.5">
-                  Send your referral link to fellow business owners or financers.
+                <div className="font-extrabold text-slate-900 text-xs">Share Your Link</div>
+                <div className="text-[10px] text-slate-500 leading-tight mt-0.5">
+                  Send invite link to fellow shops or financers.
                 </div>
               </div>
             </div>
 
-            <div className="flex items-start gap-2.5">
-              <div className="w-6 h-6 rounded-full bg-indigo-600 text-white font-black flex items-center justify-center shrink-0 text-xs">
+            <div className="flex items-start gap-2">
+              <div className="w-5 h-5 rounded-full bg-indigo-600 text-white font-black flex items-center justify-center shrink-0 text-[10px]">
                 2
               </div>
               <div>
-                <div className="font-extrabold text-slate-900">They Subscribe</div>
-                <div className="text-[11px] text-slate-500 leading-tight mt-0.5">
-                  Your friend registers and activates any verified membership plan.
+                <div className="font-extrabold text-slate-900 text-xs">They Subscribe</div>
+                <div className="text-[10px] text-slate-500 leading-tight mt-0.5">
+                  Your referee registers and activates any plan.
                 </div>
               </div>
             </div>
 
-            <div className="flex items-start gap-2.5">
-              <div className="w-6 h-6 rounded-full bg-emerald-600 text-white font-black flex items-center justify-center shrink-0 text-xs">
+            <div className="flex items-start gap-2">
+              <div className="w-5 h-5 rounded-full bg-emerald-600 text-white font-black flex items-center justify-center shrink-0 text-[10px]">
                 3
               </div>
               <div>
-                <div className="font-extrabold text-slate-900">Both Earn Wallet Balance</div>
-                <div className="text-[11px] text-slate-500 leading-tight mt-0.5">
-                  Instant reward credited to your wallet to discount future plan upgrades!
+                <div className="font-extrabold text-slate-900 text-xs">Both Earn Rewards</div>
+                <div className="text-[10px] text-slate-500 leading-tight mt-0.5">
+                  Instant ₹10+ wallet bonus credited to both.
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* ── REFERRALS & TRANSACTIONS ACTIVITY TABS ─────────────────── */}
+        {/* ── REFERRALS & WALLET HISTORY TAB NAVIGATION ─────────────── */}
         <div className="flex-1 flex flex-col min-h-0">
-          <div className="flex items-center justify-between border-b border-slate-200 mb-3 pb-2">
+          <div className="flex items-center justify-between border-b border-slate-200 mb-2.5 pb-2">
             <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={() => setActiveTab('referrals')}
-                className={`text-xs font-extrabold px-3 py-1.5 rounded-xl transition-all cursor-pointer ${
+                className={`text-xs font-extrabold px-3.5 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
                   activeTab === 'referrals'
                     ? 'bg-slate-900 text-white shadow-xs'
                     : 'text-slate-600 hover:bg-slate-100'
                 }`}
               >
-                Invited Partners ({data?.referrals?.length || 0})
+                <Users className="w-3.5 h-3.5" />
+                <span>Invited Partners ({data?.referrals?.length || 0})</span>
               </button>
               <button
                 type="button"
                 onClick={() => setActiveTab('transactions')}
-                className={`text-xs font-extrabold px-3 py-1.5 rounded-xl transition-all cursor-pointer ${
+                className={`text-xs font-extrabold px-3.5 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
                   activeTab === 'transactions'
                     ? 'bg-slate-900 text-white shadow-xs'
                     : 'text-slate-600 hover:bg-slate-100'
                 }`}
               >
-                Wallet History ({data?.recentTransactions?.length || 0})
+                <History className="w-3.5 h-3.5" />
+                <span>Wallet History ({data?.recentTransactions?.length || 0})</span>
               </button>
             </div>
           </div>
 
-          <div className="overflow-y-auto max-h-48 rounded-xl border border-slate-200">
+          <div className="overflow-y-auto max-h-48 rounded-xl border border-slate-200 bg-white">
             {activeTab === 'referrals' ? (
               data?.referrals && data.referrals.length > 0 ? (
                 <table className="w-full text-left text-xs">
@@ -312,7 +329,7 @@ export const ReferAndEarnModal: React.FC<ReferAndEarnModalProps> = ({
                       <th className="py-2 px-3">Partner</th>
                       <th className="py-2 px-3">Role</th>
                       <th className="py-2 px-3">Status</th>
-                      <th className="py-2 px-3">Plan / Reward</th>
+                      <th className="py-2 px-3">Reward</th>
                       <th className="py-2 px-3 text-right">Joined Date</th>
                     </tr>
                   </thead>
@@ -369,9 +386,10 @@ export const ReferAndEarnModal: React.FC<ReferAndEarnModalProps> = ({
                   </tbody>
                 </table>
               ) : (
-                <div className="p-6 text-center text-slate-500 text-xs font-medium">
-                  <Users className="w-8 h-8 mx-auto text-slate-300 mb-1.5" />
-                  You have not invited any partners yet. Share your link above to get started!
+                <div className="p-6 text-center text-slate-500 text-xs font-medium space-y-1">
+                  <Users className="w-7 h-7 mx-auto text-slate-300 mb-1" />
+                  <div className="font-bold text-slate-700">No invited partners registered yet</div>
+                  <p className="text-[11px] text-slate-400">Share your referral link above with friends and business contacts to start earning rewards!</p>
                 </div>
               )
             ) : data?.recentTransactions && data.recentTransactions.length > 0 ? (
@@ -381,7 +399,7 @@ export const ReferAndEarnModal: React.FC<ReferAndEarnModalProps> = ({
                     <th className="py-2 px-3">Type</th>
                     <th className="py-2 px-3">Description</th>
                     <th className="py-2 px-3">Amount</th>
-                    <th className="py-2 px-3 text-right">Date</th>
+                    <th className="py-2 px-3 text-right">Date & Time</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -396,7 +414,7 @@ export const ReferAndEarnModal: React.FC<ReferAndEarnModalProps> = ({
                           {tx.type}
                         </span>
                       </td>
-                      <td className="py-2.5 px-3 font-medium text-slate-800">
+                      <td className="py-2.5 px-3 font-semibold text-slate-800">
                         {tx.description || tx.source}
                       </td>
                       <td
@@ -418,13 +436,32 @@ export const ReferAndEarnModal: React.FC<ReferAndEarnModalProps> = ({
                 </tbody>
               </table>
             ) : (
-              <div className="p-6 text-center text-slate-500 text-xs font-medium">
-                <History className="w-8 h-8 mx-auto text-slate-300 mb-1.5" />
-                No wallet transactions recorded yet.
+              <div className="p-6 text-center text-slate-500 text-xs font-medium space-y-1">
+                <History className="w-7 h-7 mx-auto text-slate-300 mb-1" />
+                <div className="font-bold text-slate-700">No wallet transactions recorded yet</div>
+                <p className="text-[11px] text-slate-400">Your referral bonuses, welcome credits, and discount redemptions will appear here.</p>
               </div>
             )}
           </div>
         </div>
+
+        {/* ── MODAL BOTTOM ACTION / CLOSE BAR ───────────────────────── */}
+        <div className="mt-4 pt-3 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 flex-shrink-0">
+          <div className="text-[11px] text-slate-500 font-medium flex items-center gap-1">
+            <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+            <span>Referral credits can be applied as instant discounts on any plan upgrade.</span>
+          </div>
+
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all cursor-pointer active:scale-95"
+          >
+            <X className="w-3.5 h-3.5" />
+            <span>Close Window</span>
+          </button>
+        </div>
+
       </div>
     </div>
   );
