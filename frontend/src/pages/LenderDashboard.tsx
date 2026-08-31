@@ -3547,13 +3547,23 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
           <span>Businesses</span>
         </button>
 
-        {/* Floating Green Action Button */}
-        <button
-          onClick={handleBusinessesClick}
-          className="w-11 h-11 sm:w-14 sm:h-14 rounded-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white flex items-center justify-center shadow-xl hover:scale-105 transition-all -mt-5 sm:-mt-9 border-3 sm:border-4 border-white shrink-0 mx-1 cursor-pointer"
-        >
-          <Plus className="w-5 h-5 sm:w-7 sm:h-7 text-white" />
-        </button>
+        {/* Floating Center Action Button: Refer & Earn Rewards */}
+        <div className="flex flex-col items-center shrink-0 mx-1 -mt-5 sm:-mt-9">
+          <button
+            onClick={() => setReferModalOpen(true)}
+            title="Refer & Earn Wallet Rewards"
+            aria-label="Refer and Earn"
+            className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gradient-to-tr from-amber-500 via-orange-500 to-rose-500 hover:from-amber-600 hover:to-rose-600 text-white flex items-center justify-center shadow-xl hover:scale-110 transition-all border-3 sm:border-4 border-white cursor-pointer relative group"
+          >
+            <Gift className="w-5 h-5 sm:w-7 sm:h-7 text-white drop-shadow-sm group-hover:rotate-12 transition-transform" />
+            <span className="absolute -top-1 -right-1 w-3.5 h-3.5 sm:w-4 sm:h-4 bg-emerald-500 text-white text-[8px] sm:text-[9px] font-black rounded-full flex items-center justify-center border-2 border-white shadow-xs">
+              ₹
+            </span>
+          </button>
+          <span className="text-[9px] sm:text-[10px] font-extrabold text-orange-600 mt-0.5 tracking-tight">
+            Refer & Earn
+          </span>
+        </div>
 
         <button
           onClick={() => handleReportsClick('ALL')}
