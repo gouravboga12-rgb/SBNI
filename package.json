@@ -15,6 +15,10 @@
     "build:admin": "npm run build --prefix admin",
     "build:mobile": "npm run build --prefix mobile-app",
     "mobile:sync": "npm run cap:sync --prefix mobile-app",
-    "mobile:open": "npm run cap:open --prefix mobile-app"
+    "mobile:open": "npm run cap:open --prefix mobile-app",
+    "expo:start": "npm run start --prefix mobile-expo",
+    "expo:android": "npm run android --prefix mobile-expo",
+    "expo:build-apk": "npm run build:apk --prefix mobile-expo",
+    "expo:build-aab": "npm run build:aab --prefix mobile-expo"
   }
 }

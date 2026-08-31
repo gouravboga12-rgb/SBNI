@@ -1,0 +1,53 @@
+{
+  "expo": {
+    "name": "Just Paisa",
+    "slug": "justpaisa-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#003893"
+    },
+    "scheme": "justpaisa",
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.justpaisa.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#003893"
+      },
+      "package": "com.justpaisa.app",
+      "permissions": [
+        "INTERNET",
+        "ACCESS_NETWORK_STATE",
+        "CALL_PHONE",
+        "VIBRATE",
+        "RECEIVE_BOOT_COMPLETED"
+      ]
+    },
+    "plugins": [
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#003893"
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "justpaisa-app-expo"
+      },
+      "apiUrl": "https://testcodtech.shop/api",
+      "wsUrl": "https://testcodtech.shop"
+    }
+  }
+}
