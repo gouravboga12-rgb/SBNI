@@ -45,6 +45,8 @@ import {
   Edit3,
   LogOut,
   Loader2,
+  Rocket,
+  ArrowRight,
 } from 'lucide-react';
 import { getBrowserLocation, reverseGeocodeMapbox, searchPlacesMapbox } from '../services/mapboxService';
 import { Role } from '../types';
@@ -72,7 +74,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 }) => {
   const [role, setRole] = useState<Role>(initialRole);
   const [isRegister, setIsRegister] = useState(initialRegister);
-  const [viewStep, setViewStep] = useState<'SELECT' | 'FORM' | 'OTP_VERIFY' | 'FORGOT_PASSWORD'>('SELECT');
+  const [viewStep, setViewStep] = useState<'SELECT' | 'VENDOR_TYPE_SELECT' | 'FORM' | 'OTP_VERIFY' | 'FORGOT_PASSWORD'>('SELECT');
 
   // Form error & success states
   const [formError, setFormError] = useState<string | null>(null);
@@ -181,9 +183,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   useEffect(() => {
     if (isOpen) {
-      setRole(initialRole || 'VENDOR');
+      const targetRole = initialRole || 'VENDOR';
+      setRole(targetRole);
       setIsRegister(!!initialRegister);
-      setViewStep(initialRegister ? 'FORM' : 'SELECT');
+      if (initialRegister && targetRole === 'VENDOR') {
+        setViewStep('VENDOR_TYPE_SELECT');
+      } else {
+        setViewStep(initialRegister ? 'FORM' : 'SELECT');
+      }
       setFormError(null);
       setFormSuccess(null);
       setSignupOtp('');
@@ -951,10 +958,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   onClick={() => {
                     setRole('VENDOR');
                     setIsRegister(true);
-                    setViewStep('FORM');
+                    setViewStep('VENDOR_TYPE_SELECT');
                     setFormError(null);
                   }}
-                  className="py-3 px-3 rounded-xl bg-white hover:bg-blue-50 text-[#003893] border-2 border-[#003893] font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all active:scale-[0.98]"
+                  className="py-3 px-3 rounded-xl bg-white hover:bg-blue-50 text-[#003893] border-2 border-[#003893] font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all active:scale-[0.98] cursor-pointer"
                 >
                   <UserPlus className="w-4 h-4 shrink-0" /> Sign Up as Shop / Startup Owner
                 </button>
@@ -1009,6 +1016,138 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         )}
 
         {/* ========================================================================= */}
+        {/* STEP 1.5: VENDOR BUSINESS TYPE SELECTION POPUP MODAL VIEW                */}
+        {/* ========================================================================= */}
+        {viewStep === 'VENDOR_TYPE_SELECT' && (
+          <div className="p-6 sm:p-8 relative z-10 space-y-6">
+            {/* Back Navigation Bar */}
+            <div className="flex items-center justify-between pb-1 border-b border-slate-100">
+              <button
+                type="button"
+                onClick={() => {
+                  setViewStep('SELECT');
+                  setFormError(null);
+                }}
+                className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-xl transition-colors active:scale-95 cursor-pointer"
+              >
+                <ArrowLeft className="w-4 h-4 text-slate-500" />
+                <span>← Back</span>
+              </button>
+
+              <div className="text-[10px] sm:text-[11px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider border shadow-xs bg-blue-50 border-blue-200 text-[#003893]">
+                Step 1 of 2: Select Business
+              </div>
+            </div>
+
+            {/* Header */}
+            <div className="flex flex-col items-center justify-center text-center space-y-2 pt-1">
+              <div className="flex justify-center">
+                <SBNILogo imgClassName="h-14 sm:h-16 w-auto object-contain drop-shadow-sm" />
+              </div>
+              <div>
+                <h2 className="text-xl sm:text-2xl font-black font-heading text-slate-900 tracking-tight">
+                  Select Your Business Type
+                </h2>
+                <p className="text-xs text-slate-600 font-medium mt-1 max-w-sm mx-auto">
+                  Please select whether you are signing up as a <strong className="text-[#003893]">Small Shop Business</strong> or a <strong className="text-indigo-800">Local Startup Business</strong>:
+                </p>
+              </div>
+            </div>
+
+            {/* Direct 2 Option Cards */}
+            <div className="grid grid-cols-1 gap-4 pt-1">
+              {/* Option 1: Small Shop Business */}
+              <button
+                type="button"
+                onClick={() => {
+                  setBusinessCategory('Small Shop Business');
+                  setIsRegister(true);
+                  setRole('VENDOR');
+                  setViewStep('FORM');
+                  setFormError(null);
+                }}
+                className="p-5 rounded-3xl bg-gradient-to-br from-blue-50 via-white to-blue-50/60 border-2 border-blue-300 hover:border-[#003893] shadow-md hover:shadow-xl transition-all duration-300 text-left group cursor-pointer active:scale-[0.99] relative overflow-hidden"
+              >
+                <div className="flex items-start gap-4">
+                  <div className="w-13 h-13 rounded-2xl bg-gradient-to-br from-[#003893] to-[#00225b] text-white flex items-center justify-center shrink-0 shadow-md group-hover:scale-110 transition-transform">
+                    <Store className="w-6 h-6" />
+                  </div>
+
+                  <div className="space-y-1.5 flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <h3 className="text-base sm:text-lg font-black text-[#003893] group-hover:text-[#002669] transition-colors">
+                        1. Small Shop Business
+                      </h3>
+                      <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-blue-100 text-[#003893] border border-blue-200">
+                        All 6 KYC Compulsory
+                      </span>
+                    </div>
+
+                    <p className="text-xs text-slate-600 font-medium leading-relaxed">
+                      For Retail Stores, Kirana Shops, General Stores, Medical, Hardware & Commercial Outlets.
+                    </p>
+
+                    <div className="text-[11px] text-blue-900 font-bold bg-blue-100/60 px-2.5 py-1 rounded-xl border border-blue-200/80 flex items-center gap-1.5 mt-2">
+                      <ShieldCheck className="w-3.5 h-3.5 text-[#003893] shrink-0" />
+                      <span>Requires Passport Photo, PAN, Aadhaar, License/GST, Shop Photo & Live Selfie</span>
+                    </div>
+
+                    <div className="pt-2 flex items-center gap-1 text-xs font-black text-[#003893] group-hover:translate-x-1 transition-transform">
+                      <span>Continue as Small Shop Business</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </div>
+                  </div>
+                </div>
+              </button>
+
+              {/* Option 2: Local Startup Business */}
+              <button
+                type="button"
+                onClick={() => {
+                  setBusinessCategory('Local Startup Business');
+                  setIsRegister(true);
+                  setRole('VENDOR');
+                  setViewStep('FORM');
+                  setFormError(null);
+                }}
+                className="p-5 rounded-3xl bg-gradient-to-br from-indigo-50 via-white to-indigo-50/60 border-2 border-indigo-300 hover:border-indigo-700 shadow-md hover:shadow-xl transition-all duration-300 text-left group cursor-pointer active:scale-[0.99] relative overflow-hidden"
+              >
+                <div className="flex items-start gap-4">
+                  <div className="w-13 h-13 rounded-2xl bg-gradient-to-br from-indigo-600 to-indigo-900 text-white flex items-center justify-center shrink-0 shadow-md group-hover:scale-110 transition-transform">
+                    <Rocket className="w-6 h-6" />
+                  </div>
+
+                  <div className="space-y-1.5 flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <h3 className="text-base sm:text-lg font-black text-indigo-900 group-hover:text-indigo-950 transition-colors">
+                        2. Local Startup Business
+                      </h3>
+                      <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-800 border border-indigo-200">
+                        3 Mandatory • 3 Optional
+                      </span>
+                    </div>
+
+                    <p className="text-xs text-slate-600 font-medium leading-relaxed">
+                      For Early-stage Local Startups, Digital Ventures, Home Businesses & Service Enterprises.
+                    </p>
+
+                    <div className="text-[11px] text-indigo-900 font-bold bg-indigo-100/60 px-2.5 py-1 rounded-xl border border-indigo-200/80 flex items-center gap-1.5 mt-2">
+                      <Zap className="w-3.5 h-3.5 text-indigo-700 shrink-0" />
+                      <span>Mandatory: Photo, PAN & Aadhaar (License & Shop Photos are Optional)</span>
+                    </div>
+
+                    <div className="pt-2 flex items-center gap-1 text-xs font-black text-indigo-700 group-hover:translate-x-1 transition-transform">
+                      <span>Continue as Local Startup Business</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </div>
+                  </div>
+                </div>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ========================================================================= */}
         {/* STEP 2: DEDICATED FORM VIEW (LOGIN / REGISTER)                           */}
         {/* ========================================================================= */}
         {viewStep === 'FORM' && (
@@ -1018,13 +1157,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               <button
                 type="button"
                 onClick={() => {
-                  setViewStep('SELECT');
+                  if (isRegister && isVendor) {
+                    setViewStep('VENDOR_TYPE_SELECT');
+                  } else {
+                    setViewStep('SELECT');
+                  }
                   setFormError(null);
                 }}
-                className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-xl transition-colors active:scale-95"
+                className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-xl transition-colors active:scale-95 cursor-pointer"
               >
                 <ArrowLeft className="w-4 h-4 text-slate-500" />
-                <span>← Back to Choose Account</span>
+                <span>{isRegister && isVendor ? '← Back to Business Type' : '← Back to Choose Account'}</span>
               </button>
 
               <div
@@ -1035,7 +1178,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   color: isVendor ? '#003893' : '#007a33',
                 }}
               >
-                {isVendor ? 'Small Shop / Local Startup Business' : 'Business Money Financer'}
+                {isVendor
+                  ? isRegister
+                    ? businessCategory
+                    : 'Small Shop / Local Startup Business'
+                  : 'Business Money Financer'}
               </div>
             </div>
 
@@ -1053,7 +1200,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 >
                   {isRegister
                     ? isVendor
-                      ? 'Small Shop / Local Startup Business Sign Up'
+                      ? `${businessCategory} Sign Up`
                       : 'Business Money Financer Registration'
                     : isVendor
                     ? 'Small Shop / Local Startup Business Login'
@@ -1062,7 +1209,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 <p className="text-xs text-slate-500 font-medium mt-0.5">
                   {isRegister
                     ? isVendor
-                      ? 'Enter your business details & verification documents. We will verify your email with OTP.'
+                      ? businessCategory === 'Small Shop Business'
+                        ? 'Enter your shop details & all 6 required KYC verification documents.'
+                        : 'Enter your startup details & required KYC verification documents (3 required, 3 optional).'
                       : 'Sign up as a Business Money Financer. We will verify your official email with OTP.'
                     : isVendor
                     ? 'Login as small shop business or local startup business owner to check nearby business financers for money'
@@ -1221,32 +1370,42 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             {/* VENDOR REGISTER FORM MODE */}
             {isRegister && isVendor && (
               <form onSubmit={handleVendorRegisterFormSubmit} className="space-y-4">
-                {/* ── Business Category / Type Selection Dropdown (Option 1: Small Shop Business, Option 2: Local Startup Business) ── */}
-                <div className="p-3.5 sm:p-4 rounded-2xl bg-gradient-to-r from-blue-50/90 to-indigo-50/90 border-2 border-[#003893]/30 shadow-xs space-y-2.5">
-                  <div className="flex items-center justify-between">
-                    <label className="block text-xs font-black text-[#003893] uppercase tracking-wider flex items-center gap-1.5">
-                      <Building2 className="w-4 h-4 text-[#003893]" />
-                      <span>Select Business Type / Category *</span>
-                    </label>
-                    <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-[#003893] text-white">
-                      Required
-                    </span>
-                  </div>
-
-                  <div className="relative">
-                    <select
-                      value={businessCategory}
-                      onChange={(e) => setBusinessCategory(e.target.value as 'Small Shop Business' | 'Local Startup Business')}
-                      className="w-full pl-3.5 pr-10 py-3 bg-white border-2 border-[#003893]/40 hover:border-[#003893] focus:border-[#003893] rounded-xl text-xs sm:text-sm font-bold text-slate-900 outline-none transition-all appearance-none cursor-pointer shadow-xs"
-                    >
-                      <option value="Small Shop Business">Small Shop Business</option>
-                      <option value="Local Startup Business">Local Startup Business</option>
-                    </select>
-                    <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
-                      </svg>
+                {/* ── Business Category Selected Banner & Quick Switch ── */}
+                <div className={`p-4 rounded-2xl border-2 shadow-xs space-y-2.5 ${
+                  businessCategory === 'Small Shop Business'
+                    ? 'bg-gradient-to-r from-blue-50/95 to-indigo-50/90 border-[#003893]/40'
+                    : 'bg-gradient-to-r from-indigo-50/95 to-purple-50/90 border-indigo-500/40'
+                }`}>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2.5">
+                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-white font-bold shadow-xs shrink-0 ${
+                        businessCategory === 'Small Shop Business' ? 'bg-[#003893]' : 'bg-indigo-600'
+                      }`}>
+                        {businessCategory === 'Small Shop Business' ? <Store className="w-4.5 h-4.5" /> : <Rocket className="w-4.5 h-4.5" />}
+                      </div>
+                      <div>
+                        <span className="text-[10px] font-black uppercase tracking-wider text-slate-500 block">
+                          Business Registration Type
+                        </span>
+                        <span className={`text-sm sm:text-base font-black ${
+                          businessCategory === 'Small Shop Business' ? 'text-[#003893]' : 'text-indigo-900'
+                        }`}>
+                          {businessCategory}
+                        </span>
+                      </div>
                     </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setViewStep('VENDOR_TYPE_SELECT');
+                        setFormError(null);
+                      }}
+                      className="px-3 py-1.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 hover:text-slate-900 border border-slate-300 font-black text-xs shadow-xs flex items-center gap-1.5 transition-colors cursor-pointer active:scale-95 shrink-0"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" />
+                      <span>Switch Type</span>
+                    </button>
                   </div>
 
                   {/* Dynamic Info Alert */}
@@ -1923,6 +2082,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     type="button"
                     onClick={() => {
                       setIsRegister(true);
+                      if (isVendor) {
+                        setViewStep('VENDOR_TYPE_SELECT');
+                      }
                       setFormError(null);
                     }}
                     className={`py-2.5 px-4 rounded-xl border-2 font-extrabold text-xs inline-flex items-center justify-center gap-2 transition-all bg-white shadow-xs ${
