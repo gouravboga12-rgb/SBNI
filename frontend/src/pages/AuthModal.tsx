@@ -86,6 +86,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [rememberMe, setRememberMe] = useState(true);
 
   // Vendor Registration Specific Form States
+  const [businessCategory, setBusinessCategory] = useState<'Small Shop Business' | 'Local Startup Business'>('Small Shop Business');
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
@@ -296,6 +297,22 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       return;
     }
 
+    // Small Shop Business requires all 6 KYC files & photos
+    if (businessCategory === 'Small Shop Business') {
+      if (!licenseFile) {
+        setFormError('Please upload your Business License / GST document to proceed (compulsory for Small Shop Business).');
+        return;
+      }
+      if (!shopPhotoFile) {
+        setFormError('Please upload your Shop / Local Startup Business Photo to proceed (compulsory for Small Shop Business).');
+        return;
+      }
+      if (!liveSelfieFile) {
+        setFormError('Please upload your Live Photo in Front of Shop / Business to proceed (compulsory for Small Shop Business).');
+        return;
+      }
+    }
+
     setIsSubmitting(true);
     try {
       // If manual address entered and GPS not fetched, forward geocode via Mapbox API!
@@ -320,6 +337,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           phone,
           password: regPassword,
           businessName,
+          businessCategory,
+          registrationType: businessCategory,
+          category: businessCategory,
           address,
           annualIncome,
           latitude: resolvedLoc?.latitude || 17.3713,
@@ -377,12 +397,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           localStorage.getItem('sbni_referral_code') ||
           undefined;
 
+        const effectiveCategory = pendingVendorData.businessCategory || 'Small Shop Business';
+
         const result = await registerVendor({
           name: pendingVendorData.name,
           email: pendingVendorData.email,
           phone: pendingVendorData.phone,
           password: pendingVendorData.password,
           businessName: pendingVendorData.businessName,
+          registrationType: effectiveCategory,
+          category: effectiveCategory,
+          businessType: effectiveCategory,
           address: pendingVendorData.address,
           city: pendingVendorData.city,
           state: pendingVendorData.state,
@@ -439,6 +464,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             await updateVendorProfileApi({
               ownerName: pendingVendorData.name,
               businessName: pendingVendorData.businessName,
+              registrationType: effectiveCategory,
+              category: effectiveCategory,
               phone: pendingVendorData.phone,
               email: pendingVendorData.email,
               address: pendingVendorData.address,
@@ -469,6 +496,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             phone: pendingVendorData.phone,
             email: pendingVendorData.email,
             businessName: pendingVendorData.businessName,
+            registrationType: effectiveCategory,
+            category: effectiveCategory,
+            businessType: effectiveCategory,
             address: pendingVendorData.address,
             place: pendingVendorData.place || pendingVendorData.city || 'Commercial Belt',
             city: pendingVendorData.city || 'Hyderabad',
@@ -1094,6 +1124,49 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             {/* VENDOR REGISTER FORM MODE */}
             {isRegister && isVendor && (
               <form onSubmit={handleVendorRegisterFormSubmit} className="space-y-4">
+                {/* ── Business Category / Type Selection Dropdown (Option 1: Small Shop Business, Option 2: Local Startup Business) ── */}
+                <div className="p-3.5 sm:p-4 rounded-2xl bg-gradient-to-r from-blue-50/90 to-indigo-50/90 border-2 border-[#003893]/30 shadow-xs space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-black text-[#003893] uppercase tracking-wider flex items-center gap-1.5">
+                      <Building2 className="w-4 h-4 text-[#003893]" />
+                      <span>Select Business Type / Category *</span>
+                    </label>
+                    <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-[#003893] text-white">
+                      Required
+                    </span>
+                  </div>
+
+                  <div className="relative">
+                    <select
+                      value={businessCategory}
+                      onChange={(e) => setBusinessCategory(e.target.value as 'Small Shop Business' | 'Local Startup Business')}
+                      className="w-full pl-3.5 pr-10 py-3 bg-white border-2 border-[#003893]/40 hover:border-[#003893] focus:border-[#003893] rounded-xl text-xs sm:text-sm font-bold text-slate-900 outline-none transition-all appearance-none cursor-pointer shadow-xs"
+                    >
+                      <option value="Small Shop Business">Small Shop Business</option>
+                      <option value="Local Startup Business">Local Startup Business</option>
+                    </select>
+                    <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </div>
+
+                  {/* Dynamic Info Alert */}
+                  <div className={`p-2.5 rounded-xl text-xs font-semibold flex items-start gap-2 ${
+                    businessCategory === 'Small Shop Business'
+                      ? 'bg-blue-100/70 border border-blue-300 text-blue-950'
+                      : 'bg-indigo-100/70 border border-indigo-300 text-indigo-950'
+                  }`}>
+                    <ShieldCheck className="w-4 h-4 shrink-0 mt-0.5 text-[#003893]" />
+                    <span>
+                      {businessCategory === 'Small Shop Business'
+                        ? 'Small Shop Business: All 6 documents (Passport Photo, PAN Card, Aadhaar Card, Business License / GST, Shop Photo, Live Photo in Front of Shop) are compulsory.'
+                        : 'Local Startup Business: Passport Size Photo, PAN Card and Aadhaar Card are mandatory. Business License / GST, Shop Photo and Live Photo are optional.'}
+                    </span>
+                  </div>
+                </div>
+
                 {/* Personal & Contact Details */}
                 <div className="space-y-3">
                   <div className="text-xs font-extrabold text-[#003893] uppercase tracking-wider flex items-center gap-1.5 border-b pb-1">
@@ -1292,10 +1365,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
                 {/* Document Uploads */}
                 <div className="space-y-3 pt-1">
-                  <div className="text-xs font-extrabold text-[#003893] uppercase tracking-wider flex items-center gap-1.5 border-b pb-1">
-                    <FileText className="w-4 h-4" /> Photo & KYC Document Uploads
+                  <div className="text-xs font-extrabold text-[#003893] uppercase tracking-wider flex items-center justify-between border-b pb-1">
+                    <span className="flex items-center gap-1.5">
+                      <FileText className="w-4 h-4" /> Photo & KYC Document Uploads
+                    </span>
+                    <span className="text-[10px] font-bold text-slate-500">
+                      {businessCategory === 'Small Shop Business' ? 'All 6 Documents Required' : '3 Required, 3 Optional'}
+                    </span>
                   </div>
 
+                  {/* 1. Passport Size Photo (Always Required) */}
                   <div className="p-3 bg-blue-50/60 rounded-2xl border border-blue-200">
                     <div className="flex items-center justify-between mb-1.5">
                       <span className="text-xs font-extrabold text-slate-800 flex items-center gap-1">
@@ -1346,7 +1425,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {/* PAN Card */}
+                    {/* 2. PAN Card (Always Required) */}
                     <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200">
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-xs font-extrabold text-slate-800">PAN Card *</span>
@@ -1355,7 +1434,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                             <CheckCircle2 className="w-3 h-3" /> Uploaded
                           </span>
                         ) : (
-                          <span className="text-[10px] text-rose-600 font-bold">Required</span>
+                          <span className="text-[10px] text-rose-600 font-bold bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200">
+                            Required
+                          </span>
                         )}
                       </div>
                       <label className="border-2 border-dashed border-slate-300 hover:border-[#003893] rounded-xl p-2.5 text-center cursor-pointer block bg-white transition-colors">
@@ -1367,13 +1448,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                         />
                         <Upload className="w-5 h-5 text-[#003893] mx-auto mb-1" />
                         <div className="text-[11px] font-bold text-slate-700 truncate">
-                          {panFile ? panFile.name : 'Upload PAN Card'}
+                          {panFile ? panFile.name : 'Upload PAN Card *'}
                         </div>
                         <div className="text-[9px] text-slate-400">PDF, JPG, PNG up to 5MB</div>
                       </label>
                     </div>
 
-                    {/* Aadhaar Card */}
+                    {/* 3. Aadhaar Card (Always Required) */}
                     <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200">
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-xs font-extrabold text-slate-800">Aadhaar Card *</span>
@@ -1382,7 +1463,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                             <CheckCircle2 className="w-3 h-3" /> Uploaded
                           </span>
                         ) : (
-                          <span className="text-[10px] text-rose-600 font-bold">Required</span>
+                          <span className="text-[10px] text-rose-600 font-bold bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200">
+                            Required
+                          </span>
                         )}
                       </div>
                       <label className="border-2 border-dashed border-slate-300 hover:border-[#003893] rounded-xl p-2.5 text-center cursor-pointer block bg-white transition-colors">
@@ -1394,20 +1477,32 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                         />
                         <Upload className="w-5 h-5 text-[#003893] mx-auto mb-1" />
                         <div className="text-[11px] font-bold text-slate-700 truncate">
-                          {aadhaarFile ? aadhaarFile.name : 'Upload Aadhaar Card'}
+                          {aadhaarFile ? aadhaarFile.name : 'Upload Aadhaar Card *'}
                         </div>
                         <div className="text-[9px] text-slate-400">PDF, JPG, PNG up to 5MB</div>
                       </label>
                     </div>
                   </div>
 
-                  {/* Business License */}
+                  {/* 4. Business License / GST (Required for Small Shop Business, Optional for Local Startup) */}
                   <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200">
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs font-extrabold text-slate-800">Business License / GST</span>
-                      <span className="text-[10px] font-semibold text-slate-500 bg-slate-200 px-1.5 py-0.5 rounded">
-                        Optional
+                      <span className="text-xs font-extrabold text-slate-800">
+                        Business License / GST {businessCategory === 'Small Shop Business' ? '*' : ''}
                       </span>
+                      {licenseFile ? (
+                        <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3" /> Uploaded
+                        </span>
+                      ) : businessCategory === 'Small Shop Business' ? (
+                        <span className="text-[10px] text-rose-600 font-bold bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200">
+                          Required
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-semibold text-slate-500 bg-slate-200 px-1.5 py-0.5 rounded">
+                          Optional
+                        </span>
+                      )}
                     </div>
                     <label className="border-2 border-dashed border-slate-300 hover:border-[#003893] rounded-xl p-2.5 text-center cursor-pointer block bg-white transition-colors">
                       <input
@@ -1418,19 +1513,29 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       />
                       <Upload className="w-5 h-5 text-[#003893] mx-auto mb-1" />
                       <div className="text-[11px] font-bold text-slate-700 truncate">
-                        {licenseFile ? licenseFile.name : 'Upload Shop License / Trade License (Optional)'}
+                        {licenseFile
+                          ? licenseFile.name
+                          : businessCategory === 'Small Shop Business'
+                          ? 'Upload Shop / Trade License / GST *'
+                          : 'Upload Shop / Trade License / GST (Optional)'}
                       </div>
                       <div className="text-[9px] text-slate-400">PDF, JPG, PNG up to 5MB</div>
                     </label>
                   </div>
 
-                  {/* Shop Photo */}
+                  {/* 5. Shop / Local Startup Business Photo (Required for Small Shop Business, Optional for Local Startup) */}
                   <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200">
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs font-extrabold text-slate-800">Shop / Local Startup Business Photo</span>
+                      <span className="text-xs font-extrabold text-slate-800">
+                        Shop / Local Startup Business Photo {businessCategory === 'Small Shop Business' ? '*' : ''}
+                      </span>
                       {shopPhotoFile ? (
                         <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded flex items-center gap-1">
                           <CheckCircle2 className="w-3 h-3" /> Uploaded
+                        </span>
+                      ) : businessCategory === 'Small Shop Business' ? (
+                        <span className="text-[10px] text-rose-600 font-bold bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200">
+                          Required
                         </span>
                       ) : (
                         <span className="text-[10px] font-semibold text-slate-500 bg-slate-200 px-1.5 py-0.5 rounded">
@@ -1447,19 +1552,29 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       />
                       <Camera className="w-5 h-5 text-[#003893] mx-auto mb-1" />
                       <div className="text-[11px] font-bold text-slate-700 truncate">
-                        {shopPhotoFile ? shopPhotoFile.name : 'Upload Shop / Business Photo (Optional)'}
+                        {shopPhotoFile
+                          ? shopPhotoFile.name
+                          : businessCategory === 'Small Shop Business'
+                          ? 'Upload Shop / Business Photo *'
+                          : 'Upload Shop / Business Photo (Optional)'}
                       </div>
-                      <div className="text-[9px] text-slate-400">Shop Exterior / Interior Photo (Max 5MB)</div>
+                      <div className="text-[9px] text-slate-400">Shop / Business Exterior / Interior Photo (Max 5MB)</div>
                     </label>
                   </div>
 
-                  {/* Live Photo */}
+                  {/* 6. Live Photo in Front of Shop / Business (Required for Small Shop Business, Optional for Local Startup) */}
                   <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200">
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs font-extrabold text-slate-800">Live Photo in Front of Shop / Business</span>
+                      <span className="text-xs font-extrabold text-slate-800">
+                        Live Photo in Front of Shop / Business {businessCategory === 'Small Shop Business' ? '*' : ''}
+                      </span>
                       {liveSelfieFile ? (
                         <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded flex items-center gap-1">
                           <CheckCircle2 className="w-3 h-3" /> Uploaded
+                        </span>
+                      ) : businessCategory === 'Small Shop Business' ? (
+                        <span className="text-[10px] text-rose-600 font-bold bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200">
+                          Required
                         </span>
                       ) : (
                         <span className="text-[10px] font-semibold text-slate-500 bg-slate-200 px-1.5 py-0.5 rounded">
@@ -1475,8 +1590,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                         onChange={(e) => handleFileSelect(e.target.files?.[0], setLiveSelfieFile)}
                         className="hidden"
                       />
+                      <Camera className="w-5 h-5 text-[#003893] mx-auto mb-1" />
                       <div className="text-[11px] font-bold text-slate-700 truncate">
-                        {liveSelfieFile ? liveSelfieFile.name : 'Live Photo with Person in Front (Optional)'}
+                        {liveSelfieFile
+                          ? liveSelfieFile.name
+                          : businessCategory === 'Small Shop Business'
+                          ? 'Live Photo with Person in Front of Shop / Business *'
+                          : 'Live Photo with Person in Front of Shop / Business (Optional)'}
                       </div>
                       <div className="text-[9px] text-slate-400">Person Standing in Front of Shop / Business (Max 5MB)</div>
                     </label>

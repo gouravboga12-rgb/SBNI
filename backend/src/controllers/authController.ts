@@ -276,6 +276,8 @@ export const registerUser = async (req: Request, res: Response) => {
             userId: newUser.id,
             businessName: businessName || (name ? `${name} Enterprise` : 'My Enterprise Business'),
             ownerName: name || 'Business Owner',
+            registrationType: req.body.registrationType || req.body.businessType || req.body.category || 'Small Shop Business',
+            category: req.body.category || req.body.businessType || req.body.registrationType || 'Small Shop Business',
             address: address || '123 Commercial Belt',
             place: req.body.place || 'Commercial Area',
             city: city || 'Hyderabad',

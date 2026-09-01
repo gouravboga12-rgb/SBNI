@@ -312,6 +312,9 @@ export const registerVendor = async (payload: {
   phone: string;
   password: string;
   businessName: string;
+  registrationType?: string;
+  category?: string;
+  businessType?: string;
   address: string;
   city?: string;
   state?: string;
