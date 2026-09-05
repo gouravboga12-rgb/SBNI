@@ -96,14 +96,6 @@ export const Footer: React.FC = () => {
                   srinivaspolepalli10@gmail.com
                 </a>
               </li>
-              <li className="flex items-center gap-2">
-                <Phone className="w-4 h-4 text-emerald-400" />
-                <span>Toll Free: +91 1800 123 4567</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-indigo-400" />
-                <span>BKC Financial Tower 4, Mumbai - 400051</span>
-              </li>
             </ul>
           </div>
 
