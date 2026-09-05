@@ -43,8 +43,8 @@
       ]
     ],
     "extra": {
-      "apiUrl": "https://testcodtech.shop/api",
-      "wsUrl": "https://testcodtech.shop",
+      "apiUrl": "https://justpaisa.in/api",
+      "wsUrl": "https://justpaisa.in",
       "eas": {
         "projectId": "1ab35637-7a6b-4ccd-85ee-e6b5135a05fb"
       }

@@ -10,7 +10,7 @@ const getSocketUrl = (): string => {
     }
     return window.location.origin;
   }
-  return 'https://testcodtech.shop';
+  return 'https://justpaisa.in';
 };
 
 /**

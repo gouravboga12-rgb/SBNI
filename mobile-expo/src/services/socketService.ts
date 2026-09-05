@@ -1,7 +1,7 @@
 import { io, Socket } from 'socket.io-client';
 import * as Notifications from 'expo-notifications';
 
-const SOCKET_SERVER_URL = 'https://testcodtech.shop';
+const SOCKET_SERVER_URL = 'https://justpaisa.in';
 
 let socket: Socket | null = null;
 

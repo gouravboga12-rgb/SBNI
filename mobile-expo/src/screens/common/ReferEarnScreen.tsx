@@ -22,7 +22,7 @@ export const ReferEarnScreen: React.FC = () => {
   const [withdrawing, setWithdrawing] = useState(false);
 
   const referralCode = user?.referralCode || `JP${user?.phone?.slice(-4) || '9999'}`;
-  const shareLink = `https://testcodtech.shop/?ref=${referralCode}`;
+  const shareLink = `https://justpaisa.in/?ref=${referralCode}`;
 
   const handleCopy = async () => {
     await Clipboard.setStringAsync(shareLink);

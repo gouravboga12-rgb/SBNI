@@ -1,7 +1,7 @@
 import * as Linking from 'expo-linking';
 
 export const linking = {
-  prefixes: [Linking.createURL('/'), 'justpaisa://', 'https://testcodtech.shop'],
+  prefixes: [Linking.createURL('/'), 'justpaisa://', 'https://justpaisa.in'],
   config: {
     screens: {
       Main: {

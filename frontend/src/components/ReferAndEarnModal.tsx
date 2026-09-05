@@ -61,7 +61,9 @@ export const ReferAndEarnModal: React.FC<ReferAndEarnModalProps> = ({
   if (!isOpen) return null;
 
   const referralCode = data?.referralCode || 'JUSTPAISA';
-  const siteUrl = window.location.origin;
+  const siteUrl = typeof window !== 'undefined' && !window.location.origin.includes('localhost') && !window.location.origin.includes('capacitor')
+    ? window.location.origin
+    : 'https://justpaisa.in';
   const referralLink = `${siteUrl}?ref=${referralCode}`;
 
   const handleCopyLink = () => {
