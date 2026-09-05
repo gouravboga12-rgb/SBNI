@@ -289,23 +289,29 @@ export const PolicyModal: React.FC<PolicyModalProps> = ({
               <section className="space-y-2">
                 <h4 className="text-sm font-black text-slate-900 flex items-center gap-2">
                   <CreditCard className="w-4 h-4 text-indigo-600" />
-                  1. Digital Subscription Nature
+                  1. Digital Subscription Nature & Non-Refundable Policy
                 </h4>
                 <p>
-                  Just Paisa App subscriptions (Weekly, Monthly, Quarterly, Half-Yearly, Yearly) provide instantaneous digital access to verified financer databases, direct contact numbers, and KYC sharing features.
-                  Due to the immediate digital fulfillment of these privileges, subscription payments are generally non-refundable once unlocked and accessed.
+                  Just Paisa App subscriptions (Weekly, Monthly, Quarterly, Half-Yearly, Yearly) provide instantaneous digital access to verified financer databases, direct contact numbers, and KYC sharing features. 
+                  All subscription payments are <strong>strictly non-refundable once paid</strong>.
                 </p>
               </section>
 
               <section className="space-y-2">
                 <h4 className="text-sm font-black text-slate-900 flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-indigo-600" />
-                  2. Eligible Refund Circumstances
+                  2. Eligible Refund Circumstance (Service Activation Failure Only)
                 </h4>
                 <ul className="list-disc pl-5 space-y-1.5 text-slate-600">
-                  <li><strong>Duplicate Transactions:</strong> If your bank account was debited multiple times for a single subscription plan due to network lag.</li>
-                  <li><strong>Payment Deducted but Plan Not Activated:</strong> If a payment succeeded at the bank gateway but our servers failed to provision plan access within 24 hours.</li>
-                  <li><strong>Unauthorized Card Fraud:</strong> Verified cases of unauthorized fraudulent usage reported within 48 hours of transaction.</li>
+                  <li>
+                    <strong>Services Failed to Activate:</strong> A refund is considered only if a successful payment occurred but the services failed to activate on your account.
+                  </li>
+                  <li>
+                    <strong>Account Review & 1-Week Resolution Window:</strong> Upon receiving your report, our team will review the account. If our technical team is unable to activate your subscription services within <strong>1 week (7 days)</strong> of the issue being reported, an approved refund will be issued.
+                  </li>
+                  <li>
+                    <strong>Refund Timeline:</strong> Eligible and approved refunds will be credited back to the original payment method within <strong>5 to 7 working days</strong>.
+                  </li>
                 </ul>
               </section>
 
@@ -323,11 +329,10 @@ export const PolicyModal: React.FC<PolicyModalProps> = ({
               <section className="space-y-2">
                 <h4 className="text-sm font-black text-slate-900 flex items-center gap-2">
                   <Scale className="w-4 h-4 text-indigo-600" />
-                  4. Refund Request Process & SLA
+                  4. Reporting Activation Issues
                 </h4>
                 <p>
-                  To request a refund for an eligible transaction, send an email to <a href="mailto:srinivaspolepalli10@gmail.com" className="text-indigo-700 font-bold underline">srinivaspolepalli10@gmail.com</a> with your Payment ID (e.g. <code>pay_...</code>) and Registered Mobile Number.
-                  Approved refunds are processed to the original payment method within <strong>5 to 7 business days</strong>.
+                  If your paid subscription has failed to activate, please email our support desk at <a href="mailto:srinivaspolepalli10@gmail.com" className="text-indigo-700 font-bold underline">srinivaspolepalli10@gmail.com</a> with your Payment ID (e.g. <code>pay_...</code>) and Registered Mobile Number. If service activation cannot be resolved within 1 week of reporting, your payment will be refunded within <strong>5 to 7 working days</strong>.
                 </p>
               </section>
             </div>
