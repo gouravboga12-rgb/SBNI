@@ -57,6 +57,7 @@ interface AuthModalProps {
   onAuthSuccess: (user: any) => void;
   initialRole?: Role;
   initialRegister?: boolean;
+  initialViewStep?: 'SELECT' | 'VENDOR_TYPE_SELECT' | 'FORM' | 'OTP_VERIFY' | 'FORGOT_PASSWORD';
   subscribeIntent?: boolean;
   currentUser?: any;
   onLogout?: (roleTarget?: 'VENDOR' | 'LENDER') => void;
@@ -68,13 +69,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   onAuthSuccess,
   initialRole = 'VENDOR',
   initialRegister = false,
+  initialViewStep,
   subscribeIntent = false,
   currentUser,
   onLogout,
 }) => {
   const [role, setRole] = useState<Role>(initialRole);
   const [isRegister, setIsRegister] = useState(initialRegister);
-  const [viewStep, setViewStep] = useState<'SELECT' | 'VENDOR_TYPE_SELECT' | 'FORM' | 'OTP_VERIFY' | 'FORGOT_PASSWORD'>('SELECT');
+  const [viewStep, setViewStep] = useState<'SELECT' | 'VENDOR_TYPE_SELECT' | 'FORM' | 'OTP_VERIFY' | 'FORGOT_PASSWORD'>(initialViewStep || 'SELECT');
 
   // Form error & success states
   const [formError, setFormError] = useState<string | null>(null);
@@ -186,7 +188,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       const targetRole = initialRole || 'VENDOR';
       setRole(targetRole);
       setIsRegister(!!initialRegister);
-      if (initialRegister && targetRole === 'VENDOR') {
+      if (initialViewStep) {
+        setViewStep(initialViewStep);
+      } else if (initialRegister && targetRole === 'VENDOR') {
         setViewStep('VENDOR_TYPE_SELECT');
       } else {
         setViewStep(initialRegister ? 'FORM' : 'SELECT');
@@ -211,7 +215,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         }
       } catch {}
     }
-  }, [isOpen, initialRole, initialRegister]);
+  }, [isOpen, initialRole, initialRegister, initialViewStep]);
 
   // Timer for Sign Up OTP Countdown
   useEffect(() => {
@@ -943,6 +947,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 <button
                   type="button"
                   onClick={() => {
+                    window.history.pushState({}, '', '/vendor-login');
                     setRole('VENDOR');
                     setIsRegister(false);
                     setViewStep('FORM');
@@ -988,6 +993,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 <button
                   type="button"
                   onClick={() => {
+                    window.history.pushState({}, '', '/login');
                     setRole('LENDER');
                     setIsRegister(false);
                     setViewStep('FORM');
@@ -1161,6 +1167,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     setViewStep('VENDOR_TYPE_SELECT');
                   } else {
                     setViewStep('SELECT');
+                    if (window.location.pathname === '/login' || window.location.pathname === '/vendor-login') {
+                      window.history.pushState({}, '', '/');
+                    }
                   }
                   setFormError(null);
                 }}

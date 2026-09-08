@@ -35,10 +35,12 @@ export function App() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [hasActiveSubscription, setHasActiveSubscription] = useState<boolean>(false);
   const [authRole, setAuthRole] = useState<'VENDOR' | 'LENDER'>('VENDOR');
+  const [authViewStep, setAuthViewStep] = useState<'SELECT' | 'VENDOR_TYPE_SELECT' | 'FORM' | 'OTP_VERIFY' | 'FORGOT_PASSWORD'>('SELECT');
+  const [authRegister, setAuthRegister] = useState<boolean>(false);
   const [authSubscribeIntent, setAuthSubscribeIntent] = useState<boolean>(false);
   const [isLoadingUser, setIsLoadingUser] = useState(true);
 
-  // Listen for admin route changes and capture referral query param
+  // Listen for admin & separated login routes and capture referral query param
   useEffect(() => {
     try {
       const urlParams = new URLSearchParams(window.location.search);
@@ -49,8 +51,28 @@ export function App() {
     } catch {}
 
     const handleLocationCheck = () => {
-      setIsAdminRoute(window.location.pathname.startsWith('/admin'));
+      const pathname = window.location.pathname;
+      if (pathname.startsWith('/admin')) {
+        setIsAdminRoute(true);
+        setAuthModalOpen(false);
+      } else if (pathname === '/vendor-login') {
+        setIsAdminRoute(false);
+        setAuthRole('VENDOR');
+        setAuthRegister(false);
+        setAuthViewStep('FORM');
+        setAuthModalOpen(true);
+      } else if (pathname === '/login') {
+        setIsAdminRoute(false);
+        setAuthRole('LENDER');
+        setAuthRegister(false);
+        setAuthViewStep('FORM');
+        setAuthModalOpen(true);
+      } else {
+        setIsAdminRoute(false);
+      }
     };
+
+    handleLocationCheck();
     window.addEventListener('popstate', handleLocationCheck);
     return () => window.removeEventListener('popstate', handleLocationCheck);
   }, []);
@@ -189,13 +211,26 @@ export function App() {
       // If logged out: ask whether to login as Small Shop Business or Business Money Financer
       setAuthSubscribeIntent(true);
       setAuthRole(currentRole);
+      setAuthRegister(false);
+      setAuthViewStep('SELECT');
       setAuthModalOpen(true);
     } else {
       setSubModalOpen(true);
     }
   };
 
+  const handleCloseAuthModal = () => {
+    setAuthModalOpen(false);
+    setAuthSubscribeIntent(false);
+    if (window.location.pathname === '/login' || window.location.pathname === '/vendor-login') {
+      window.history.pushState({}, '', '/');
+    }
+  };
+
   const handleAuthSuccess = async (user: any) => {
+    if (window.location.pathname === '/login' || window.location.pathname === '/vendor-login') {
+      window.history.pushState({}, '', '/');
+    }
     setCurrentUser(user);
     const role = user.role === 'LENDER' ? 'LENDER' : 'VENDOR';
     setCurrentRole(role);
@@ -316,6 +351,8 @@ export function App() {
         onOpenAuth={() => {
           setAuthSubscribeIntent(false);
           setAuthRole(currentRole);
+          setAuthRegister(false);
+          setAuthViewStep('SELECT');
           setAuthModalOpen(true);
         }}
         onOpenSubscription={handleOpenSubscription}
@@ -344,6 +381,8 @@ export function App() {
             onOpenAuth={() => {
               setAuthSubscribeIntent(false);
               setAuthRole('VENDOR');
+              setAuthRegister(false);
+              setAuthViewStep('SELECT');
               setAuthModalOpen(true);
             }}
           />
@@ -357,6 +396,8 @@ export function App() {
             onOpenAuth={() => {
               setAuthSubscribeIntent(false);
               setAuthRole('LENDER');
+              setAuthRegister(false);
+              setAuthViewStep('SELECT');
               setAuthModalOpen(true);
             }}
           />
@@ -369,12 +410,11 @@ export function App() {
       {/* Auth Modal */}
       <AuthModal
         isOpen={authModalOpen}
-        onClose={() => {
-          setAuthModalOpen(false);
-          setAuthSubscribeIntent(false);
-        }}
+        onClose={handleCloseAuthModal}
         onAuthSuccess={handleAuthSuccess}
         initialRole={authRole}
+        initialRegister={authRegister}
+        initialViewStep={authViewStep}
         subscribeIntent={authSubscribeIntent}
         currentUser={currentUser}
         onLogout={handleLogout}
