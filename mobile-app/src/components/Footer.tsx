@@ -3,13 +3,25 @@ import { SBNILogo } from './SBNILogo';
 import { ShieldCheck, Mail, Phone, MapPin, FileText, Lock, RefreshCcw, AlertTriangle } from 'lucide-react';
 import { PolicyModal, PolicyTab } from './PolicyModal';
 
-export const Footer: React.FC = () => {
+interface FooterProps {
+  onOpenPolicyRoute?: (path: string) => void;
+}
+
+export const Footer: React.FC<FooterProps> = ({ onOpenPolicyRoute }) => {
   const [policyModalOpen, setPolicyModalOpen] = useState(false);
   const [policyTab, setPolicyTab] = useState<PolicyTab>('terms');
 
-  const openPolicy = (tab: PolicyTab) => {
-    setPolicyTab(tab);
-    setPolicyModalOpen(true);
+  const navigateTo = (path: string, fallbackTab?: PolicyTab) => {
+    if (onOpenPolicyRoute) {
+      onOpenPolicyRoute(path);
+    } else if (typeof window !== 'undefined') {
+      window.history.pushState({}, '', path);
+      window.dispatchEvent(new PopStateEvent('popstate'));
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else if (fallbackTab) {
+      setPolicyTab(fallbackTab);
+      setPolicyModalOpen(true);
+    }
   };
 
   return (
@@ -32,10 +44,11 @@ export const Footer: React.FC = () => {
           <div>
             <h4 className="font-bold text-white text-sm font-heading mb-4">Directory Links</h4>
             <ul className="space-y-2.5">
-              <li><a href="#discovery" className="hover:text-cyan-400 transition-colors">Find Nearby Commercial Partners</a></li>
-              <li><a href="#plans" className="hover:text-cyan-400 transition-colors">Subscription Plans</a></li>
-              <li><a href="#kyc" className="hover:text-cyan-400 transition-colors">Digital Verification</a></li>
-              <li><a href="#faqs" className="hover:text-cyan-400 transition-colors">Frequently Asked Questions</a></li>
+              <li><button type="button" onClick={() => navigateTo('/about-us')} className="hover:text-cyan-400 transition-colors cursor-pointer text-left">About Just Paisa</button></li>
+              <li><button type="button" onClick={() => navigateTo('/faq')} className="hover:text-cyan-400 transition-colors cursor-pointer text-left">Frequently Asked Questions</button></li>
+              <li><button type="button" onClick={() => navigateTo('/contact-us')} className="hover:text-cyan-400 transition-colors cursor-pointer text-left">Help Desk & Support</button></li>
+              <li><button type="button" onClick={() => navigateTo('/vendor-login')} className="hover:text-cyan-400 transition-colors cursor-pointer text-left">Vendor Portal Login</button></li>
+              <li><button type="button" onClick={() => navigateTo('/login')} className="hover:text-cyan-400 transition-colors cursor-pointer text-left">Commercial Partner Login</button></li>
             </ul>
           </div>
 
@@ -46,7 +59,7 @@ export const Footer: React.FC = () => {
               <li>
                 <button
                   type="button"
-                  onClick={() => openPolicy('terms')}
+                  onClick={() => navigateTo('/terms-and-conditions', 'terms')}
                   className="hover:text-cyan-400 transition-colors cursor-pointer text-left flex items-center gap-1.5"
                 >
                   <FileText className="w-3.5 h-3.5 text-slate-500" />
@@ -56,7 +69,7 @@ export const Footer: React.FC = () => {
               <li>
                 <button
                   type="button"
-                  onClick={() => openPolicy('privacy')}
+                  onClick={() => navigateTo('/privacy-policy', 'privacy')}
                   className="hover:text-cyan-400 transition-colors cursor-pointer text-left flex items-center gap-1.5"
                 >
                   <Lock className="w-3.5 h-3.5 text-slate-500" />
@@ -66,7 +79,7 @@ export const Footer: React.FC = () => {
               <li>
                 <button
                   type="button"
-                  onClick={() => openPolicy('refund')}
+                  onClick={() => navigateTo('/refund-policy', 'refund')}
                   className="hover:text-cyan-400 transition-colors cursor-pointer text-left flex items-center gap-1.5"
                 >
                   <RefreshCcw className="w-3.5 h-3.5 text-slate-500" />
@@ -76,7 +89,7 @@ export const Footer: React.FC = () => {
               <li>
                 <button
                   type="button"
-                  onClick={() => openPolicy('disclaimer')}
+                  onClick={() => navigateTo('/about-us', 'disclaimer')}
                   className="hover:text-cyan-400 transition-colors cursor-pointer text-left flex items-center gap-1.5"
                 >
                   <AlertTriangle className="w-3.5 h-3.5 text-slate-500" />
@@ -96,6 +109,15 @@ export const Footer: React.FC = () => {
                   srinivaspolepalli10@gmail.com
                 </a>
               </li>
+              <li>
+                <button
+                  type="button"
+                  onClick={() => navigateTo('/contact-us')}
+                  className="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-cyan-400 hover:bg-slate-800 font-bold text-xs transition-colors cursor-pointer"
+                >
+                  Contact Support ➔
+                </button>
+              </li>
             </ul>
           </div>
 
@@ -113,7 +135,7 @@ export const Footer: React.FC = () => {
           <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs font-semibold">
             <button
               type="button"
-              onClick={() => openPolicy('privacy')}
+              onClick={() => navigateTo('/privacy-policy', 'privacy')}
               className="text-slate-300 hover:text-cyan-400 transition-colors cursor-pointer"
             >
               Privacy Policy
@@ -121,7 +143,7 @@ export const Footer: React.FC = () => {
             <span className="text-slate-700">•</span>
             <button
               type="button"
-              onClick={() => openPolicy('terms')}
+              onClick={() => navigateTo('/terms-and-conditions', 'terms')}
               className="text-slate-300 hover:text-cyan-400 transition-colors cursor-pointer"
             >
               Terms & Conditions
@@ -129,7 +151,7 @@ export const Footer: React.FC = () => {
             <span className="text-slate-700">•</span>
             <button
               type="button"
-              onClick={() => openPolicy('refund')}
+              onClick={() => navigateTo('/refund-policy', 'refund')}
               className="text-slate-300 hover:text-cyan-400 transition-colors cursor-pointer"
             >
               Refund & Cancellation Policy
@@ -137,10 +159,18 @@ export const Footer: React.FC = () => {
             <span className="text-slate-700">•</span>
             <button
               type="button"
-              onClick={() => openPolicy('disclaimer')}
+              onClick={() => navigateTo('/about-us', 'disclaimer')}
               className="text-slate-300 hover:text-cyan-400 transition-colors cursor-pointer"
             >
-              Marketplace Disclaimer
+              About Just Paisa
+            </button>
+            <span className="text-slate-700">•</span>
+            <button
+              type="button"
+              onClick={() => navigateTo('/contact-us')}
+              className="text-slate-300 hover:text-cyan-400 transition-colors cursor-pointer"
+            >
+              Contact Us
             </button>
           </div>
 

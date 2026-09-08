@@ -1,6 +1,12 @@
 # Robots.txt for Just Paisa (https://justpaisa.in)
 User-agent: *
 Allow: /
+Allow: /about-us
+Allow: /faq
+Allow: /contact-us
+Allow: /terms-and-conditions
+Allow: /privacy-policy
+Allow: /refund-policy
 Allow: /vendor-login
 Allow: /login
 Disallow: /admin

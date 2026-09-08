@@ -17,12 +17,14 @@ import {
   getToken,
   safeSetLocalStorage,
 } from './services/api';
+import { StaticPolicyPage, StaticPageType } from './pages/StaticPolicyPage';
 import { Lender } from './types';
 
 export function App() {
   const [isAdminRoute, setIsAdminRoute] = useState<boolean>(
     typeof window !== 'undefined' && window.location.pathname.startsWith('/admin')
   );
+  const [staticPageRoute, setStaticPageRoute] = useState<StaticPageType | null>(null);
   const [currentRole, setCurrentRole] = useState<'VENDOR' | 'LENDER'>('VENDOR');
   const [vendorActiveTab, setVendorActiveTab] = useState<'home' | 'lenders' | 'requests' | 'profile'>('home');
   const [lenderActiveTab, setLenderActiveTab] = useState<'home' | 'businesses' | 'reports' | 'profile'>('home');
@@ -54,21 +56,49 @@ export function App() {
       const pathname = window.location.pathname;
       if (pathname.startsWith('/admin')) {
         setIsAdminRoute(true);
+        setStaticPageRoute(null);
         setAuthModalOpen(false);
       } else if (pathname === '/vendor-login') {
         setIsAdminRoute(false);
+        setStaticPageRoute(null);
         setAuthRole('VENDOR');
         setAuthRegister(false);
         setAuthViewStep('FORM');
         setAuthModalOpen(true);
       } else if (pathname === '/login') {
         setIsAdminRoute(false);
+        setStaticPageRoute(null);
         setAuthRole('LENDER');
         setAuthRegister(false);
         setAuthViewStep('FORM');
         setAuthModalOpen(true);
+      } else if (pathname === '/terms-and-conditions' || pathname === '/terms') {
+        setIsAdminRoute(false);
+        setAuthModalOpen(false);
+        setStaticPageRoute('terms');
+      } else if (pathname === '/privacy-policy' || pathname === '/privacy') {
+        setIsAdminRoute(false);
+        setAuthModalOpen(false);
+        setStaticPageRoute('privacy');
+      } else if (pathname === '/refund-policy' || pathname === '/refund') {
+        setIsAdminRoute(false);
+        setAuthModalOpen(false);
+        setStaticPageRoute('refund');
+      } else if (pathname === '/about-us' || pathname === '/about') {
+        setIsAdminRoute(false);
+        setAuthModalOpen(false);
+        setStaticPageRoute('about');
+      } else if (pathname === '/contact-us' || pathname === '/contact' || pathname === '/support') {
+        setIsAdminRoute(false);
+        setAuthModalOpen(false);
+        setStaticPageRoute('contact');
+      } else if (pathname === '/faq' || pathname === '/faqs') {
+        setIsAdminRoute(false);
+        setAuthModalOpen(false);
+        setStaticPageRoute('faq');
       } else {
         setIsAdminRoute(false);
+        setStaticPageRoute(null);
       }
     };
 
@@ -269,6 +299,10 @@ export function App() {
   };
 
   const handleNavigateHome = () => {
+    if (window.location.pathname !== '/') {
+      window.history.pushState({}, '', '/');
+    }
+    setStaticPageRoute(null);
     setVendorActiveTab('home');
     setLenderActiveTab('home');
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -329,6 +363,18 @@ export function App() {
     );
   }
 
+  if (staticPageRoute) {
+    return (
+      <StaticPolicyPage
+        pageType={staticPageRoute}
+        onNavigate={(path) => {
+          window.history.pushState({}, '', path);
+          window.dispatchEvent(new PopStateEvent('popstate'));
+        }}
+      />
+    );
+  }
+
   // Loading state
   if (isLoadingUser) {
     return (
@@ -357,8 +403,14 @@ export function App() {
         }}
         onOpenSubscription={handleOpenSubscription}
         onOpenKYC={() => setKycModalOpen(true)}
-        onOpenSupport={() => setSupportModalOpen(true)}
-        onOpenTerms={() => setTermsModalOpen(true)}
+        onOpenSupport={() => {
+          window.history.pushState({}, '', '/contact-us');
+          window.dispatchEvent(new PopStateEvent('popstate'));
+        }}
+        onOpenTerms={() => {
+          window.history.pushState({}, '', '/terms-and-conditions');
+          window.dispatchEvent(new PopStateEvent('popstate'));
+        }}
         onNavigateHome={handleNavigateHome}
         onNavigateLenders={handleNavigateLenders}
         onNavigateProfile={handleNavigateProfile}
@@ -405,7 +457,12 @@ export function App() {
       </main>
 
       {/* Footer */}
-      <Footer />
+      <Footer
+        onOpenPolicyRoute={(path) => {
+          window.history.pushState({}, '', path);
+          window.dispatchEvent(new PopStateEvent('popstate'));
+        }}
+      />
 
       {/* Auth Modal */}
       <AuthModal

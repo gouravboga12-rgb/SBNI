@@ -3,21 +3,71 @@
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9
         http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
-  <!-- Homepage -->
+  <!-- 1. Homepage & B2B Directory Marketplace -->
   <url>
     <loc>https://justpaisa.in/</loc>
     <lastmod>2026-09-08</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
-  <!-- Vendor / Small Shop Business Login -->
+
+  <!-- 2. About Us -->
+  <url>
+    <loc>https://justpaisa.in/about-us</loc>
+    <lastmod>2026-09-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- 3. Frequently Asked Questions (FAQ) -->
+  <url>
+    <loc>https://justpaisa.in/faq</loc>
+    <lastmod>2026-09-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- 4. Contact Us & Helpdesk -->
+  <url>
+    <loc>https://justpaisa.in/contact-us</loc>
+    <lastmod>2026-09-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- 5. Terms & Conditions -->
+  <url>
+    <loc>https://justpaisa.in/terms-and-conditions</loc>
+    <lastmod>2026-09-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- 6. Privacy Policy -->
+  <url>
+    <loc>https://justpaisa.in/privacy-policy</loc>
+    <lastmod>2026-09-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- 7. Cancellation & Refund Policy -->
+  <url>
+    <loc>https://justpaisa.in/refund-policy</loc>
+    <lastmod>2026-09-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- 8. Vendor / Small Shop Business Login -->
   <url>
     <loc>https://justpaisa.in/vendor-login</loc>
     <lastmod>2026-09-08</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
-  <!-- Commercial Partner / Business Login -->
+
+  <!-- 9. Commercial Partner / Business Login -->
   <url>
     <loc>https://justpaisa.in/login</loc>
     <lastmod>2026-09-08</lastmod>
