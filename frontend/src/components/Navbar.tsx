@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { SBNILogo } from './SBNILogo';
 import {
   Menu,
@@ -51,6 +51,29 @@ export const Navbar: React.FC<NavbarProps> = ({
 }) => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [referModalOpen, setReferModalOpen] = useState(false);
+
+  // Refer & Earn UI Visibility (defaults to false for Razorpay approval)
+  const [isReferEarnEnabled, setIsReferEarnEnabled] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('sbni_enable_refer_earn') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  useEffect(() => {
+    const handleSyncSetting = () => {
+      try {
+        setIsReferEarnEnabled(localStorage.getItem('sbni_enable_refer_earn') === 'true');
+      } catch {}
+    };
+    window.addEventListener('sbni_settings_updated', handleSyncSetting);
+    window.addEventListener('storage', handleSyncSetting);
+    return () => {
+      window.removeEventListener('sbni_settings_updated', handleSyncSetting);
+      window.removeEventListener('storage', handleSyncSetting);
+    };
+  }, []);
 
   const isVendor = currentRole === 'VENDOR';
 
@@ -270,28 +293,30 @@ export const Navbar: React.FC<NavbarProps> = ({
                 </button>
 
                 {/* 4. Refer & Earn */}
-                <button
-                  onClick={() => {
-                    if (!currentUser && onOpenAuth) {
-                      handleNavClick(onOpenAuth);
-                    } else {
-                      setDrawerOpen(false);
-                      setReferModalOpen(true);
-                    }
-                  }}
-                  className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-purple-50 text-purple-900 text-xs font-bold transition-colors cursor-pointer group"
-                >
-                  <div className="flex items-center gap-3">
-                    <Gift className="w-4 h-4 text-purple-600 group-hover:scale-110 transition-transform" />
-                    <span>Refer & Earn</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="bg-purple-100 text-purple-800 text-[10px] px-2 py-0.5 rounded-full font-extrabold flex items-center gap-0.5">
-                      <Sparkles className="w-2.5 h-2.5" /> Rewards
-                    </span>
-                    <ChevronRight className="w-4 h-4 text-slate-400" />
-                  </div>
-                </button>
+                {isReferEarnEnabled && (
+                  <button
+                    onClick={() => {
+                      if (!currentUser && onOpenAuth) {
+                        handleNavClick(onOpenAuth);
+                      } else {
+                        setDrawerOpen(false);
+                        setReferModalOpen(true);
+                      }
+                    }}
+                    className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-purple-50 text-purple-900 text-xs font-bold transition-colors cursor-pointer group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Gift className="w-4 h-4 text-purple-600 group-hover:scale-110 transition-transform" />
+                      <span>Refer & Earn</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="bg-purple-100 text-purple-800 text-[10px] px-2 py-0.5 rounded-full font-extrabold flex items-center gap-0.5">
+                        <Sparkles className="w-2.5 h-2.5" /> Rewards
+                      </span>
+                      <ChevronRight className="w-4 h-4 text-slate-400" />
+                    </div>
+                  </button>
+                )}
 
                 {/* 5. Find Nearby Lenders / Verification Requests */}
                 <button

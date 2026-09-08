@@ -156,9 +156,9 @@ export const PolicyModal: React.FC<PolicyModalProps> = ({
                   1. Nature of Platform & Non-Banking Status
                 </h4>
                 <p>
-                  <strong>Just Paisa App</strong> operates purely as an online business-to-business (B2B) discovery and communications technology infrastructure. 
+                  <strong>Just Paisa App</strong> operates purely as an online business-to-business (B2B) directory and commercial communication technology infrastructure. 
                   Just Paisa App is <strong>NOT</strong> a bank, Non-Banking Financial Company (NBFC), money lender, credit rating agency, or recovery agent.
-                  The platform enables registered small businesses, shop owners, and startups (<strong>Vendors</strong>) to discover and connect with verified financial institutions and loan providers (<strong>Lenders</strong>).
+                  The platform enables registered businesses, shop owners, and enterprises (<strong>Vendors</strong>) to discover and network directly with verified commercial partners, suppliers, and business institutions.
                 </p>
               </section>
 
@@ -232,7 +232,7 @@ export const PolicyModal: React.FC<PolicyModalProps> = ({
                   <li><strong>Account Profile:</strong> Full name, verified mobile number, email address, shop/business name, category, and physical address.</li>
                   <li><strong>KYC Documents:</strong> GSTIN certificate, PAN card, Aadhaar documentation, and business registration records for verification.</li>
                   <li><strong>Location Data:</strong> Geolocation coordinates (via GPS & Mapbox Reverse Geocoding) used strictly to identify nearby financial institutions and service radius.</li>
-                  <li><strong>Transaction Records:</strong> Subscription invoices, Razorpay transaction IDs, and referral wallet rewards.</li>
+                  <li><strong>Transaction Records:</strong> Subscription invoices, Razorpay transaction IDs, and billing receipts.</li>
                 </ul>
               </section>
 
@@ -292,7 +292,7 @@ export const PolicyModal: React.FC<PolicyModalProps> = ({
                   1. Digital Subscription Nature & Non-Refundable Policy
                 </h4>
                 <p>
-                  Just Paisa App subscriptions (Weekly, Monthly, Quarterly, Half-Yearly, Yearly) provide instantaneous digital access to verified financer databases, direct contact numbers, and KYC sharing features. 
+                  Just Paisa App subscriptions (Weekly, Monthly, Quarterly, Half-Yearly, Yearly) provide instantaneous digital access to verified commercial business directories, direct contact details, and business networking features. 
                   All subscription payments are <strong>strictly non-refundable once paid</strong>.
                 </p>
               </section>
@@ -358,18 +358,18 @@ export const PolicyModal: React.FC<PolicyModalProps> = ({
                   1. Statutory Non-Intermediary Notice
                 </h4>
                 <p>
-                  Just Paisa App is exclusively a communication and match-making portal connecting independent business owners with financial institutions.
-                  Just Paisa App is <strong>not</strong> an RBI-regulated bank, NBFC, financial adviser, guarantor, or loan underwriter.
+                  Just Paisa App is exclusively a B2B business directory and commercial communication portal connecting independent business owners with verified commercial partners and enterprises.
+                  Just Paisa App is strictly a directory and software service and is not a bank, NBFC, or financial intermediary.
                 </p>
               </section>
 
               <section className="space-y-2">
                 <h4 className="text-sm font-black text-slate-900">
-                  2. No Loan Approval or Disbursement Guarantee
+                  2. Commercial Agreements Independence
                 </h4>
                 <p>
-                  Just Paisa App does not guarantee loan sanctions, interest rate caps, credit approvals, or turnaround times.
-                  All loan approvals, sanction letters, interest charges, repayment schedules, and documentation are decided solely by the respective independent lending partner based on their proprietary credit evaluation policies.
+                  Just Paisa App does not broker, underwrite, or guarantee commercial agreements or transactions.
+                  All commercial terms, trade arrangements, pricing agreements, and mutual documentation are decided solely by the respective independent business partners.
                 </p>
               </section>
 

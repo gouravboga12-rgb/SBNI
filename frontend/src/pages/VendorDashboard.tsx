@@ -478,6 +478,29 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
   const [showVendorCancelModal, setShowVendorCancelModal] = useState(false);
   const [vendorSubFeedback, setVendorSubFeedback] = useState('');
   const [referModalOpen, setReferModalOpen] = useState(false);
+
+  // Refer & Earn UI Visibility on Home and Profile pages (defaults to false for Razorpay approval)
+  const [isReferEarnEnabled, setIsReferEarnEnabled] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('sbni_enable_refer_earn') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  useEffect(() => {
+    const handleSyncSetting = () => {
+      try {
+        setIsReferEarnEnabled(localStorage.getItem('sbni_enable_refer_earn') === 'true');
+      } catch {}
+    };
+    window.addEventListener('sbni_settings_updated', handleSyncSetting);
+    window.addEventListener('storage', handleSyncSetting);
+    return () => {
+      window.removeEventListener('sbni_settings_updated', handleSyncSetting);
+      window.removeEventListener('storage', handleSyncSetting);
+    };
+  }, []);
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     billing: false,
     info: false,
@@ -1146,10 +1169,10 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                 <div className="card-blue-header p-6 shadow-xl relative overflow-hidden flex flex-col justify-between min-h-[170px] border border-blue-400/20 group">
                   <div className="absolute top-0 right-0 w-40 h-40 bg-blue-400/20 rounded-full blur-3xl pointer-events-none group-hover:bg-blue-400/30 transition-colors" />
                   <div className="space-y-1.5 z-10">
-                    <div className="text-xs text-blue-200 font-semibold tracking-wide uppercase">Small Business Marketplace</div>
-                    <h2 className="text-xl sm:text-2xl font-extrabold text-white font-heading">Direct Capital for Local Shops</h2>
+                    <div className="text-xs text-blue-200 font-semibold tracking-wide uppercase">B2B Directory & Commercial Network</div>
+                    <h2 className="text-xl sm:text-2xl font-extrabold text-white font-heading">Direct Networking for Local Enterprises</h2>
                     <p className="text-xs text-blue-100/90 leading-relaxed max-w-sm">
-                      Connect directly with verified local money financers & NBFCs within 10 KM for fast working capital.
+                      Connect directly with verified local commercial vendors, suppliers & business partners within 10 KM.
                     </p>
                   </div>
                   <div className="pt-3 z-10">
@@ -1164,23 +1187,23 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                 </div>
               )}
 
-              {/* Card 2: Find & Connect with Nearby Lenders (Unified Proximity Card - HIGHLIGHTED) */}
+              {/* Card 2: Find & Connect with Nearby Commercial Partners */}
               <div className="card-white-hover splash-highlight-card p-6 flex flex-col justify-between min-h-[170px] relative group overflow-hidden bg-gradient-to-br from-emerald-50/60 via-white to-blue-50/30">
                 <div className="flex items-start justify-between">
                   <div className="space-y-1.5">
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <span className="text-[11px] font-extrabold text-white px-2.5 py-0.5 rounded-full splash-badge-pulse shadow-sm flex items-center gap-1">
-                        ⚡ Nearby Money Financers
+                        ⚡ Nearby Business Partners
                       </span>
                       <span className="text-[11px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-md border border-emerald-300">
                         10 KM Radius
                       </span>
                     </div>
                     <h3 className="font-extrabold text-slate-900 text-xl font-heading pt-1">
-                      Find Nearby Business Money Financers
+                      Find Nearby Commercial Business Partners
                     </h3>
                     <p className="text-xs text-slate-600 font-medium leading-relaxed">
-                      Discover verified business money financers (e.g., Santhosh Money Finance, Rohit Money Finance) within 10 KM radius for instant approval.
+                      Discover verified commercial vendors, suppliers & business partners within 10 KM radius for direct commercial collaboration.
                     </p>
                   </div>
                   <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#007a33] to-[#005724] text-white flex items-center justify-center flex-shrink-0 shadow-lg group-hover:scale-110 transition-transform">
@@ -1192,7 +1215,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                   onClick={() => handleTabChange('lenders')}
                   className="btn-sbni-green mt-4 text-xs justify-center py-2.5 shadow-lg font-extrabold flex items-center gap-2"
                 >
-                  <span>Search Nearby Business Money Financers →</span>
+                  <span>Search Nearby Commercial Partners →</span>
                 </button>
               </div>
 
@@ -1210,7 +1233,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                       )}
                     </div>
                     <h3 className="font-extrabold text-slate-900 text-lg font-heading pt-1">Small Shop & Local Startup Business Membership</h3>
-                    <p className="text-xs text-slate-500 font-medium">Direct financer contacts & priority application routing active.</p>
+                    <p className="text-xs text-slate-500 font-medium">Direct commercial business directory access & verified partner networking.</p>
                   </div>
                   <div className="w-12 h-12 rounded-2xl bg-amber-100/80 border border-amber-200 flex items-center justify-center text-amber-700 flex-shrink-0 shadow-sm group-hover:scale-105 transition-transform">
                     <Headphones className="w-6 h-6" />
@@ -1234,7 +1257,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                 <span className="text-xs text-slate-400 font-medium">Shortcuts</span>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 md:gap-4">
+              <div className={`grid grid-cols-2 ${isReferEarnEnabled ? 'sm:grid-cols-5' : 'sm:grid-cols-4'} gap-3 md:gap-4`}>
                 <div 
                   onClick={() => handleTabChange('profile')}
                   className="card-white p-4 text-center flex flex-col items-center justify-center gap-2.5 cursor-pointer border border-slate-200/80 hover:border-blue-600 hover:shadow-lg transition-all group rounded-2xl bg-white"
@@ -1252,7 +1275,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                   <div className="w-12 h-12 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center text-[#003893] group-hover:scale-110 group-hover:bg-[#003893] group-hover:text-white transition-all duration-300 shadow-sm">
                     <FileText className="w-6 h-6" />
                   </div>
-                  <span className="text-xs font-extrabold text-slate-800">Applications</span>
+                  <span className="text-xs font-extrabold text-slate-800">Inquiries</span>
                 </div>
 
                 <div 
@@ -1262,18 +1285,20 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                   <div className="w-12 h-12 rounded-2xl bg-emerald-600 text-white flex items-center justify-center group-hover:scale-110 transition-all duration-300 shadow-md">
                     <Users className="w-6 h-6" />
                   </div>
-                  <span className="text-xs font-extrabold text-emerald-900">Nearby Financers ⚡</span>
+                  <span className="text-xs font-extrabold text-emerald-900">Nearby Partners ⚡</span>
                 </div>
 
-                <div 
-                  onClick={() => setReferModalOpen(true)}
-                  className="card-white p-4 text-center flex flex-col items-center justify-center gap-2.5 cursor-pointer border-2 border-purple-300 hover:border-purple-600 hover:shadow-xl transition-all group rounded-2xl bg-gradient-to-br from-purple-50/80 to-white shadow-md active:scale-95"
-                >
-                  <div className="w-12 h-12 rounded-2xl bg-purple-600 text-white flex items-center justify-center group-hover:scale-110 transition-all duration-300 shadow-md">
-                    <Gift className="w-6 h-6" />
+                {isReferEarnEnabled && (
+                  <div 
+                    onClick={() => setReferModalOpen(true)}
+                    className="card-white p-4 text-center flex flex-col items-center justify-center gap-2.5 cursor-pointer border-2 border-purple-300 hover:border-purple-600 hover:shadow-xl transition-all group rounded-2xl bg-gradient-to-br from-purple-50/80 to-white shadow-md active:scale-95"
+                  >
+                    <div className="w-12 h-12 rounded-2xl bg-purple-600 text-white flex items-center justify-center group-hover:scale-110 transition-all duration-300 shadow-md">
+                      <Gift className="w-6 h-6" />
+                    </div>
+                    <span className="text-xs font-extrabold text-purple-900">Refer & Earn 🎁</span>
                   </div>
-                  <span className="text-xs font-extrabold text-purple-900">Refer & Earn 🎁</span>
-                </div>
+                )}
 
                 <div 
                   onClick={onOpenSubscription}
@@ -1287,11 +1312,11 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
               </div>
             </div>
 
-            {/* Main Content Area: Recommended Business Money Financers (Lenders) */}
+            {/* Main Content Area: Recommended Commercial Partners & Business Vendors */}
             <div className="space-y-4">
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <div className="flex items-center gap-2">
-                  <h3 className="font-extrabold text-slate-900 text-lg font-heading">Recommended Business Money Financers (Lenders)</h3>
+                  <h3 className="font-extrabold text-slate-900 text-lg font-heading">Recommended Commercial Partners & Business Vendors</h3>
                   <span className="text-[10px] font-extrabold text-white bg-emerald-600 px-2 py-0.5 rounded-full shadow-xs animate-pulse">⚡ Nearby</span>
                 </div>
                 <button
@@ -1307,22 +1332,22 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                 {isLoadingLenders ? (
                   <div className="card-white p-8 text-center text-xs text-slate-500 font-medium space-y-2">
                     <div className="w-6 h-6 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin mx-auto" />
-                    <div>Discovering nearby verified financers with Mapbox GPS...</div>
+                    <div>Discovering nearby verified commercial partners with Mapbox GPS...</div>
                   </div>
                 ) : currentLendersList.filter((l) => Number(l.distanceKm) <= (Number(l.lendingRadiusKm) || 50)).length === 0 ? (
                   <div className="card-white p-8 text-center rounded-2xl border border-slate-200/90 shadow-sm space-y-3">
                     <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto">
                       <Users className="w-6 h-6" />
                     </div>
-                    <h4 className="font-extrabold text-slate-900 text-sm">No Financers Located within Service Radius</h4>
+                    <h4 className="font-extrabold text-slate-900 text-sm">No Commercial Partners Located within Service Radius</h4>
                     <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                      No active financers found within their service radius of {searchLocation.place}, {searchLocation.city}. Expand your location search or explore all financers.
+                      No active business partners found within their service radius of {searchLocation.place}, {searchLocation.city}. Expand your location search or explore all business listings.
                     </p>
                     <button
                       onClick={() => handleTabChange('lenders')}
                       className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs shadow-sm transition-all cursor-pointer"
                     >
-                      Explore All Financers ({currentLendersList.length})
+                      Explore All Business Partners ({currentLendersList.length})
                     </button>
                   </div>
                 ) : (
@@ -2545,28 +2570,30 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
               </div>
 
               {/* ── CARD 6: REFER & EARN ─────────────────────────────────── */}
-              <div
-                onClick={() => setReferModalOpen(true)}
-                className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200/90 shadow-sm p-3.5 sm:p-5 flex items-center justify-between gap-2.5 sm:gap-3 hover:bg-purple-50/30 hover:border-purple-300 transition-all cursor-pointer group active:scale-99"
-              >
-                <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0 flex-1">
-                  <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
-                    <Gift className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
+              {isReferEarnEnabled && (
+                <div
+                  onClick={() => setReferModalOpen(true)}
+                  className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200/90 shadow-sm p-3.5 sm:p-5 flex items-center justify-between gap-2.5 sm:gap-3 hover:bg-purple-50/30 hover:border-purple-300 transition-all cursor-pointer group active:scale-99"
+                >
+                  <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0 flex-1">
+                    <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+                      <Gift className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <h3 className="font-extrabold text-slate-900 text-xs sm:text-base font-heading leading-tight group-hover:text-purple-900 truncate">
+                        Refer & Earn
+                      </h3>
+                      <p className="text-[11px] sm:text-xs text-slate-500 font-medium leading-tight mt-0.5 truncate">
+                        Refer friends and earn exciting rewards.
+                      </p>
+                    </div>
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <h3 className="font-extrabold text-slate-900 text-xs sm:text-base font-heading leading-tight group-hover:text-purple-900 truncate">
-                      Refer & Earn
-                    </h3>
-                    <p className="text-[11px] sm:text-xs text-slate-500 font-medium leading-tight mt-0.5 truncate">
-                      Refer friends and earn exciting rewards.
-                    </p>
-                  </div>
-                </div>
 
-                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center group-hover:bg-purple-600 group-hover:text-white transition-colors shrink-0">
-                  <ChevronRight className="w-4 h-4" />
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center group-hover:bg-purple-600 group-hover:text-white transition-colors shrink-0">
+                    <ChevronRight className="w-4 h-4" />
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* ── CARD 7: ACCOUNT SESSION & SECURITY (LOGOUT) ─────────── */}
               <div className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200/90 shadow-sm p-3.5 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -2630,23 +2657,14 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
           <span>Financers</span>
         </button>
 
-        {/* Floating Center Action Button: Refer & Earn Rewards */}
-        <div className="flex flex-col items-center shrink-0 mx-1 -mt-5 sm:-mt-9">
-          <button
-            onClick={() => setReferModalOpen(true)}
-            title="Refer & Earn Wallet Rewards"
-            aria-label="Refer and Earn"
-            className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gradient-to-tr from-amber-500 via-orange-500 to-rose-500 hover:from-amber-600 hover:to-rose-600 text-white flex items-center justify-center shadow-xl hover:scale-110 transition-all border-3 sm:border-4 border-white cursor-pointer relative group"
-          >
-            <Gift className="w-5 h-5 sm:w-7 sm:h-7 text-white drop-shadow-sm group-hover:rotate-12 transition-transform" />
-            <span className="absolute -top-1 -right-1 w-3.5 h-3.5 sm:w-4 sm:h-4 bg-emerald-500 text-white text-[8px] sm:text-[9px] font-black rounded-full flex items-center justify-center border-2 border-white shadow-xs">
-              ₹
-            </span>
-          </button>
-          <span className="text-[9px] sm:text-[10px] font-extrabold text-orange-600 mt-0.5 tracking-tight">
-            Refer & Earn
-          </span>
-        </div>
+        {/* Floating Action Button */}
+        <button
+          onClick={onOpenSubscription}
+          title="Pay Subscription"
+          className="w-11 h-11 sm:w-14 sm:h-14 rounded-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white flex items-center justify-center shadow-xl hover:scale-105 transition-all -mt-5 sm:-mt-9 border-3 sm:border-4 border-white shrink-0 mx-1 cursor-pointer"
+        >
+          <Phone className="w-5 h-5 sm:w-7 sm:h-7 fill-white" />
+        </button>
 
         <button
           onClick={() => handleTabChange('requests')}

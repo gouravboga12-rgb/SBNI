@@ -6,26 +6,26 @@ const defaultFAQs: FAQItem[] = [
   {
     id: '1',
     category: 'General',
-    question: 'What is SBNI Money App?',
-    answer: 'SBNI Money App is India’s premier B2B Capital Marketplace that connects Business Owners (Vendors) with verified Banks, NBFCs, and Lenders. We facilitate direct discovery and communication.',
+    question: 'What is Just Paisa App?',
+    answer: 'Just Paisa App is India’s premier B2B Business Directory & Commercial Networking platform that connects Business Owners, Vendors, and Enterprises directly with verified Commercial Partners, Suppliers, and Distributors.',
   },
   {
     id: '2',
     category: 'General',
-    question: 'Does SBNI Money process or approve my financial application?',
-    answer: 'No. SBNI Money is strictly a discovery marketplace platform. We do not process, approve, disburse, or track financial credit. All negotiations, documentation, and capital disbursements take place directly between you and the verified lender.',
+    question: 'Does Just Paisa App provide financial loans or intermediation?',
+    answer: 'No. Just Paisa App is strictly a B2B business discovery directory and networking platform. We do not offer loans, credit facilities, deposit products, or payment intermediation. All commercial discussions and trade agreements take place directly between registered enterprises.',
   },
   {
     id: '3',
     category: 'Subscriptions',
     question: 'Why do I need a subscription plan?',
-    answer: 'Subscription plans unlock direct lender phone numbers, WhatsApp links, and verified contact details, allowing business owners to connect directly with financial institutions without intermediaries.',
+    answer: 'Subscription plans unlock verified business partner contact information, WhatsApp links, and company profile credentials, allowing business owners to connect directly with commercial vendors without intermediaries.',
   },
   {
     id: '4',
     category: 'Verification',
-    question: 'How are lenders verified on SBNI Money?',
-    answer: 'Every Bank, NBFC, and financial institution undergoes strict digital KYC, license verification, and registration audits before being displayed on the platform.',
+    question: 'How are commercial partners verified on Just Paisa?',
+    answer: 'Every commercial enterprise and vendor profile undergoes digital business verification, GST/business credential validation, and profile audits before being listed on the platform.',
   },
 ];
 

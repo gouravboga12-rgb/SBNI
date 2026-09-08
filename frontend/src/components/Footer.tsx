@@ -24,17 +24,17 @@ export const Footer: React.FC = () => {
               <SBNILogo imgClassName="h-20 sm:h-24 w-auto object-contain" style={{ maxHeight: '100px' }} />
             </div>
             <p className="text-slate-400 leading-relaxed text-xs">
-              India's trusted enterprise B2B Financial Marketplace platform connecting Business Owners (Vendors) directly with verified Banks, NBFCs, and Financial Institutions.
+              India's trusted enterprise B2B Business Directory & Commercial Networking platform connecting Business Owners (Vendors) directly with verified Commercial Partners, Suppliers & Enterprises.
             </p>
           </div>
 
           {/* Quick Links */}
           <div>
-            <h4 className="font-bold text-white text-sm font-heading mb-4">Marketplace Links</h4>
+            <h4 className="font-bold text-white text-sm font-heading mb-4">Directory Links</h4>
             <ul className="space-y-2.5">
-              <li><a href="#discovery" className="hover:text-cyan-400 transition-colors">Find Nearby Lenders</a></li>
+              <li><a href="#discovery" className="hover:text-cyan-400 transition-colors">Find Nearby Commercial Partners</a></li>
               <li><a href="#plans" className="hover:text-cyan-400 transition-colors">Subscription Plans</a></li>
-              <li><a href="#kyc" className="hover:text-cyan-400 transition-colors">Digital KYC Verification</a></li>
+              <li><a href="#kyc" className="hover:text-cyan-400 transition-colors">Digital Verification</a></li>
               <li><a href="#faqs" className="hover:text-cyan-400 transition-colors">Frequently Asked Questions</a></li>
             </ul>
           </div>
@@ -80,7 +80,7 @@ export const Footer: React.FC = () => {
                   className="hover:text-cyan-400 transition-colors cursor-pointer text-left flex items-center gap-1.5"
                 >
                   <AlertTriangle className="w-3.5 h-3.5 text-slate-500" />
-                  Marketplace Disclaimer
+                  Directory Disclaimer
                 </button>
               </li>
             </ul>
@@ -103,7 +103,7 @@ export const Footer: React.FC = () => {
 
         {/* Regulatory Disclaimer Banner */}
         <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 text-[11px] text-slate-400 mb-8 leading-relaxed">
-          <strong className="text-slate-200">Regulatory Disclaimer:</strong> Just Paisa App is strictly a technology platform facilitating vendor-lender discovery and communication. Just Paisa App is not a bank, non-banking financial company (NBFC), recovery agent, or credit institution. Just Paisa App does not offer credit approvals, process applications, disburse funds, or compute credit scores. All financial arrangements and business agreements take place directly between independent users.
+          <strong className="text-slate-200">Regulatory Disclaimer:</strong> Just Paisa App is strictly a technology platform facilitating vendor discovery and commercial business communication. Just Paisa App is not a bank, non-banking financial company (NBFC), recovery agent, or credit institution. Just Paisa App does not offer credit approvals, process loan applications, disburse funds, or compute credit scores. All business agreements take place directly between independent users.
         </div>
 
         {/* Bottom Footer Bar */}

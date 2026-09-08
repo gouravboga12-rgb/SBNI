@@ -243,6 +243,24 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
   const [referralDiscountPct, setReferralDiscountPct] = useState('15');
   const [referralProgramActive, setReferralProgramActive] = useState(true);
 
+  // Refer & Earn UI Visibility on Home and Profile pages (defaults to false for Razorpay approval)
+  const [referEarnEnabled, setReferEarnEnabled] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('sbni_enable_refer_earn') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const handleToggleReferEarn = (enable: boolean) => {
+    setReferEarnEnabled(enable);
+    try {
+      localStorage.setItem('sbni_enable_refer_earn', enable ? 'true' : 'false');
+      window.dispatchEvent(new Event('sbni_settings_updated'));
+      window.dispatchEvent(new StorageEvent('storage', { key: 'sbni_enable_refer_earn', newValue: enable ? 'true' : 'false' }));
+    } catch {}
+  };
+
   // Live Vendors & Lenders State with localStorage Persistence
   const [vendors, setVendors] = useState<VendorData[]>(() => {
     try {
@@ -2344,6 +2362,52 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
               </div>
             </div>
 
+            {/* Refer & Earn Program Visibility Toggle (Home & Profile Pages) */}
+            <div className="bg-gradient-to-r from-purple-900 via-indigo-900 to-slate-900 rounded-2xl sm:rounded-3xl p-4 sm:p-5 text-white shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-purple-800/60">
+              <div className="flex items-start sm:items-center gap-3.5">
+                <div className="w-10 h-10 rounded-xl bg-purple-600/60 border border-purple-400/40 text-purple-200 flex items-center justify-center shrink-0 shadow-inner">
+                  <Gift className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-extrabold text-sm sm:text-base font-heading">
+                      Refer & Earn UI Visibility (Home & Profile Pages)
+                    </h3>
+                    <span className={`text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider ${
+                      referEarnEnabled ? 'bg-emerald-500 text-white' : 'bg-slate-700 text-slate-300'
+                    }`}>
+                      {referEarnEnabled ? 'Active / Visible' : 'Hidden for Razorpay Compliance'}
+                    </span>
+                  </div>
+                  <p className="text-xs text-purple-200/80 mt-0.5 max-w-2xl leading-relaxed">
+                    {referEarnEnabled 
+                      ? 'Refer & Earn cards are currently visible to Vendors and Financers on their Home and Profile pages.' 
+                      : 'Refer & Earn is currently hidden across Home and Profile pages to keep the website clean and compliant for Razorpay approval.'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 self-end sm:self-center shrink-0">
+                <span className="text-xs font-bold text-slate-300">
+                  {referEarnEnabled ? 'Enabled' : 'Disabled'}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => handleToggleReferEarn(!referEarnEnabled)}
+                  className={`w-14 h-7 flex items-center rounded-full p-1 transition-colors duration-300 cursor-pointer shadow-inner ${
+                    referEarnEnabled ? 'bg-emerald-500' : 'bg-slate-700'
+                  }`}
+                  title="Toggle Refer & Earn on Home and Profile pages"
+                >
+                  <div
+                    className={`bg-white w-5 h-5 rounded-full shadow-md transform transition-transform duration-300 ${
+                      referEarnEnabled ? 'translate-x-7' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
+              </div>
+            </div>
+
             {/* Stat Cards Grid */}
             <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
               <div
@@ -3314,6 +3378,52 @@ export function AdminDashboard({ onNavigateHome }: { onNavigateHome?: () => void
                     title="Reload Plan Rules"
                   >
                     <RefreshCw className="w-4 h-4 text-purple-600" /> Reload
+                  </button>
+                </div>
+              </div>
+
+              {/* Refer & Earn Program Visibility Toggle (Home & Profile Pages) */}
+              <div className="bg-gradient-to-r from-purple-900 via-indigo-900 to-slate-900 rounded-2xl sm:rounded-3xl p-4 sm:p-5 text-white shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-purple-800/60">
+                <div className="flex items-start sm:items-center gap-3.5">
+                  <div className="w-10 h-10 rounded-xl bg-purple-600/60 border border-purple-400/40 text-purple-200 flex items-center justify-center shrink-0 shadow-inner">
+                    <Gift className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-extrabold text-sm sm:text-base font-heading">
+                        Refer & Earn UI Visibility (Home & Profile Pages)
+                      </h3>
+                      <span className={`text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider ${
+                        referEarnEnabled ? 'bg-emerald-500 text-white' : 'bg-slate-700 text-slate-300'
+                      }`}>
+                        {referEarnEnabled ? 'Active / Visible' : 'Hidden for Razorpay Compliance'}
+                      </span>
+                    </div>
+                    <p className="text-xs text-purple-200/80 mt-0.5 max-w-2xl leading-relaxed">
+                      {referEarnEnabled 
+                        ? 'Refer & Earn cards are currently visible to Vendors and Financers on their Home and Profile pages.' 
+                        : 'Refer & Earn is currently hidden across Home and Profile pages to keep the website clean and compliant for Razorpay approval.'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 self-end sm:self-center shrink-0">
+                  <span className="text-xs font-bold text-slate-300">
+                    {referEarnEnabled ? 'Enabled' : 'Disabled'}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleToggleReferEarn(!referEarnEnabled)}
+                    className={`w-14 h-7 flex items-center rounded-full p-1 transition-colors duration-300 cursor-pointer shadow-inner ${
+                      referEarnEnabled ? 'bg-emerald-500' : 'bg-slate-700'
+                    }`}
+                    title="Toggle Refer & Earn on Home and Profile pages"
+                  >
+                    <div
+                      className={`bg-white w-5 h-5 rounded-full shadow-md transform transition-transform duration-300 ${
+                        referEarnEnabled ? 'translate-x-7' : 'translate-x-0'
+                      }`}
+                    />
                   </button>
                 </div>
               </div>

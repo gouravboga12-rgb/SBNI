@@ -28,7 +28,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({ onSearch, onOpenSubscrip
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-900/80 border border-slate-800 backdrop-blur-md shadow-inner">
             <span className="flex h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
             <span className="text-xs font-semibold text-slate-300">
-              India's B2B FinTech Loan Discovery Marketplace
+              India's Premier B2B Business Directory & Commercial Networking Platform
             </span>
           </div>
         </div>
@@ -36,19 +36,19 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({ onSearch, onOpenSubscrip
         {/* Hero Heading & Subtitle */}
         <div className="text-center max-w-4xl mx-auto space-y-6">
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white tracking-tight leading-[1.15] font-heading">
-            Discover Nearby <span className="gradient-text">Verified Lenders</span>. <br />
+            Discover Nearby <span className="gradient-text">Verified Business Partners</span>. <br />
             Connect & Grow <span className="gradient-emerald-text">Without Middlemen</span>.
           </h1>
 
           <p className="text-base sm:text-lg text-slate-300 max-w-3xl mx-auto leading-relaxed">
-            Just Paisa App connects Business Owners directly with verified Banks, NBFCs, and Lenders. Search location-based lending partners, review verified credentials, and unlock contact access with a single transparent subscription.
+            Just Paisa App connects Business Owners and Enterprises directly with verified Commercial Vendors, Suppliers, and Business Partners. Search location-based verified listings, review company credentials, and unlock direct contact access with a single transparent subscription.
           </p>
 
           {/* Compliance Marketplace Disclaimer */}
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs font-medium max-w-2xl mx-auto">
             <ShieldCheck className="w-4 h-4 text-amber-400 flex-shrink-0" />
             <span>
-              Marketplace Model: Just Paisa App does not approve, disburse, or track credit. All financial discussions occur directly between vendor and verified lender.
+              Directory Model: Just Paisa App is an independent B2B directory and networking platform. Just Paisa does not process financial transactions, credit, or disbursements. All commercial discussions occur directly between registered businesses.
             </span>
           </div>
         </div>
@@ -77,18 +77,18 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({ onSearch, onOpenSubscrip
                 onChange={(e) => setCategory(e.target.value)}
                 className="input-glass pl-11 py-3 text-xs sm:text-sm text-white appearance-none bg-slate-900 cursor-pointer"
               >
-                <option value="">All Loan Categories</option>
-                <option value="Business Loan">Unsecured Business Loan</option>
-                <option value="MSME Loan">MSME Working Capital</option>
-                <option value="Machinery Loan">Machinery & Equipment Finance</option>
-                <option value="Commercial Loan">Commercial Credit & Overdraft</option>
-                <option value="Letter of Credit">Letter of Credit & Trade Finance</option>
+                <option value="">All Business Sectors</option>
+                <option value="MSME & Manufacturing">MSME & Manufacturing</option>
+                <option value="Retail & Wholesale Trading">Retail & Wholesale Trading</option>
+                <option value="Machinery & Industrial Supply">Machinery & Industrial Supply</option>
+                <option value="Commercial Services">Commercial Services & Logistics</option>
+                <option value="Raw Materials & Trade">Raw Materials & Trade</option>
               </select>
             </div>
 
             <button type="submit" className="btn-primary w-full md:w-auto py-3 px-8 text-xs sm:text-sm font-bold justify-center whitespace-nowrap">
               <Search className="w-4 h-4" />
-              <span>Search Lenders</span>
+              <span>Search Directory</span>
             </button>
           </form>
         </div>
@@ -97,11 +97,11 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({ onSearch, onOpenSubscrip
         <div className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-4 max-w-5xl mx-auto">
           <div className="glass-panel p-6 text-center border-slate-800">
             <div className="text-3xl sm:text-4xl font-extrabold text-cyan-400 font-heading">1,250+</div>
-            <div className="text-xs sm:text-sm text-slate-400 font-medium mt-1">Verified Banks & NBFCs</div>
+            <div className="text-xs sm:text-sm text-slate-400 font-medium mt-1">Verified Partners</div>
           </div>
           <div className="glass-panel p-6 text-center border-slate-800">
             <div className="text-3xl sm:text-4xl font-extrabold text-emerald-400 font-heading">50,000+</div>
-            <div className="text-xs sm:text-sm text-slate-400 font-medium mt-1">Subscribed Vendors</div>
+            <div className="text-xs sm:text-sm text-slate-400 font-medium mt-1">Registered Enterprises</div>
           </div>
           <div className="glass-panel p-6 text-center border-slate-800">
             <div className="text-3xl sm:text-4xl font-extrabold text-indigo-400 font-heading">28 States</div>

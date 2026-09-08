@@ -295,6 +295,29 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
   const [reportsSearchQuery, setReportsSearchQuery] = useState('');
   const [referModalOpen, setReferModalOpen] = useState(false);
 
+  // Refer & Earn UI Visibility on Home and Profile pages (defaults to false for Razorpay approval)
+  const [isReferEarnEnabled, setIsReferEarnEnabled] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('sbni_enable_refer_earn') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  useEffect(() => {
+    const handleSyncSetting = () => {
+      try {
+        setIsReferEarnEnabled(localStorage.getItem('sbni_enable_refer_earn') === 'true');
+      } catch {}
+    };
+    window.addEventListener('sbni_settings_updated', handleSyncSetting);
+    window.addEventListener('storage', handleSyncSetting);
+    return () => {
+      window.removeEventListener('sbni_settings_updated', handleSyncSetting);
+      window.removeEventListener('storage', handleSyncSetting);
+    };
+  }, []);
+
   const loadNearbyBusinessesList = async () => {
     await loadNearbyBusinesses();
   };
@@ -1565,7 +1588,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
             {/* Overview Metric Cards */}
             <div className="space-y-3">
               <h3 className="font-bold text-slate-900 text-base font-heading">Overview</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+              <div className={`grid grid-cols-1 sm:grid-cols-2 ${isReferEarnEnabled ? 'lg:grid-cols-4' : 'lg:grid-cols-3'} gap-3 md:gap-4`}>
 
                 <div className="card-white p-4 flex items-center justify-between hover:shadow-md transition-all">
                   <div>
@@ -1615,21 +1638,23 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                   </div>
                 </div>
 
-                <div className="card-white p-4 flex items-center justify-between hover:shadow-md transition-all border-2 border-purple-200 bg-gradient-to-br from-purple-50/60 to-white">
-                  <div>
-                    <div className="text-xs text-purple-700 font-extrabold">Refer & Earn</div>
-                    <div className="text-xl font-extrabold text-purple-950 font-heading mt-0.5">₹ Rewards</div>
-                    <button
-                      onClick={() => setReferModalOpen(true)}
-                      className="text-xs text-purple-700 font-extrabold mt-1 hover:underline flex items-center gap-0.5 cursor-pointer"
-                    >
-                      <span>Invite Partners</span> <ChevronRight className="w-3 h-3" />
-                    </button>
+                {isReferEarnEnabled && (
+                  <div className="card-white p-4 flex items-center justify-between hover:shadow-md transition-all border-2 border-purple-200 bg-gradient-to-br from-purple-50/60 to-white">
+                    <div>
+                      <div className="text-xs text-purple-700 font-extrabold">Refer & Earn</div>
+                      <div className="text-xl font-extrabold text-purple-950 font-heading mt-0.5">₹ Rewards</div>
+                      <button
+                        onClick={() => setReferModalOpen(true)}
+                        className="text-xs text-purple-700 font-extrabold mt-1 hover:underline flex items-center gap-0.5 cursor-pointer"
+                      >
+                        <span>Invite Partners</span> <ChevronRight className="w-3 h-3" />
+                      </button>
+                    </div>
+                    <div className="w-10 h-10 rounded-xl bg-purple-600 flex items-center justify-center text-white flex-shrink-0 shadow-md">
+                      <Gift className="w-5 h-5" />
+                    </div>
                   </div>
-                  <div className="w-10 h-10 rounded-xl bg-purple-600 flex items-center justify-center text-white flex-shrink-0 shadow-md">
-                    <Gift className="w-5 h-5" />
-                  </div>
-                </div>
+                )}
 
               </div>
             </div>
@@ -3470,28 +3495,30 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
               </div>
 
               {/* ── CARD 5: REFER & EARN ─────────────────────────────────── */}
-              <div
-                onClick={() => setReferModalOpen(true)}
-                className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200/90 shadow-sm p-3.5 sm:p-5 flex items-center justify-between gap-2.5 sm:gap-3 hover:bg-purple-50/30 hover:border-purple-300 transition-all cursor-pointer group active:scale-99"
-              >
-                <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0 flex-1">
-                  <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
-                    <Gift className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
+              {isReferEarnEnabled && (
+                <div
+                  onClick={() => setReferModalOpen(true)}
+                  className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200/90 shadow-sm p-3.5 sm:p-5 flex items-center justify-between gap-2.5 sm:gap-3 hover:bg-purple-50/30 hover:border-purple-300 transition-all cursor-pointer group active:scale-99"
+                >
+                  <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0 flex-1">
+                    <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+                      <Gift className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <h3 className="font-extrabold text-slate-900 text-xs sm:text-base font-heading leading-tight group-hover:text-purple-900 truncate">
+                        Refer & Earn
+                      </h3>
+                      <p className="text-[11px] sm:text-xs text-slate-500 font-medium leading-tight mt-0.5 truncate">
+                        Refer friends and earn exciting rewards.
+                      </p>
+                    </div>
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <h3 className="font-extrabold text-slate-900 text-xs sm:text-base font-heading leading-tight group-hover:text-purple-900 truncate">
-                      Refer & Earn
-                    </h3>
-                    <p className="text-[11px] sm:text-xs text-slate-500 font-medium leading-tight mt-0.5 truncate">
-                      Refer friends and earn exciting rewards.
-                    </p>
-                  </div>
-                </div>
 
-                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center group-hover:bg-purple-600 group-hover:text-white transition-colors shrink-0">
-                  <ChevronRight className="w-4 h-4" />
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center group-hover:bg-purple-600 group-hover:text-white transition-colors shrink-0">
+                    <ChevronRight className="w-4 h-4" />
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* ── CARD 6: ACCOUNT SESSION & SECURITY (LOGOUT) ─────────── */}
               <div className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200/90 shadow-sm p-3.5 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -3553,23 +3580,14 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
           <span>Businesses</span>
         </button>
 
-        {/* Floating Center Action Button: Refer & Earn Rewards */}
-        <div className="flex flex-col items-center shrink-0 mx-1 -mt-5 sm:-mt-9">
-          <button
-            onClick={() => setReferModalOpen(true)}
-            title="Refer & Earn Wallet Rewards"
-            aria-label="Refer and Earn"
-            className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gradient-to-tr from-amber-500 via-orange-500 to-rose-500 hover:from-amber-600 hover:to-rose-600 text-white flex items-center justify-center shadow-xl hover:scale-110 transition-all border-3 sm:border-4 border-white cursor-pointer relative group"
-          >
-            <Gift className="w-5 h-5 sm:w-7 sm:h-7 text-white drop-shadow-sm group-hover:rotate-12 transition-transform" />
-            <span className="absolute -top-1 -right-1 w-3.5 h-3.5 sm:w-4 sm:h-4 bg-emerald-500 text-white text-[8px] sm:text-[9px] font-black rounded-full flex items-center justify-center border-2 border-white shadow-xs">
-              ₹
-            </span>
-          </button>
-          <span className="text-[9px] sm:text-[10px] font-extrabold text-orange-600 mt-0.5 tracking-tight">
-            Refer & Earn
-          </span>
-        </div>
+        {/* Floating Green Action Button */}
+        <button
+          onClick={onOpenSubscription}
+          title="Pay Subscription"
+          className="w-11 h-11 sm:w-14 sm:h-14 rounded-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white flex items-center justify-center shadow-xl hover:scale-105 transition-all -mt-5 sm:-mt-9 border-3 sm:border-4 border-white shrink-0 mx-1 cursor-pointer"
+        >
+          <Plus className="w-5 h-5 sm:w-7 sm:h-7 text-white" />
+        </button>
 
         <button
           onClick={() => handleReportsClick('ALL')}

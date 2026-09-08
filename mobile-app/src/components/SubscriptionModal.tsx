@@ -49,6 +49,9 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
   const [walletBalance, setWalletBalance] = useState<number>(0);
   const [useWallet, setUseWallet] = useState<boolean>(false);
+  const [isReferEarnEnabled, setIsReferEarnEnabled] = useState<boolean>(() => {
+    return localStorage.getItem('sbni_enable_refer_earn') === 'true';
+  });
   const [isAutoPay, setIsAutoPay] = useState<boolean>(true);
   const [loading, setLoading] = useState(false);
   const [cancellingAutoPay, setCancellingAutoPay] = useState(false);
@@ -57,6 +60,18 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
   const [errorMessage, setErrorMessage] = useState('');
   const [activeSub, setActiveSub] = useState<any>(null);
   const [loadingActiveSub, setLoadingActiveSub] = useState(false);
+
+  useEffect(() => {
+    const syncReferEarn = () => {
+      setIsReferEarnEnabled(localStorage.getItem('sbni_enable_refer_earn') === 'true');
+    };
+    window.addEventListener('sbni_settings_updated', syncReferEarn);
+    window.addEventListener('storage', syncReferEarn);
+    return () => {
+      window.removeEventListener('sbni_settings_updated', syncReferEarn);
+      window.removeEventListener('storage', syncReferEarn);
+    };
+  }, []);
 
   const handleConfirmCancelAutoPay = async () => {
     setCancellingAutoPay(true);
@@ -182,7 +197,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
   };
 
   const basePrice = selectedPlan ? selectedPlan.price : 0;
-  const appliedWalletDeduction = useWallet ? Math.min(walletBalance, basePrice) : 0;
+  const appliedWalletDeduction = (isReferEarnEnabled && useWallet) ? Math.min(walletBalance, basePrice) : 0;
   const calculatedPrice = Math.max(0, basePrice - appliedWalletDeduction);
 
   const handleSubscribe = async (targetPlan?: SubscriptionPlan, e?: React.MouseEvent) => {
@@ -490,8 +505,8 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
               {isUpgrading
                 ? 'Upgrade Your Subscription'
                 : isLender
-                ? 'Business Money Financer Subscription'
-                : 'Small Shop & Startup Business Unlock Subscription'}
+                ? 'Commercial Enterprise Partner Subscription'
+                : 'Commercial Business Discovery Subscription'}
             </span>
           </div>
 
@@ -500,14 +515,14 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
               <>
                 Upgrade to a{' '}
                 <span className={isLender ? 'text-[#059669]' : 'text-[#003893]'}>
-                  Higher {isLender ? 'Financer' : 'Business'} Tier
+                  Higher {isLender ? 'Commercial Partner' : 'Enterprise'} Tier
                 </span>
               </>
             ) : (
               <>
                 Choose Your{' '}
                 <span className={isLender ? 'text-[#059669]' : 'text-[#003893]'}>
-                  {isLender ? 'Business Money Financer Verification' : 'Small Shop & Startup Business Discovery'} Plan
+                  {isLender ? 'Commercial Partner Verification' : 'Enterprise & Vendor Business Discovery'} Plan
                 </span>
               </>
             )}
@@ -517,8 +532,8 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
             {isUpgrading
               ? `You are currently on ${activeSub?.plan?.name || 'an active plan'}. Select a higher tier plan below for extended validity, higher priority, and maximum savings.`
               : isLender
-              ? 'Unlock unlimited shop business verifications, full KYC reports, GST documents, and direct shop owner access.'
-              : 'Unlock direct phone numbers, WhatsApp connect, and verified financer details. Zero middleman fees.'}
+              ? 'Unlock unlimited business profile verifications, verified directory reports, GST details, and direct commercial partner access.'
+              : 'Unlock direct phone numbers, WhatsApp connect, and verified business partner details. Zero middleman fees.'}
           </p>
         </div>
 
@@ -740,8 +755,8 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
           </div>
         </div>
 
-        {/* ── REFERRAL WALLET BALANCE CARD (If available) ───────────────── */}
-        {walletBalance > 0 && (
+        {/* ── REFERRAL WALLET BALANCE CARD (If available & enabled) ───────────────── */}
+        {isReferEarnEnabled && walletBalance > 0 && (
           <div
             onClick={() => setUseWallet(!useWallet)}
             className={`p-3 rounded-2xl border transition-all cursor-pointer flex items-center justify-between gap-3 mb-3 ${
@@ -863,7 +878,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                 ? `Extend / Renew ${selectedPlan.name} (₹${calculatedPrice})`
                 : isAutoPay
                 ? `Setup AutoPay ₹${calculatedPrice} & Activate ${selectedPlan?.name || 'Plan'}`
-                : `Pay ₹${calculatedPrice} with Razorpay & Unlock Contacts`}
+                : `Pay ₹${calculatedPrice} with Razorpay & Activate Subscription`}
             </span>
           </button>
         </div>

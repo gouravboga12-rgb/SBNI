@@ -37,10 +37,10 @@ export const TermsModal: React.FC<TermsModalProps> = ({ isOpen, onClose }) => {
           <section className="space-y-1">
             <h3 className="font-bold text-slate-900 text-sm flex items-center gap-1.5">
               <ShieldCheck className="w-4 h-4 text-emerald-600" />
-              1. Platform Nature & Direct Marketplace
+              1. Platform Nature & Direct B2B Directory
             </h3>
             <p>
-              Just Paisa App connects verified Vendors directly with Nationalized Banks, NBFCs, and Private Lenders. Just Paisa App operates as a direct listing technology platform and does not charge any hidden middleman commission on credit approvals.
+              Just Paisa App connects verified Commercial Businesses, Vendors, Suppliers, and Enterprises. Just Paisa App operates as a direct B2B directory and networking technology platform providing contact discovery without hidden broker commissions.
             </p>
           </section>
 
@@ -50,7 +50,7 @@ export const TermsModal: React.FC<TermsModalProps> = ({ isOpen, onClose }) => {
               2. Data Privacy & Compliance
             </h3>
             <p>
-              All GST numbers, Aadhaar details, PAN cards, and business financial documents uploaded during digital KYC verification are encrypted with 256-bit SSL encryption. Data is shared exclusively with partner financial institutions upon your explicit request.
+              All GST numbers, Aadhaar details, PAN cards, and business documentation uploaded during digital verification are encrypted with 256-bit SSL encryption. Data is shared exclusively with verified commercial partners upon your explicit mutual request.
             </p>
           </section>
 
@@ -60,7 +60,7 @@ export const TermsModal: React.FC<TermsModalProps> = ({ isOpen, onClose }) => {
               3. Subscription Terms & Duration Tiers
             </h3>
             <p>
-              Subscription plans (Weekly, Monthly, Quarterly, Half-Yearly, Yearly) grant access to unlocked lender contact details, instant verification reports, and priority loan processing. Subscription fees are non-refundable once activated.
+              Subscription plans (Weekly, Monthly, Quarterly, Half-Yearly, Yearly) grant digital access to verified business directory contact listings and commercial communication tools. Subscription fees are non-refundable once activated.
             </p>
           </section>
         </div>
