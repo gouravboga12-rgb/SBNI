@@ -1,0 +1,12 @@
+# Robots.txt for Just Paisa (https://justpaisa.in)
+User-agent: *
+Allow: /
+Allow: /vendor-login
+Allow: /login
+Disallow: /admin
+Disallow: /admin/
+Disallow: /api/
+Disallow: /uploads/
+
+# Sitemaps
+Sitemap: https://justpaisa.in/sitemap.xml
