@@ -10,6 +10,7 @@ import {
   verifyOTP,
   refreshAccessToken,
   getMyProfile,
+  updatePushToken,
 } from '../controllers/authController';
 import { authenticateUser } from '../middlewares/auth';
 import { asyncHandler } from '../middlewares/errorHandler';
@@ -26,6 +27,9 @@ router.post('/login', asyncHandler(loginUser));
 router.post('/forgot-password', asyncHandler(forgotPasswordRequest));
 router.post('/reset-password', asyncHandler(resetPasswordWithOtp));
 router.post('/resend-otp', asyncHandler(resendOtp));
+
+// Push Notifications
+router.post('/push-token', authenticateUser, asyncHandler(updatePushToken));
 
 // Legacy & Session Routes
 router.post('/verify-otp', asyncHandler(verifyOTP));

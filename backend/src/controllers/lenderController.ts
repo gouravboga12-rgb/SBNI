@@ -4,6 +4,7 @@ import { AuthenticatedRequest } from '../middlewares/auth';
 import { LenderType } from '@prisma/client';
 import { calculateDistanceKm } from '../utils/distance';
 import { emitToUser, emitToRole, emitToAdmin } from '../services/socketService';
+import { notifyVendorsOfNewLender } from '../services/pushNotificationService';
 
 const mapLenderTypeEnum = (type?: string): LenderType => {
   if (!type) return 'NBFC';
@@ -142,6 +143,13 @@ export const updateLenderProfile = async (req: AuthenticatedRequest, res: Respon
   // Real-time broadcast lender profile update to all vendors and admin
   emitToRole('VENDOR', 'lender:updated', { lender: profile });
   emitToAdmin('lender:updated', { lender: profile });
+
+  // If lending radius or location is configured, trigger radius notifications
+  if (profile.lendingRadiusKm && profile.latitude && profile.longitude) {
+    notifyVendorsOfNewLender(profile).catch((err) => {
+      console.warn('[PushNotification] Lender profile radius notification failed:', err.message);
+    });
+  }
 
   res.json({ success: true, message: 'Lender institution profile and lending area updated successfully.', data: profile });
 };

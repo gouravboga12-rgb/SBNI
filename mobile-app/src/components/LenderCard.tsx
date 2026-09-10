@@ -150,7 +150,7 @@ export const LenderCard: React.FC<LenderCardProps> = ({ lender, onOpenSubscripti
     if (e) e.stopPropagation();
 
     if (checkIsVendorFraud()) {
-      alert('🚨 Account Restricted: Your account has been flagged as Fraud / Blacklisted by Admin. Loan applications and financing requests are currently restricted. Please contact JustPaisa support.');
+      alert('🚨 Account Restricted: Your account has been flagged as Fraud / Blacklisted by Admin. Inquiries and connecting with lenders are currently restricted. Please contact JustPaisa support.');
       return;
     }
 
@@ -500,10 +500,10 @@ export const LenderCard: React.FC<LenderCardProps> = ({ lender, onOpenSubscripti
         );
       })()}
 
-      {/* Right Column: Apply Now, Phone Call & WhatsApp Message Buttons */}
+      {/* Right Column: Inquire Now, Phone Call & WhatsApp Message Buttons */}
       <div className="flex flex-col gap-2 flex-shrink-0 w-full sm:w-auto justify-end border-t sm:border-t-0 pt-3 sm:pt-0 border-slate-100 z-10 min-w-[130px]">
         
-        {/* Apply Now Button */}
+        {/* Inquire Now Button */}
         {hasApplied ? (
           <button
             type="button"
@@ -511,7 +511,7 @@ export const LenderCard: React.FC<LenderCardProps> = ({ lender, onOpenSubscripti
             className="py-2.5 px-4 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-300 font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-xs hover:bg-emerald-100 transition-all cursor-pointer"
           >
             <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-            <span>Applied ✓</span>
+            <span>Inquired ✓</span>
           </button>
         ) : (
           <button
@@ -522,12 +522,12 @@ export const LenderCard: React.FC<LenderCardProps> = ({ lender, onOpenSubscripti
             {isSubscribed ? (
               <>
                 <SendHorizontal className="w-4 h-4 text-blue-200 shrink-0" />
-                <span>Apply Now</span>
+                <span>Inquire Now</span>
               </>
             ) : (
               <>
                 <Lock className="w-4 h-4 text-amber-300 shrink-0" />
-                <span>Apply Now</span>
+                <span>Inquire Now</span>
               </>
             )}
           </button>

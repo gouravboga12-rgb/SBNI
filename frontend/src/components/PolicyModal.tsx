@@ -355,11 +355,10 @@ export const PolicyModal: React.FC<PolicyModalProps> = ({
 
               <section className="space-y-2">
                 <h4 className="text-sm font-black text-slate-900">
-                  1. Statutory Non-Intermediary Notice
+                  1. Statutory Directory & Communication Notice
                 </h4>
                 <p>
-                  Just Paisa App is exclusively a B2B business directory and commercial communication portal connecting independent business owners with verified commercial partners and enterprises.
-                  Just Paisa App is strictly a directory and software service and is not a bank, NBFC, or financial intermediary.
+                  JustPaisa is strictly a local business directory and communication platform. No lending, loan disbursement, collection, or financial intermediation of any kind takes place through our website or infrastructure. JustPaisa does not provide loans, process loan applications, disburse loans, or collect repayments. We do not act as a lender, bank, or NBFC.
                 </p>
               </section>
 

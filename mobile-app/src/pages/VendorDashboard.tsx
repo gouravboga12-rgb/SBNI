@@ -1588,9 +1588,9 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                     <FileText className="w-8 h-8" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-extrabold text-slate-900 font-heading">No Applications Submitted Yet</h3>
+                    <h3 className="text-lg font-extrabold text-slate-900 font-heading">No Inquiries Submitted Yet</h3>
                     <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1.5 leading-relaxed">
-                      You haven't submitted any capital applications yet. Explore verified financers and click <strong>Apply for Loan</strong> to connect with lenders.
+                      You haven't submitted any inquiries yet. Explore verified financers and click <strong>Inquire Now</strong> to connect with lenders.
                     </p>
                   </div>
                   <div className="pt-2">

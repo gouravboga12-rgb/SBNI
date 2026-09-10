@@ -19,6 +19,8 @@ import { LenderHomeScreen } from '../screens/lender/LenderHomeScreen';
 import { ReferEarnScreen } from '../screens/common/ReferEarnScreen';
 import { ProfileScreen } from '../screens/common/ProfileScreen';
 import { SubscriptionModal } from '../components/SubscriptionModal';
+import { NotificationModal } from '../components/NotificationModal';
+import { setupNotificationListeners } from '../services/notificationService';
 import { linking } from './linking';
 
 const Tab = createBottomTabNavigator();
@@ -88,6 +90,21 @@ function BottomTabs() {
 export const AppNavigator: React.FC = () => {
   const { token, isLoading } = useAuth();
   const [subModalVisible, setSubModalVisible] = useState(false);
+  const [notifModalVisible, setNotifModalVisible] = useState(false);
+
+  React.useEffect(() => {
+    const unsubscribe = setupNotificationListeners(
+      (notification) => {
+        // Optionally open modal or toast on foreground alert
+      },
+      (response) => {
+        setNotifModalVisible(true);
+      }
+    );
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
+  }, []);
 
   if (isLoading) {
     return (
@@ -105,6 +122,7 @@ export const AppNavigator: React.FC = () => {
     <NavigationContainer linking={linking as any}>
       <View style={styles.container}>
         <AppHeader
+          onOpenNotifications={() => setNotifModalVisible(true)}
           onOpenWallet={() => setSubModalVisible(true)}
           onOpenProfile={() => {}}
         />
@@ -115,6 +133,11 @@ export const AppNavigator: React.FC = () => {
         <SubscriptionModal
           visible={subModalVisible}
           onClose={() => setSubModalVisible(false)}
+        />
+
+        <NotificationModal
+          visible={notifModalVisible}
+          onClose={() => setNotifModalVisible(false)}
         />
       </View>
     </NavigationContainer>

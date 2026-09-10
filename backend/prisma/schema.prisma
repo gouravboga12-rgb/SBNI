@@ -77,6 +77,7 @@ model User {
   referredBy         User?              @relation("UserReferrals", fields: [referredById], references: [id])
   referrals          User[]             @relation("UserReferrals")
   walletBalance      Float              @default(0)
+  pushToken          String?
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
 

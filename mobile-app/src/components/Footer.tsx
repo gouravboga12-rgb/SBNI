@@ -36,7 +36,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPolicyRoute }) => {
               <SBNILogo imgClassName="h-20 sm:h-24 w-auto object-contain" style={{ maxHeight: '100px' }} />
             </div>
             <p className="text-slate-400 leading-relaxed text-xs">
-              India's trusted enterprise B2B Business Directory & Commercial Networking platform connecting Business Owners (Vendors) directly with verified Commercial Partners, Suppliers & Enterprises.
+              JustPaisa is strictly a local business directory and communication platform connecting local business owners (vendors) directly with commercial partners. No lending, loan disbursement, collection, or financial intermediation of any kind takes place through our website or infrastructure.
             </p>
           </div>
 
@@ -124,8 +124,8 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPolicyRoute }) => {
         </div>
 
         {/* Regulatory Disclaimer Banner */}
-        <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 text-[11px] text-slate-400 mb-8 leading-relaxed">
-          <strong className="text-slate-200">Regulatory Disclaimer:</strong> Just Paisa App is strictly a technology platform facilitating vendor discovery and commercial business communication. Just Paisa App is not a bank, non-banking financial company (NBFC), recovery agent, or credit institution. Just Paisa App does not offer credit approvals, process loan applications, disburse funds, or compute credit scores. All business agreements take place directly between independent users.
+        <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 text-[11px] text-slate-300 mb-8 leading-relaxed">
+          <strong className="text-amber-400">Important Statutory Notice & Regulatory Disclaimer:</strong> JustPaisa is strictly a local business directory and communication platform. No lending, loan disbursement, collection, or financial intermediation of any kind takes place through our website or infrastructure. JustPaisa does not provide loans, process loan applications, disburse loans, collect repayments, or process financial transactions. We do not act as a lender, financial institution, NBFC, or credit provider. Any communication or business arrangement between a vendor and a lender takes place directly between the respective parties outside the platform.
         </div>
 
         {/* Bottom Footer Bar */}

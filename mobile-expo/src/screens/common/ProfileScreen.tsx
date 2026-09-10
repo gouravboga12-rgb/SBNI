@@ -142,6 +142,13 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onOpenPolicies }) 
         </TouchableOpacity>
       </View>
 
+      {/* Directory Statutory Disclaimer */}
+      <View style={styles.disclaimerBox}>
+        <Text style={styles.disclaimerText}>
+          JustPaisa is strictly a local business directory and communication platform. No lending, loan disbursement, collection, or financial intermediation of any kind takes place through our website or infrastructure.
+        </Text>
+      </View>
+
       {/* Developer Credit & Logout */}
       <View style={styles.devCreditBox}>
         <Text style={styles.devCreditText}>
@@ -271,6 +278,21 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#64748b',
     marginTop: 1,
+  },
+  disclaimerBox: {
+    padding: 12,
+    backgroundColor: '#e2e8f0',
+    borderRadius: 12,
+    marginVertical: 6,
+    borderWidth: 1,
+    borderColor: '#cbd5e1',
+  },
+  disclaimerText: {
+    fontSize: 11,
+    color: '#475569',
+    textAlign: 'center',
+    lineHeight: 16,
+    fontWeight: '500',
   },
   devCreditBox: {
     alignItems: 'center',

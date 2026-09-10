@@ -97,3 +97,22 @@ export const requestWalletWithdrawal = async (amount: number, upiId: string) => 
   const res = await api.post('/wallet/withdraw', { amount, upiId });
   return res.data;
 };
+
+// Push Notifications
+export const savePushTokenApi = async (pushToken: string) => {
+  try {
+    const res = await api.post('/auth/push-token', { pushToken });
+    return res.data;
+  } catch (e) {
+    return null;
+  }
+};
+
+export const getMyNotificationsApi = async () => {
+  try {
+    const res = await api.get('/cms/notifications');
+    return res.data;
+  } catch (e) {
+    return { success: false, data: [] };
+  }
+};

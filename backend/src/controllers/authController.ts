@@ -5,6 +5,7 @@ import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from '.
 import { Role, LenderType } from '@prisma/client';
 import { AuthenticatedRequest } from '../middlewares/auth';
 import { sendSignupOtpEmail, sendForgotPasswordOtpEmail } from '../utils/mailer';
+import { saveUserPushToken, notifyVendorsOfNewLender } from '../services/pushNotificationService';
 
 // In-memory store for pending signup OTPs (before account creation in DB)
 interface PendingOtpRecord {
@@ -341,6 +342,13 @@ export const registerUser = async (req: Request, res: Response) => {
 
     const { newUser, createdProfile } = result;
     pendingSignupOtps.delete(normalizedEmail);
+
+    // CORE REQUIREMENT: Automatically notify all vendors within lender's radius
+    if (newUser.role === 'LENDER' && createdProfile) {
+      notifyVendorsOfNewLender(createdProfile).catch((pushErr) => {
+        console.error('❌ [PushNotification] Failed to dispatch new lender radius notifications:', pushErr);
+      });
+    }
 
     const accessToken = generateAccessToken({ userId: newUser.id, email: newUser.email, role: newUser.role });
     const refreshToken = generateRefreshToken({ userId: newUser.id, email: newUser.email, role: newUser.role });
@@ -781,5 +789,23 @@ export const getMyProfile = async (req: AuthenticatedRequest, res: Response) => 
       passwordHash: undefined,
       hasActiveSubscription,
     },
+  });
+};
+
+/**
+ * Register / Update User's Mobile or Web Push Notification Token
+ */
+export const updatePushToken = async (req: AuthenticatedRequest, res: Response) => {
+  const userId = req.user?.userId;
+  const { pushToken } = req.body;
+
+  if (!userId || !pushToken) {
+    return res.status(400).json({ success: false, message: 'pushToken is required' });
+  }
+
+  const saved = await saveUserPushToken(userId, pushToken);
+  res.json({
+    success: saved,
+    message: saved ? 'Push token registered successfully' : 'Failed to register push token',
   });
 };

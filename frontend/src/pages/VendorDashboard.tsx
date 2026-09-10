@@ -174,6 +174,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
   const [locationModalMode, setLocationModalMode] = useState<'VENDOR_SEARCH' | 'GENERAL_LOCATION'>('VENDOR_SEARCH');
   const [isLocatingGPS, setIsLocatingGPS] = useState(false);
   const [locationToast, setLocationToast] = useState<string | null>(null);
+  const [lenderRadiusAlert, setLenderRadiusAlert] = useState<any>(null);
 
   // Applications List (Strictly Real User Applications from AWS RDS Database)
   const [vendorApplications, setVendorApplications] = useState<any[]>(() => {
@@ -322,6 +323,12 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
       window.dispatchEvent(new CustomEvent('sbni_vendor_profile_updated', { detail: data }));
     });
 
+    const unsubNewLenderInRadius = onSocketEvent('new_lender_in_radius', (data) => {
+      console.log('⚡ [Real-Time Socket] New Financer joined within radius:', data);
+      setLenderRadiusAlert(data);
+      window.dispatchEvent(new CustomEvent('sbni_lender_profile_updated'));
+    });
+
     window.addEventListener('sbni_request_submitted', loadVendorApplications);
     window.addEventListener('storage', loadVendorApplications);
     return () => {
@@ -330,6 +337,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
       unsubLenderUpdated();
       unsubWalletUpdated();
       unsubKycUpdated();
+      unsubNewLenderInRadius();
       window.removeEventListener('sbni_request_submitted', loadVendorApplications);
       window.removeEventListener('storage', loadVendorApplications);
     };
@@ -1588,9 +1596,9 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                     <FileText className="w-8 h-8" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-extrabold text-slate-900 font-heading">No Applications Submitted Yet</h3>
+                    <h3 className="text-lg font-extrabold text-slate-900 font-heading">No Inquiries Submitted Yet</h3>
                     <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1.5 leading-relaxed">
-                      You haven't submitted any capital applications yet. Explore verified financers and click <strong>Apply for Loan</strong> to connect with lenders.
+                      You haven't submitted any inquiries yet. Explore verified financers and click <strong>Inquire Now</strong> to connect with lenders.
                     </p>
                   </div>
                   <div className="pt-2">

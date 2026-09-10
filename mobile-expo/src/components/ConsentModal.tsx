@@ -68,12 +68,12 @@ export const ConsentModal: React.FC<ConsentModalProps> = ({
           <Text style={styles.title}>Data Sharing & Contact Consent</Text>
           <Text style={styles.message}>
             Your verified shop details and enquiry requirements will be shared directly with{' '}
-            <Text style={styles.boldText}>{lender.institutionName}</Text> to connect and process your loan application.
+            <Text style={styles.boldText}>{lender.institutionName}</Text> to connect and discuss your commercial enquiry.
           </Text>
 
           <View style={styles.noticeBox}>
             <Text style={styles.noticeText}>
-              🔒 JustPaisa operates with 0% middleman commission. All conversations and loan agreements remain strictly between you and the financer.
+              🔒 JustPaisa is strictly a directory platform. All communication remains directly between you and the listed partner outside the platform.
             </Text>
           </View>
 
