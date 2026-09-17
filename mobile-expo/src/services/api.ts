@@ -398,6 +398,74 @@ export async function activateSubscriptionWithWalletApi(
   }
 }
 
+export async function createRazorpayPaymentSessionApi(
+  planId: string,
+  isAutoPay: boolean = false,
+  couponCode?: string,
+  useWallet: boolean = false,
+  referralCode?: string
+): Promise<{
+  success: boolean;
+  mode?: 'order' | 'subscription';
+  orderId?: string;
+  subscriptionId?: string;
+  amount?: number;
+  amountPaise?: number;
+  currency?: string;
+  keyId?: string;
+  plan?: any;
+  walletDiscount?: number;
+  message?: string;
+}> {
+  try {
+    const res = await api.post('/subscriptions/create-order', {
+      planId,
+      isAutoPay,
+      couponCode,
+      useWallet,
+      referralCode,
+    });
+    return res.data;
+  } catch (err: any) {
+    return { success: false, message: err.response?.data?.message || err.message || 'Failed to initialize payment.' };
+  }
+}
+
+export async function verifyRazorpayPaymentApi(payload: {
+  razorpay_order_id?: string;
+  razorpay_payment_id: string;
+  razorpay_signature: string;
+  razorpay_subscription_id?: string;
+  planId: string;
+  couponCode?: string;
+  isAutoPay?: boolean;
+  useWallet?: boolean;
+  walletAmountUsed?: number;
+  referralCode?: string;
+}): Promise<{
+  success: boolean;
+  hasActiveSubscription?: boolean;
+  subscription?: any;
+  payment?: any;
+  message?: string;
+}> {
+  try {
+    const res = await api.post('/subscriptions/verify-payment', payload);
+    return res.data;
+  } catch (err: any) {
+    return { success: false, message: err.response?.data?.message || err.message || 'Payment verification failed.' };
+  }
+}
+
+export async function cancelAutoPayApi(): Promise<{ success: boolean; message?: string }> {
+  try {
+    const res = await api.post('/subscriptions/cancel-autopay');
+    return res.data;
+  } catch (err: any) {
+    return { success: false, message: err.response?.data?.message || err.message || 'Failed to cancel AutoPay.' };
+  }
+}
+
 // ================================================================
 // REFERRALS & WALLET
 // ================================================================

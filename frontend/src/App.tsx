@@ -18,11 +18,15 @@ import {
   safeSetLocalStorage,
 } from './services/api';
 import { StaticPolicyPage, StaticPageType } from './pages/StaticPolicyPage';
+import { MobileCheckout } from './pages/MobileCheckout';
 import { Lender } from './types';
 
 export function App() {
   const [isAdminRoute, setIsAdminRoute] = useState<boolean>(
     typeof window !== 'undefined' && window.location.pathname.startsWith('/admin')
+  );
+  const [isCheckoutRoute, setIsCheckoutRoute] = useState<boolean>(
+    typeof window !== 'undefined' && (window.location.pathname === '/checkout' || window.location.pathname === '/pay')
   );
   const [staticPageRoute, setStaticPageRoute] = useState<StaticPageType | null>(null);
   const [currentRole, setCurrentRole] = useState<'VENDOR' | 'LENDER'>('VENDOR');
@@ -96,8 +100,14 @@ export function App() {
         setIsAdminRoute(false);
         setAuthModalOpen(false);
         setStaticPageRoute('faq');
+      } else if (pathname === '/checkout' || pathname === '/pay') {
+        setIsAdminRoute(false);
+        setIsCheckoutRoute(true);
+        setStaticPageRoute(null);
+        setAuthModalOpen(false);
       } else {
         setIsAdminRoute(false);
+        setIsCheckoutRoute(false);
         setStaticPageRoute(null);
       }
     };
@@ -361,6 +371,10 @@ export function App() {
         }}
       />
     );
+  }
+
+  if (isCheckoutRoute) {
+    return <MobileCheckout />;
   }
 
   if (staticPageRoute) {

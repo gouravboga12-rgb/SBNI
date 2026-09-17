@@ -19,22 +19,47 @@ import {
   LogOut,
   Crown,
   Compass,
-  ChevronRight,
+  ChevronDown,
+  ChevronUp,
   ShieldCheck,
   Gift,
+  Sparkles,
 } from 'lucide-react-native';
 import { useAuth } from '../../context/AuthContext';
-import { updateLenderProfileApi, fetchReferEarnStatusApi } from '../../services/api';
+import {
+  updateLenderProfileApi,
+  fetchReferEarnStatusApi,
+} from '../../services/api';
 import { SubscriptionModal } from '../../components/SubscriptionModal';
-import { ReferAndEarnModal } from '../../components/ReferAndEarnModal';
-
+import { LocationPickerModal } from '../../components/LocationPickerModal';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const RADIUS_OPTIONS = [10, 25, 50, 70, 100];
 
 export const LenderProfileScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
-  const { user, isSubscribed, lenderProfile, logout, updateLenderProfileState } = useAuth();
+  const {
+    user,
+    isSubscribed,
+    activeSubscription,
+    daysRemaining,
+    formattedEndDate,
+    lenderProfile,
+    logout,
+    updateLenderProfileState,
+  } = useAuth();
+
+  // Accordion open/close state
+  const [openSections, setOpenSections] = useState<{ [key: string]: boolean }>({
+    membership: true,
+    basic: true,
+    location: true,
+    criteria: true,
+  });
+
+  const toggleSection = (key: string) => {
+    setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
 
   const [institutionName, setInstitutionName] = useState(
     lenderProfile?.institutionName || user?.name || 'Financing Partner'
@@ -49,25 +74,20 @@ export const LenderProfileScreen: React.FC = () => {
   const [maxAmount, setMaxAmount] = useState(String(lenderProfile?.maxLoanAmount || 500000));
   const [interestRate, setInterestRate] = useState(String(lenderProfile?.minInterestRate || 1.5));
   const [address, setAddress] = useState(lenderProfile?.address || '');
-  const [city, setCity] = useState(lenderProfile?.city || '');
-  const [state, setState] = useState(lenderProfile?.state || '');
+  const [city, setCity] = useState(lenderProfile?.city || 'Hyderabad');
+  const [state, setState] = useState(lenderProfile?.state || 'Telangana');
   const [pincode, setPincode] = useState(lenderProfile?.pincode || '');
+  const [lat, setLat] = useState<number | undefined>(lenderProfile?.latitude);
+  const [lng, setLng] = useState<number | undefined>(lenderProfile?.longitude);
 
   const [saving, setSaving] = useState(false);
   const [subModalVisible, setSubModalVisible] = useState(false);
-  const [isReferEarnEnabled, setIsReferEarnEnabled] = useState(false);
-  const [referModalVisible, setReferModalVisible] = useState(false);
-
-  useEffect(() => {
-    fetchReferEarnStatusApi()
-      .then((enabled) => setIsReferEarnEnabled(enabled))
-      .catch(() => {});
-  }, []);
+  const [locationPickerVisible, setLocationPickerVisible] = useState(false);
 
   const handleSave = async () => {
     setSaving(true);
     try {
-      const payload = {
+      const payload: any = {
         institutionName: institutionName.trim(),
         contactPersonName: contactPerson.trim(),
         lendingRadiusKm,
@@ -78,12 +98,14 @@ export const LenderProfileScreen: React.FC = () => {
         city: city.trim(),
         state: state.trim(),
         pincode: pincode.trim(),
+        latitude: lat,
+        longitude: lng,
       };
 
       const res = await updateLenderProfileApi(payload);
       if (res.success) {
         updateLenderProfileState(payload);
-        Alert.alert('Profile Saved', 'Financer profile & lending limits updated successfully.');
+        Alert.alert('Profile Saved 🎉', 'Financer profile & operating radius updated successfully.');
       } else {
         Alert.alert('Notice', res.message || 'Could not update profile.');
       }
@@ -94,243 +116,336 @@ export const LenderProfileScreen: React.FC = () => {
     }
   };
 
+  const handleLocationFromPicker = (radius: number, pickedCity?: string, pickedLat?: number, pickedLng?: number) => {
+    setLendingRadiusKm(radius);
+    if (pickedCity) setCity(pickedCity);
+    if (pickedLat) setLat(pickedLat);
+    if (pickedLng) setLng(pickedLng);
+  };
+
   return (
     <ScrollView
       style={styles.container}
       contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 90 }]}
     >
-      {/* Top Financer Profile Card */}
+      {/* Top Financer Profile Header Card */}
       <View style={styles.headerCard}>
         <View style={styles.instIcon}>
-          <Building2 size={32} color="#007a33" />
+          <Building2 size={30} color="#007a33" />
         </View>
         <Text style={styles.instName}>{institutionName}</Text>
-        <Text style={styles.contactPersonText}>Manager: {contactPerson}</Text>
+        <Text style={styles.contactPersonText}>Manager: {contactPerson || user?.name}</Text>
         <View style={styles.badgeRow}>
           <View style={styles.roleBadge}>
-            <Text style={styles.roleBadgeText}>Business Money Financer</Text>
+            <Text style={styles.roleBadgeText}>Business Financer Hub</Text>
           </View>
           <View style={isSubscribed ? styles.subActiveBadge : styles.subInactiveBadge}>
             <Crown size={12} color={isSubscribed ? '#16a34a' : '#d97706'} />
             <Text style={isSubscribed ? styles.subActiveText : styles.subInactiveText}>
-              {isSubscribed ? 'Subscribed VIP' : 'Standard'}
+              {isSubscribed ? `VIP Financer (${daysRemaining} Days)` : 'Standard'}
             </Text>
           </View>
         </View>
       </View>
 
-      {/* Plan Card */}
-      <TouchableOpacity
-        style={styles.membershipCard}
-        onPress={() => setSubModalVisible(true)}
-        activeOpacity={0.9}
-      >
-        <View style={styles.membershipLeft}>
-          <Crown size={22} color="#f59e0b" />
-          <View>
-            <Text style={styles.membershipTitle}>
-              {isSubscribed ? 'VIP Financer Membership Active' : 'Upgrade Financer Plan'}
-            </Text>
-            <Text style={styles.membershipSub}>
-              {isSubscribed
-                ? 'Unlimited verified shop leads across your radius'
-                : 'Get featured badge and priority loan applications'}
-            </Text>
-          </View>
-        </View>
-        <ChevronRight size={18} color="#ffffff" />
-      </TouchableOpacity>
-
-      {/* Refer & Earn Banner (Only if enabled by admin) */}
-      {isReferEarnEnabled && (
+      {/* ── ACCORDION 1: MEMBERSHIP & BILLING DETAILS ── */}
+      <View style={styles.accordionCard}>
         <TouchableOpacity
-          style={styles.referCard}
-          onPress={() => setReferModalVisible(true)}
-          activeOpacity={0.9}
+          style={styles.accordionHeader}
+          onPress={() => toggleSection('membership')}
+          activeOpacity={0.8}
         >
-          <View style={styles.referIconBox}>
-            <Gift size={22} color="#ffffff" />
+          <View style={styles.accordionTitleRow}>
+            <Crown size={18} color="#007a33" />
+            <Text style={styles.accordionTitle}>Membership & Validity Stacking</Text>
           </View>
-          <View style={{ flex: 1 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Text style={styles.referTitle}>Refer & Earn Rewards 🎁</Text>
-              <Text style={styles.referBadge}>Cashback</Text>
-            </View>
-            <Text style={styles.referSub}>
-              Earn ₹500 cashback for every business or financer you invite!
-            </Text>
-          </View>
-          <ChevronRight size={18} color="#9333ea" />
+          {openSections.membership ? <ChevronUp size={18} color="#64748b" /> : <ChevronDown size={18} color="#64748b" />}
         </TouchableOpacity>
-      )}
 
-      {/* Core Requirement: Active Lending Radius Area */}
-      <View style={styles.sectionCard}>
-        <View style={styles.radiusHeader}>
-          <Compass size={18} color="#007a33" />
-          <Text style={styles.sectionHeading}>Lending Radius Area</Text>
-        </View>
-        <Text style={styles.sectionSub}>
-          Vendors within this radius will be notified upon your registration and can apply directly.
-        </Text>
-        <View style={styles.radiusRow}>
-          {RADIUS_OPTIONS.map((km) => {
-            const active = lendingRadiusKm === km;
-            return (
-              <TouchableOpacity
-                key={km}
-                style={[styles.radiusBtn, active && styles.radiusBtnActive]}
-                onPress={() => setLendingRadiusKm(km)}
-              >
-                <Text style={[styles.radiusBtnText, active && styles.radiusBtnTextActive]}>
-                  {km} km
+        {openSections.membership && (
+          <View style={styles.accordionBody}>
+            {isSubscribed ? (
+              <View style={styles.vipActiveBox}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                  <Crown size={18} color="#047857" />
+                  <Text style={styles.vipActiveTitle}>
+                    VIP Financer Active • {daysRemaining} Days Remaining
+                  </Text>
+                </View>
+                <Text style={styles.vipActiveSub}>
+                  Valid until {formattedEndDate || 'Active'}. Full applicant directory unlocked with verified shop KYC documents.
                 </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
+
+                <View style={styles.stackingAlert}>
+                  <Sparkles size={14} color="#d97706" />
+                  <Text style={styles.stackingAlertText}>
+                    Validity Stacking Active: Additional plans purchased will add days directly on top of your {daysRemaining} days!
+                  </Text>
+                </View>
+
+                <TouchableOpacity
+                  style={styles.extendBtn}
+                  onPress={() => setSubModalVisible(true)}
+                  activeOpacity={0.85}
+                >
+                  <Text style={styles.extendBtnText}>Extend Validity / Buy More Days</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View style={styles.vipInactiveBox}>
+                <Text style={styles.inactiveTitle}>Standard Financer Account</Text>
+                <Text style={styles.inactiveSub}>
+                  Upgrade to VIP Financer for unlimited applicant leads, direct calling, and priority discovery across your radius.
+                </Text>
+                <TouchableOpacity
+                  style={styles.upgradeBtn}
+                  onPress={() => setSubModalVisible(true)}
+                  activeOpacity={0.85}
+                >
+                  <Crown size={16} color="#ffffff" />
+                  <Text style={styles.upgradeBtnText}>Upgrade to VIP Financer</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        )}
       </View>
 
-      {/* Loan Limits & Rates */}
-      <View style={styles.sectionCard}>
-        <Text style={styles.sectionHeading}>Loan Limits & Interest Rates</Text>
-
-        <View style={styles.gridRow}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.inputLabel}>Min Loan Amount (₹)</Text>
-            <TextInput
-              style={styles.gridInput}
-              keyboardType="number-pad"
-              value={minAmount}
-              onChangeText={setMinAmount}
-            />
+      {/* ── ACCORDION 2: FINANCER COMPANY & CONTACT INFO ── */}
+      <View style={styles.accordionCard}>
+        <TouchableOpacity
+          style={styles.accordionHeader}
+          onPress={() => toggleSection('basic')}
+          activeOpacity={0.8}
+        >
+          <View style={styles.accordionTitleRow}>
+            <Building2 size={18} color="#007a33" />
+            <Text style={styles.accordionTitle}>Financer Entity & Contact</Text>
           </View>
-          <View style={{ flex: 1, marginLeft: 10 }}>
-            <Text style={styles.inputLabel}>Max Loan Amount (₹)</Text>
-            <TextInput
-              style={styles.gridInput}
-              keyboardType="number-pad"
-              value={maxAmount}
-              onChangeText={setMaxAmount}
-            />
-          </View>
-        </View>
+          {openSections.basic ? <ChevronUp size={18} color="#64748b" /> : <ChevronDown size={18} color="#64748b" />}
+        </TouchableOpacity>
 
-        <Text style={styles.inputLabel}>Monthly Interest Rate (%)</Text>
-        <View style={styles.inputBox}>
-          <TextInput
-            style={styles.textInput}
-            keyboardType="decimal-pad"
-            value={interestRate}
-            onChangeText={setInterestRate}
-            placeholder="e.g. 1.5"
-          />
-        </View>
+        {openSections.basic && (
+          <View style={styles.accordionBody}>
+            <Text style={styles.inputLabel}>Company / Institution Name *</Text>
+            <View style={styles.inputBox}>
+              <Building2 size={16} color="#94a3b8" />
+              <TextInput
+                style={styles.textInput}
+                value={institutionName}
+                onChangeText={setInstitutionName}
+                placeholder="e.g. Hyderabad Capital Financers"
+                placeholderTextColor="#94a3b8"
+              />
+            </View>
+
+            <Text style={styles.inputLabel}>Contact Person / Branch Manager *</Text>
+            <View style={styles.inputBox}>
+              <User size={16} color="#94a3b8" />
+              <TextInput
+                style={styles.textInput}
+                value={contactPerson}
+                onChangeText={setContactPerson}
+                placeholder="Manager Name"
+                placeholderTextColor="#94a3b8"
+              />
+            </View>
+
+            <Text style={styles.inputLabel}>Registered Mobile</Text>
+            <View style={[styles.inputBox, styles.readOnlyBox]}>
+              <Phone size={16} color="#94a3b8" />
+              <Text style={styles.readOnlyText}>+91 {user?.phone || '9876543210'}</Text>
+            </View>
+
+            <Text style={styles.inputLabel}>Email Address</Text>
+            <View style={[styles.inputBox, styles.readOnlyBox]}>
+              <Mail size={16} color="#94a3b8" />
+              <Text style={styles.readOnlyText}>{user?.email || 'lender@justpaisa.in'}</Text>
+            </View>
+          </View>
+        )}
       </View>
 
-      {/* Institution Details */}
-      <View style={styles.sectionCard}>
-        <Text style={styles.sectionHeading}>Institution Details</Text>
-
-        <Text style={styles.inputLabel}>Institution / Business Name</Text>
-        <View style={styles.inputBox}>
-          <Building2 size={18} color="#94a3b8" />
-          <TextInput
-            style={styles.textInput}
-            value={institutionName}
-            onChangeText={setInstitutionName}
-          />
-        </View>
-
-        <Text style={styles.inputLabel}>Contact Person Name</Text>
-        <View style={styles.inputBox}>
-          <User size={18} color="#94a3b8" />
-          <TextInput
-            style={styles.textInput}
-            value={contactPerson}
-            onChangeText={setContactPerson}
-          />
-        </View>
-
-        <Text style={styles.inputLabel}>Registered Mobile</Text>
-        <View style={[styles.inputBox, styles.readOnlyBox]}>
-          <Phone size={18} color="#94a3b8" />
-          <Text style={styles.readOnlyText}>+91 {user?.phone || '9553921237'}</Text>
-        </View>
-
-        <Text style={styles.inputLabel}>Office Address</Text>
-        <View style={styles.inputBox}>
-          <MapPin size={18} color="#94a3b8" />
-          <TextInput
-            style={styles.textInput}
-            value={address}
-            onChangeText={setAddress}
-            placeholder="Office Address"
-          />
-        </View>
-
-        <View style={styles.gridRow}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.inputLabel}>City</Text>
-            <TextInput
-              style={styles.gridInput}
-              value={city}
-              onChangeText={setCity}
-            />
+      {/* ── ACCORDION 3: OPERATING LOCATION & MAPBOX SELECTOR ── */}
+      <View style={styles.accordionCard}>
+        <TouchableOpacity
+          style={styles.accordionHeader}
+          onPress={() => toggleSection('location')}
+          activeOpacity={0.8}
+        >
+          <View style={styles.accordionTitleRow}>
+            <MapPin size={18} color="#007a33" />
+            <Text style={styles.accordionTitle}>Operating Location (Mapbox)</Text>
           </View>
-          <View style={{ flex: 1, marginHorizontal: 8 }}>
-            <Text style={styles.inputLabel}>State</Text>
-            <TextInput
-              style={styles.gridInput}
-              value={state}
-              onChangeText={setState}
-            />
+          {openSections.location ? <ChevronUp size={18} color="#64748b" /> : <ChevronDown size={18} color="#64748b" />}
+        </TouchableOpacity>
+
+        {openSections.location && (
+          <View style={styles.accordionBody}>
+            <TouchableOpacity
+              style={styles.mapboxPickerTrigger}
+              onPress={() => setLocationPickerVisible(true)}
+              activeOpacity={0.85}
+            >
+              <Compass size={18} color="#007a33" />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.mapboxPickerTitle}>Select Office Area on Mapbox</Text>
+                <Text style={styles.mapboxPickerSub}>
+                  {city ? `${city}, ${state}` : 'Tap to search area and auto-detect coordinates'}
+                </Text>
+              </View>
+              <Text style={styles.mapboxPickerBtnText}>Pick Area →</Text>
+            </TouchableOpacity>
+
+            <Text style={styles.inputLabel}>Office Address</Text>
+            <View style={styles.inputBox}>
+              <TextInput
+                style={styles.textInput}
+                value={address}
+                onChangeText={setAddress}
+                placeholder="Office street address, building, floor"
+                placeholderTextColor="#94a3b8"
+              />
+            </View>
+
+            <View style={styles.gridRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.inputLabel}>City</Text>
+                <TextInput
+                  style={styles.gridInput}
+                  value={city}
+                  onChangeText={setCity}
+                  placeholder="City"
+                  placeholderTextColor="#94a3b8"
+                />
+              </View>
+              <View style={{ flex: 1, marginHorizontal: 8 }}>
+                <Text style={styles.inputLabel}>State</Text>
+                <TextInput
+                  style={styles.gridInput}
+                  value={state}
+                  onChangeText={setState}
+                  placeholder="State"
+                  placeholderTextColor="#94a3b8"
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.inputLabel}>Pincode</Text>
+                <TextInput
+                  style={styles.gridInput}
+                  value={pincode}
+                  onChangeText={setPincode}
+                  placeholder="Pincode"
+                  keyboardType="number-pad"
+                  placeholderTextColor="#94a3b8"
+                />
+              </View>
+            </View>
           </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.inputLabel}>Pincode</Text>
-            <TextInput
-              style={styles.gridInput}
-              value={pincode}
-              onChangeText={setPincode}
-              keyboardType="number-pad"
-            />
+        )}
+      </View>
+
+      {/* ── ACCORDION 4: FINANCING CRITERIA & RADIUS ── */}
+      <View style={styles.accordionCard}>
+        <TouchableOpacity
+          style={styles.accordionHeader}
+          onPress={() => toggleSection('criteria')}
+          activeOpacity={0.8}
+        >
+          <View style={styles.accordionTitleRow}>
+            <Compass size={18} color="#007a33" />
+            <Text style={styles.accordionTitle}>Financing Criteria & Radius</Text>
           </View>
-        </View>
+          {openSections.criteria ? <ChevronUp size={18} color="#64748b" /> : <ChevronDown size={18} color="#64748b" />}
+        </TouchableOpacity>
+
+        {openSections.criteria && (
+          <View style={styles.accordionBody}>
+            <Text style={styles.inputLabel}>
+              Operating Distance Radius: <Text style={{ color: '#007a33', fontWeight: '900' }}>{lendingRadiusKm} KM</Text>
+            </Text>
+            <View style={styles.radiusPillsRow}>
+              {RADIUS_OPTIONS.map((km) => (
+                <TouchableOpacity
+                  key={km}
+                  style={[styles.radiusChip, lendingRadiusKm === km && styles.radiusChipActive]}
+                  onPress={() => setLendingRadiusKm(km)}
+                >
+                  <Text style={[styles.radiusChipText, lendingRadiusKm === km && styles.radiusChipTextActive]}>
+                    {km} KM
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <View style={styles.gridRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.inputLabel}>Min Amount (₹)</Text>
+                <TextInput
+                  style={styles.gridInput}
+                  value={minAmount}
+                  onChangeText={setMinAmount}
+                  keyboardType="number-pad"
+                  placeholder="10000"
+                  placeholderTextColor="#94a3b8"
+                />
+              </View>
+              <View style={{ flex: 1, marginHorizontal: 8 }}>
+                <Text style={styles.inputLabel}>Max Amount (₹)</Text>
+                <TextInput
+                  style={styles.gridInput}
+                  value={maxAmount}
+                  onChangeText={setMaxAmount}
+                  keyboardType="number-pad"
+                  placeholder="500000"
+                  placeholderTextColor="#94a3b8"
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.inputLabel}>Rate (%/mo)</Text>
+                <TextInput
+                  style={styles.gridInput}
+                  value={interestRate}
+                  onChangeText={setInterestRate}
+                  keyboardType="decimal-pad"
+                  placeholder="1.5"
+                  placeholderTextColor="#94a3b8"
+                />
+              </View>
+            </View>
+          </View>
+        )}
       </View>
 
       {/* Save Button */}
       <TouchableOpacity
-        style={styles.saveBtn}
+        style={[styles.saveBtn, saving && styles.saveBtnDisabled]}
         onPress={handleSave}
         disabled={saving}
         activeOpacity={0.85}
       >
         {saving ? (
-          <ActivityIndicator color="#ffffff" />
+          <ActivityIndicator size="small" color="#ffffff" />
         ) : (
           <>
             <Save size={18} color="#ffffff" />
-            <Text style={styles.saveBtnText}>Save Financer Settings</Text>
+            <Text style={styles.saveBtnText}>Save Financer Profile</Text>
           </>
         )}
       </TouchableOpacity>
 
-      {/* Logout */}
-      <TouchableOpacity style={styles.logoutBtn} onPress={logout} activeOpacity={0.8}>
-        <LogOut size={18} color="#dc2626" />
-        <Text style={styles.logoutBtnText}>Log Out Account</Text>
-      </TouchableOpacity>
-
+      {/* Modals */}
       <SubscriptionModal
         visible={subModalVisible}
         onClose={() => setSubModalVisible(false)}
       />
 
-      <ReferAndEarnModal
-        visible={referModalVisible}
-        onClose={() => setReferModalVisible(false)}
-        userRole="LENDER"
-        userName={lenderProfile?.institutionName || user?.name || 'Financer'}
+      <LocationPickerModal
+        visible={locationPickerVisible}
+        currentRadius={lendingRadiusKm}
+        currentCity={city}
+        onClose={() => setLocationPickerVisible(false)}
+        onApply={handleLocationFromPicker}
       />
     </ScrollView>
   );
@@ -343,70 +458,24 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 16,
-    paddingBottom: 110,
-  },
-  referCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#faf5ff',
-    borderRadius: 18,
-    padding: 14,
-    marginBottom: 14,
-    borderWidth: 1.5,
-    borderColor: '#d8b4fe',
-    gap: 12,
-    shadowColor: '#9333ea',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  referIconBox: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    backgroundColor: '#9333ea',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  referTitle: {
-    fontSize: 14,
-    fontWeight: '900',
-    color: '#581c87',
-  },
-  referBadge: {
-    fontSize: 9,
-    fontWeight: '800',
-    color: '#7e22ce',
-    backgroundColor: '#f3e8ff',
-    paddingHorizontal: 6,
-    paddingVertical: 1,
-    borderRadius: 6,
-  },
-  referSub: {
-    fontSize: 11,
-    color: '#7e22ce',
-    marginTop: 2,
   },
   headerCard: {
     backgroundColor: '#ffffff',
     borderRadius: 20,
-    padding: 20,
+    padding: 18,
     alignItems: 'center',
     marginBottom: 14,
     borderWidth: 1,
     borderColor: '#e2e8f0',
   },
   instIcon: {
-    width: 68,
-    height: 68,
-    borderRadius: 34,
-    backgroundColor: '#f0fdf4',
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#ecfdf5',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 10,
-    borderWidth: 2,
-    borderColor: '#bbf7d0',
+    marginBottom: 8,
   },
   instName: {
     fontSize: 18,
@@ -424,34 +493,35 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   roleBadge: {
-    backgroundColor: '#f1f5f9',
+    backgroundColor: '#ecfdf5',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#a7f3d0',
   },
   roleBadgeText: {
     fontSize: 11,
-    fontWeight: '700',
-    color: '#334155',
+    color: '#007a33',
+    fontWeight: '800',
   },
   subActiveBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#dcfce7',
+    backgroundColor: '#ecfdf5',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#a7f3d0',
   },
   subActiveText: {
     fontSize: 11,
+    color: '#047857',
     fontWeight: '800',
-    color: '#16a34a',
   },
   subInactiveBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
     backgroundColor: '#fef3c7',
     paddingHorizontal: 10,
     paddingVertical: 4,
@@ -459,159 +529,238 @@ const styles = StyleSheet.create({
   },
   subInactiveText: {
     fontSize: 11,
-    fontWeight: '800',
-    color: '#d97706',
+    color: '#92400e',
+    fontWeight: '700',
   },
-  membershipCard: {
+  accordionCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    marginBottom: 12,
+    overflow: 'hidden',
+  },
+  accordionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#007a33',
-    borderRadius: 16,
     padding: 16,
-    marginBottom: 14,
+    backgroundColor: '#ffffff',
   },
-  membershipLeft: {
+  accordionTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    flex: 1,
+    gap: 10,
   },
-  membershipTitle: {
-    fontSize: 13,
+  accordionTitle: {
+    fontSize: 14,
     fontWeight: '800',
-    color: '#ffffff',
+    color: '#0f172a',
   },
-  membershipSub: {
-    fontSize: 11,
-    color: '#bbf7d0',
-    marginTop: 2,
+  accordionBody: {
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#f1f5f9',
+    paddingTop: 12,
   },
-  sectionCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 18,
-    padding: 18,
-    marginBottom: 14,
+  vipActiveBox: {
+    backgroundColor: '#ecfdf5',
+    borderRadius: 14,
+    padding: 14,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: '#a7f3d0',
   },
-  radiusHeader: {
+  vipActiveTitle: {
+    fontSize: 14,
+    fontWeight: '900',
+    color: '#065f46',
+  },
+  vipActiveSub: {
+    fontSize: 11,
+    color: '#047857',
+    lineHeight: 16,
+    marginBottom: 8,
+  },
+  stackingAlert: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginBottom: 4,
-  },
-  sectionHeading: {
-    fontSize: 15,
-    fontWeight: '900',
-    color: '#0f172a',
-  },
-  sectionSub: {
-    fontSize: 11,
-    color: '#64748b',
-    marginBottom: 14,
-    lineHeight: 16,
-  },
-  radiusRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  radiusBtn: {
-    flex: 1,
-    paddingVertical: 10,
+    backgroundColor: '#fef3c7',
+    padding: 8,
     borderRadius: 10,
-    borderWidth: 1.5,
-    borderColor: '#e2e8f0',
-    alignItems: 'center',
-    backgroundColor: '#f8fafc',
+    marginBottom: 10,
   },
-  radiusBtnActive: {
-    backgroundColor: '#007a33',
-    borderColor: '#007a33',
-  },
-  radiusBtnText: {
-    fontSize: 12,
+  stackingAlertText: {
+    fontSize: 11,
+    color: '#92400e',
     fontWeight: '700',
-    color: '#64748b',
+    flex: 1,
   },
-  radiusBtnTextActive: {
+  extendBtn: {
+    backgroundColor: '#059669',
+    paddingVertical: 10,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  extendBtnText: {
     color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  vipInactiveBox: {
+    backgroundColor: '#eff6ff',
+    borderRadius: 14,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#bfdbfe',
+  },
+  inactiveTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#003893',
+  },
+  inactiveSub: {
+    fontSize: 11,
+    color: '#3b82f6',
+    marginTop: 2,
+    marginBottom: 10,
+  },
+  upgradeBtn: {
+    backgroundColor: '#007a33',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 10,
+    borderRadius: 12,
+  },
+  upgradeBtnText: {
+    color: '#ffffff',
+    fontSize: 12,
     fontWeight: '800',
   },
   inputLabel: {
     fontSize: 12,
-    fontWeight: '800',
-    color: '#334155',
-    marginBottom: 6,
+    fontWeight: '700',
+    color: '#475569',
+    marginBottom: 4,
+    marginTop: 8,
   },
   inputBox: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    borderWidth: 1.5,
+    backgroundColor: '#f8fafc',
+    borderWidth: 1,
     borderColor: '#e2e8f0',
     borderRadius: 12,
-    backgroundColor: '#f8fafc',
     paddingHorizontal: 12,
-    marginBottom: 14,
+    height: 44,
   },
   textInput: {
     flex: 1,
-    paddingVertical: 10,
-    fontSize: 14,
+    fontSize: 13,
     color: '#0f172a',
     fontWeight: '600',
   },
   readOnlyBox: {
     backgroundColor: '#f1f5f9',
-    paddingVertical: 12,
+    borderColor: '#e2e8f0',
   },
   readOnlyText: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#64748b',
-    fontWeight: '700',
+    fontWeight: '600',
   },
   gridRow: {
     flexDirection: 'row',
-    marginBottom: 12,
+    marginTop: 4,
   },
   gridInput: {
-    borderWidth: 1.5,
-    borderColor: '#e2e8f0',
-    borderRadius: 10,
     backgroundColor: '#f8fafc',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    borderRadius: 12,
     paddingHorizontal: 10,
-    paddingVertical: 10,
+    height: 44,
     fontSize: 13,
     color: '#0f172a',
-    fontWeight: '600',
+  },
+  mapboxPickerTrigger: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: '#ecfdf5',
+    borderWidth: 1,
+    borderColor: '#a7f3d0',
+    borderRadius: 14,
+    padding: 12,
+    marginBottom: 8,
+  },
+  mapboxPickerTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#007a33',
+  },
+  mapboxPickerSub: {
+    fontSize: 11,
+    color: '#059669',
+  },
+  mapboxPickerBtnText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#007a33',
+  },
+  radiusPillsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 6,
+    marginBottom: 4,
+  },
+  radiusChip: {
+    flex: 1,
+    paddingVertical: 8,
+    borderRadius: 10,
+    backgroundColor: '#f8fafc',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    alignItems: 'center',
+  },
+  radiusChipActive: {
+    backgroundColor: '#007a33',
+    borderColor: '#007a33',
+  },
+  radiusChipText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#64748b',
+  },
+  radiusChipTextActive: {
+    color: '#ffffff',
+    fontWeight: '800',
   },
   saveBtn: {
+    backgroundColor: '#007a33',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: '#007a33',
-    paddingVertical: 14,
-    borderRadius: 14,
-    marginBottom: 12,
+    paddingVertical: 15,
+    borderRadius: 16,
+    marginTop: 8,
+    marginBottom: 20,
+    shadowColor: '#007a33',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  saveBtnDisabled: {
+    opacity: 0.6,
   },
   saveBtnText: {
     color: '#ffffff',
-    fontSize: 15,
-    fontWeight: '800',
-  },
-  logoutBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    backgroundColor: '#fee2e2',
-    paddingVertical: 12,
-    borderRadius: 14,
-  },
-  logoutBtnText: {
-    color: '#dc2626',
     fontSize: 14,
     fontWeight: '800',
   },

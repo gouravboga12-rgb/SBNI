@@ -7,6 +7,7 @@ import {
   Image,
   Modal,
   ScrollView,
+  useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -24,6 +25,7 @@ import {
   ChevronRight,
   Headphones,
   User,
+  Crown,
 } from 'lucide-react-native';
 import { useAuth } from '../context/AuthContext';
 
@@ -49,7 +51,8 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   onOpenRefer,
 }) => {
   const insets = useSafeAreaInsets();
-  const { user, role, isSubscribed, logout } = useAuth();
+  const { width: screenWidth } = useWindowDimensions();
+  const { user, role, isSubscribed, daysRemaining, logout } = useAuth();
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   const isVendor = role === 'VENDOR';
@@ -90,28 +93,30 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
 
           {/* Right: Role Pill, Subscription Button, Bell, Avatar */}
           <View style={styles.rightGroup}>
-            {/* Role Badge (Hidden on very narrow screens) */}
-            <View
-              style={[
-                styles.roleBadge,
-                isVendor ? styles.roleBadgeVendor : styles.roleBadgeLender,
-              ]}
-            >
-              {isVendor ? (
-                <Store size={12} color="#003893" />
-              ) : (
-                <Building2 size={12} color="#047857" />
-              )}
-              <Text
+            {/* Role Badge (Only show if screen is wide enough to avoid any overlap) */}
+            {screenWidth >= 380 && (
+              <View
                 style={[
-                  styles.roleBadgeText,
-                  isVendor ? { color: '#003893' } : { color: '#047857' },
+                  styles.roleBadge,
+                  isVendor ? styles.roleBadgeVendor : styles.roleBadgeLender,
                 ]}
-                numberOfLines={1}
               >
-                {isVendor ? 'Shop' : 'Financer'}
-              </Text>
-            </View>
+                {isVendor ? (
+                  <Store size={11} color="#003893" />
+                ) : (
+                  <Building2 size={11} color="#047857" />
+                )}
+                <Text
+                  style={[
+                    styles.roleBadgeText,
+                    isVendor ? { color: '#003893' } : { color: '#047857' },
+                  ]}
+                  numberOfLines={1}
+                >
+                  {isVendor ? 'Shop' : 'Financer'}
+                </Text>
+              </View>
+            )}
 
             {/* Subscription Upgrade / Status Trigger Button */}
             <TouchableOpacity
@@ -122,14 +127,19 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
               onPress={onOpenWallet}
               activeOpacity={0.85}
             >
-              <Zap size={12} color={isSubscribed ? '#047857' : '#ffffff'} fill={isSubscribed ? '#047857' : '#ffffff'} />
+              {isSubscribed ? (
+                <Crown size={12} color="#047857" />
+              ) : (
+                <Zap size={11} color="#ffffff" fill="#ffffff" />
+              )}
               <Text
                 style={[
                   styles.subButtonText,
                   isSubscribed ? { color: '#047857' } : { color: '#ffffff' },
                 ]}
+                numberOfLines={1}
               >
-                {isSubscribed ? 'Active' : 'Pay Sub'}
+                {isSubscribed ? (daysRemaining > 0 ? `${daysRemaining}d` : 'VIP') : 'Pay Sub'}
               </Text>
             </TouchableOpacity>
 
@@ -139,7 +149,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
               onPress={onOpenNotifications}
               activeOpacity={0.7}
             >
-              <Bell size={20} color="#334155" />
+              <Bell size={19} color="#334155" />
               <View style={styles.bellBadge}>
                 <Text style={styles.bellBadgeText}>3</Text>
               </View>
@@ -328,8 +338,8 @@ const styles = StyleSheet.create({
   leftGroup: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    flex: 1,
+    gap: 6,
+    flexShrink: 0,
   },
   hamburgerBtn: {
     padding: 6,
@@ -340,13 +350,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   logoImage: {
-    width: 110,
-    height: 38,
+    width: 92,
+    height: 28,
   },
   rightGroup: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 5,
+    flexShrink: 0,
   },
   roleBadge: {
     flexDirection: 'row',

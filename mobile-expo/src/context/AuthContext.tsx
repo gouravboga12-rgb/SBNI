@@ -11,6 +11,9 @@ interface AuthContextType {
   token: string | null;
   isLoading: boolean;
   isSubscribed: boolean;
+  activeSubscription: any | null;
+  daysRemaining: number;
+  formattedEndDate: string;
   vendorProfile: VendorProfile | null;
   lenderProfile: LenderProfile | null;
   login: (token: string, userData: User) => Promise<void>;
@@ -28,6 +31,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [role, setRole] = useState<Role>('VENDOR');
   const [token, setToken] = useState<string | null>(null);
   const [isSubscribed, setIsSubscribed] = useState<boolean>(false);
+  const [activeSubscription, setActiveSubscription] = useState<any | null>(null);
+  const [daysRemaining, setDaysRemaining] = useState<number>(0);
+  const [formattedEndDate, setFormattedEndDate] = useState<string>('');
   const [vendorProfile, setVendorProfile] = useState<VendorProfile | null>(null);
   const [lenderProfile, setLenderProfile] = useState<LenderProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -35,6 +41,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     loadStoredAuth();
   }, []);
+
+  const calculateSubscriptionDetails = (sub: any) => {
+    if (!sub || !sub.endDate) {
+      setDaysRemaining(0);
+      setFormattedEndDate('');
+      return;
+    }
+    try {
+      const end = new Date(sub.endDate);
+      const remaining = Math.max(0, Math.ceil((end.getTime() - Date.now()) / (1000 * 60 * 60 * 24)));
+      setDaysRemaining(remaining);
+      const formatted = end.toLocaleDateString('en-IN', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      });
+      setFormattedEndDate(formatted);
+    } catch {
+      setDaysRemaining(0);
+      setFormattedEndDate('');
+    }
+  };
 
   /**
    * On app boot:
@@ -64,6 +92,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           // Fetch live subscription status from AWS server
           const subStatus = await checkSubscriptionStatus();
           setIsSubscribed(subStatus.isActive);
+          setActiveSubscription(subStatus.subscription || null);
+          calculateSubscriptionDetails(subStatus.subscription);
 
           // Initialize socket and push notifications
           initSocket(serverUser.id, activeRole);
@@ -95,6 +125,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Check live subscription status from server
     const subStatus = await checkSubscriptionStatus();
     setIsSubscribed(subStatus.isActive);
+    setActiveSubscription(subStatus.subscription || null);
+    calculateSubscriptionDetails(subStatus.subscription);
 
     initSocket(userData.id, activeRole);
     registerForPushNotificationsAsync();
@@ -106,6 +138,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setVendorProfile(null);
     setLenderProfile(null);
     setIsSubscribed(false);
+    setActiveSubscription(null);
+    setDaysRemaining(0);
+    setFormattedEndDate('');
     // logoutUser() removes only the JWT token from AsyncStorage
     await logoutUser();
     disconnectSocket();
@@ -133,6 +168,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       const subStatus = await checkSubscriptionStatus();
       setIsSubscribed(subStatus.isActive);
+      setActiveSubscription(subStatus.subscription || null);
+      calculateSubscriptionDetails(subStatus.subscription);
     } catch (e) {}
   };
 
@@ -152,6 +189,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         token,
         isLoading,
         isSubscribed,
+        activeSubscription,
+        daysRemaining,
+        formattedEndDate,
         vendorProfile,
         lenderProfile,
         login,

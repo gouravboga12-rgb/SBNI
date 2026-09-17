@@ -521,14 +521,9 @@ export const VendorReviewModal: React.FC<VendorReviewModalProps> = ({
           <View style={styles.bottomActions}>
             {isAccepted ? (
               <View style={styles.actionButtonsRow}>
-                <TouchableOpacity
-                  style={styles.reportFraudBtn}
-                  onPress={() => {
-                    if (onReportFraud) onReportFraud(vendor);
-                  }}
-                >
-                  <AlertTriangle size={16} color="#dc2626" />
-                  <Text style={styles.reportFraudBtnText}>Report Fraud</Text>
+                <TouchableOpacity style={styles.rejectBtn} onPress={handleReject}>
+                  <XCircle size={16} color="#dc2626" />
+                  <Text style={styles.rejectBtnText}>Reject Request</Text>
                 </TouchableOpacity>
 
                 <View style={styles.acceptedBannerBtn}>

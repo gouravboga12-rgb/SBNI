@@ -80,9 +80,9 @@ export const VendorRequestsScreen: React.FC = () => {
     <View style={styles.container}>
       {/* Header & Status Filter Pills */}
       <View style={styles.filterHeader}>
-        <Text style={styles.headerTitle}>My Applications & Inquiries</Text>
+        <Text style={styles.headerTitle}>My Inquiries</Text>
         <Text style={styles.headerSub}>
-          Track your loan submissions and navigate to financer offices once approved
+          Track your direct business inquiries and connect with verified financers
         </Text>
         <View style={styles.pillsRow}>
           {STATUS_FILTERS.map((s) => {
@@ -155,7 +155,7 @@ export const VendorRequestsScreen: React.FC = () => {
           const effectivePhone = cleanPhone.length >= 10 ? cleanPhone.slice(-10) : cleanPhone;
 
           const whatsAppMsg = encodeURIComponent(
-            `Hello ${item.lenderName || 'Financer'}, I am contacting you regarding my loan application #${(item.id || '').substring(0, 8)} on Just Paisa App.`
+            `Hello ${item.lenderName || 'Financer'}, I am contacting you regarding my business enquiry #${(item.id || '').substring(0, 8)} on Just Paisa App.`
           );
 
           return (
@@ -183,19 +183,19 @@ export const VendorRequestsScreen: React.FC = () => {
                 </View>
               </View>
 
-              {/* Amount & Purpose Box */}
+              {/* Requirement & Notes Box */}
               <View style={styles.detailsBox}>
                 <View style={styles.detailCol}>
-                  <Text style={styles.detailLabel}>Applied Amount</Text>
+                  <Text style={styles.detailLabel}>Requirement</Text>
                   <Text style={styles.amountVal}>
                     ₹{Number(item.requiredAmount || 50000).toLocaleString('en-IN')}
                   </Text>
                 </View>
                 <View style={styles.detailDivider} />
                 <View style={styles.detailCol}>
-                  <Text style={styles.detailLabel}>Loan Purpose</Text>
+                  <Text style={styles.detailLabel}>Enquiry Note</Text>
                   <Text style={styles.purposeVal} numberOfLines={1}>
-                    {item.inquiryMessage || 'Working Capital & Inventory'}
+                    {item.inquiryMessage || 'Working Capital & Business Need'}
                   </Text>
                 </View>
               </View>

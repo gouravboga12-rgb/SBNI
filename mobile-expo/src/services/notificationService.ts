@@ -1,6 +1,7 @@
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
+import Constants from 'expo-constants';
 import { savePushTokenApi } from './api';
 
 Notifications.setNotificationHandler({
@@ -11,7 +12,13 @@ Notifications.setNotificationHandler({
   }),
 });
 
-export const EAS_PROJECT_ID = '1ab35637-7a6b-4ccd-85ee-e6b5135a05fb';
+export const getEasProjectId = () => {
+  return (
+    Constants.expoConfig?.extra?.eas?.projectId ||
+    Constants.easConfig?.projectId ||
+    'cc531adf-480e-4deb-8f5d-bfa22156dcdb'
+  );
+};
 
 export async function registerForPushNotificationsAsync(): Promise<string | undefined> {
   let token: string | undefined;
@@ -40,7 +47,7 @@ export async function registerForPushNotificationsAsync(): Promise<string | unde
     }
     try {
       const pushTokenData = await Notifications.getExpoPushTokenAsync({
-        projectId: EAS_PROJECT_ID,
+        projectId: getEasProjectId(),
       });
       token = pushTokenData.data;
       console.log('[Expo Push Token Registered]:', token);

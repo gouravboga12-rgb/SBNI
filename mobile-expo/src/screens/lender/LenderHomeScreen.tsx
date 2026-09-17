@@ -37,6 +37,7 @@ import { VendorLead } from '../../types';
 import { VendorReviewModal } from '../../components/VendorReviewModal';
 import { ReferAndEarnModal } from '../../components/ReferAndEarnModal';
 import { SubscriptionModal } from '../../components/SubscriptionModal';
+import { LenderLocationPromptModal } from '../../components/LenderLocationPromptModal';
 import { BannerCarousel, BannerSlide } from '../../components/BannerCarousel';
 
 const LENDER_BANNER_SLIDES: BannerSlide[] = [
@@ -74,7 +75,7 @@ export const LenderHomeScreen: React.FC = () => {
   const { width } = useWindowDimensions();
   const isTablet = width >= 768;
 
-  const { user, isSubscribed, lenderProfile, updateLenderProfileState } = useAuth();
+  const { user, isSubscribed, daysRemaining, formattedEndDate, lenderProfile, updateLenderProfileState } = useAuth();
   const [leads, setLeads] = useState<VendorLead[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -88,6 +89,7 @@ export const LenderHomeScreen: React.FC = () => {
   const [isReferEarnEnabled, setIsReferEarnEnabled] = useState(false);
   const [referModalVisible, setReferModalVisible] = useState(false);
   const [subModalVisible, setSubModalVisible] = useState(false);
+  const [locationPromptVisible, setLocationPromptVisible] = useState(false);
 
   useEffect(() => {
     loadDashboardData();
@@ -182,9 +184,15 @@ export const LenderHomeScreen: React.FC = () => {
             <Text style={styles.institutionTitle} numberOfLines={1}>
               {lenderProfile?.institutionName || user?.name || 'Business Money Financer'}
             </Text>
-            <Text style={styles.institutionSub}>
-              Financer Hub • {lenderProfile?.city || 'Hyderabad'}
-            </Text>
+            <TouchableOpacity
+              onPress={() => setLocationPromptVisible(true)}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 }}
+            >
+              <Compass size={13} color="#007a33" />
+              <Text style={styles.institutionSub}>
+                {lenderProfile?.city || 'Hyderabad'} • {activeRadius} KM Radius (Tap to Change)
+              </Text>
+            </TouchableOpacity>
           </View>
           <View style={styles.activeStatusBadge}>
             <Text style={styles.activeStatusText}>Active Lending</Text>
@@ -197,16 +205,18 @@ export const LenderHomeScreen: React.FC = () => {
             <View style={styles.membershipBadge}>
               <Crown size={12} color={isSubscribed ? '#16a34a' : '#d97706'} />
               <Text style={styles.membershipBadgeText}>
-                {isSubscribed ? 'VIP Financer Active' : 'Standard Account'}
+                {isSubscribed ? `VIP Financer Active (${daysRemaining} Days)` : 'Standard Account'}
               </Text>
             </View>
             <Headphones size={20} color="#007a33" />
           </View>
-          <Text style={styles.membershipTitle}>Financer Network Membership</Text>
+          <Text style={styles.membershipTitle}>
+            {isSubscribed ? `VIP Financer (${daysRemaining} Days Remaining)` : 'Financer Network Membership'}
+          </Text>
           <Text style={styles.membershipDesc}>
             {isSubscribed
-              ? 'Full unlimited verified shop leads and direct applicant contacts'
-              : 'Upgrade to VIP for unlimited leads across your full lending radius'}
+              ? `Valid until ${formattedEndDate || 'Active'}. Full unlimited verified shop leads and direct applicant contacts.`
+              : 'Upgrade to VIP for unlimited leads across your full lending radius.'}
           </Text>
           <TouchableOpacity
             style={styles.membershipBtn}
@@ -214,7 +224,7 @@ export const LenderHomeScreen: React.FC = () => {
             activeOpacity={0.85}
           >
             <Text style={styles.membershipBtnText}>
-              {isSubscribed ? 'Manage Membership' : 'Upgrade to VIP Financer'}
+              {isSubscribed ? 'Extend Validity / Upgrade' : 'Upgrade to VIP Financer'}
             </Text>
           </TouchableOpacity>
         </View>
@@ -418,7 +428,7 @@ export const LenderHomeScreen: React.FC = () => {
                       Linking.openURL(
                         `https://wa.me/${cleanPhone}?text=Hello%20${encodeURIComponent(
                           item.shopName
-                        )},%20regarding%20your%20loan%20enquiry%20on%20JustPaisa...`
+                        )},%20regarding%20your%20business%20enquiry%20on%20JustPaisa...`
                       );
                     }}
                   >
@@ -458,6 +468,37 @@ export const LenderHomeScreen: React.FC = () => {
       <SubscriptionModal
         visible={subModalVisible}
         onClose={() => setSubModalVisible(false)}
+      />
+
+      {/* Lender Location Prompt Modal */}
+      <LenderLocationPromptModal
+        visible={locationPromptVisible}
+        onClose={() => setLocationPromptVisible(false)}
+        currentLocation={{
+          city: lenderProfile?.city || 'Hyderabad',
+          state: (lenderProfile as any)?.state || 'Telangana',
+          latitude: lenderProfile?.latitude,
+          longitude: lenderProfile?.longitude,
+          lendingRadiusKm: activeRadius,
+        }}
+        onSaveLocation={async (loc) => {
+          try {
+            await updateLenderProfileApi({
+              city: loc.city,
+              latitude: loc.latitude,
+              longitude: loc.longitude,
+              lendingRadiusKm: loc.lendingRadiusKm || activeRadius,
+            });
+            updateLenderProfileState({
+              city: loc.city,
+              latitude: loc.latitude,
+              longitude: loc.longitude,
+              lendingRadiusKm: loc.lendingRadiusKm || activeRadius,
+            });
+          } catch (err) {
+            console.warn('Error saving location:', err);
+          }
+        }}
       />
     </ScrollView>
   );

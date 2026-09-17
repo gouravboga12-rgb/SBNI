@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,9 +8,15 @@ import {
   ActivityIndicator,
   TextInput,
   Alert,
+  ScrollView,
 } from 'react-native';
-import { X, MapPin, Compass, Check } from 'lucide-react-native';
+import { X, MapPin, Compass, Check, Search } from 'lucide-react-native';
 import * as Location from 'expo-location';
+import {
+  searchPlacesMapbox,
+  reverseGeocodeMapbox,
+  LocationResult,
+} from '../services/mapboxService';
 
 interface LocationPickerModalProps {
   visible: boolean;
@@ -33,6 +39,39 @@ export const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
   const [cityInput, setCityInput] = useState(currentCity);
   const [isDetecting, setIsDetecting] = useState(false);
   const [coords, setCoords] = useState<{ lat?: number; lng?: number }>({});
+  const [suggestions, setSuggestions] = useState<LocationResult[]>([]);
+  const [searching, setSearching] = useState(false);
+
+  useEffect(() => {
+    if (visible) {
+      setSelectedRadius(currentRadius || 50);
+      setCityInput(currentCity || '');
+      setSuggestions([]);
+    }
+  }, [visible, currentRadius, currentCity]);
+
+  const handleSearchQuery = async (text: string) => {
+    setCityInput(text);
+    if (text.trim().length >= 2) {
+      setSearching(true);
+      try {
+        const results = await searchPlacesMapbox(text);
+        setSuggestions(results);
+      } catch (err) {
+        setSuggestions([]);
+      } finally {
+        setSearching(false);
+      }
+    } else {
+      setSuggestions([]);
+    }
+  };
+
+  const handleSelectSuggestion = (item: LocationResult) => {
+    setCityInput(item.city || item.place);
+    setCoords({ lat: item.latitude, lng: item.longitude });
+    setSuggestions([]);
+  };
 
   const handleAutoDetect = async () => {
     setIsDetecting(true);
@@ -47,14 +86,19 @@ export const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
       const lng = loc.coords.longitude;
       setCoords({ lat, lng });
 
-      const geocode = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lng });
-      if (geocode && geocode.length > 0) {
-        const item = geocode[0];
-        const detectedName = item.city || item.subregion || item.district || item.region || '';
-        if (detectedName) setCityInput(detectedName);
+      const mapboxResult = await reverseGeocodeMapbox(lat, lng);
+      if (mapboxResult) {
+        setCityInput(mapboxResult.city || mapboxResult.place);
+      } else {
+        const geocode = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lng });
+        if (geocode && geocode.length > 0) {
+          const item = geocode[0];
+          const detectedName = item.city || item.subregion || item.district || item.region || '';
+          if (detectedName) setCityInput(detectedName);
+        }
       }
     } catch (e: any) {
-      Alert.alert('Notice', 'Could not detect location automatically. Please enter your city name.');
+      Alert.alert('Notice', 'Could not detect location automatically. Please search using the input below.');
     } finally {
       setIsDetecting(false);
     }
@@ -102,27 +146,50 @@ export const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
             <View style={{ flex: 1 }}>
               <Text style={styles.gpsTitle}>Use Current GPS Location</Text>
               <Text style={styles.gpsSubtitle}>
-                Automatically find financers closest to your shop
+                Automatically find financers closest to your shop (Mapbox Verified)
               </Text>
             </View>
           </TouchableOpacity>
 
-          {/* City / Place Input */}
-          <Text style={styles.sectionLabel}>City / Area</Text>
+          {/* City / Place Input with Mapbox Autocomplete */}
+          <Text style={styles.sectionLabel}>Search City / Area (Mapbox)</Text>
           <View style={styles.inputBox}>
-            <MapPin size={18} color="#94a3b8" />
+            <Search size={18} color="#94a3b8" />
             <TextInput
               style={styles.textInput}
-              placeholder="e.g. Hyderabad, Mumbai, Bangalore"
+              placeholder="Search place, city or area (e.g. Hyderabad)"
               placeholderTextColor="#94a3b8"
               value={cityInput}
-              onChangeText={setCityInput}
+              onChangeText={handleSearchQuery}
             />
+            {searching && <ActivityIndicator size="small" color="#003893" />}
           </View>
+
+          {/* Mapbox Suggestions dropdown */}
+          {suggestions.length > 0 && (
+            <ScrollView style={styles.suggestionsContainer} nestedScrollEnabled>
+              {suggestions.map((item, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={styles.suggestionItem}
+                  onPress={() => handleSelectSuggestion(item)}
+                >
+                  <MapPin size={14} color="#003893" style={{ marginTop: 2 }} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.suggestionTitle}>{item.place}</Text>
+                    <Text style={styles.suggestionSub} numberOfLines={1}>
+                      {item.fullAddress}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          )}
 
           {/* Radius Selector */}
           <Text style={styles.sectionLabel}>
-            Financer Distance Radius: <Text style={{ color: '#003893', fontWeight: '900' }}>{selectedRadius} km</Text>
+            Financer Distance Radius:{' '}
+            <Text style={{ color: '#003893', fontWeight: '900' }}>{selectedRadius} km</Text>
           </Text>
           <Text style={styles.radiusHelp}>
             Only display business financers operating within this radius
@@ -162,21 +229,25 @@ export const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.65)',
+    backgroundColor: 'rgba(15, 23, 42, 0.65)',
     justifyContent: 'flex-end',
   },
   modalContent: {
     backgroundColor: '#ffffff',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 28,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    padding: 22,
+    maxHeight: '90%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 12,
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: 16,
   },
   headerTitleRow: {
@@ -185,49 +256,51 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: '900',
+    fontSize: 17,
+    fontWeight: '800',
     color: '#0f172a',
   },
   closeBtn: {
     padding: 6,
-    borderRadius: 20,
-    backgroundColor: '#f1f5f9',
   },
   gpsBanner: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
     backgroundColor: '#eff6ff',
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: '#bfdbfe',
-    borderRadius: 14,
-    padding: 14,
-    marginBottom: 18,
+    borderRadius: 16,
+    padding: 12,
+    marginBottom: 14,
   },
   gpsIconCircle: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: '#ffffff',
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#bfdbfe',
   },
   gpsTitle: {
     fontSize: 14,
     fontWeight: '800',
-    color: '#1e40af',
+    color: '#003893',
   },
   gpsSubtitle: {
     fontSize: 11,
     color: '#3b82f6',
+    fontWeight: '500',
     marginTop: 2,
   },
   sectionLabel: {
     fontSize: 13,
     fontWeight: '800',
-    color: '#334155',
+    color: '#0f172a',
     marginBottom: 6,
+    marginTop: 4,
   },
   radiusHelp: {
     fontSize: 11,
@@ -237,38 +310,65 @@ const styles = StyleSheet.create({
   inputBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    borderWidth: 1.5,
+    gap: 10,
+    backgroundColor: '#f8fafc',
+    borderWidth: 1,
     borderColor: '#e2e8f0',
     borderRadius: 12,
-    backgroundColor: '#f8fafc',
     paddingHorizontal: 12,
-    marginBottom: 16,
+    height: 46,
+    marginBottom: 8,
   },
   textInput: {
     flex: 1,
-    paddingVertical: 12,
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 13,
     color: '#0f172a',
+    fontWeight: '600',
+  },
+  suggestionsContainer: {
+    maxHeight: 160,
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#cbd5e1',
+    borderRadius: 12,
+    marginBottom: 12,
+    paddingVertical: 4,
+  },
+  suggestionItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9',
+  },
+  suggestionTitle: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#0f172a',
+  },
+  suggestionSub: {
+    fontSize: 10,
+    color: '#64748b',
   },
   radiusRow: {
     flexDirection: 'row',
     gap: 8,
-    marginBottom: 22,
+    marginBottom: 18,
   },
   radiusBtn: {
     flex: 1,
     paddingVertical: 10,
-    borderRadius: 10,
-    borderWidth: 1.5,
+    borderRadius: 12,
+    backgroundColor: '#f8fafc',
+    borderWidth: 1,
     borderColor: '#e2e8f0',
     alignItems: 'center',
-    backgroundColor: '#f8fafc',
   },
   radiusBtnActive: {
-    borderColor: '#003893',
     backgroundColor: '#003893',
+    borderColor: '#003893',
   },
   radiusBtnText: {
     fontSize: 12,
@@ -280,17 +380,17 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   applyBtn: {
+    backgroundColor: '#003893',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: '#003893',
-    paddingVertical: 15,
-    borderRadius: 14,
+    paddingVertical: 14,
+    borderRadius: 16,
   },
   applyBtnText: {
     color: '#ffffff',
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '800',
   },
 });

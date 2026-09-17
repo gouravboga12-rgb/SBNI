@@ -39,6 +39,7 @@ import {
   Users,
   Headphones,
   User,
+  Crown,
 } from 'lucide-react-native';
 import { useAuth } from '../../context/AuthContext';
 import { fetchLenders, unlockLenderContact, fetchReferEarnStatusApi } from '../../services/api';
@@ -53,9 +54,9 @@ import { BannerCarousel, BannerSlide } from '../../components/BannerCarousel';
 const CATEGORIES = [
   'All',
   'Daily Finance',
-  'Business Loan',
-  'MSME Loan',
-  'Machinery Loan',
+  'Working Capital',
+  'MSME Support',
+  'Equipment Finance',
   'Emergency Cash',
 ];
 
@@ -92,7 +93,7 @@ export const VendorHomeScreen: React.FC = () => {
   const { width } = useWindowDimensions();
   const isTablet = width >= 768;
 
-  const { user, isSubscribed } = useAuth();
+  const { user, isSubscribed, daysRemaining, formattedEndDate } = useAuth();
   const [lenders, setLenders] = useState<Lender[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -293,17 +294,21 @@ export const VendorHomeScreen: React.FC = () => {
               {/* Card 3: Membership Status Card */}
               <View style={[styles.membershipCard, isTablet && styles.heroCardTabletItem]}>
                 <View style={styles.membershipTop}>
-                  <View style={styles.membershipBadge}>
-                    <CheckCircle2 size={12} color="#16a34a" />
-                    <Text style={styles.membershipBadgeText}>
-                      {isSubscribed ? 'Plan Active' : 'Marketplace'}
+                  <View style={[styles.membershipBadge, isSubscribed && { backgroundColor: '#ecfdf5', borderColor: '#a7f3d0' }]}>
+                    <CheckCircle2 size={12} color={isSubscribed ? "#059669" : "#16a34a"} />
+                    <Text style={[styles.membershipBadgeText, isSubscribed && { color: '#065f46' }]}>
+                      {isSubscribed ? `VIP Active (${daysRemaining} Days)` : 'Marketplace'}
                     </Text>
                   </View>
-                  <Headphones size={20} color="#b45309" />
+                  <Crown size={20} color={isSubscribed ? "#059669" : "#b45309"} />
                 </View>
-                <Text style={styles.membershipTitle}>Small Shop & Startup Membership</Text>
+                <Text style={styles.membershipTitle}>
+                  {isSubscribed ? `VIP Membership (${daysRemaining} Days Remaining)` : 'Small Shop & Startup Membership'}
+                </Text>
                 <Text style={styles.membershipDesc}>
-                  Direct commercial business directory access & verified partner networking.
+                  {isSubscribed
+                    ? `Valid until ${formattedEndDate || 'Active'}. Direct commercial business directory access & 0% broker fees.`
+                    : 'Direct commercial business directory access & verified partner networking.'}
                 </Text>
                 <TouchableOpacity
                   style={styles.membershipBtn}
@@ -311,7 +316,7 @@ export const VendorHomeScreen: React.FC = () => {
                   activeOpacity={0.85}
                 >
                   <Text style={styles.membershipBtnText}>
-                    {isSubscribed ? 'Manage Subscription' : 'View Membership Plans'}
+                    {isSubscribed ? 'Extend Validity / Upgrade' : 'View Membership Plans'}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -568,7 +573,7 @@ export const VendorHomeScreen: React.FC = () => {
                 activeOpacity={0.85}
               >
                 <FileText size={15} color="#ffffff" />
-                <Text style={styles.applyBtnText}>Inquire / Apply</Text>
+                <Text style={styles.applyBtnText}>Inquire Now</Text>
               </TouchableOpacity>
             </View>
           </View>
