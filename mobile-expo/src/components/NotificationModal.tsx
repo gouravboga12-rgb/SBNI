@@ -30,29 +30,14 @@ export const NotificationModal: React.FC<NotificationModalProps> = ({ visible, o
     setLoading(true);
     try {
       const res = await getMyNotificationsApi();
-      if (res?.data && res.data.length > 0) {
+      if (res?.data && Array.isArray(res.data)) {
         setNotifications(res.data);
       } else {
-        // Fallback demo notifications
-        setNotifications([
-          {
-            id: 'n1',
-            title: 'New Financer in Your Area! 💰',
-            message: 'Apex Capital Microfinance has joined JustPaisa within 25 km of your location. Connect directly for quick working capital!',
-            createdAt: new Date().toISOString(),
-            type: 'LENDER_ALERT',
-          },
-          {
-            id: 'n2',
-            title: 'Welcome to JustPaisa! 🎉',
-            message: 'Your account is verified. Connect with nearby lenders and track real-time loan offers.',
-            createdAt: new Date(Date.now() - 3600000).toISOString(),
-            type: 'SYSTEM',
-          },
-        ]);
+        setNotifications([]);
       }
     } catch (e) {
       console.log('Error fetching notifications:', e);
+      setNotifications([]);
     } finally {
       setLoading(false);
     }

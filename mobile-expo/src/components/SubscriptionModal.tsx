@@ -31,10 +31,11 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
   const loadPlans = async () => {
     setLoading(true);
     try {
-      const res = await getSubscriptionPlans(role);
-      if (res?.data && res.data.length > 0) {
-        setPlans(res.data);
-        const popular = res.data.find((p: any) => p.isPopular) || res.data[0];
+      const targetRole = role === 'LENDER' ? 'LENDER' : 'VENDOR';
+      const plansList = await getSubscriptionPlans(targetRole);
+      if (Array.isArray(plansList) && plansList.length > 0) {
+        setPlans(plansList);
+        const popular = plansList.find((p: any) => p.isPopular) || plansList[0];
         setSelectedPlanId(popular.id);
       }
     } catch (e) {

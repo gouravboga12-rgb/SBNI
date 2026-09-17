@@ -8,7 +8,9 @@ export const linking = {
         screens: {
           Home: 'home',
           Financers: 'financers',
+          Inquiries: 'requests',
           Leads: 'leads',
+          FraudRisk: 'fraud',
           Refer: 'refer',
           Profile: 'profile',
         },

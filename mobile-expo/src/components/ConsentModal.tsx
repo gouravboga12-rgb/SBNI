@@ -1,7 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity, Linking, Alert } from 'react-native';
 import { ShieldCheck, Phone, MessageSquare, X } from 'lucide-react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface ConsentModalProps {
   visible: boolean;
@@ -24,9 +23,7 @@ export const ConsentModal: React.FC<ConsentModalProps> = ({
 
   const handleContinue = async () => {
     try {
-      // Store user consent for this lender
-      await AsyncStorage.setItem(`consent_lender_${lender.id}`, 'true');
-
+      // Consent is handled server-side by the unlock API — no local storage needed
       const rawPhone = lender.phone.replace(/\D/g, '');
       const cleanPhone = rawPhone.length === 10 ? `91${rawPhone}` : rawPhone;
 

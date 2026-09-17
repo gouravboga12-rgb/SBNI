@@ -3,21 +3,18 @@ import { View, StyleSheet, ActivityIndicator } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import {
-  Home,
-  Building2,
-  Gift,
-  User as UserIcon,
-  Store,
-  FileSpreadsheet,
-} from 'lucide-react-native';
 import { useAuth } from '../context/AuthContext';
 import { AppHeader } from '../components/AppHeader';
 import { LoginScreen } from '../screens/auth/LoginScreen';
 import { VendorHomeScreen } from '../screens/vendor/VendorHomeScreen';
+import { VendorFinancersScreen } from '../screens/vendor/VendorFinancersScreen';
+import { VendorRequestsScreen } from '../screens/vendor/VendorRequestsScreen';
+import { VendorProfileScreen } from '../screens/vendor/VendorProfileScreen';
 import { LenderHomeScreen } from '../screens/lender/LenderHomeScreen';
-import { ReferEarnScreen } from '../screens/common/ReferEarnScreen';
-import { ProfileScreen } from '../screens/common/ProfileScreen';
+import { LenderBusinessesScreen } from '../screens/lender/LenderBusinessesScreen';
+import { LenderReportsScreen } from '../screens/lender/LenderReportsScreen';
+import { LenderProfileScreen } from '../screens/lender/LenderProfileScreen';
+import { CustomTabBar } from '../components/CustomTabBar';
 import { SubscriptionModal } from '../components/SubscriptionModal';
 import { NotificationModal } from '../components/NotificationModal';
 import { setupNotificationListeners } from '../services/notificationService';
@@ -26,78 +23,63 @@ import { linking } from './linking';
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
-function BottomTabs() {
-  const { role } = useAuth();
-  const isVendor = role === 'VENDOR';
+interface RoleTabsProps {
+  onOpenSubscription: () => void;
+}
 
+function VendorTabs({ onOpenSubscription }: RoleTabsProps) {
   return (
     <Tab.Navigator
+      tabBar={(props) => (
+        <CustomTabBar
+          {...props}
+          role="VENDOR"
+          onOpenSubscription={onOpenSubscription}
+        />
+      )}
       screenOptions={{
         headerShown: false,
-        tabBarStyle: {
-          backgroundColor: '#ffffff',
-          borderTopWidth: 1,
-          borderTopColor: '#e2e8f0',
-          height: 64,
-          paddingBottom: 8,
-          paddingTop: 8,
-        },
-        tabBarActiveTintColor: isVendor ? '#003893' : '#007a33',
-        tabBarInactiveTintColor: '#64748b',
-        tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: '700',
-        },
       }}
     >
-      <Tab.Screen
-        name="Home"
-        component={isVendor ? VendorHomeScreen : LenderHomeScreen}
-        options={{
-          tabBarLabel: 'Home',
-          tabBarIcon: ({ color, size }) => <Home size={size} color={color} />,
-        }}
-      />
-      <Tab.Screen
-        name={isVendor ? 'Financers' : 'Enquiries'}
-        component={isVendor ? VendorHomeScreen : LenderHomeScreen}
-        options={{
-          tabBarLabel: isVendor ? 'Financers' : 'Enquiries',
-          tabBarIcon: ({ color, size }) =>
-            isVendor ? <Building2 size={size} color={color} /> : <FileSpreadsheet size={size} color={color} />,
-        }}
-      />
-      <Tab.Screen
-        name="Refer"
-        component={ReferEarnScreen}
-        options={{
-          tabBarLabel: 'Refer & Earn',
-          tabBarIcon: ({ color, size }) => <Gift size={size} color={color} />,
-        }}
-      />
-      <Tab.Screen
-        name="Profile"
-        component={ProfileScreen}
-        options={{
-          tabBarLabel: 'Account',
-          tabBarIcon: ({ color, size }) => <UserIcon size={size} color={color} />,
-        }}
-      />
+      <Tab.Screen name="Home" component={VendorHomeScreen} />
+      <Tab.Screen name="Financers" component={VendorFinancersScreen} />
+      <Tab.Screen name="Requests" component={VendorRequestsScreen} />
+      <Tab.Screen name="Profile" component={VendorProfileScreen} />
+    </Tab.Navigator>
+  );
+}
+
+function LenderTabs({ onOpenSubscription }: RoleTabsProps) {
+  return (
+    <Tab.Navigator
+      tabBar={(props) => (
+        <CustomTabBar
+          {...props}
+          role="LENDER"
+          onOpenSubscription={onOpenSubscription}
+        />
+      )}
+      screenOptions={{
+        headerShown: false,
+      }}
+    >
+      <Tab.Screen name="Home" component={LenderHomeScreen} />
+      <Tab.Screen name="Businesses" component={LenderBusinessesScreen} />
+      <Tab.Screen name="Reports" component={LenderReportsScreen} />
+      <Tab.Screen name="Profile" component={LenderProfileScreen} />
     </Tab.Navigator>
   );
 }
 
 export const AppNavigator: React.FC = () => {
-  const { token, isLoading } = useAuth();
+  const { token, role, isLoading } = useAuth();
   const [subModalVisible, setSubModalVisible] = useState(false);
   const [notifModalVisible, setNotifModalVisible] = useState(false);
 
   React.useEffect(() => {
     const unsubscribe = setupNotificationListeners(
-      (notification) => {
-        // Optionally open modal or toast on foreground alert
-      },
-      (response) => {
+      () => {},
+      () => {
         setNotifModalVisible(true);
       }
     );
@@ -114,6 +96,7 @@ export const AppNavigator: React.FC = () => {
     );
   }
 
+  // Initial Screen is Login when not authenticated
   if (!token) {
     return <LoginScreen />;
   }
@@ -127,7 +110,15 @@ export const AppNavigator: React.FC = () => {
           onOpenProfile={() => {}}
         />
         <Stack.Navigator screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="Main" component={BottomTabs} />
+          <Stack.Screen name="Main">
+            {() =>
+              role === 'VENDOR' ? (
+                <VendorTabs onOpenSubscription={() => setSubModalVisible(true)} />
+              ) : (
+                <LenderTabs onOpenSubscription={() => setSubModalVisible(true)} />
+              )
+            }
+          </Stack.Screen>
         </Stack.Navigator>
 
         <SubscriptionModal
@@ -153,6 +144,6 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#0f172a',
+    backgroundColor: '#ffffff',
   },
 });

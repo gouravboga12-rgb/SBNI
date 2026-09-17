@@ -3,373 +3,897 @@ import {
   View,
   Text,
   StyleSheet,
-  FlatList,
   TouchableOpacity,
   RefreshControl,
   Linking,
   Alert,
+  ScrollView,
+  useWindowDimensions,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
 import {
   Store,
   Phone,
   MessageSquare,
-  Clock,
   CheckCircle,
   XCircle,
-  FileText,
-  BadgeAlert,
-  ChevronRight,
+  Compass,
+  Eye,
+  Gift,
+  ArrowRight,
+  TrendingUp,
+  Crown,
+  Headphones,
 } from 'lucide-react-native';
-import { getInboundLeads, updateLeadStatus } from '../../services/api';
-import { LoanRequestItem } from '../../types';
+import { useAuth } from '../../context/AuthContext';
+import {
+  fetchLenderLeadsApi,
+  updateLeadStatusApi,
+  updateLenderProfileApi,
+  fetchReferEarnStatusApi,
+} from '../../services/api';
+import { VendorLead } from '../../types';
+import { VendorReviewModal } from '../../components/VendorReviewModal';
+import { ReferAndEarnModal } from '../../components/ReferAndEarnModal';
+import { SubscriptionModal } from '../../components/SubscriptionModal';
+import { BannerCarousel, BannerSlide } from '../../components/BannerCarousel';
+
+const LENDER_BANNER_SLIDES: BannerSlide[] = [
+  {
+    id: 'lb-1',
+    image: require('../../../assets/banners/lender_banner_1.png'),
+    title: 'Direct Borrower Marketplace for Money Financers',
+    badge: '⚡ Verified Businesses',
+  },
+  {
+    id: 'lb-2',
+    image: require('../../../assets/banners/lender_banner_2.png'),
+    title: '100% Pre-Verified KYC Small Business Directory',
+    badge: '✓ Zero Bad Debts',
+  },
+  {
+    id: 'lb-3',
+    image: require('../../../assets/banners/lender_banner_3.png'),
+    title: 'Expand Your Financing Portfolio in Your Radius',
+    badge: '📍 Radius Matching',
+  },
+  {
+    id: 'lb-4',
+    image: require('../../../assets/banners/lender_banner_4.png'),
+    title: 'Transparent Capital Network • 0% Broker Commission',
+    badge: '⭐ Direct Contact',
+  },
+];
+
+const RADIUS_OPTIONS = [10, 25, 50, 70, 100];
 
 export const LenderHomeScreen: React.FC = () => {
-  const [leads, setLeads] = useState<LoanRequestItem[]>([]);
+  const insets = useSafeAreaInsets();
+  const navigation = useNavigation<any>();
+  const { width } = useWindowDimensions();
+  const isTablet = width >= 768;
+
+  const { user, isSubscribed, lenderProfile, updateLenderProfileState } = useAuth();
+  const [leads, setLeads] = useState<VendorLead[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [statusFilter, setStatusFilter] = useState<'ALL' | 'PENDING' | 'ACCEPTED'>('ALL');
+  const [activeRadius, setActiveRadius] = useState<number>(
+    lenderProfile?.lendingRadiusKm || 50
+  );
+  const [updatingRadius, setUpdatingRadius] = useState(false);
+  const [selectedVendorForReview, setSelectedVendorForReview] = useState<VendorLead | null>(null);
+
+  // Refer & Earn conditionally shown only if enabled by admin
+  const [isReferEarnEnabled, setIsReferEarnEnabled] = useState(false);
+  const [referModalVisible, setReferModalVisible] = useState(false);
+  const [subModalVisible, setSubModalVisible] = useState(false);
 
   useEffect(() => {
-    loadLeads();
+    loadDashboardData();
   }, []);
 
-  const loadLeads = async () => {
+  const loadDashboardData = async () => {
     setLoading(true);
     try {
-      const res = await getInboundLeads();
-      if (res?.data && res.data.length > 0) {
-        setLeads(res.data);
+      // Check admin refer & earn setting
+      fetchReferEarnStatusApi()
+        .then((enabled) => setIsReferEarnEnabled(enabled))
+        .catch(() => {});
+
+      const data = await fetchLenderLeadsApi();
+      if (Array.isArray(data)) {
+        setLeads(data);
       } else {
-        // Fallback default leads
-        setLeads([
-          {
-            id: 'lead_101',
-            vendorId: 'v1',
-            vendorName: 'Ramesh Gupta',
-            shopName: 'Gupta General & Kirana Store',
-            amount: 50000,
-            purpose: 'Festival inventory purchase & working capital',
-            status: 'PENDING',
-            createdAt: new Date().toISOString(),
-            vendorPhone: '9553921237',
-          },
-          {
-            id: 'lead_102',
-            vendorId: 'v2',
-            vendorName: 'Mohammed Ali',
-            shopName: 'Deccan Mobile & Electronics',
-            amount: 150000,
-            purpose: 'Shop renovation and bulk accessory stock',
-            status: 'ACCEPTED',
-            createdAt: new Date(Date.now() - 86400000).toISOString(),
-            vendorPhone: '9848022338',
-          },
-        ]);
+        setLeads([]);
       }
     } catch (e) {
-      console.error('Error loading leads:', e);
+      console.warn('Error loading lender dashboard:', e);
+      setLeads([]);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   };
 
-  const handleUpdateStatus = async (leadId: string, newStatus: string) => {
+  const handleUpdateRadius = async (km: number) => {
+    setActiveRadius(km);
+    setUpdatingRadius(true);
     try {
-      await updateLeadStatus(leadId, newStatus);
-      setLeads((prev) =>
-        prev.map((l) => (l.id === leadId ? { ...l, status: newStatus as any } : l))
-      );
-      Alert.alert('Status Updated', `Enquiry marked as ${newStatus}.`);
+      const res = await updateLenderProfileApi({ lendingRadiusKm: km });
+      if (res.success) {
+        updateLenderProfileState({ lendingRadiusKm: km });
+        Alert.alert(
+          'Lending Radius Updated! 📍',
+          `Your active lending radius is now ${km} km. All registered local shops and startups within ${km} km can discover your financing options.`
+        );
+      }
     } catch (e) {
-      Alert.alert('Error', 'Failed to update status.');
+      Alert.alert('Notice', 'Could not update lending radius.');
+    } finally {
+      setUpdatingRadius(false);
     }
   };
 
-  const handleCallVendor = (phone?: string) => {
-    if (!phone) {
-      Alert.alert('Notice', 'Vendor phone not available.');
-      return;
-    }
-    Linking.openURL(`tel:${phone}`);
-  };
-
-  const handleWhatsAppVendor = (shopName: string, phone?: string) => {
-    if (!phone) return;
-    const clean = phone.replace(/\D/g, '');
-    const cleanPhone = clean.length === 10 ? `91${clean}` : clean;
-    const msg = encodeURIComponent(
-      `Hello, this is regarding your loan enquiry on JustPaisa for ${shopName}. We would like to discuss the sanction terms.`
+  const handleUpdateStatus = async (leadId: string, newStatus: string) => {
+    // 1. Immediately update local state so button response is instant
+    setLeads((prev) =>
+      prev.map((l) => (l.id === leadId ? { ...l, status: newStatus } : l))
     );
-    Linking.openURL(`https://wa.me/${cleanPhone}?text=${msg}`);
+    if (selectedVendorForReview?.id === leadId) {
+      setSelectedVendorForReview((prev) => (prev ? { ...prev, status: newStatus } : null));
+    }
+
+    // 2. Persist to AWS RDS backend
+    await updateLeadStatusApi(leadId, newStatus);
+    Alert.alert('Status Updated', `Enquiry marked as ${newStatus}.`);
   };
 
-  const filteredLeads = leads.filter(
-    (l) => statusFilter === 'ALL' || l.status === statusFilter
-  );
+  const totalEnquiries = leads.length;
+  const pendingCount = leads.filter((l) => (l.status || '').toLowerCase().includes('pend')).length;
+  const acceptedCount = leads.filter((l) => (l.status || '').toLowerCase().includes('accept') || l.status === 'Verified').length;
 
   return (
-    <View style={styles.container}>
-      {/* Header Filter Pills */}
-      <View style={styles.filterSection}>
-        <TouchableOpacity
-          style={[styles.filterPill, statusFilter === 'ALL' && styles.filterPillActive]}
-          onPress={() => setStatusFilter('ALL')}
-        >
-          <Text style={[styles.filterText, statusFilter === 'ALL' && styles.filterTextActive]}>
-            All Leads ({leads.length})
-          </Text>
-        </TouchableOpacity>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={[
+        styles.scrollContent,
+        { paddingBottom: insets.bottom + 90 },
+      ]}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={() => {
+            setRefreshing(true);
+            loadDashboardData();
+          }}
+          colors={['#007a33']}
+        />
+      }
+    >
+      {/* Top Auto-Scrolling Visual Banner Carousel */}
+      <BannerCarousel slides={LENDER_BANNER_SLIDES} autoScrollIntervalMs={4000} />
 
-        <TouchableOpacity
-          style={[styles.filterPill, statusFilter === 'PENDING' && styles.filterPillActive]}
-          onPress={() => setStatusFilter('PENDING')}
-        >
-          <Text style={[styles.filterText, statusFilter === 'PENDING' && styles.filterTextActive]}>
-            Pending ({leads.filter((l) => l.status === 'PENDING').length})
-          </Text>
-        </TouchableOpacity>
+      {/* Hero Cards Container (Mirrors Website LenderDashboard) */}
+      <View style={[styles.heroCardsContainer, isTablet && styles.heroCardsTablet]}>
+        {/* Financer Welcome Header */}
+        <View style={[styles.headerCard, isTablet && styles.heroCardTabletItem]}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.institutionTitle} numberOfLines={1}>
+              {lenderProfile?.institutionName || user?.name || 'Business Money Financer'}
+            </Text>
+            <Text style={styles.institutionSub}>
+              Financer Hub • {lenderProfile?.city || 'Hyderabad'}
+            </Text>
+          </View>
+          <View style={styles.activeStatusBadge}>
+            <Text style={styles.activeStatusText}>Active Lending</Text>
+          </View>
+        </View>
 
-        <TouchableOpacity
-          style={[styles.filterPill, statusFilter === 'ACCEPTED' && styles.filterPillActive]}
-          onPress={() => setStatusFilter('ACCEPTED')}
-        >
-          <Text style={[styles.filterText, statusFilter === 'ACCEPTED' && styles.filterTextActive]}>
-            Sanctioned ({leads.filter((l) => l.status === 'ACCEPTED').length})
+        {/* Membership Status Card */}
+        <View style={[styles.membershipCard, isTablet && styles.heroCardTabletItem]}>
+          <View style={styles.membershipTop}>
+            <View style={styles.membershipBadge}>
+              <Crown size={12} color={isSubscribed ? '#16a34a' : '#d97706'} />
+              <Text style={styles.membershipBadgeText}>
+                {isSubscribed ? 'VIP Financer Active' : 'Standard Account'}
+              </Text>
+            </View>
+            <Headphones size={20} color="#007a33" />
+          </View>
+          <Text style={styles.membershipTitle}>Financer Network Membership</Text>
+          <Text style={styles.membershipDesc}>
+            {isSubscribed
+              ? 'Full unlimited verified shop leads and direct applicant contacts'
+              : 'Upgrade to VIP for unlimited leads across your full lending radius'}
           </Text>
-        </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.membershipBtn}
+            onPress={() => setSubModalVisible(true)}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.membershipBtnText}>
+              {isSubscribed ? 'Manage Membership' : 'Upgrade to VIP Financer'}
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
-      {/* Leads List */}
-      <FlatList
-        data={filteredLeads}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContainer}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={() => {
-              setRefreshing(true);
-              loadLeads();
-            }}
-            colors={['#007a33']}
-          />
-        }
-        renderItem={({ item }) => {
-          const isPending = item.status === 'PENDING';
-          return (
-            <View style={styles.leadCard}>
-              {/* Card Top */}
-              <View style={styles.leadCardTop}>
-                <View style={styles.shopIconBg}>
-                  <Store size={22} color="#007a33" />
-                </View>
-                <View style={styles.leadInfo}>
-                  <Text style={styles.shopName}>{item.shopName}</Text>
-                  <Text style={styles.vendorName}>Owner: {item.vendorName}</Text>
-                </View>
-                <View style={styles.amountBadge}>
-                  <Text style={styles.amountText}>₹{(item.amount / 1000).toFixed(0)}k</Text>
-                </View>
+      {/* KPI Stats Row */}
+      <View style={styles.kpiRow}>
+        <View style={styles.kpiCard}>
+          <Text style={styles.kpiNum}>{totalEnquiries}</Text>
+          <Text style={styles.kpiLabel}>Total Enquiries</Text>
+        </View>
+        <View style={[styles.kpiCard, { borderColor: '#fef08a' }]}>
+          <Text style={[styles.kpiNum, { color: '#ca8a04' }]}>{pendingCount}</Text>
+          <Text style={styles.kpiLabel}>Pending Review</Text>
+        </View>
+        <View style={[styles.kpiCard, { borderColor: '#bbf7d0' }]}>
+          <Text style={[styles.kpiNum, { color: '#16a34a' }]}>{acceptedCount}</Text>
+          <Text style={styles.kpiLabel}>Approved</Text>
+        </View>
+      </View>
+
+      {/* Conditional Refer & Earn Banner (Only if enabled by admin on admin panel) */}
+      {isReferEarnEnabled && (
+        <TouchableOpacity
+          style={styles.referCard}
+          activeOpacity={0.85}
+          onPress={() => setReferModalVisible(true)}
+        >
+          <View style={styles.referIconBox}>
+            <Gift size={22} color="#ffffff" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Text style={styles.referTitle}>Refer & Earn Rewards 🎁</Text>
+              <Text style={styles.referBadge}>Cashback</Text>
+            </View>
+            <Text style={styles.referSub}>
+              Earn instant cashback for every business or financer you invite!
+            </Text>
+          </View>
+          <ArrowRight size={18} color="#9333ea" />
+        </TouchableOpacity>
+      )}
+
+      {/* Core Requirement: Active Lending Radius Area Selector */}
+      <View style={styles.radiusSection}>
+        <View style={styles.radiusHeader}>
+          <View style={styles.radiusTitleRow}>
+            <Compass size={18} color="#007a33" />
+            <Text style={styles.radiusSectionTitle}>Active Lending Radius Area</Text>
+          </View>
+          <Text style={styles.radiusCurrentValue}>{activeRadius} km</Text>
+        </View>
+        <Text style={styles.radiusSectionDesc}>
+          Select your active lending distance. Vendors within this radius will be notified when you register and can apply for loans.
+        </Text>
+        <View style={styles.radiusPillsRow}>
+          {RADIUS_OPTIONS.map((km) => {
+            const active = activeRadius === km;
+            return (
+              <TouchableOpacity
+                key={km}
+                style={[styles.radiusChip, active && styles.radiusChipActive]}
+                onPress={() => handleUpdateRadius(km)}
+                disabled={updatingRadius}
+              >
+                <Text style={[styles.radiusChipText, active && styles.radiusChipTextActive]}>
+                  {km} km
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </View>
+
+      {/* Recent Shop Applications */}
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>Recent Inbound Shop Enquiries</Text>
+        <Text style={styles.sectionCount}>({leads.length})</Text>
+      </View>
+
+      {leads.length === 0 ? (
+        <View style={styles.emptyCard}>
+          <View style={styles.emptyIconBox}>
+            <Store size={32} color="#007a33" />
+          </View>
+          <Text style={styles.emptyCardTitle}>No Inbound Enquiries Yet</Text>
+          <Text style={styles.emptyCardDesc}>
+            You haven't received any loan applications yet. Explore Discovered Businesses to review nearby shops within your {activeRadius} km lending radius.
+          </Text>
+          <TouchableOpacity
+            style={styles.emptyExploreBtn}
+            onPress={() => navigation.navigate('Businesses')}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.emptyExploreBtnText}>Browse Discovered Businesses</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        leads.map((item) => {
+        const isPending = item.status.toLowerCase().includes('pend');
+        const isAccepted = item.status.toLowerCase().includes('accept') || item.status === 'Verified';
+
+        return (
+          <TouchableOpacity
+            key={item.id}
+            style={styles.leadCard}
+            activeOpacity={0.9}
+            onPress={() => setSelectedVendorForReview(item)}
+          >
+            <View style={styles.leadTop}>
+              <View style={styles.shopIcon}>
+                <Store size={22} color="#007a33" />
               </View>
-
-              {/* Purpose Box */}
-              <View style={styles.purposeBox}>
-                <Text style={styles.purposeLabel}>Requirement / Purpose:</Text>
-                <Text style={styles.purposeText}>{item.purpose}</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.shopName}>{item.shopName}</Text>
+                <Text style={styles.vendorName}>
+                  {item.vendorName} • {item.city}
+                </Text>
               </View>
-
-              {/* Action Buttons */}
-              <View style={styles.actionsRow}>
-                <TouchableOpacity
-                  style={styles.callBtn}
-                  onPress={() => handleCallVendor(item.vendorPhone)}
-                  activeOpacity={0.8}
+              <View
+                style={[
+                  styles.statusBadge,
+                  isAccepted && styles.statusBadgeAccepted,
+                  isPending && styles.statusBadgePending,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.statusBadgeText,
+                    isAccepted && { color: '#16a34a' },
+                    isPending && { color: '#d97706' },
+                  ]}
                 >
-                  <Phone size={16} color="#ffffff" />
-                  <Text style={styles.btnText}>Call Vendor</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.whatsappBtn}
-                  onPress={() => handleWhatsAppVendor(item.shopName, item.vendorPhone)}
-                  activeOpacity={0.8}
-                >
-                  <MessageSquare size={16} color="#ffffff" />
-                  <Text style={styles.btnText}>WhatsApp</Text>
-                </TouchableOpacity>
-
-                {isPending && (
-                  <TouchableOpacity
-                    style={styles.acceptBtn}
-                    onPress={() => handleUpdateStatus(item.id, 'ACCEPTED')}
-                    activeOpacity={0.8}
-                  >
-                    <CheckCircle size={16} color="#ffffff" />
-                    <Text style={styles.btnText}>Accept</Text>
-                  </TouchableOpacity>
-                )}
+                  {item.status}
+                </Text>
               </View>
             </View>
+
+            {/* Purpose & Amount */}
+            <View style={styles.leadDetailsBox}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.leadDetailLabel}>Requested Capital</Text>
+                <Text style={styles.leadAmount}>
+                  ₹{Number(item.requiredAmount || 0).toLocaleString('en-IN')}
+                </Text>
+              </View>
+              <View style={{ flex: 1.5 }}>
+                <Text style={styles.leadDetailLabel}>Business Purpose</Text>
+                <Text style={styles.leadPurpose} numberOfLines={2}>
+                  {item.inquiryMessage || 'Working Capital & Inventory'}
+                </Text>
+              </View>
+            </View>
+
+            {/* Inspect KYC Action */}
+            <TouchableOpacity
+              style={styles.inspectQuickBtn}
+              onPress={() => setSelectedVendorForReview(item)}
+            >
+              <Eye size={13} color="#003893" />
+              <Text style={styles.inspectQuickBtnText}>Open Shop Profile & Inspect KYC Details</Text>
+            </TouchableOpacity>
+
+            {/* Actions: Approve / Reject / Call / WhatsApp */}
+            <View style={styles.leadActions}>
+              {isPending && (
+                <>
+                  <TouchableOpacity
+                    style={styles.approveBtn}
+                    onPress={() => handleUpdateStatus(item.id, 'Accepted')}
+                  >
+                    <CheckCircle size={14} color="#ffffff" />
+                    <Text style={styles.approveBtnText}>Approve</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.rejectBtn}
+                    onPress={() => handleUpdateStatus(item.id, 'Rejected')}
+                  >
+                    <XCircle size={14} color="#dc2626" />
+                    <Text style={styles.rejectBtnText}>Reject</Text>
+                  </TouchableOpacity>
+                </>
+              )}
+
+              {item.mobileNumber && (
+                <>
+                  <TouchableOpacity
+                    style={styles.circleBtn}
+                    onPress={() => Linking.openURL(`tel:${item.mobileNumber}`)}
+                  >
+                    <Phone size={16} color="#007a33" />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.circleBtn}
+                    onPress={() => {
+                      const clean = item.mobileNumber.replace(/\D/g, '');
+                      const cleanPhone = clean.length === 10 ? `91${clean}` : clean;
+                      Linking.openURL(
+                        `https://wa.me/${cleanPhone}?text=Hello%20${encodeURIComponent(
+                          item.shopName
+                        )},%20regarding%20your%20loan%20enquiry%20on%20JustPaisa...`
+                      );
+                    }}
+                  >
+                    <MessageSquare size={16} color="#16a34a" />
+                  </TouchableOpacity>
+                </>
+              )}
+            </View>
+          </TouchableOpacity>
+        );
+      }))}
+
+      {/* Vendor Review & KYC Modal */}
+      <VendorReviewModal
+        visible={!!selectedVendorForReview}
+        onClose={() => setSelectedVendorForReview(null)}
+        vendor={selectedVendorForReview}
+        onStatusChange={(id, newStatus) => {
+          setLeads((prev) =>
+            prev.map((l) => (l.id === id ? { ...l, status: newStatus } : l))
           );
         }}
+        onDeleteRequest={(id) => {
+          setLeads((prev) => prev.filter((l) => l.id !== id));
+        }}
       />
-    </View>
+
+      {/* Refer & Earn Modal */}
+      <ReferAndEarnModal
+        visible={referModalVisible}
+        onClose={() => setReferModalVisible(false)}
+        userRole="LENDER"
+        userName={lenderProfile?.institutionName || user?.name || 'Financer'}
+      />
+
+      {/* Subscription Modal */}
+      <SubscriptionModal
+        visible={subModalVisible}
+        onClose={() => setSubModalVisible(false)}
+      />
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f1f5f9',
-  },
-  filterSection: {
-    flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#ffffff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
-    gap: 8,
-  },
-  filterPill: {
-    paddingVertical: 6,
-    paddingHorizontal: 14,
-    borderRadius: 20,
     backgroundColor: '#f8fafc',
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
   },
-  filterPillActive: {
-    backgroundColor: '#007a33',
-    borderColor: '#007a33',
-  },
-  filterText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#64748b',
-  },
-  filterTextActive: {
-    color: '#ffffff',
-  },
-  listContainer: {
+  scrollContent: {
     padding: 16,
-    gap: 14,
   },
-  leadCard: {
+  heroCardsContainer: {
+    marginBottom: 6,
+  },
+  heroCardsTablet: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  heroCardTabletItem: {
+    width: '48%',
+  },
+  headerCard: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     backgroundColor: '#ffffff',
-    borderRadius: 20,
-    padding: 18,
+    borderRadius: 18,
+    padding: 16,
+    marginBottom: 12,
     borderWidth: 1,
     borderColor: '#e2e8f0',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    elevation: 3,
   },
-  leadCardTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
+  membershipCard: {
+    backgroundColor: '#ecfdf5',
+    borderWidth: 1,
+    borderColor: '#a7f3d0',
+    borderRadius: 18,
+    padding: 14,
     marginBottom: 12,
   },
-  shopIconBg: {
-    width: 46,
-    height: 46,
-    borderRadius: 14,
+  membershipTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  membershipBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#a7f3d0',
+    paddingVertical: 2,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+  },
+  membershipBadgeText: {
+    color: '#047857',
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  membershipTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#0f172a',
+    marginTop: 2,
+  },
+  membershipDesc: {
+    fontSize: 11,
+    color: '#065f46',
+    marginTop: 2,
+    lineHeight: 16,
+  },
+  membershipBtn: {
+    backgroundColor: '#059669',
+    paddingVertical: 8,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  membershipBtnText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  emptyCard: {
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    borderRadius: 18,
+    padding: 24,
+    alignItems: 'center',
+    marginVertical: 16,
+  },
+  emptyIconBox: {
+    width: 56,
+    height: 56,
+    borderRadius: 18,
     backgroundColor: '#ecfdf5',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#a7f3d0',
+    marginBottom: 12,
   },
-  leadInfo: {
+  emptyCardTitle: {
+    fontSize: 15,
+    fontWeight: '900',
+    color: '#0f172a',
+    textAlign: 'center',
+  },
+  emptyCardDesc: {
+    fontSize: 12,
+    color: '#64748b',
+    textAlign: 'center',
+    marginTop: 6,
+    lineHeight: 18,
+    maxWidth: 320,
+  },
+  emptyExploreBtn: {
+    backgroundColor: '#007a33',
+    paddingVertical: 10,
+    paddingHorizontal: 18,
+    borderRadius: 12,
+    marginTop: 14,
+  },
+  emptyExploreBtnText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  institutionTitle: {
+    fontSize: 16,
+    fontWeight: '900',
+    color: '#0f172a',
+  },
+  institutionSub: {
+    fontSize: 11,
+    color: '#64748b',
+    marginTop: 2,
+  },
+  activeStatusBadge: {
+    backgroundColor: '#dcfce7',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+  },
+  activeStatusText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#16a34a',
+  },
+  kpiRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 14,
+  },
+  kpiCard: {
     flex: 1,
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    alignItems: 'center',
   },
-  shopName: {
+  kpiNum: {
+    fontSize: 22,
+    fontWeight: '900',
+    color: '#0f172a',
+  },
+  kpiLabel: {
+    fontSize: 10,
+    color: '#64748b',
+    fontWeight: '700',
+    marginTop: 2,
+    textAlign: 'center',
+  },
+  referCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#faf5ff',
+    borderRadius: 18,
+    padding: 14,
+    marginBottom: 14,
+    borderWidth: 1.5,
+    borderColor: '#d8b4fe',
+    gap: 12,
+    shadowColor: '#9333ea',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  referIconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    backgroundColor: '#9333ea',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  referTitle: {
+    fontSize: 14,
+    fontWeight: '900',
+    color: '#581c87',
+  },
+  referBadge: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#7e22ce',
+    backgroundColor: '#f3e8ff',
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 6,
+  },
+  referSub: {
+    fontSize: 11,
+    color: '#7e22ce',
+    marginTop: 2,
+  },
+  radiusSection: {
+    backgroundColor: '#ffffff',
+    borderRadius: 18,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  radiusHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  radiusTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  radiusSectionTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#0f172a',
+  },
+  radiusCurrentValue: {
+    fontSize: 13,
+    fontWeight: '900',
+    color: '#007a33',
+    backgroundColor: '#dcfce7',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  radiusSectionDesc: {
+    fontSize: 11,
+    color: '#64748b',
+    lineHeight: 16,
+    marginBottom: 12,
+  },
+  radiusPillsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 6,
+  },
+  radiusChip: {
+    flex: 1,
+    paddingVertical: 8,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: '#e2e8f0',
+    backgroundColor: '#f8fafc',
+    alignItems: 'center',
+  },
+  radiusChipActive: {
+    borderColor: '#007a33',
+    backgroundColor: '#007a33',
+  },
+  radiusChipText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#475569',
+  },
+  radiusChipTextActive: {
+    color: '#ffffff',
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 10,
+  },
+  sectionTitle: {
     fontSize: 15,
     fontWeight: '800',
     color: '#0f172a',
   },
-  vendorName: {
-    fontSize: 12,
+  sectionCount: {
+    fontSize: 13,
+    fontWeight: '700',
     color: '#64748b',
-    fontWeight: '500',
-    marginTop: 2,
   },
-  amountBadge: {
-    backgroundColor: '#ecfdf5',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 12,
+  leadCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 18,
+    padding: 16,
+    marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#a7f3d0',
+    borderColor: '#e2e8f0',
   },
-  amountText: {
-    fontSize: 16,
+  leadTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 12,
+  },
+  shopIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: '#f0fdf4',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  shopName: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#0f172a',
+  },
+  vendorName: {
+    fontSize: 11,
+    color: '#64748b',
+    marginTop: 1,
+  },
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    backgroundColor: '#f1f5f9',
+  },
+  statusBadgeAccepted: {
+    backgroundColor: '#dcfce7',
+  },
+  statusBadgePending: {
+    backgroundColor: '#fef3c7',
+  },
+  statusBadgeText: {
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  leadDetailsBox: {
+    flexDirection: 'row',
+    backgroundColor: '#f8fafc',
+    borderRadius: 12,
+    padding: 10,
+    marginBottom: 10,
+    gap: 12,
+  },
+  leadDetailLabel: {
+    fontSize: 10,
+    color: '#64748b',
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  leadAmount: {
+    fontSize: 14,
     fontWeight: '900',
     color: '#007a33',
   },
-  purposeBox: {
-    backgroundColor: '#f8fafc',
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 14,
-    borderWidth: 1,
-    borderColor: '#f1f5f9',
-  },
-  purposeLabel: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#64748b',
-    textTransform: 'uppercase',
-  },
-  purposeText: {
-    fontSize: 12,
+  leadPurpose: {
+    fontSize: 11,
     color: '#334155',
     fontWeight: '600',
-    marginTop: 4,
-    lineHeight: 18,
   },
-  actionsRow: {
+  inspectQuickBtn: {
     flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#eff6ff',
+    paddingVertical: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#bfdbfe',
+    marginBottom: 10,
+  },
+  inspectQuickBtnText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#003893',
+  },
+  leadActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 8,
   },
-  callBtn: {
+  approveBtn: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
-    backgroundColor: '#003893',
-    paddingVertical: 12,
-    borderRadius: 12,
-  },
-  whatsappBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    backgroundColor: '#059669',
-    paddingVertical: 12,
-    borderRadius: 12,
-  },
-  acceptBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
+    gap: 4,
     backgroundColor: '#007a33',
-    paddingVertical: 12,
-    borderRadius: 12,
+    paddingVertical: 9,
+    borderRadius: 10,
   },
-  btnText: {
+  approveBtnText: {
     color: '#ffffff',
     fontSize: 12,
     fontWeight: '800',
+  },
+  rejectBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    backgroundColor: '#fee2e2',
+    borderWidth: 1,
+    borderColor: '#fca5a5',
+    paddingVertical: 9,
+    borderRadius: 10,
+  },
+  rejectBtnText: {
+    color: '#dc2626',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  circleBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: '#f1f5f9',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

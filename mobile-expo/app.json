@@ -26,11 +26,17 @@
       },
       "package": "com.justpaisa.app",
       "permissions": [
-        "INTERNET",
-        "ACCESS_NETWORK_STATE",
-        "CALL_PHONE",
-        "VIBRATE",
-        "RECEIVE_BOOT_COMPLETED"
+        "android.permission.INTERNET",
+        "android.permission.ACCESS_NETWORK_STATE",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.CALL_PHONE",
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.VIBRATE",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.RECORD_AUDIO"
       ]
     },
     "plugins": [
@@ -39,15 +45,28 @@
         {
           "color": "#003893"
         }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow JustPaisa to access your photos to upload shop and KYC documents.",
+          "cameraPermission": "Allow JustPaisa to take photos of your shop and business documents."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow JustPaisa to use your location to find nearby financers within your radius."
+        }
       ]
     ],
     "extra": {
       "apiUrl": "https://justpaisa.in/api",
       "wsUrl": "https://justpaisa.in",
       "eas": {
-        "projectId": "1ab35637-7a6b-4ccd-85ee-e6b5135a05fb"
+        "projectId": "cc531adf-480e-4deb-8f5d-bfa22156dcdb"
       }
     },
-    "owner": "gourav56"
+    "owner": "zoro45"
   }
 }

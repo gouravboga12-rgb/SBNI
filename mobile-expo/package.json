@@ -11,6 +11,7 @@
     "build:aab": "eas build --platform android --profile production"
   },
   "dependencies": {
+    "@expo/config-plugins": "~8.0.0",
     "@react-native-async-storage/async-storage": "1.23.1",
     "@react-navigation/bottom-tabs": "^6.5.20",
     "@react-navigation/native": "^6.1.17",
@@ -22,8 +23,10 @@
     "expo-constants": "~16.0.2",
     "expo-device": "~6.0.2",
     "expo-haptics": "~13.0.1",
+    "expo-image-picker": "~15.1.0",
     "expo-linear-gradient": "~13.0.2",
     "expo-linking": "~6.3.1",
+    "expo-location": "~17.0.1",
     "expo-notifications": "~0.28.19",
     "expo-status-bar": "~1.12.1",
     "lucide-react-native": "^0.395.0",
@@ -40,5 +43,12 @@
     "@types/react": "~18.2.45",
     "typescript": "~5.3.3"
   },
-  "private": true
+  "private": true,
+  "expo": {
+    "install": {
+      "exclude": [
+        "@expo/config-plugins"
+      ]
+    }
+  }
 }

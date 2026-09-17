@@ -25,6 +25,21 @@ export const initSocket = (userId?: string, role?: string): Socket => {
     }
   });
 
+  // Core Requirement: Real-time alert when a new lender registers in vendor radius (50km / 70km)
+  socket.on('lender:new_nearby', async (data) => {
+    console.log('[Socket Event] lender:new_nearby received:', data);
+    try {
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: 'New Financer in Your Area! 🚀',
+          body: `${data?.financerName || 'A verified business financer'} is now lending within ${data?.radiusKm || 50} km. Tap to inquire.`,
+          data: { url: 'justpaisa://financers', lenderId: data?.lenderId },
+        },
+        trigger: null,
+      });
+    } catch (e) {}
+  });
+
   socket.on('lead:new', async (data) => {
     console.log('[Socket Event] lead:new received:', data);
     try {
@@ -34,7 +49,21 @@ export const initSocket = (userId?: string, role?: string): Socket => {
           body: `New enquiry for ₹${data?.amount || ''} from ${data?.shopName || 'a verified vendor'}.`,
           data: { url: 'justpaisa://leads' },
         },
-        trigger: null, // trigger immediately
+        trigger: null,
+      });
+    } catch (e) {}
+  });
+
+  socket.on('lead:status_updated', async (data) => {
+    console.log('[Socket Event] lead:status_updated received:', data);
+    try {
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: `Loan Enquiry ${data?.status || 'Updated'} 📋`,
+          body: `Your loan request with ${data?.financerName || 'financer'} was marked as ${data?.status}.`,
+          data: { url: 'justpaisa://requests' },
+        },
+        trigger: null,
       });
     } catch (e) {}
   });
