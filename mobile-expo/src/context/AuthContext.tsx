@@ -143,6 +143,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setFormattedEndDate('');
     // logoutUser() removes only the JWT token from AsyncStorage
     await logoutUser();
+    try {
+      await AsyncStorage.removeItem('sbni_lender_loc_prompted');
+    } catch (e) {}
     disconnectSocket();
   };
 

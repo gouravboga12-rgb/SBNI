@@ -10,6 +10,7 @@ import {
   ScrollView,
   useWindowDimensions,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import {
@@ -93,6 +94,21 @@ export const LenderHomeScreen: React.FC = () => {
 
   useEffect(() => {
     loadDashboardData();
+    // Auto-prompt office location on login (matches website sessionStorage behavior)
+    const checkLocationPrompt = async () => {
+      try {
+        const prompted = await AsyncStorage.getItem('sbni_lender_loc_prompted');
+        if (!prompted) {
+          // Short delay so screen loads first
+          setTimeout(() => {
+            setLocationPromptVisible(true);
+          }, 600);
+        }
+      } catch (e) {
+        console.warn('Error reading location prompt status:', e);
+      }
+    };
+    checkLocationPrompt();
   }, []);
 
   const loadDashboardData = async () => {
@@ -473,7 +489,12 @@ export const LenderHomeScreen: React.FC = () => {
       {/* Lender Location Prompt Modal */}
       <LenderLocationPromptModal
         visible={locationPromptVisible}
-        onClose={() => setLocationPromptVisible(false)}
+        onClose={async () => {
+          try {
+            await AsyncStorage.setItem('sbni_lender_loc_prompted', 'true');
+          } catch (e) {}
+          setLocationPromptVisible(false);
+        }}
         currentLocation={{
           city: lenderProfile?.city || 'Hyderabad',
           state: (lenderProfile as any)?.state || 'Telangana',
@@ -483,6 +504,7 @@ export const LenderHomeScreen: React.FC = () => {
         }}
         onSaveLocation={async (loc) => {
           try {
+            await AsyncStorage.setItem('sbni_lender_loc_prompted', 'true');
             await updateLenderProfileApi({
               city: loc.city,
               latitude: loc.latitude,
@@ -495,6 +517,8 @@ export const LenderHomeScreen: React.FC = () => {
               longitude: loc.longitude,
               lendingRadiusKm: loc.lendingRadiusKm || activeRadius,
             });
+            setLocationPromptVisible(false);
+            Alert.alert('Office Location Updated! 📍', `Your lending office location has been set to ${loc.city}.`);
           } catch (err) {
             console.warn('Error saving location:', err);
           }

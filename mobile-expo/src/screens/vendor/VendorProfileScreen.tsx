@@ -42,6 +42,7 @@ import {
 import { SubscriptionModal } from '../../components/SubscriptionModal';
 import { ReferAndEarnModal } from '../../components/ReferAndEarnModal';
 import { LocationPickerModal } from '../../components/LocationPickerModal';
+import { resolveDocumentUrl } from '../../utils/documentGenerators';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export const VendorProfileScreen: React.FC = () => {
@@ -88,6 +89,7 @@ export const VendorProfileScreen: React.FC = () => {
   const [shopPhotoUrl, setShopPhotoUrl] = useState(
     vendorProfile?.shopPhotoUrl || (vendorProfile?.shopPhotos ? vendorProfile.shopPhotos[0] : '')
   );
+  const [photoLoadError, setPhotoLoadError] = useState(false);
 
   const [saving, setSaving] = useState(false);
   const [uploadingDoc, setUploadingDoc] = useState<string | null>(null);
@@ -154,7 +156,10 @@ export const VendorProfileScreen: React.FC = () => {
       if (res.success && res.fileUrl) {
         if (docType === 'PAN') setPanUrl(res.fileUrl);
         if (docType === 'AADHAAR') setAadhaarUrl(res.fileUrl);
-        if (docType === 'SHOP') setShopPhotoUrl(res.fileUrl);
+        if (docType === 'SHOP') {
+          setShopPhotoUrl(res.fileUrl);
+          setPhotoLoadError(false);
+        }
         Alert.alert('Upload Success', `${docType} uploaded successfully.`);
       } else {
         Alert.alert('Upload Failed', res.message || 'Could not upload image.');
@@ -538,15 +543,24 @@ export const VendorProfileScreen: React.FC = () => {
 
         {openSections.photos && (
           <View style={styles.accordionBody}>
-            {shopPhotoUrl ? (
+            {shopPhotoUrl && !photoLoadError ? (
               <View style={styles.photoPreviewContainer}>
-                <Image source={{ uri: shopPhotoUrl }} style={styles.photoPreview} />
+                <Image
+                  source={{ uri: resolveDocumentUrl(shopPhotoUrl) }}
+                  style={styles.photoPreview}
+                  resizeMode="cover"
+                  onError={() => setPhotoLoadError(true)}
+                />
                 <TouchableOpacity
                   style={styles.changePhotoBtn}
                   onPress={() => handlePickAndUpload('SHOP')}
+                  disabled={uploadingDoc === 'SHOP'}
+                  activeOpacity={0.85}
                 >
                   <Camera size={14} color="#ffffff" />
-                  <Text style={styles.changePhotoText}>Change Store Photo</Text>
+                  <Text style={styles.changePhotoText}>
+                    {uploadingDoc === 'SHOP' ? 'Uploading...' : 'Change Store Photo'}
+                  </Text>
                 </TouchableOpacity>
               </View>
             ) : (
@@ -554,10 +568,17 @@ export const VendorProfileScreen: React.FC = () => {
                 style={styles.addPhotoBox}
                 onPress={() => handlePickAndUpload('SHOP')}
                 disabled={uploadingDoc === 'SHOP'}
+                activeOpacity={0.85}
               >
-                <Camera size={28} color="#003893" />
+                <Camera size={32} color="#003893" />
                 <Text style={styles.addPhotoTitle}>Add Storefront / Counter Photo</Text>
-                <Text style={styles.addPhotoSub}>Take photo from camera or upload gallery</Text>
+                <Text style={styles.addPhotoSub}>Take photo from camera or choose from gallery</Text>
+                <View style={styles.uploadBadgePill}>
+                  <Upload size={12} color="#003893" />
+                  <Text style={styles.uploadBadgePillText}>
+                    {uploadingDoc === 'SHOP' ? 'Uploading Photo...' : 'Upload Store Photo'}
+                  </Text>
+                </View>
               </TouchableOpacity>
             )}
           </View>
@@ -950,6 +971,23 @@ const styles = StyleSheet.create({
   addPhotoSub: {
     fontSize: 11,
     color: '#64748b',
+    marginBottom: 6,
+  },
+  uploadBadgePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#eff6ff',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#bfdbfe',
+  },
+  uploadBadgePillText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#003893',
   },
   saveBtn: {
     backgroundColor: '#003893',

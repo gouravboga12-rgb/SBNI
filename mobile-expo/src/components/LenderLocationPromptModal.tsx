@@ -11,11 +11,13 @@ import {
 import {
   Compass,
   MapPin,
-  CheckCircle2,
   X,
   Building2,
-  Check,
   Search,
+  Navigation,
+  SlidersHorizontal,
+  ShieldCheck,
+  ArrowRight,
 } from 'lucide-react-native';
 import * as Location from 'expo-location';
 import { reverseGeocodeMapbox } from '../services/mapboxService';
@@ -53,8 +55,12 @@ export const LenderLocationPromptModal: React.FC<LenderLocationPromptModalProps>
 
   if (!visible) return null;
 
+  const currentPlace = currentLocation.place || 'Chaitanya Puri Main Road';
   const currentCity = currentLocation.city || 'Hyderabad';
-  const currentRadius = currentLocation.lendingRadiusKm || 25;
+  const currentState = currentLocation.state || 'Telangana';
+  const currentLat = currentLocation.latitude ? Number(currentLocation.latitude) : 17.3736;
+  const currentLng = currentLocation.longitude ? Number(currentLocation.longitude) : 78.5388;
+  const currentRadius = currentLocation.lendingRadiusKm || 100;
 
   const handleUseGps = async () => {
     setIsDetectingGps(true);
@@ -62,9 +68,23 @@ export const LenderLocationPromptModal: React.FC<LenderLocationPromptModalProps>
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
         Alert.alert('Permission Denied', 'Please grant location permissions to detect office coordinates.');
+        setIsDetectingGps(false);
         return;
       }
-      const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+
+      let loc = await Location.getLastKnownPositionAsync();
+      if (!loc) {
+        const fetchPromise = Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+        const timeoutPromise = new Promise<null>((_, reject) =>
+          setTimeout(() => reject(new Error('GPS timeout')), 6000)
+        );
+        loc = (await Promise.race([fetchPromise, timeoutPromise])) as any;
+      }
+
+      if (!loc || !loc.coords) {
+        throw new Error('Coordinates unavailable');
+      }
+
       const lat = loc.coords.latitude;
       const lng = loc.coords.longitude;
 
@@ -72,17 +92,17 @@ export const LenderLocationPromptModal: React.FC<LenderLocationPromptModalProps>
       const updatedLoc = {
         place: geocoded?.place || 'Financing Office',
         city: geocoded?.city || currentCity,
-        state: geocoded?.state || 'Telangana',
+        state: geocoded?.state || currentState,
         latitude: lat,
         longitude: lng,
         lendingRadiusKm: currentRadius,
       };
 
       await onSaveLocation(updatedLoc);
-      Alert.alert('Location Updated', `Office set to ${updatedLoc.place}, ${updatedLoc.city}`);
+      Alert.alert('Office Location Updated 🎉', `Office set to ${updatedLoc.place}, ${updatedLoc.city}`);
       onClose();
     } catch (err: any) {
-      Alert.alert('Error', err.message || 'Could not fetch GPS coordinates.');
+      Alert.alert('Notice', 'Could not detect exact GPS coordinates. Please search on the map below.');
     } finally {
       setIsDetectingGps(false);
     }
@@ -94,11 +114,12 @@ export const LenderLocationPromptModal: React.FC<LenderLocationPromptModalProps>
       await onSaveLocation({
         place: city,
         city,
+        state: currentState,
         latitude: lat,
         longitude: lng,
         lendingRadiusKm: radius,
       });
-      Alert.alert('Location Updated', `Office set to ${city}`);
+      Alert.alert('Office Location Updated 🎉', `Office set to ${city} (${radius} km radius)`);
       onClose();
     }
   };
@@ -113,71 +134,110 @@ export const LenderLocationPromptModal: React.FC<LenderLocationPromptModalProps>
       >
         <View style={styles.overlay}>
           <View style={styles.card}>
-            {/* Header */}
-            <View style={styles.badgeRow}>
-              <View style={styles.badge}>
-                <Compass size={14} color="#059669" />
-                <Text style={styles.badgeText}>Financer Location Check</Text>
-              </View>
-              <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-                <X size={18} color="#64748b" />
-              </TouchableOpacity>
-            </View>
-
-            <Text style={styles.title}>Confirm Your Operating Location</Text>
-            <Text style={styles.subtitle}>
-              Nearby shop owners discover you based on your office location and radius. Please ensure your location is up to date.
-            </Text>
-
-            {/* Current Location Pill */}
-            <View style={styles.currentLocPill}>
-              <Building2 size={16} color="#003893" />
-              <Text style={styles.currentLocText} numberOfLines={1}>
-                Current: <Text style={{ fontWeight: '800', color: '#0f172a' }}>{currentCity}</Text> ({currentRadius} KM Radius)
-              </Text>
-            </View>
-
-            {/* Option 1: Use Current GPS */}
-            <TouchableOpacity
-              style={styles.optionBtnPrimary}
-              onPress={handleUseGps}
-              disabled={isDetectingGps}
-              activeOpacity={0.85}
-            >
-              {isDetectingGps ? (
-                <ActivityIndicator size="small" color="#ffffff" />
-              ) : (
-                <>
-                  <Compass size={18} color="#ffffff" />
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.optionBtnPrimaryTitle}>Use Current GPS Location</Text>
-                    <Text style={styles.optionBtnPrimarySub}>Auto-detect office coordinates (Mapbox)</Text>
-                  </View>
-                </>
-              )}
+            {/* Top Close Button */}
+            <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
+              <X size={18} color="#64748b" />
             </TouchableOpacity>
 
-            {/* Option 2: Search Mapbox Location */}
+            {/* Header Badge */}
+            <View style={styles.badgeRow}>
+              <View style={styles.badge}>
+                <Compass size={13} color="#059669" />
+                <Text style={styles.badgeText}>Financer Office & Lending Service Area</Text>
+              </View>
+            </View>
+
+            {/* Header Title & Subtitle */}
+            <Text style={styles.title}>Confirm Your Lending Office Location</Text>
+            <Text style={styles.subtitle}>
+              JustPaisa connects you with local shop owners and startups looking for business funding within your service radius. Ensure your office location is accurate.
+            </Text>
+
+            {/* Current Recorded Office Location Box */}
+            <View style={styles.currentBox}>
+              <View style={styles.currentBoxHeader}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                  <Building2 size={13} color="#003893" />
+                  <Text style={styles.currentBoxLabel}>CURRENT RECORDED OFFICE LOCATION</Text>
+                </View>
+                <View style={styles.onFileBadge}>
+                  <ShieldCheck size={11} color="#003893" />
+                  <Text style={styles.onFileText}>On File</Text>
+                </View>
+              </View>
+
+              <View style={styles.currentAddressRow}>
+                <MapPin size={16} color="#ef4444" style={{ marginTop: 2 }} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.currentAddressText}>
+                    {currentPlace ? `${currentPlace}, ` : ''}{currentCity}
+                  </Text>
+                  <Text style={styles.currentRadiusSub}>
+                    {currentState}, India • {currentRadius} km Service Radius
+                  </Text>
+                  <Text style={styles.currentCoordsSub}>
+                    Coordinates: {currentLat.toFixed(4)}° N, {currentLng.toFixed(4)}° E
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            {/* Button 1: Green GPS Button */}
             <TouchableOpacity
-              style={styles.optionBtnSecondary}
+              style={styles.gpsBtn}
+              onPress={handleUseGps}
+              disabled={isDetectingGps}
+              activeOpacity={0.88}
+            >
+              <View style={styles.gpsIconCircle}>
+                {isDetectingGps ? (
+                  <ActivityIndicator size="small" color="#ffffff" />
+                ) : (
+                  <Navigation size={18} color="#ffffff" />
+                )}
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.gpsBtnTitle}>Use Current Device GPS</Text>
+                <Text style={styles.gpsBtnSub}>
+                  Auto-capture exact coordinates of your current office
+                </Text>
+              </View>
+              <ArrowRight size={18} color="#ffffff" />
+            </TouchableOpacity>
+
+            {/* Button 2: White with Blue Border - Map Search */}
+            <TouchableOpacity
+              style={styles.mapSearchBtn}
               onPress={() => setIsMapPickerOpen(true)}
               activeOpacity={0.85}
             >
-              <Search size={18} color="#003893" />
-              <View style={{ flex: 1 }}>
-                <Text style={styles.optionBtnSecondaryTitle}>Search & Pick Location</Text>
-                <Text style={styles.optionBtnSecondarySub}>Select area & radius on Mapbox</Text>
+              <View style={styles.mapSearchIconCircle}>
+                <Search size={16} color="#003893" />
               </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.mapSearchTitle}>Search Landmark or Pin on Map</Text>
+                <Text style={styles.mapSearchSub}>
+                  Search metro station, business center, or adjust radius
+                </Text>
+              </View>
+              <SlidersHorizontal size={16} color="#003893" />
             </TouchableOpacity>
 
-            {/* Option 3: Keep Existing */}
+            {/* Button 3: Keep Existing Location */}
             <TouchableOpacity
-              style={styles.keepBtn}
+              style={styles.keepExistingBtn}
               onPress={onClose}
               activeOpacity={0.8}
             >
-              <Text style={styles.keepBtnText}>Keep Existing ({currentCity})</Text>
+              <Text style={styles.keepExistingText}>
+                Keep Existing Location ({currentCity}, {currentState})
+              </Text>
             </TouchableOpacity>
+
+            {/* Footer Notice */}
+            <Text style={styles.footerNote}>
+              You can also adjust your lending location and service radius anytime from your homepage.
+            </Text>
           </View>
         </View>
       </Modal>
@@ -197,123 +257,206 @@ export const LenderLocationPromptModal: React.FC<LenderLocationPromptModalProps>
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.7)',
+    backgroundColor: 'rgba(15, 23, 42, 0.72)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: 16,
   },
   card: {
-    width: '100%',
-    maxWidth: 400,
     backgroundColor: '#ffffff',
-    borderRadius: 24,
+    borderRadius: 26,
     padding: 22,
+    width: '100%',
+    maxWidth: 420,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 18,
     elevation: 12,
   },
-  badgeRow: {
-    flexDirection: 'row',
+  closeBtn: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    zIndex: 10,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#f1f5f9',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 12,
+    justifyContent: 'center',
+  },
+  badgeRow: {
+    alignItems: 'center',
+    marginBottom: 10,
   },
   badge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 5,
     backgroundColor: '#ecfdf5',
-    paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 8,
+    paddingHorizontal: 10,
+    borderRadius: 999,
     borderWidth: 1,
     borderColor: '#a7f3d0',
   },
   badgeText: {
     fontSize: 11,
-    color: '#065f46',
     fontWeight: '800',
-  },
-  closeBtn: {
-    padding: 4,
+    color: '#065f46',
   },
   title: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '900',
     color: '#0f172a',
+    textAlign: 'center',
     marginBottom: 6,
   },
   subtitle: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#64748b',
-    lineHeight: 18,
+    textAlign: 'center',
+    lineHeight: 16,
+    marginBottom: 16,
+    paddingHorizontal: 8,
+  },
+  currentBox: {
+    backgroundColor: '#f0f7ff',
+    borderWidth: 1,
+    borderColor: '#bfdbfe',
+    borderRadius: 16,
+    padding: 14,
     marginBottom: 14,
   },
-  currentLocPill: {
+  currentBoxHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  currentBoxLabel: {
+    fontSize: 9,
+    fontWeight: '900',
+    color: '#003893',
+    letterSpacing: 0.5,
+  },
+  onFileBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: '#dbeafe',
+    paddingVertical: 2,
+    paddingHorizontal: 6,
+    borderRadius: 6,
+  },
+  onFileText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#003893',
+  },
+  currentAddressRow: {
+    flexDirection: 'row',
     gap: 8,
-    backgroundColor: '#f8fafc',
-    padding: 10,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-    marginBottom: 16,
+    alignItems: 'flex-start',
   },
-  currentLocText: {
-    fontSize: 12,
-    color: '#64748b',
-    flex: 1,
+  currentAddressText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#0f172a',
+    lineHeight: 18,
   },
-  optionBtnPrimary: {
-    backgroundColor: '#059669',
+  currentRadiusSub: {
+    fontSize: 11,
+    color: '#475569',
+    fontWeight: '600',
+    marginTop: 2,
+  },
+  currentCoordsSub: {
+    fontSize: 9,
+    fontFamily: 'monospace',
+    color: '#94a3b8',
+    marginTop: 2,
+  },
+  gpsBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    padding: 14,
+    backgroundColor: '#007a33',
+    paddingVertical: 12,
+    paddingHorizontal: 14,
     borderRadius: 16,
     marginBottom: 10,
+    shadowColor: '#007a33',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 3,
   },
-  optionBtnPrimaryTitle: {
+  gpsIconCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  gpsBtnTitle: {
     fontSize: 13,
     fontWeight: '800',
     color: '#ffffff',
   },
-  optionBtnPrimarySub: {
+  gpsBtnSub: {
     fontSize: 10,
-    color: '#d1fae5',
+    color: 'rgba(255, 255, 255, 0.85)',
     marginTop: 1,
   },
-  optionBtnSecondary: {
-    backgroundColor: '#eff6ff',
-    borderWidth: 1,
-    borderColor: '#bfdbfe',
+  mapSearchBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    padding: 14,
+    backgroundColor: '#ffffff',
+    borderWidth: 1.5,
+    borderColor: '#003893',
+    paddingVertical: 12,
+    paddingHorizontal: 14,
     borderRadius: 16,
     marginBottom: 10,
   },
-  optionBtnSecondaryTitle: {
+  mapSearchIconCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#eff6ff',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  mapSearchTitle: {
     fontSize: 13,
     fontWeight: '800',
     color: '#003893',
   },
-  optionBtnSecondarySub: {
+  mapSearchSub: {
     fontSize: 10,
-    color: '#3b82f6',
+    color: '#64748b',
     marginTop: 1,
   },
-  keepBtn: {
+  keepExistingBtn: {
+    backgroundColor: '#f1f5f9',
     paddingVertical: 12,
+    borderRadius: 14,
     alignItems: 'center',
+    marginBottom: 12,
   },
-  keepBtnText: {
+  keepExistingText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#64748b',
+    color: '#334155',
+  },
+  footerNote: {
+    fontSize: 10,
+    color: '#94a3b8',
+    textAlign: 'center',
+    lineHeight: 14,
   },
 });

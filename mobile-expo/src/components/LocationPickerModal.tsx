@@ -78,27 +78,49 @@ export const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Permission Denied', 'Please enable location permissions in device settings.');
+        Alert.alert('Permission Denied', 'Please grant location permissions in device settings.');
+        setIsDetecting(false);
         return;
       }
-      const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+
+      // 1. Check last known position first for instantaneous result
+      let loc = await Location.getLastKnownPositionAsync();
+
+      // 2. If no cached position, query with a strict 6-second timeout race
+      if (!loc) {
+        const locationPromise = Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        });
+        const timeoutPromise = new Promise<null>((_, reject) =>
+          setTimeout(() => reject(new Error('Location timeout')), 6000)
+        );
+        loc = (await Promise.race([locationPromise, timeoutPromise])) as any;
+      }
+
+      if (!loc || !loc.coords) {
+        throw new Error('Coordinates unavailable');
+      }
+
       const lat = loc.coords.latitude;
       const lng = loc.coords.longitude;
       setCoords({ lat, lng });
 
       const mapboxResult = await reverseGeocodeMapbox(lat, lng);
-      if (mapboxResult) {
+      if (mapboxResult && (mapboxResult.city || mapboxResult.place)) {
         setCityInput(mapboxResult.city || mapboxResult.place);
       } else {
         const geocode = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lng });
         if (geocode && geocode.length > 0) {
           const item = geocode[0];
-          const detectedName = item.city || item.subregion || item.district || item.region || '';
+          const detectedName = item.city || item.subregion || item.district || item.region || item.name || '';
           if (detectedName) setCityInput(detectedName);
         }
       }
     } catch (e: any) {
-      Alert.alert('Notice', 'Could not detect location automatically. Please search using the input below.');
+      Alert.alert(
+        'GPS Detection Notice',
+        'Could not acquire immediate GPS fix. Please type your area or landmark in the search box below.'
+      );
     } finally {
       setIsDetecting(false);
     }

@@ -10,6 +10,7 @@ import {
   TextInput,
   ScrollView,
   Alert,
+  Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -32,6 +33,9 @@ import { ConsentModal } from '../../components/ConsentModal';
 import { SubscriptionModal } from '../../components/SubscriptionModal';
 import { LoanRequestModal } from '../../components/LoanRequestModal';
 import { LocationPickerModal } from '../../components/LocationPickerModal';
+import { resolveDocumentUrl } from '../../utils/documentGenerators';
+
+const DEFAULT_LENDER_PHOTO = 'https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=200';
 
 const RADIUS_CHIPS = [10, 25, 50, 70, 100];
 
@@ -201,25 +205,32 @@ export const VendorFinancersScreen: React.FC = () => {
             </TouchableOpacity>
           </View>
         }
-        renderItem={({ item }) => (
-          <View style={styles.card}>
-            <View style={styles.cardHeader}>
-              <View style={styles.instIcon}>
-                <Building2 size={22} color="#003893" />
-              </View>
-              <View style={{ flex: 1 }}>
-                <View style={styles.titleRow}>
-                  <Text style={styles.instName}>{item.institutionName}</Text>
-                  <View style={styles.verifiedPill}>
-                    <CheckCircle2 size={12} color="#16a34a" />
-                    <Text style={styles.verifiedPillText}>Verified</Text>
-                  </View>
+        renderItem={({ item }) => {
+          const effectiveLogo = resolveDocumentUrl(item.logoUrl || item.avatarUrl || DEFAULT_LENDER_PHOTO);
+
+          return (
+            <View style={styles.card}>
+              <View style={styles.cardHeader}>
+                <View style={styles.instIcon}>
+                  <Image
+                    source={{ uri: effectiveLogo }}
+                    style={styles.instLogo}
+                    resizeMode="cover"
+                  />
                 </View>
-                <Text style={styles.subText}>
-                  {item.institutionType} • {item.city}, {item.state}
-                </Text>
+                <View style={{ flex: 1 }}>
+                  <View style={styles.titleRow}>
+                    <Text style={styles.instName}>{item.institutionName}</Text>
+                    <View style={styles.verifiedPill}>
+                      <CheckCircle2 size={12} color="#16a34a" />
+                      <Text style={styles.verifiedPillText}>Verified</Text>
+                    </View>
+                  </View>
+                  <Text style={styles.subText}>
+                    {item.institutionType} • {item.city}, {item.state}
+                  </Text>
+                </View>
               </View>
-            </View>
 
             {/* Metrics Chips */}
             <View style={styles.metricsRow}>
@@ -275,7 +286,8 @@ export const VendorFinancersScreen: React.FC = () => {
               </TouchableOpacity>
             </View>
           </View>
-        )}
+        );
+      }}
       />
 
       {/* Modals */}
@@ -413,6 +425,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#eff6ff',
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  instLogo: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 10,
   },
   titleRow: {
     flexDirection: 'row',

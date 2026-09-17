@@ -50,6 +50,9 @@ import { LoanRequestModal } from '../../components/LoanRequestModal';
 import { LocationPickerModal } from '../../components/LocationPickerModal';
 import { ReferAndEarnModal } from '../../components/ReferAndEarnModal';
 import { BannerCarousel, BannerSlide } from '../../components/BannerCarousel';
+import { resolveDocumentUrl } from '../../utils/documentGenerators';
+
+const DEFAULT_LENDER_PHOTO = 'https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=200';
 
 const CATEGORIES = [
   'All',
@@ -491,26 +494,33 @@ export const VendorHomeScreen: React.FC = () => {
             </TouchableOpacity>
           </View>
         }
-        renderItem={({ item }) => (
-          <View style={styles.lenderCard}>
-            {/* Header: Financer Name, Type, Rating & Distance */}
-            <View style={styles.cardTop}>
-              <View style={styles.instIcon}>
-                <Building2 size={24} color="#003893" />
-              </View>
-              <View style={{ flex: 1 }}>
-                <View style={styles.nameRow}>
-                  <Text style={styles.instName}>{item.institutionName}</Text>
-                  <View style={styles.verifiedBadge}>
-                    <CheckCircle2 size={12} color="#16a34a" />
-                    <Text style={styles.verifiedText}>Verified</Text>
-                  </View>
+        renderItem={({ item }) => {
+          const effectiveLogo = resolveDocumentUrl(item.logoUrl || item.avatarUrl || DEFAULT_LENDER_PHOTO);
+
+          return (
+            <View style={styles.lenderCard}>
+              {/* Header: Financer Name, Type, Rating & Distance */}
+              <View style={styles.cardTop}>
+                <View style={styles.instIcon}>
+                  <Image
+                    source={{ uri: effectiveLogo }}
+                    style={styles.instLogo}
+                    resizeMode="cover"
+                  />
                 </View>
-                <Text style={styles.instType}>
-                  {item.institutionType} • {item.registrationNumber || 'Registered'}
-                </Text>
+                <View style={{ flex: 1 }}>
+                  <View style={styles.nameRow}>
+                    <Text style={styles.instName}>{item.institutionName}</Text>
+                    <View style={styles.verifiedBadge}>
+                      <CheckCircle2 size={12} color="#16a34a" />
+                      <Text style={styles.verifiedText}>Verified</Text>
+                    </View>
+                  </View>
+                  <Text style={styles.instType}>
+                    {item.institutionType} • {item.registrationNumber || 'Registered'}
+                  </Text>
+                </View>
               </View>
-            </View>
 
             {/* Rating & Distance Badges */}
             <View style={styles.metaRow}>
@@ -577,7 +587,8 @@ export const VendorHomeScreen: React.FC = () => {
               </TouchableOpacity>
             </View>
           </View>
-        )}
+        );
+      }}
         ListFooterComponent={
           <View style={styles.statutoryFooter}>
             <ShieldCheck size={16} color="#64748b" />
@@ -1111,6 +1122,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#eff6ff',
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  instLogo: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 12,
   },
   nameRow: {
     flexDirection: 'row',

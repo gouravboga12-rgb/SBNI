@@ -40,6 +40,7 @@ import {
   Rocket,
   AlertCircle,
   Sparkles,
+  UserPlus,
 } from 'lucide-react-native';
 import * as Location from 'expo-location';
 import * as ImagePicker from 'expo-image-picker';
@@ -642,6 +643,7 @@ export const LoginScreen: React.FC = () => {
                   }}
                   activeOpacity={0.85}
                 >
+                  <UserPlus size={16} color="#003893" />
                   <Text style={styles.selectSignUpBtnTextVendor}>Sign Up as Shop Owner</Text>
                 </TouchableOpacity>
               </View>
@@ -686,6 +688,7 @@ export const LoginScreen: React.FC = () => {
                   }}
                   activeOpacity={0.85}
                 >
+                  <UserPlus size={16} color="#007a33" />
                   <Text style={styles.selectSignUpBtnTextLender}>Sign Up as Financer</Text>
                 </TouchableOpacity>
               </View>
@@ -1978,63 +1981,81 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
   selectBtnRow: {
-    flexDirection: 'row',
-    gap: 10,
+    flexDirection: 'column',
+    gap: 8,
+    marginTop: 6,
   },
   selectLoginBtnVendor: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
+    gap: 8,
     backgroundColor: '#003893',
-    paddingVertical: 10,
-    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 14,
+    shadowColor: '#003893',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 2,
   },
   selectSignUpBtnVendor: {
-    flex: 1,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 8,
     backgroundColor: '#ffffff',
     borderWidth: 1.5,
     borderColor: '#003893',
-    paddingVertical: 10,
-    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 14,
   },
   selectLoginBtnText: {
     color: '#ffffff',
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '800',
+    letterSpacing: 0.2,
   },
   selectSignUpBtnTextVendor: {
     color: '#003893',
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '800',
+    letterSpacing: 0.2,
   },
   selectLoginBtnLender: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
+    gap: 8,
     backgroundColor: '#007a33',
-    paddingVertical: 10,
-    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 14,
+    shadowColor: '#007a33',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 2,
   },
   selectSignUpBtnLender: {
-    flex: 1,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 8,
     backgroundColor: '#ffffff',
     borderWidth: 1.5,
     borderColor: '#007a33',
-    paddingVertical: 10,
-    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 14,
   },
   selectSignUpBtnTextLender: {
     color: '#007a33',
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '800',
+    letterSpacing: 0.2,
   },
   trustBadgeRow: {
     flexDirection: 'row',
