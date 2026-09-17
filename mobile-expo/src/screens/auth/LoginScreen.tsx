@@ -594,7 +594,7 @@ export const LoginScreen: React.FC = () => {
             {/* Top Brand Logo */}
             <View style={styles.brandHeader}>
               <Image
-                source={require('../../assets/sbni_logo.png')}
+                source={require('../../../assets/sbni_logo.png')}
                 style={styles.mainBrandLogo}
                 resizeMode="contain"
               />
@@ -724,7 +724,7 @@ export const LoginScreen: React.FC = () => {
             {/* Central Brand Logo */}
             <View style={styles.brandHeader}>
               <Image
-                source={require('../../assets/sbni_logo.png')}
+                source={require('../../../assets/sbni_logo.png')}
                 style={styles.mainBrandLogo}
                 resizeMode="contain"
               />
@@ -853,7 +853,7 @@ export const LoginScreen: React.FC = () => {
             {/* Central Brand Logo */}
             <View style={styles.brandHeader}>
               <Image
-                source={require('../../assets/sbni_logo.png')}
+                source={require('../../../assets/sbni_logo.png')}
                 style={styles.mainBrandLogo}
                 resizeMode="contain"
               />
