@@ -43,6 +43,35 @@ export async function saveUserPushToken(userId: string, pushToken: string): Prom
 }
 
 /**
+ * Send an Expo push notification directly to a specific user by userId
+ */
+export async function sendPushNotificationToUser(
+  userId: string,
+  title: string,
+  body: string,
+  data?: Record<string, any>
+): Promise<boolean> {
+  try {
+    if (!userId) return false;
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { pushToken: true, id: true },
+    });
+
+    if (!user?.pushToken) {
+      return false;
+    }
+
+    const sent = await sendExpoPushNotification([user.pushToken], title, body, data);
+    return sent > 0;
+  } catch (err: any) {
+    console.warn(`[PushNotification] Failed to send push to user ${userId}:`, err?.message || err);
+    return false;
+  }
+}
+
+
+/**
  * Batch send push notifications to a list of Expo push tokens
  */
 export async function sendExpoPushNotification(

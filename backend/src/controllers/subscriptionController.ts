@@ -5,6 +5,7 @@ import { AuthenticatedRequest } from '../middlewares/auth';
 import razorpayInstance, { razorpayKeyId, razorpayKeySecret } from '../config/razorpay';
 import { emitToUser, emitToAdmin } from '../services/socketService';
 import { sendSubscriptionInvoiceEmail } from '../utils/mailer';
+import { sendPushNotificationToUser } from '../services/pushNotificationService';
 
 /**
  * Calculates new subscription start and end dates by stacking validity
@@ -286,6 +287,24 @@ export const processReferralRewardsForUser = async (userId: string, plan: any, e
           rewardedAt: new Date(),
         },
       });
+
+      // Dispatch push notifications for referral rewards
+      if (referrerReward > 0 && pendingReferral.referrerId) {
+        sendPushNotificationToUser(
+          pendingReferral.referrerId,
+          '🎉 Referral Bonus Earned!',
+          `₹${referrerReward} has been credited to your wallet for inviting a partner (${dbPlan.name}).`,
+          { type: 'WALLET_BONUS', screen: 'Profile' }
+        ).catch(() => {});
+      }
+      if (refereeReward > 0) {
+        sendPushNotificationToUser(
+          userId,
+          '🎁 Welcome Cashback Credited!',
+          `₹${refereeReward} welcome bonus has been added to your wallet!`,
+          { type: 'WALLET_BONUS', screen: 'Profile' }
+        ).catch(() => {});
+      }
     });
   } catch (err: any) {
     console.error('Error processing referral rewards:', err?.message || err);

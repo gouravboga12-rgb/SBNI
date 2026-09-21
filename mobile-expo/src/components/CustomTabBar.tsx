@@ -5,6 +5,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   useWindowDimensions,
+  Platform,
 } from 'react-native';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -13,6 +14,8 @@ import {
   FileText,
   User,
   Users,
+  Phone,
+  Plus,
 } from 'lucide-react-native';
 
 interface CustomTabBarProps extends BottomTabBarProps {
@@ -25,6 +28,7 @@ export const CustomTabBar: React.FC<CustomTabBarProps> = ({
   descriptors,
   navigation,
   role,
+  onOpenSubscription,
 }) => {
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
@@ -33,6 +37,77 @@ export const CustomTabBar: React.FC<CustomTabBarProps> = ({
   const isVendor = role === 'VENDOR';
   const activeColor = isVendor ? '#003893' : '#059669';
   const activeBg = isVendor ? '#eff6ff' : '#ecfdf5';
+
+  const leftRoutes = state.routes.slice(0, 2);
+  const rightRoutes = state.routes.slice(2, 4);
+
+  const renderTab = (route: typeof state.routes[0], index: number) => {
+    const isFocused = state.index === index;
+
+    const onPress = () => {
+      const event = navigation.emit({
+        type: 'tabPress',
+        target: route.key,
+        canPreventDefault: true,
+      });
+
+      if (!isFocused && !event.defaultPrevented) {
+        navigation.navigate(route.name);
+      }
+    };
+
+    let IconComponent = Home;
+    let label = 'Home';
+
+    if (route.name === 'Home') {
+      IconComponent = Home;
+      label = 'Home';
+    } else if (route.name === 'Financers') {
+      IconComponent = Users;
+      label = 'Financers';
+    } else if (route.name === 'Businesses') {
+      IconComponent = Users;
+      label = 'Businesses';
+    } else if (route.name === 'Requests') {
+      IconComponent = FileText;
+      label = 'Requests';
+    } else if (route.name === 'Reports') {
+      IconComponent = FileText;
+      label = 'Reports';
+    } else if (route.name === 'Profile') {
+      IconComponent = User;
+      label = 'Profile';
+    }
+
+    return (
+      <TouchableOpacity
+        key={route.key}
+        style={[
+          styles.tabItem,
+          isFocused && { backgroundColor: activeBg },
+        ]}
+        onPress={onPress}
+        activeOpacity={0.7}
+      >
+        <IconComponent
+          size={isTablet ? 22 : 19}
+          color={isFocused ? activeColor : '#64748b'}
+        />
+        <Text
+          style={[
+            styles.tabLabel,
+            {
+              color: isFocused ? activeColor : '#64748b',
+              fontWeight: isFocused ? '800' : '600',
+            },
+          ]}
+          numberOfLines={1}
+        >
+          {label}
+        </Text>
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <View
@@ -52,73 +127,28 @@ export const CustomTabBar: React.FC<CustomTabBarProps> = ({
           },
         ]}
       >
-        {state.routes.map((route, index) => {
-          const isFocused = state.index === index;
+        {/* Left 2 Tabs */}
+        {leftRoutes.map((route, i) => renderTab(route, i))}
 
-          const onPress = () => {
-            const event = navigation.emit({
-              type: 'tabPress',
-              target: route.key,
-              canPreventDefault: true,
-            });
-
-            if (!isFocused && !event.defaultPrevented) {
-              navigation.navigate(route.name);
+        {/* Center Floating Action Button (Matches Website Exactly: Phone for Vendor, Plus for Lender) */}
+        <TouchableOpacity
+          style={styles.floatingCenterBtn}
+          onPress={() => {
+            if (onOpenSubscription) {
+              onOpenSubscription();
             }
-          };
+          }}
+          activeOpacity={0.88}
+        >
+          {isVendor ? (
+            <Phone size={21} color="#ffffff" fill="#ffffff" />
+          ) : (
+            <Plus size={26} color="#ffffff" />
+          )}
+        </TouchableOpacity>
 
-          let IconComponent = Home;
-          let label = 'Home';
-
-          if (route.name === 'Home') {
-            IconComponent = Home;
-            label = 'Home';
-          } else if (route.name === 'Financers') {
-            IconComponent = Users;
-            label = 'Financers';
-          } else if (route.name === 'Businesses') {
-            IconComponent = Users;
-            label = 'Businesses';
-          } else if (route.name === 'Requests') {
-            IconComponent = FileText;
-            label = 'Inquiries';
-          } else if (route.name === 'Reports') {
-            IconComponent = FileText;
-            label = 'Reports';
-          } else if (route.name === 'Profile') {
-            IconComponent = User;
-            label = 'Profile';
-          }
-
-          return (
-            <TouchableOpacity
-              key={route.key}
-              style={[
-                styles.tabItem,
-                isFocused && { backgroundColor: activeBg },
-              ]}
-              onPress={onPress}
-              activeOpacity={0.7}
-            >
-              <IconComponent
-                size={isTablet ? 22 : 19}
-                color={isFocused ? activeColor : '#64748b'}
-              />
-              <Text
-                style={[
-                  styles.tabLabel,
-                  {
-                    color: isFocused ? activeColor : '#64748b',
-                    fontWeight: isFocused ? '800' : '600',
-                  },
-                ]}
-                numberOfLines={1}
-              >
-                {label}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
+        {/* Right 2 Tabs */}
+        {rightRoutes.map((route, i) => renderTab(route, i + 2))}
       </View>
     </View>
   );
@@ -149,7 +179,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 10,
     elevation: 10,
-    paddingHorizontal: 12,
+    paddingHorizontal: 8,
   },
   phoneDock: {
     width: '100%',
@@ -166,11 +196,28 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 6,
-    paddingHorizontal: 8,
+    paddingHorizontal: 4,
     borderRadius: 12,
     gap: 3,
   },
   tabLabel: {
     fontSize: 11,
+  },
+  floatingCenterBtn: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: '#059669',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: -24,
+    borderWidth: 3.5,
+    borderColor: '#ffffff',
+    shadowColor: '#059669',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 12,
+    marginHorizontal: 4,
   },
 });

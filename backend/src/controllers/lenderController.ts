@@ -4,7 +4,7 @@ import { AuthenticatedRequest } from '../middlewares/auth';
 import { LenderType } from '@prisma/client';
 import { calculateDistanceKm } from '../utils/distance';
 import { emitToUser, emitToRole, emitToAdmin } from '../services/socketService';
-import { notifyVendorsOfNewLender } from '../services/pushNotificationService';
+import { notifyVendorsOfNewLender, sendPushNotificationToUser } from '../services/pushNotificationService';
 
 const mapLenderTypeEnum = (type?: string): LenderType => {
   if (!type) return 'NBFC';
@@ -403,6 +403,14 @@ export const ingestLead = async (req: AuthenticatedRequest, res: Response) => {
 
       if (targetLender?.userId) {
         emitToUser(targetLender.userId, 'lead:new', lead);
+        // Dispatch Expo mobile push notification to Financer
+        const vendorDisplayName = (lead as any).shopName || (lead as any).vendorName || 'A Small Business';
+        sendPushNotificationToUser(
+          targetLender.userId,
+          '🔔 New Financing Inquiry',
+          `${vendorDisplayName} has submitted a new business financing inquiry. Tap to review.`,
+          { type: 'LEAD_NEW', leadId: lead.id, screen: 'Reports' }
+        ).catch(() => {});
       }
       emitToUser(lenderId, 'lead:new', lead);
       emitToAdmin('lead:new', lead);
@@ -513,6 +521,18 @@ export const updateLeadStatus = async (req: AuthenticatedRequest, res: Response)
           status,
           lead,
         });
+        // Dispatch Expo mobile push notification to Vendor
+        const isAccepted = status === 'Accepted' || status === 'Verified' || status === 'Approved' || status === 'Completed';
+        const notifTitle = isAccepted ? '🎉 Financing Request Approved!' : 'Financing Request Update';
+        const notifBody = isAccepted
+          ? 'Your financing application has been accepted! Tap to view details and office navigation.'
+          : `Your financing application status has been updated to ${status}.`;
+        sendPushNotificationToUser(
+          existingLead.vendor.userId,
+          notifTitle,
+          notifBody,
+          { type: 'LEAD_STATUS_UPDATE', leadId, status, screen: 'Requests' }
+        ).catch(() => {});
       }
       emitToAdmin('lead:status_updated', { leadId, status, lead });
     } catch (socketErr) {

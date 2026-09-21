@@ -13,6 +13,7 @@ import {
   Dimensions,
   Modal,
   ScrollView,
+  useWindowDimensions,
 } from 'react-native';
 import {
   Users,
@@ -35,11 +36,25 @@ import { resolveDocumentUrl } from '../../utils/documentGenerators';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
+const BUSINESS_CATEGORIES = [
+  'All',
+  'Retail & Kirana',
+  'Wholesale',
+  'Manufacturing',
+  'Food & Dining',
+  'Services',
+  'Garments',
+  'Electronics',
+];
+
 export const LenderBusinessesScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+  const isTablet = width >= 768;
   const { lenderProfile } = useAuth();
   const [businesses, setBusinesses] = useState<DiscoveredBusiness[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('All');
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedBusinessForInfo, setSelectedBusinessForInfo] = useState<DiscoveredBusiness | null>(null);
@@ -88,8 +103,8 @@ export const LenderBusinessesScreen: React.FC = () => {
             category: vp.category || 'Retail Shop Business',
             annualTurnover: vp.annualTurnover || '10 - 25 Lakhs',
             monthlyIncome: '₹ 50,000 / month',
-            mobileNumber: vp.phone || u.phone || 'Not provided',
-            emailId: vp.email || u.email || 'vendor@example.com',
+            mobileNumber: vp.mobileNumber || vp.phone || vp.user?.phone || u.phone || (vp.contactNumber || 'Not provided'),
+            emailId: vp.emailId || vp.email || u.email || 'vendor@example.com',
             dateOfBirth: vp.dateOfBirth || 'Not specified',
             panNumber: vp.panNumber,
             aadhaarNumber: vp.aadhaarNumber,
@@ -120,26 +135,40 @@ export const LenderBusinessesScreen: React.FC = () => {
   };
 
   const handleCall = (phone?: string) => {
-    if (phone && phone !== 'Not provided') {
-      Linking.openURL(`tel:${phone}`).catch(() => {});
+    const raw = (phone || '').replace(/\D/g, '');
+    if (raw.length >= 10) {
+      Linking.openURL(`tel:${raw}`).catch(() => {
+        Alert.alert('Call Error', 'Could not open device dialer.');
+      });
     } else {
       Alert.alert('Notice', 'Mobile number not provided.');
     }
   };
 
   const handleWhatsApp = (phone?: string, shopName?: string) => {
-    if (phone && phone !== 'Not provided') {
-      const cleanPhone = phone.replace(/\D/g, '');
+    const raw = (phone || '').replace(/\D/g, '');
+    if (raw.length >= 10) {
+      const cleanPhone = raw.length === 10 ? `91${raw}` : raw;
       const msg = encodeURIComponent(
         `Hello! I saw your business "${shopName || 'Shop'}" on JustPaisa and would like to discuss business financing options.`
       );
-      Linking.openURL(`https://wa.me/91${cleanPhone}?text=${msg}`).catch(() => {});
+      Linking.openURL(`https://wa.me/${cleanPhone}?text=${msg}`).catch(() => {
+        Alert.alert('WhatsApp Error', 'Could not open WhatsApp.');
+      });
     } else {
       Alert.alert('Notice', 'WhatsApp number not provided.');
     }
   };
 
   const filteredBusinesses = businesses.filter((b) => {
+    // 1. Category filter
+    if (selectedCategory !== 'All') {
+      const catKeyword = selectedCategory.split(' ')[0].toLowerCase();
+      if (!b.category || !b.category.toLowerCase().includes(catKeyword)) {
+        return false;
+      }
+    }
+    // 2. Search query filter
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase();
     return (
@@ -176,11 +205,40 @@ export const LenderBusinessesScreen: React.FC = () => {
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
+          {searchQuery ? (
+            <TouchableOpacity onPress={() => setSearchQuery('')}>
+              <X size={16} color="#94a3b8" />
+            </TouchableOpacity>
+          ) : null}
         </View>
+
+        {/* Category Filter Chips */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.categoryScroll}
+        >
+          {BUSINESS_CATEGORIES.map((cat) => {
+            const active = selectedCategory === cat;
+            return (
+              <TouchableOpacity
+                key={cat}
+                style={[styles.categoryChip, active && styles.categoryChipActive]}
+                onPress={() => setSelectedCategory(cat)}
+              >
+                <Text style={[styles.categoryChipText, active && styles.categoryChipTextActive]}>
+                  {cat}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
       </View>
 
       {/* Businesses List */}
       <FlatList
+        key={isTablet ? 'tablet-2' : 'phone-1'}
+        numColumns={isTablet ? 2 : 1}
         data={filteredBusinesses}
         keyExtractor={(item) => item.id}
         contentContainerStyle={[
@@ -204,7 +262,7 @@ export const LenderBusinessesScreen: React.FC = () => {
             </View>
             <Text style={styles.emptyCardTitle}>No Businesses Found in Radius</Text>
             <Text style={styles.emptyCardDesc}>
-              Currently there are no registered small shops or startups discovered within {activeRadiusKm} km of your office location. Try increasing your lending radius in the Profile tab.
+              Currently there are no registered small shops or startups discovered matching your criteria within {activeRadiusKm} km of your office location. Try increasing your lending radius in the Profile tab.
             </Text>
           </View>
         }
@@ -213,7 +271,7 @@ export const LenderBusinessesScreen: React.FC = () => {
           const avatarUri = item.avatarUrl ? resolveDocumentUrl(item.avatarUrl) : null;
 
           return (
-            <View style={[styles.card, isFraud && styles.cardFraud]}>
+            <View style={[styles.card, isTablet && styles.cardTablet, isFraud && styles.cardFraud]}>
               {/* Header Row */}
               <View style={styles.cardHeader}>
                 <View style={styles.avatarBox}>
@@ -272,7 +330,7 @@ export const LenderBusinessesScreen: React.FC = () => {
                 </View>
               </View>
 
-              {/* Action Buttons: Row 1 = Call & WhatsApp, Row 2 = Full width More Info & Location */}
+              {/* Action Buttons: Row 1 = Call & WhatsApp, Row 2 = Directions & Details */}
               <View style={styles.actionsContainer}>
                 <View style={styles.actionsRow}>
                   <TouchableOpacity
@@ -294,14 +352,29 @@ export const LenderBusinessesScreen: React.FC = () => {
                   </TouchableOpacity>
                 </View>
 
-                <TouchableOpacity
-                  style={styles.moreInfoBtn}
-                  onPress={() => setSelectedBusinessForInfo(item)}
-                  activeOpacity={0.8}
-                >
-                  <Info size={14} color="#003893" />
-                  <Text style={styles.moreInfoBtnText}>More Info & Location</Text>
-                </TouchableOpacity>
+                <View style={styles.actionsRow}>
+                  <TouchableOpacity
+                    style={styles.mapBtn}
+                    onPress={() => {
+                      const lat = item.latitude || 17.3688;
+                      const lng = item.longitude || 78.5247;
+                      Linking.openURL(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`).catch(() => {});
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <Navigation size={14} color="#007a33" />
+                    <Text style={styles.mapBtnText}>Directions</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.moreInfoBtn}
+                    onPress={() => setSelectedBusinessForInfo(item)}
+                    activeOpacity={0.8}
+                  >
+                    <Info size={14} color="#003893" />
+                    <Text style={styles.moreInfoBtnText}>Details</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             </View>
           );
@@ -542,6 +615,29 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     padding: 0,
   },
+  categoryScroll: {
+    flexDirection: 'row',
+    gap: 6,
+    paddingTop: 4,
+  },
+  categoryChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 10,
+    backgroundColor: '#f1f5f9',
+  },
+  categoryChipActive: {
+    backgroundColor: '#007a33',
+  },
+  categoryChipText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#475569',
+  },
+  categoryChipTextActive: {
+    color: '#ffffff',
+    fontWeight: '800',
+  },
   listContent: {
     padding: 14,
     gap: 12,
@@ -558,6 +654,11 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 2,
     gap: 12,
+    marginBottom: 12,
+  },
+  cardTablet: {
+    flex: 1,
+    marginHorizontal: 6,
   },
   cardFraud: {
     borderColor: '#fca5a5',
@@ -722,8 +823,25 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#ffffff',
   },
+  mapBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#ecfdf5',
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#a7f3d0',
+  },
+  mapBtnText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#007a33',
+  },
   moreInfoBtn: {
-    width: '100%',
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',

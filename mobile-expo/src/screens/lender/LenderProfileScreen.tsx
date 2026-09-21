@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   Building2,
   User,
@@ -24,14 +25,21 @@ import {
   ShieldCheck,
   Gift,
   Sparkles,
+  Headphones,
+  Scale,
+  FileText,
+  ChevronRight,
 } from 'lucide-react-native';
 import { useAuth } from '../../context/AuthContext';
 import {
   updateLenderProfileApi,
   fetchReferEarnStatusApi,
+  cancelAutoPayApi,
 } from '../../services/api';
 import { SubscriptionModal } from '../../components/SubscriptionModal';
 import { LocationPickerModal } from '../../components/LocationPickerModal';
+import { PolicyModal } from '../../components/PolicyModal';
+import { SupportModal } from '../../components/SupportModal';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const RADIUS_OPTIONS = [10, 25, 50, 70, 100];
@@ -46,6 +54,7 @@ export const LenderProfileScreen: React.FC = () => {
     formattedEndDate,
     lenderProfile,
     logout,
+    refreshUserData,
     updateLenderProfileState,
   } = useAuth();
 
@@ -55,10 +64,53 @@ export const LenderProfileScreen: React.FC = () => {
     basic: true,
     location: true,
     criteria: true,
+    policies: true,
   });
 
   const toggleSection = (key: string) => {
     setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const [supportModalVisible, setSupportModalVisible] = useState(false);
+  const [policyModalVisible, setPolicyModalVisible] = useState(false);
+  const [selectedPolicy, setSelectedPolicy] = useState<'terms' | 'privacy' | 'refund' | 'shipping'>('terms');
+  const [cancellingAutoPay, setCancellingAutoPay] = useState(false);
+
+  const handleOpenPolicy = (type: 'terms' | 'privacy' | 'refund' | 'shipping') => {
+    setSelectedPolicy(type);
+    setPolicyModalVisible(true);
+  };
+
+  const handleCancelAutoPay = () => {
+    Alert.alert(
+      'Cancel AutoPay Subscription',
+      'Are you sure you want to cancel automatic subscription renewals? Your current VIP Financer access will remain active until the end of your billing cycle.',
+      [
+        { text: 'Keep AutoPay', style: 'cancel' },
+        {
+          text: 'Cancel AutoPay',
+          style: 'destructive',
+          onPress: async () => {
+            setCancellingAutoPay(true);
+            try {
+              const res = await cancelAutoPayApi();
+              if (res.success) {
+                Alert.alert(
+                  'AutoPay Cancelled',
+                  res.message || 'Auto-renewal has been cancelled. No further deductions will occur.'
+                );
+              } else {
+                Alert.alert('Notice', res.message || 'AutoPay was not active or already cancelled.');
+              }
+            } catch (e: any) {
+              Alert.alert('Error', e.message || 'Could not cancel AutoPay.');
+            } finally {
+              setCancellingAutoPay(false);
+            }
+          },
+        },
+      ]
+    );
   };
 
   const [institutionName, setInstitutionName] = useState(
@@ -72,7 +124,6 @@ export const LenderProfileScreen: React.FC = () => {
   );
   const [minAmount, setMinAmount] = useState(String(lenderProfile?.minLoanAmount || 10000));
   const [maxAmount, setMaxAmount] = useState(String(lenderProfile?.maxLoanAmount || 500000));
-  const [interestRate, setInterestRate] = useState(String(lenderProfile?.minInterestRate || 1.5));
   const [address, setAddress] = useState(lenderProfile?.address || '');
   const [city, setCity] = useState(lenderProfile?.city || 'Hyderabad');
   const [state, setState] = useState(lenderProfile?.state || 'Telangana');
@@ -84,6 +135,32 @@ export const LenderProfileScreen: React.FC = () => {
   const [subModalVisible, setSubModalVisible] = useState(false);
   const [locationPickerVisible, setLocationPickerVisible] = useState(false);
 
+  // Sync form whenever lenderProfile or user updates
+  useEffect(() => {
+    if (lenderProfile) {
+      if (lenderProfile.institutionName) setInstitutionName(lenderProfile.institutionName);
+      if (lenderProfile.contactPersonName) setContactPerson(lenderProfile.contactPersonName);
+      if (lenderProfile.lendingRadiusKm) setLendingRadiusKm(lenderProfile.lendingRadiusKm);
+      if (lenderProfile.minLoanAmount !== undefined) setMinAmount(String(lenderProfile.minLoanAmount));
+      if (lenderProfile.maxLoanAmount !== undefined) setMaxAmount(String(lenderProfile.maxLoanAmount));
+      if (lenderProfile.address) setAddress(lenderProfile.address);
+      if (lenderProfile.city) setCity(lenderProfile.city);
+      if (lenderProfile.state) setState(lenderProfile.state);
+      if (lenderProfile.pincode) setPincode(lenderProfile.pincode);
+      if (lenderProfile.latitude !== undefined) setLat(lenderProfile.latitude);
+      if (lenderProfile.longitude !== undefined) setLng(lenderProfile.longitude);
+    } else if (user?.name) {
+      setContactPerson(user.name);
+    }
+  }, [lenderProfile, user]);
+
+  // Refresh user data from server on focus
+  useFocusEffect(
+    useCallback(() => {
+      refreshUserData();
+    }, [])
+  );
+
   const handleSave = async () => {
     setSaving(true);
     try {
@@ -93,7 +170,6 @@ export const LenderProfileScreen: React.FC = () => {
         lendingRadiusKm,
         minLoanAmount: Number(minAmount) || 10000,
         maxLoanAmount: Number(maxAmount) || 500000,
-        minInterestRate: Number(interestRate) || 1.5,
         address: address.trim(),
         city: city.trim(),
         state: state.trim(),
@@ -183,13 +259,23 @@ export const LenderProfileScreen: React.FC = () => {
                   </Text>
                 </View>
 
-                <TouchableOpacity
-                  style={styles.extendBtn}
-                  onPress={() => setSubModalVisible(true)}
-                  activeOpacity={0.85}
-                >
-                  <Text style={styles.extendBtnText}>Extend Validity / Buy More Days</Text>
-                </TouchableOpacity>
+                <View style={{ flexDirection: 'row', gap: 10, marginTop: 12 }}>
+                  <TouchableOpacity
+                    style={[styles.extendBtn, { flex: 1 }]}
+                    onPress={() => setSubModalVisible(true)}
+                    activeOpacity={0.85}
+                  >
+                    <Text style={styles.extendBtnText}>Extend Validity</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.cancelAutoPayBtn}
+                    onPress={handleCancelAutoPay}
+                    activeOpacity={0.8}
+                    disabled={cancellingAutoPay}
+                  >
+                    <Text style={styles.cancelAutoPayBtnText}>Cancel AutoPay</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             ) : (
               <View style={styles.vipInactiveBox}>
@@ -379,7 +465,7 @@ export const LenderProfileScreen: React.FC = () => {
             </View>
 
             <View style={styles.gridRow}>
-              <View style={{ flex: 1 }}>
+              <View style={{ flex: 1, marginRight: 8 }}>
                 <Text style={styles.inputLabel}>Min Amount (₹)</Text>
                 <TextInput
                   style={styles.gridInput}
@@ -390,7 +476,7 @@ export const LenderProfileScreen: React.FC = () => {
                   placeholderTextColor="#94a3b8"
                 />
               </View>
-              <View style={{ flex: 1, marginHorizontal: 8 }}>
+              <View style={{ flex: 1 }}>
                 <Text style={styles.inputLabel}>Max Amount (₹)</Text>
                 <TextInput
                   style={styles.gridInput}
@@ -401,18 +487,90 @@ export const LenderProfileScreen: React.FC = () => {
                   placeholderTextColor="#94a3b8"
                 />
               </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.inputLabel}>Rate (%/mo)</Text>
-                <TextInput
-                  style={styles.gridInput}
-                  value={interestRate}
-                  onChangeText={setInterestRate}
-                  keyboardType="decimal-pad"
-                  placeholder="1.5"
-                  placeholderTextColor="#94a3b8"
-                />
-              </View>
             </View>
+          </View>
+        )}
+      </View>
+
+      {/* ── ACCORDION 5: LEGAL POLICIES & CUSTOMER SUPPORT ── */}
+      <View style={styles.accordionCard}>
+        <TouchableOpacity
+          style={styles.accordionHeader}
+          onPress={() => toggleSection('policies')}
+          activeOpacity={0.8}
+        >
+          <View style={styles.accordionTitleRow}>
+            <ShieldCheck size={18} color="#007a33" />
+            <Text style={styles.accordionTitle}>Legal Policies & Support</Text>
+          </View>
+          {openSections.policies ? <ChevronUp size={18} color="#64748b" /> : <ChevronDown size={18} color="#64748b" />}
+        </TouchableOpacity>
+
+        {openSections.policies && (
+          <View style={styles.accordionBody}>
+            <TouchableOpacity
+              style={styles.policyRow}
+              onPress={() => handleOpenPolicy('terms')}
+              activeOpacity={0.7}
+            >
+              <View style={styles.policyRowLeft}>
+                <FileText size={16} color="#003893" />
+                <Text style={styles.policyRowText}>Terms of Service & Usage</Text>
+              </View>
+              <ChevronRight size={16} color="#94a3b8" />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.policyRow}
+              onPress={() => handleOpenPolicy('privacy')}
+              activeOpacity={0.7}
+            >
+              <View style={styles.policyRowLeft}>
+                <ShieldCheck size={16} color="#16a34a" />
+                <Text style={styles.policyRowText}>Privacy & Data Protection Policy</Text>
+              </View>
+              <ChevronRight size={16} color="#94a3b8" />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.policyRow}
+              onPress={() => handleOpenPolicy('refund')}
+              activeOpacity={0.7}
+            >
+              <View style={styles.policyRowLeft}>
+                <Scale size={16} color="#2563eb" />
+                <Text style={styles.policyRowText}>Cancellation & Refund Policy</Text>
+              </View>
+              <ChevronRight size={16} color="#94a3b8" />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.policyRow}
+              onPress={() => setSupportModalVisible(true)}
+              activeOpacity={0.7}
+            >
+              <View style={styles.policyRowLeft}>
+                <Headphones size={16} color="#7c3aed" />
+                <Text style={styles.policyRowText}>24/7 Customer Helpdesk & Support</Text>
+              </View>
+              <ChevronRight size={16} color="#94a3b8" />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.logoutRow}
+              onPress={() => {
+                Alert.alert('Sign Out', 'Are you sure you want to sign out of your Financer Account?', [
+                  { text: 'Cancel', style: 'cancel' },
+                  { text: 'Sign Out', style: 'destructive', onPress: logout },
+                ]);
+              }}
+              activeOpacity={0.7}
+            >
+              <View style={styles.policyRowLeft}>
+                <LogOut size={16} color="#dc2626" />
+                <Text style={styles.logoutRowText}>Sign Out of Financer Account</Text>
+              </View>
+            </TouchableOpacity>
           </View>
         )}
       </View>
@@ -446,6 +604,17 @@ export const LenderProfileScreen: React.FC = () => {
         currentCity={city}
         onClose={() => setLocationPickerVisible(false)}
         onApply={handleLocationFromPicker}
+      />
+
+      <PolicyModal
+        visible={policyModalVisible}
+        onClose={() => setPolicyModalVisible(false)}
+        policyType={selectedPolicy}
+      />
+
+      <SupportModal
+        visible={supportModalVisible}
+        onClose={() => setSupportModalVisible(false)}
       />
     </ScrollView>
   );
@@ -763,5 +932,51 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 14,
     fontWeight: '800',
+  },
+  cancelAutoPayBtn: {
+    backgroundColor: '#fff1f2',
+    borderWidth: 1,
+    borderColor: '#fecdd3',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cancelAutoPayBtnText: {
+    color: '#e11d48',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  policyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9',
+  },
+  policyRowLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  },
+  policyRowText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#334155',
+  },
+  logoutRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    marginTop: 6,
+  },
+  logoutRowText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#dc2626',
   },
 });

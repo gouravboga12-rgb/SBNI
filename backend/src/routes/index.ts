@@ -7,12 +7,14 @@ import cmsRoutes from './cmsRoutes';
 import adminRoutes from './adminRoutes';
 import uploadRoutes from './uploadRoutes';
 import referralRoutes from './referralRoutes';
+import loanRoutes from './loanRoutes';
 
 const router = Router();
 
 router.use('/auth', authRoutes);
 router.use('/vendors', vendorRoutes);
 router.use('/lenders', lenderRoutes);
+router.use('/loans', loanRoutes);
 router.use('/subscriptions', subscriptionRoutes);
 router.use('/referrals', referralRoutes);
 router.use('/cms', cmsRoutes);

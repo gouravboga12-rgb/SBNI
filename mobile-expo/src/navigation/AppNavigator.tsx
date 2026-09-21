@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, ActivityIndicator } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, useNavigationContainerRef } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useAuth } from '../context/AuthContext';
@@ -17,6 +17,9 @@ import { LenderProfileScreen } from '../screens/lender/LenderProfileScreen';
 import { CustomTabBar } from '../components/CustomTabBar';
 import { SubscriptionModal } from '../components/SubscriptionModal';
 import { NotificationModal } from '../components/NotificationModal';
+import { PolicyModal, PolicyTab } from '../components/PolicyModal';
+import { SupportModal } from '../components/SupportModal';
+import { ReferAndEarnModal } from '../components/ReferAndEarnModal';
 import { setupNotificationListeners } from '../services/notificationService';
 import { linking } from './linking';
 
@@ -72,15 +75,29 @@ function LenderTabs({ onOpenSubscription }: RoleTabsProps) {
 }
 
 export const AppNavigator: React.FC = () => {
-  const { token, role, isLoading } = useAuth();
+  const navigationRef = useNavigationContainerRef();
+  const { user, token, role, isLoading } = useAuth();
   const [subModalVisible, setSubModalVisible] = useState(false);
   const [notifModalVisible, setNotifModalVisible] = useState(false);
+  const [policyModalVisible, setPolicyModalVisible] = useState(false);
+  const [policyTab, setPolicyTab] = useState<PolicyTab>('terms');
+  const [supportModalVisible, setSupportModalVisible] = useState(false);
+  const [referModalVisible, setReferModalVisible] = useState(false);
 
   React.useEffect(() => {
     const unsubscribe = setupNotificationListeners(
       () => {},
-      () => {
-        setNotifModalVisible(true);
+      (response) => {
+        try {
+          const data = response?.notification?.request?.content?.data;
+          if (data?.screen && navigationRef.isReady()) {
+            navigationRef.navigate(data.screen as never);
+          } else {
+            setNotifModalVisible(true);
+          }
+        } catch {
+          setNotifModalVisible(true);
+        }
       }
     );
     return () => {
@@ -101,13 +118,41 @@ export const AppNavigator: React.FC = () => {
     return <LoginScreen />;
   }
 
+  const handleNavigateHome = () => {
+    if (navigationRef.isReady()) {
+      navigationRef.navigate('Home' as never);
+    }
+  };
+
+  const handleNavigateFinancers = () => {
+    if (navigationRef.isReady()) {
+      navigationRef.navigate((role === 'VENDOR' ? 'Financers' : 'Businesses') as never);
+    }
+  };
+
+  const handleOpenProfile = () => {
+    if (navigationRef.isReady()) {
+      navigationRef.navigate('Profile' as never);
+    }
+  };
+
+  const handleOpenTerms = () => {
+    setPolicyTab('terms');
+    setPolicyModalVisible(true);
+  };
+
   return (
-    <NavigationContainer linking={linking as any}>
+    <NavigationContainer ref={navigationRef} linking={linking as any}>
       <View style={styles.container}>
         <AppHeader
-          onOpenNotifications={() => setNotifModalVisible(true)}
+          onNavigateHome={handleNavigateHome}
+          onNavigateFinancers={handleNavigateFinancers}
+          onOpenProfile={handleOpenProfile}
           onOpenWallet={() => setSubModalVisible(true)}
-          onOpenProfile={() => {}}
+          onOpenTerms={handleOpenTerms}
+          onOpenSupport={() => setSupportModalVisible(true)}
+          onOpenRefer={() => setReferModalVisible(true)}
+          onOpenNotifications={() => setNotifModalVisible(true)}
         />
         <Stack.Navigator screenOptions={{ headerShown: false }}>
           <Stack.Screen name="Main">
@@ -129,6 +174,24 @@ export const AppNavigator: React.FC = () => {
         <NotificationModal
           visible={notifModalVisible}
           onClose={() => setNotifModalVisible(false)}
+        />
+
+        <PolicyModal
+          visible={policyModalVisible}
+          initialTab={policyTab}
+          onClose={() => setPolicyModalVisible(false)}
+        />
+
+        <SupportModal
+          visible={supportModalVisible}
+          onClose={() => setSupportModalVisible(false)}
+        />
+
+        <ReferAndEarnModal
+          visible={referModalVisible}
+          onClose={() => setReferModalVisible(false)}
+          userRole={role === 'LENDER' ? 'LENDER' : 'VENDOR'}
+          userName={user?.name || user?.fullName || 'Partner'}
         />
       </View>
     </NavigationContainer>

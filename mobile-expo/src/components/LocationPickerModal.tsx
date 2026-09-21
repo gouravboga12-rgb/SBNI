@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,7 +10,7 @@ import {
   Alert,
   ScrollView,
 } from 'react-native';
-import { X, MapPin, Compass, Check, Search } from 'lucide-react-native';
+import { X, MapPin, Compass, Check, Search, CheckCircle2, Navigation } from 'lucide-react-native';
 import * as Location from 'expo-location';
 import {
   searchPlacesMapbox,
@@ -22,8 +22,9 @@ interface LocationPickerModalProps {
   visible: boolean;
   currentRadius: number;
   currentCity?: string;
+  currentPlace?: string;
   onClose: () => void;
-  onApply: (radiusKm: number, city?: string, lat?: number, lng?: number) => void;
+  onApply: (radiusKm: number, city?: string, lat?: number, lng?: number, place?: string) => void;
 }
 
 const RADIUS_PRESETS = [10, 25, 50, 70, 100];
@@ -32,61 +33,84 @@ export const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
   visible,
   currentRadius,
   currentCity = '',
+  currentPlace = '',
   onClose,
   onApply,
 }) => {
   const [selectedRadius, setSelectedRadius] = useState(currentRadius || 50);
-  const [cityInput, setCityInput] = useState(currentCity);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [place, setPlace] = useState(currentPlace || 'Dilsukhnagar');
+  const [city, setCity] = useState(currentCity || 'Hyderabad');
+  const [stateName, setStateName] = useState('Telangana');
   const [isDetecting, setIsDetecting] = useState(false);
-  const [coords, setCoords] = useState<{ lat?: number; lng?: number }>({});
+  const [coords, setCoords] = useState<{ lat?: number; lng?: number }>({ lat: 17.3688, lng: 78.5247 });
   const [suggestions, setSuggestions] = useState<LocationResult[]>([]);
   const [searching, setSearching] = useState(false);
+  const [statusMsg, setStatusMsg] = useState<string | null>(null);
+
+  const debounceTimer = useRef<any>(null);
 
   useEffect(() => {
     if (visible) {
       setSelectedRadius(currentRadius || 50);
-      setCityInput(currentCity || '');
+      if (currentCity) setCity(currentCity);
+      if (currentPlace) setPlace(currentPlace);
+      setSearchQuery('');
       setSuggestions([]);
+      setStatusMsg(null);
     }
-  }, [visible, currentRadius, currentCity]);
+  }, [visible, currentRadius, currentCity, currentPlace]);
 
-  const handleSearchQuery = async (text: string) => {
-    setCityInput(text);
-    if (text.trim().length >= 2) {
+  const handleSearchChange = (text: string) => {
+    setSearchQuery(text);
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
+
+    if (text.trim().length < 2) {
+      setSuggestions([]);
+      return;
+    }
+
+    debounceTimer.current = setTimeout(async () => {
       setSearching(true);
       try {
-        const results = await searchPlacesMapbox(text);
+        const results = await searchPlacesMapbox(text, 'in');
         setSuggestions(results);
       } catch (err) {
         setSuggestions([]);
       } finally {
         setSearching(false);
       }
-    } else {
-      setSuggestions([]);
-    }
+    }, 300);
   };
 
   const handleSelectSuggestion = (item: LocationResult) => {
-    setCityInput(item.city || item.place);
+    const p = item.place || '';
+    const c = item.city || item.place || '';
+    setPlace(p);
+    setCity(c);
+    if (item.state) setStateName(item.state);
     setCoords({ lat: item.latitude, lng: item.longitude });
+    setSearchQuery('');
     setSuggestions([]);
+    setStatusMsg(`Selected: ${p}, ${c}`);
   };
 
   const handleAutoDetect = async () => {
     setIsDetecting(true);
+    setStatusMsg('Accessing GPS coordinates...');
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
         Alert.alert('Permission Denied', 'Please grant location permissions in device settings.');
         setIsDetecting(false);
+        setStatusMsg(null);
         return;
       }
 
-      // 1. Check last known position first for instantaneous result
+      // 1. Check last known position first for quick detection
       let loc = await Location.getLastKnownPositionAsync();
 
-      // 2. If no cached position, query with a strict 6-second timeout race
+      // 2. If no cached position, query with 6s timeout race
       if (!loc) {
         const locationPromise = Location.getCurrentPositionAsync({
           accuracy: Location.Accuracy.Balanced,
@@ -106,28 +130,45 @@ export const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
       setCoords({ lat, lng });
 
       const mapboxResult = await reverseGeocodeMapbox(lat, lng);
-      if (mapboxResult && (mapboxResult.city || mapboxResult.place)) {
-        setCityInput(mapboxResult.city || mapboxResult.place);
+      if (mapboxResult) {
+        const rPlace = mapboxResult.place || 'Commercial Area';
+        const rCity = mapboxResult.city || 'Hyderabad';
+        const rState = mapboxResult.state || 'Telangana';
+        setPlace(rPlace);
+        setCity(rCity);
+        setStateName(rState);
+        setStatusMsg(`✅ Located: ${rPlace}, ${rCity}`);
       } else {
         const geocode = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lng });
         if (geocode && geocode.length > 0) {
           const item = geocode[0];
-          const detectedName = item.city || item.subregion || item.district || item.region || item.name || '';
-          if (detectedName) setCityInput(detectedName);
+          const detectedCity = item.city || item.subregion || item.district || 'Hyderabad';
+          const detectedPlace = item.name || item.street || item.district || 'Area';
+          setPlace(detectedPlace);
+          setCity(detectedCity);
+          if (item.region) setStateName(item.region);
+          setStatusMsg(`✅ Located: ${detectedPlace}, ${detectedCity}`);
         }
       }
     } catch (e: any) {
       Alert.alert(
-        'GPS Detection Notice',
-        'Could not acquire immediate GPS fix. Please type your area or landmark in the search box below.'
+        'GPS Notice',
+        'Could not acquire exact GPS location. Please search and select your area in the search bar.'
       );
+      setStatusMsg(null);
     } finally {
       setIsDetecting(false);
     }
   };
 
   const handleConfirm = () => {
-    onApply(selectedRadius, cityInput.trim() || undefined, coords.lat, coords.lng);
+    onApply(
+      selectedRadius,
+      city.trim() || undefined,
+      coords.lat,
+      coords.lng,
+      place.trim() || undefined
+    );
     onClose();
   };
 
@@ -151,97 +192,168 @@ export const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
             </TouchableOpacity>
           </View>
 
-          {/* GPS Auto Detect Banner */}
-          <TouchableOpacity
-            style={styles.gpsBanner}
-            onPress={handleAutoDetect}
-            disabled={isDetecting}
-            activeOpacity={0.8}
-          >
-            <View style={styles.gpsIconCircle}>
-              {isDetecting ? (
-                <ActivityIndicator size="small" color="#003893" />
-              ) : (
-                <Compass size={20} color="#003893" />
+          <ScrollView showsVerticalScrollIndicator={false}>
+            {/* GPS Auto Detect Banner */}
+            <TouchableOpacity
+              style={styles.gpsBanner}
+              onPress={handleAutoDetect}
+              disabled={isDetecting}
+              activeOpacity={0.8}
+            >
+              <View style={styles.gpsIconCircle}>
+                {isDetecting ? (
+                  <ActivityIndicator size="small" color="#003893" />
+                ) : (
+                  <Compass size={20} color="#003893" />
+                )}
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.gpsTitle}>Use Current GPS Location</Text>
+                <Text style={styles.gpsSubtitle}>
+                  Automatically find financers closest to your shop (Mapbox Verified)
+                </Text>
+              </View>
+            </TouchableOpacity>
+
+            {/* Status Message */}
+            {statusMsg && (
+              <View style={styles.statusBox}>
+                <CheckCircle2 size={14} color="#047857" />
+                <Text style={styles.statusText}>{statusMsg}</Text>
+              </View>
+            )}
+
+            {/* City / Place Input with Mapbox Autocomplete */}
+            <Text style={styles.sectionLabel}>Search City / Area (Mapbox Autocomplete)</Text>
+            <View style={styles.inputBox}>
+              <Search size={18} color="#94a3b8" />
+              <TextInput
+                style={styles.textInput}
+                placeholder="Type place or city (e.g. Dilsukhnagar, Banjara Hills...)"
+                placeholderTextColor="#94a3b8"
+                value={searchQuery}
+                onChangeText={handleSearchChange}
+              />
+              {searching && <ActivityIndicator size="small" color="#003893" />}
+            </View>
+
+            {/* Mapbox Suggestions dropdown */}
+            {suggestions.length > 0 && (
+              <View style={styles.suggestionsContainer}>
+                {suggestions.map((item, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    style={styles.suggestionItem}
+                    onPress={() => handleSelectSuggestion(item)}
+                  >
+                    <MapPin size={14} color="#003893" style={{ marginTop: 2 }} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.suggestionTitle}>{item.place}, {item.city}</Text>
+                      <Text style={styles.suggestionSub} numberOfLines={1}>
+                        {item.fullAddress}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+
+            {/* Selected Location Details Breakdown (Mirrors Website) */}
+            <View style={styles.detailsCard}>
+              <View style={styles.detailsCardHeader}>
+                <Text style={styles.detailsCardTitle}>SELECTED LOCATION DETAILS</Text>
+                <View style={styles.verifiedBadge}>
+                  <Text style={styles.verifiedBadgeText}>Mapbox Verified</Text>
+                </View>
+              </View>
+
+              <View style={styles.gridRow}>
+                <View style={{ flex: 1, marginRight: 8 }}>
+                  <Text style={styles.fieldLabel}>Place / Area *</Text>
+                  <TextInput
+                    style={styles.fieldInput}
+                    value={place}
+                    onChangeText={setPlace}
+                    placeholder="e.g. Dilsukhnagar"
+                    placeholderTextColor="#94a3b8"
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.fieldLabel}>City *</Text>
+                  <TextInput
+                    style={styles.fieldInput}
+                    value={city}
+                    onChangeText={setCity}
+                    placeholder="e.g. Hyderabad"
+                    placeholderTextColor="#94a3b8"
+                  />
+                </View>
+              </View>
+
+              <View style={[styles.gridRow, { marginTop: 8 }]}>
+                <View style={{ flex: 1, marginRight: 8 }}>
+                  <Text style={styles.fieldLabel}>State *</Text>
+                  <TextInput
+                    style={styles.fieldInput}
+                    value={stateName}
+                    onChangeText={setStateName}
+                    placeholder="Telangana"
+                    placeholderTextColor="#94a3b8"
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.fieldLabel}>Country</Text>
+                  <View style={[styles.fieldInput, { backgroundColor: '#f1f5f9', justifyContent: 'center' }]}>
+                    <Text style={{ fontSize: 12, fontWeight: '700', color: '#64748b' }}>India</Text>
+                  </View>
+                </View>
+              </View>
+
+              {coords.lat && coords.lng && (
+                <View style={styles.coordsRow}>
+                  <MapPin size={12} color="#dc2626" />
+                  <Text style={styles.coordsText}>
+                    GPS: Lat {Number(coords.lat).toFixed(4)}, Lng {Number(coords.lng).toFixed(4)}
+                  </Text>
+                </View>
               )}
             </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.gpsTitle}>Use Current GPS Location</Text>
-              <Text style={styles.gpsSubtitle}>
-                Automatically find financers closest to your shop (Mapbox Verified)
-              </Text>
-            </View>
-          </TouchableOpacity>
 
-          {/* City / Place Input with Mapbox Autocomplete */}
-          <Text style={styles.sectionLabel}>Search City / Area (Mapbox)</Text>
-          <View style={styles.inputBox}>
-            <Search size={18} color="#94a3b8" />
-            <TextInput
-              style={styles.textInput}
-              placeholder="Search place, city or area (e.g. Hyderabad)"
-              placeholderTextColor="#94a3b8"
-              value={cityInput}
-              onChangeText={handleSearchQuery}
-            />
-            {searching && <ActivityIndicator size="small" color="#003893" />}
-          </View>
-
-          {/* Mapbox Suggestions dropdown */}
-          {suggestions.length > 0 && (
-            <ScrollView style={styles.suggestionsContainer} nestedScrollEnabled>
-              {suggestions.map((item, index) => (
-                <TouchableOpacity
-                  key={index}
-                  style={styles.suggestionItem}
-                  onPress={() => handleSelectSuggestion(item)}
-                >
-                  <MapPin size={14} color="#003893" style={{ marginTop: 2 }} />
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.suggestionTitle}>{item.place}</Text>
-                    <Text style={styles.suggestionSub} numberOfLines={1}>
-                      {item.fullAddress}
+            {/* Radius Selector */}
+            <Text style={styles.sectionLabel}>
+              Financer Distance Radius:{' '}
+              <Text style={{ color: '#003893', fontWeight: '900' }}>{selectedRadius} km</Text>
+            </Text>
+            <Text style={styles.radiusHelp}>
+              Only display business financers operating within this radius
+            </Text>
+            <View style={styles.radiusRow}>
+              {RADIUS_PRESETS.map((km) => {
+                const active = selectedRadius === km;
+                return (
+                  <TouchableOpacity
+                    key={km}
+                    style={[styles.radiusBtn, active && styles.radiusBtnActive]}
+                    onPress={() => setSelectedRadius(km)}
+                  >
+                    <Text style={[styles.radiusBtnText, active && styles.radiusBtnTextActive]}>
+                      {km} km
                     </Text>
-                  </View>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          )}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
 
-          {/* Radius Selector */}
-          <Text style={styles.sectionLabel}>
-            Financer Distance Radius:{' '}
-            <Text style={{ color: '#003893', fontWeight: '900' }}>{selectedRadius} km</Text>
-          </Text>
-          <Text style={styles.radiusHelp}>
-            Only display business financers operating within this radius
-          </Text>
-          <View style={styles.radiusRow}>
-            {RADIUS_PRESETS.map((km) => {
-              const active = selectedRadius === km;
-              return (
-                <TouchableOpacity
-                  key={km}
-                  style={[styles.radiusBtn, active && styles.radiusBtnActive]}
-                  onPress={() => setSelectedRadius(km)}
-                >
-                  <Text style={[styles.radiusBtnText, active && styles.radiusBtnTextActive]}>
-                    {km} km
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-
-          {/* Apply Button */}
-          <TouchableOpacity
-            style={styles.applyBtn}
-            onPress={handleConfirm}
-            activeOpacity={0.85}
-          >
-            <Check size={18} color="#ffffff" />
-            <Text style={styles.applyBtnText}>Apply Location & Radius</Text>
-          </TouchableOpacity>
+            {/* Apply Button */}
+            <TouchableOpacity
+              style={styles.applyBtn}
+              onPress={handleConfirm}
+              activeOpacity={0.85}
+            >
+              <Check size={18} color="#ffffff" />
+              <Text style={styles.applyBtnText}>Apply Location & Radius</Text>
+            </TouchableOpacity>
+          </ScrollView>
         </View>
       </View>
     </Modal>
@@ -373,6 +485,92 @@ const styles = StyleSheet.create({
   suggestionSub: {
     fontSize: 10,
     color: '#64748b',
+  },
+  statusBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#ecfdf5',
+    padding: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#a7f3d0',
+    marginBottom: 10,
+  },
+  statusText: {
+    fontSize: 11,
+    color: '#065f46',
+    fontWeight: '700',
+    flex: 1,
+  },
+  detailsCard: {
+    backgroundColor: '#f8fafc',
+    borderRadius: 16,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    marginBottom: 14,
+  },
+  detailsCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  detailsCardTitle: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#64748b',
+    letterSpacing: 0.5,
+  },
+  verifiedBadge: {
+    backgroundColor: '#ecfdf5',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#a7f3d0',
+  },
+  verifiedBadgeText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#047857',
+  },
+  gridRow: {
+    flexDirection: 'row',
+  },
+  fieldLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#475569',
+    marginBottom: 4,
+  },
+  fieldInput: {
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#cbd5e1',
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#0f172a',
+    height: 38,
+  },
+  coordsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#e2e8f0',
+  },
+  coordsText: {
+    fontSize: 10,
+    color: '#64748b',
+    fontWeight: '600',
+    fontFamily: 'monospace',
   },
   radiusRow: {
     flexDirection: 'row',

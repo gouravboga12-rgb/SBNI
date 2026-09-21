@@ -197,13 +197,35 @@ export const VendorHomeScreen: React.FC = () => {
   };
 
   const filteredLenders = lenders.filter((l) => {
-    if (!searchQuery) return true;
-    const q = searchQuery.toLowerCase();
-    return (
-      l.institutionName.toLowerCase().includes(q) ||
-      l.city.toLowerCase().includes(q) ||
-      (l.loanCategories && l.loanCategories.some((c) => c.toLowerCase().includes(q)))
-    );
+    // 1. Category Filter
+    if (selectedCategory && selectedCategory !== 'All') {
+      const catLower = selectedCategory.toLowerCase();
+      const hasCategory =
+        l.loanCategories &&
+        l.loanCategories.some(
+          (c) => c.toLowerCase().includes(catLower) || catLower.includes(c.toLowerCase())
+        );
+      const hasType = l.institutionType && l.institutionType.toLowerCase().includes(catLower);
+      if (!hasCategory && !hasType) {
+        return false;
+      }
+    }
+
+    // 2. Search Query Filter
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      const matchesName = l.institutionName.toLowerCase().includes(q);
+      const matchesCity = l.city.toLowerCase().includes(q);
+      const matchesType = l.institutionType && l.institutionType.toLowerCase().includes(q);
+      const matchesCat =
+        l.loanCategories &&
+        l.loanCategories.some((c) => c.toLowerCase().includes(q));
+      if (!matchesName && !matchesCity && !matchesType && !matchesCat) {
+        return false;
+      }
+    }
+
+    return true;
   });
 
   const vendorName = user?.name || user?.fullName || 'Shop Owner';
@@ -542,18 +564,14 @@ export const VendorHomeScreen: React.FC = () => {
               </View>
             </View>
 
-            {/* Loan Limits & Rate Details */}
+            {/* Loan Limits Banner */}
             <View style={styles.detailsGrid}>
-              <View style={styles.detailBox}>
-                <Text style={styles.detailLabel}>Min - Max Loan</Text>
+              <View style={[styles.detailBox, { flex: 1 }]}>
+                <Text style={styles.detailLabel}>Lending Limit Range</Text>
                 <Text style={styles.detailValue}>
                   ₹{(item.minLoanAmount || 10000).toLocaleString('en-IN')} - ₹
                   {(item.maxLoanAmount || 500000).toLocaleString('en-IN')}
                 </Text>
-              </View>
-              <View style={styles.detailBox}>
-                <Text style={styles.detailLabel}>Interest Rate</Text>
-                <Text style={styles.detailValue}>From {item.minInterestRate || '1.2'}% / mo</Text>
               </View>
             </View>
 
@@ -566,15 +584,24 @@ export const VendorHomeScreen: React.FC = () => {
               ))}
             </View>
 
-            {/* Card Action Buttons: Call, WhatsApp, Inquire / Apply */}
+            {/* Card Action Buttons: Call, WhatsApp, Inquire */}
             <View style={styles.actionRow}>
               <TouchableOpacity
                 style={styles.callBtn}
                 onPress={() => handleContactAction(item, 'CALL')}
                 activeOpacity={0.8}
               >
-                <Phone size={15} color="#003893" />
-                <Text style={styles.callBtnText}>Call Financer</Text>
+                <Phone size={14} color="#003893" />
+                <Text style={styles.callBtnText}>Call</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.whatsAppActionBtn}
+                onPress={() => handleContactAction(item, 'WHATSAPP')}
+                activeOpacity={0.8}
+              >
+                <MessageSquare size={14} color="#ffffff" />
+                <Text style={styles.whatsAppActionBtnText}>WhatsApp</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -582,8 +609,8 @@ export const VendorHomeScreen: React.FC = () => {
                 onPress={() => handleOpenLoanRequest(item)}
                 activeOpacity={0.85}
               >
-                <FileText size={15} color="#ffffff" />
-                <Text style={styles.applyBtnText}>Inquire Now</Text>
+                <FileText size={14} color="#ffffff" />
+                <Text style={styles.applyBtnText}>Inquire</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -1238,6 +1265,21 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '800',
     color: '#003893',
+  },
+  whatsAppActionBtn: {
+    flex: 1.1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#16a34a',
+    paddingVertical: 10,
+    borderRadius: 12,
+  },
+  whatsAppActionBtnText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#ffffff',
   },
   applyBtn: {
     flex: 1,

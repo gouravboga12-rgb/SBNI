@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import {
   Store,
@@ -32,16 +33,22 @@ import {
   Sparkles,
   ShieldCheck,
   Eye,
+  Headphones,
+  Scale,
+  ChevronRight,
 } from 'lucide-react-native';
 import { useAuth } from '../../context/AuthContext';
 import {
   updateVendorProfileApi,
   uploadFileToEc2Api,
   fetchReferEarnStatusApi,
+  cancelAutoPayApi,
 } from '../../services/api';
 import { SubscriptionModal } from '../../components/SubscriptionModal';
 import { ReferAndEarnModal } from '../../components/ReferAndEarnModal';
 import { LocationPickerModal } from '../../components/LocationPickerModal';
+import { PolicyModal, PolicyTab } from '../../components/PolicyModal';
+import { SupportModal } from '../../components/SupportModal';
 import { resolveDocumentUrl } from '../../utils/documentGenerators';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -55,6 +62,7 @@ export const VendorProfileScreen: React.FC = () => {
     formattedEndDate,
     vendorProfile,
     logout,
+    refreshUserData,
     updateVendorProfileState,
   } = useAuth();
 
@@ -62,9 +70,10 @@ export const VendorProfileScreen: React.FC = () => {
   const [openSections, setOpenSections] = useState<{ [key: string]: boolean }>({
     membership: true,
     basic: true,
-    location: true,
-    kyc: true,
-    photos: true,
+    location: false,
+    kyc: false,
+    photos: false,
+    policies: true,
   });
 
   const toggleSection = (key: string) => {
@@ -97,6 +106,62 @@ export const VendorProfileScreen: React.FC = () => {
   const [locationPickerVisible, setLocationPickerVisible] = useState(false);
   const [isReferEarnEnabled, setIsReferEarnEnabled] = useState(false);
   const [referModalVisible, setReferModalVisible] = useState(false);
+  const [policyModalVisible, setPolicyModalVisible] = useState(false);
+  const [policyTab, setPolicyTab] = useState<PolicyTab>('terms');
+  const [supportModalVisible, setSupportModalVisible] = useState(false);
+
+  // Sync form whenever vendorProfile or user updates
+  useEffect(() => {
+    if (vendorProfile) {
+      if (vendorProfile.ownerName) setOwnerName(vendorProfile.ownerName);
+      if (vendorProfile.businessName) setBusinessName(vendorProfile.businessName);
+      if (vendorProfile.category) setCategory(vendorProfile.category);
+      if (vendorProfile.annualTurnover) setTurnover(vendorProfile.annualTurnover);
+      if (vendorProfile.address) setAddress(vendorProfile.address);
+      if (vendorProfile.city) setCity(vendorProfile.city);
+      if (vendorProfile.state) setState(vendorProfile.state);
+      if (vendorProfile.pincode) setPincode(vendorProfile.pincode);
+      if (vendorProfile.latitude !== undefined) setLat(vendorProfile.latitude);
+      if (vendorProfile.longitude !== undefined) setLng(vendorProfile.longitude);
+      if (vendorProfile.panFileUrl) setPanUrl(vendorProfile.panFileUrl);
+      if (vendorProfile.aadhaarFileUrl) setAadhaarUrl(vendorProfile.aadhaarFileUrl);
+      if (vendorProfile.shopPhotoUrl || vendorProfile.shopPhotos?.[0]) {
+        setShopPhotoUrl(vendorProfile.shopPhotoUrl || vendorProfile.shopPhotos?.[0] || '');
+      }
+    } else if (user?.name) {
+      setOwnerName(user.name);
+    }
+  }, [vendorProfile, user]);
+
+  // Refresh user data from server on focus
+  useFocusEffect(
+    useCallback(() => {
+      refreshUserData();
+    }, [])
+  );
+
+  const handleOpenPolicy = (tab: PolicyTab) => {
+    setPolicyTab(tab);
+    setPolicyModalVisible(true);
+  };
+
+  const handleCancelAutoPay = () => {
+    Alert.alert(
+      'Cancel AutoPay Renewal',
+      'Are you sure you want to cancel recurring plan AutoPay? Your currently active VIP validity will remain intact until expiry.',
+      [
+        { text: 'Keep AutoPay', style: 'cancel' },
+        {
+          text: 'Cancel AutoPay',
+          style: 'destructive',
+          onPress: async () => {
+            const res = await cancelAutoPayApi();
+            Alert.alert(res.success ? 'AutoPay Cancelled' : 'Notice', res.message || 'AutoPay status updated.');
+          },
+        },
+      ]
+    );
+  };
 
   useEffect(() => {
     fetchReferEarnStatusApi()
@@ -271,13 +336,22 @@ export const VendorProfileScreen: React.FC = () => {
                   </Text>
                 </View>
 
-                <TouchableOpacity
-                  style={styles.extendBtn}
-                  onPress={() => setSubModalVisible(true)}
-                  activeOpacity={0.85}
-                >
-                  <Text style={styles.extendBtnText}>Extend Validity / Buy More Days</Text>
-                </TouchableOpacity>
+                <View style={{ flexDirection: 'row', gap: 10, marginTop: 12 }}>
+                  <TouchableOpacity
+                    style={[styles.extendBtn, { flex: 1 }]}
+                    onPress={() => setSubModalVisible(true)}
+                    activeOpacity={0.85}
+                  >
+                    <Text style={styles.extendBtnText}>Extend Validity</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.cancelAutoPayBtn}
+                    onPress={handleCancelAutoPay}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.cancelAutoPayBtnText}>Cancel AutoPay</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             ) : (
               <View style={styles.vipInactiveBox}>
@@ -585,6 +659,89 @@ export const VendorProfileScreen: React.FC = () => {
         )}
       </View>
 
+      {/* ── ACCORDION 6: LEGAL POLICIES & CUSTOMER SUPPORT ── */}
+      <View style={styles.accordionCard}>
+        <TouchableOpacity
+          style={styles.accordionHeader}
+          onPress={() => toggleSection('policies')}
+          activeOpacity={0.8}
+        >
+          <View style={styles.accordionTitleRow}>
+            <ShieldCheck size={18} color="#003893" />
+            <Text style={styles.accordionTitle}>Legal Policies & Support</Text>
+          </View>
+          {openSections.policies ? <ChevronUp size={18} color="#64748b" /> : <ChevronDown size={18} color="#64748b" />}
+        </TouchableOpacity>
+
+        {openSections.policies && (
+          <View style={styles.accordionBody}>
+            <TouchableOpacity
+              style={styles.policyRow}
+              onPress={() => handleOpenPolicy('terms')}
+              activeOpacity={0.7}
+            >
+              <View style={styles.policyRowLeft}>
+                <FileText size={16} color="#003893" />
+                <Text style={styles.policyRowText}>Terms of Service & Usage</Text>
+              </View>
+              <ChevronRight size={16} color="#94a3b8" />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.policyRow}
+              onPress={() => handleOpenPolicy('privacy')}
+              activeOpacity={0.7}
+            >
+              <View style={styles.policyRowLeft}>
+                <ShieldCheck size={16} color="#16a34a" />
+                <Text style={styles.policyRowText}>Privacy & Data Protection Policy</Text>
+              </View>
+              <ChevronRight size={16} color="#94a3b8" />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.policyRow}
+              onPress={() => handleOpenPolicy('refund')}
+              activeOpacity={0.7}
+            >
+              <View style={styles.policyRowLeft}>
+                <Scale size={16} color="#2563eb" />
+                <Text style={styles.policyRowText}>Cancellation & Refund Policy</Text>
+              </View>
+              <ChevronRight size={16} color="#94a3b8" />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.policyRow}
+              onPress={() => setSupportModalVisible(true)}
+              activeOpacity={0.7}
+            >
+              <View style={styles.policyRowLeft}>
+                <Headphones size={16} color="#7c3aed" />
+                <Text style={styles.policyRowText}>24/7 Customer Helpdesk & Support</Text>
+              </View>
+              <ChevronRight size={16} color="#94a3b8" />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.logoutRow}
+              onPress={() => {
+                Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
+                  { text: 'Cancel', style: 'cancel' },
+                  { text: 'Sign Out', style: 'destructive', onPress: logout },
+                ]);
+              }}
+              activeOpacity={0.7}
+            >
+              <View style={styles.policyRowLeft}>
+                <LogOut size={16} color="#dc2626" />
+                <Text style={styles.logoutRowText}>Sign Out of My Account</Text>
+              </View>
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
+
       {/* Save Profile Floating Action Button */}
       <TouchableOpacity
         style={[styles.saveBtn, saving && styles.saveBtnDisabled]}
@@ -614,6 +771,17 @@ export const VendorProfileScreen: React.FC = () => {
         currentCity={city}
         onClose={() => setLocationPickerVisible(false)}
         onApply={handleLocationFromPicker}
+      />
+
+      <PolicyModal
+        visible={policyModalVisible}
+        initialTab={policyTab}
+        onClose={() => setPolicyModalVisible(false)}
+      />
+
+      <SupportModal
+        visible={supportModalVisible}
+        onClose={() => setSupportModalVisible(false)}
       />
     </ScrollView>
   );
@@ -1012,5 +1180,51 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 14,
     fontWeight: '800',
+  },
+  cancelAutoPayBtn: {
+    backgroundColor: '#fff1f2',
+    borderWidth: 1,
+    borderColor: '#fecdd3',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cancelAutoPayBtnText: {
+    color: '#e11d48',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  policyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9',
+  },
+  policyRowLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  },
+  policyRowText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#334155',
+  },
+  logoutRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 14,
+    marginTop: 4,
+  },
+  logoutRowText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#dc2626',
   },
 });

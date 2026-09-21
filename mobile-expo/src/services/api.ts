@@ -506,11 +506,12 @@ export async function requestWalletWithdrawal(
 
 export async function submitLoanRequest(payload: {
   lenderId: string;
-  amount: number;
-  purpose: string;
+  amount?: number;
+  purpose?: string;
   businessName?: string;
   monthlyIncome?: number;
   notes?: string;
+  vendorSnapshot?: any;
 }): Promise<{ success: boolean; request?: any; message?: string }> {
   try {
     const res = await api.post('/loans/request', payload);

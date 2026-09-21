@@ -172,10 +172,21 @@ export const VendorReviewModal: React.FC<VendorReviewModalProps> = ({
               <Text style={styles.subTitle}>Review shop details and documents for approval</Text>
             </View>
           </View>
-          <TouchableOpacity style={styles.deleteBtn} onPress={handleDelete}>
-            <Trash2 size={16} color="#dc2626" />
-            <Text style={styles.deleteBtnText}>Delete</Text>
-          </TouchableOpacity>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            {onReportFraud && !isFraud && (
+              <TouchableOpacity
+                style={styles.fraudReportHeaderBtn}
+                onPress={() => onReportFraud(vendor)}
+              >
+                <AlertTriangle size={14} color="#dc2626" />
+                <Text style={styles.fraudReportHeaderBtnText}>Report Fraud</Text>
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity style={styles.deleteBtn} onPress={handleDelete}>
+              <Trash2 size={16} color="#dc2626" />
+              <Text style={styles.deleteBtnText}>Delete</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
@@ -617,6 +628,22 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '800',
     color: '#dc2626',
+  },
+  fraudReportHeaderBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#fff1f2',
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#fecdd3',
+  },
+  fraudReportHeaderBtnText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#e11d48',
   },
   scroll: {
     flex: 1,

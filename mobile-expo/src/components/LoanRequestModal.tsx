@@ -23,7 +23,13 @@ import {
   Shield,
   FileCheck,
   Building2,
+  Camera,
+  Image as ImageIcon,
+  CreditCard,
+  Hash,
 } from 'lucide-react-native';
+import * as ImagePicker from 'expo-image-picker';
+import { Image } from 'react-native';
 import { submitLoanRequest } from '../services/api';
 import { Lender } from '../types';
 import { useAuth } from '../context/AuthContext';
@@ -58,6 +64,12 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [shopPhotoUri, setShopPhotoUri] = useState<string | null>(null);
+  const [selfieUri, setSelfieUri] = useState<string | null>(null);
+  const [panUri, setPanUri] = useState<string | null>(null);
+  const [aadhaarUri, setAadhaarUri] = useState<string | null>(null);
+  const [accountNumber, setAccountNumber] = useState('');
+  const [ifsc, setIfsc] = useState('');
 
   useEffect(() => {
     if (visible && user) {
@@ -67,11 +79,57 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
       if (vendorProfile?.annualTurnover) {
         setAnnualIncome(vendorProfile.annualTurnover);
       }
+      // Pre-fill documents from profile
+      setPanUri(vendorProfile?.panFileUrl || null);
+      setAadhaarUri(vendorProfile?.aadhaarFileUrl || null);
+      setShopPhotoUri(vendorProfile?.shopPhotoUrl || vendorProfile?.shopPhotos?.[0] || null);
+      setSelfieUri(vendorProfile?.liveSelfieUrl || vendorProfile?.avatarUrl || null);
+      setAccountNumber('');
+      setIfsc('');
       setSubmitted(false);
     }
   }, [visible, user, vendorProfile]);
 
   if (!lender) return null;
+
+  const pickImage = async (
+    setter: (uri: string) => void,
+    useCamera: boolean = false
+  ) => {
+    try {
+      let result: ImagePicker.ImagePickerResult;
+      if (useCamera) {
+        const { status } = await ImagePicker.requestCameraPermissionsAsync();
+        if (status !== 'granted') {
+          Alert.alert('Permission Required', 'Camera permission is needed to take a photo.');
+          return;
+        }
+        result = await ImagePicker.launchCameraAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          quality: 0.85,
+          allowsEditing: true,
+          aspect: [4, 3],
+        });
+      } else {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') {
+          Alert.alert('Permission Required', 'Gallery permission is needed to select a photo.');
+          return;
+        }
+        result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          quality: 0.85,
+          allowsEditing: true,
+          aspect: [4, 3],
+        });
+      }
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        setter(result.assets[0].uri);
+      }
+    } catch (e: any) {
+      Alert.alert('Error', 'Could not open picker: ' + e.message);
+    }
+  };
 
   const handleSubmit = async () => {
     if (!fullName.trim() || !phone.trim() || !email.trim()) {
@@ -88,6 +146,19 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
         businessName: vendorProfile?.businessName || undefined,
         monthlyIncome: undefined,
         notes: `Enquiry from ${fullName.trim()} (${email.trim()}). Annual Income: ${annualIncome}. ${notes.trim()}`,
+        vendorSnapshot: {
+          vendorName: fullName.trim(),
+          shopName: vendorProfile?.businessName || fullName.trim(),
+          phone: phone.trim(),
+          emailId: email.trim(),
+          annualTurnover: annualIncome,
+          panCardUrl: panUri || vendorProfile?.panFileUrl || undefined,
+          aadhaarUrl: aadhaarUri || vendorProfile?.aadhaarFileUrl || undefined,
+          shopPhotoUrl: shopPhotoUri || undefined,
+          liveSelfieUrl: selfieUri || undefined,
+          bankAccountNumber: accountNumber.trim() || undefined,
+          ifscCode: ifsc.trim() || undefined,
+        },
       });
 
       if (res.success) {
@@ -103,8 +174,8 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
     }
   };
 
-  const hasAadhaar = Boolean(vendorProfile?.aadhaarFileUrl || vendorProfile?.aadhaarNumber);
-  const hasPan = Boolean(vendorProfile?.panFileUrl || vendorProfile?.panNumber);
+  const hasPan = Boolean(panUri || vendorProfile?.panFileUrl || vendorProfile?.panNumber);
+  const hasAadhaar = Boolean(aadhaarUri || vendorProfile?.aadhaarFileUrl || vendorProfile?.aadhaarNumber);
 
   return (
     <Modal
@@ -164,7 +235,7 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
                 <View style={styles.autoFillBadge}>
                   <CheckCircle2 size={15} color="#059669" />
                   <Text style={styles.autoFillText}>
-                    Auto-filled from your registered profile. Edit if needed.
+                    Auto-filled from your registered profile. Edit or change if needed.
                   </Text>
                 </View>
 
@@ -234,21 +305,177 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
                   ))}
                 </View>
 
-                {/* Verified KYC Document Status */}
+                {/* KYC Documents — 2x2 Grid */}
                 <Text style={styles.inputLabel}>KYC Documents Attached</Text>
-                <View style={styles.docsRow}>
-                  <View style={[styles.docBadge, hasPan && styles.docBadgeActive]}>
-                    <FileCheck size={14} color={hasPan ? '#059669' : '#94a3b8'} />
-                    <Text style={[styles.docBadgeText, hasPan && styles.docBadgeTextActive]}>
-                      PAN Card: {hasPan ? 'Auto-Attached' : 'Pending'}
-                    </Text>
+                <View style={styles.docsGrid}>
+                  {/* PAN Card */}
+                  <View style={[styles.docCard, hasPan && styles.docCardActive]}>
+                    <View style={styles.docCardHeader}>
+                      <FileCheck size={15} color={hasPan ? '#059669' : '#94a3b8'} />
+                      <Text style={[styles.docCardTitle, hasPan && styles.docCardTitleActive]}>
+                        PAN Card
+                      </Text>
+                    </View>
+                    {panUri ? (
+                      <Image
+                        source={{ uri: panUri }}
+                        style={styles.docThumb}
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      <Text style={[styles.docCardStatus, hasPan && styles.docCardStatusActive]}>
+                        {hasPan ? '✓ Auto-Attached' : 'Pending'}
+                      </Text>
+                    )}
+                    <View style={styles.docBtnRow}>
+                      <TouchableOpacity
+                        style={styles.docMiniBtn}
+                        onPress={() => pickImage(setPanUri, true)}
+                      >
+                        <Camera size={12} color="#003893" />
+                        <Text style={styles.docMiniBtnText}>Camera</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.docMiniBtn}
+                        onPress={() => pickImage(setPanUri, false)}
+                      >
+                        <ImageIcon size={12} color="#003893" />
+                        <Text style={styles.docMiniBtnText}>Gallery</Text>
+                      </TouchableOpacity>
+                    </View>
                   </View>
-                  <View style={[styles.docBadge, hasAadhaar && styles.docBadgeActive]}>
-                    <FileCheck size={14} color={hasAadhaar ? '#059669' : '#94a3b8'} />
-                    <Text style={[styles.docBadgeText, hasAadhaar && styles.docBadgeTextActive]}>
-                      Aadhaar: {hasAadhaar ? 'Auto-Attached' : 'Pending'}
-                    </Text>
+
+                  {/* Aadhaar Card */}
+                  <View style={[styles.docCard, hasAadhaar && styles.docCardActive]}>
+                    <View style={styles.docCardHeader}>
+                      <Shield size={15} color={hasAadhaar ? '#059669' : '#94a3b8'} />
+                      <Text style={[styles.docCardTitle, hasAadhaar && styles.docCardTitleActive]}>
+                        Aadhaar
+                      </Text>
+                    </View>
+                    {aadhaarUri ? (
+                      <Image
+                        source={{ uri: aadhaarUri }}
+                        style={styles.docThumb}
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      <Text style={[styles.docCardStatus, hasAadhaar && styles.docCardStatusActive]}>
+                        {hasAadhaar ? '✓ Auto-Attached' : 'Pending'}
+                      </Text>
+                    )}
+                    <View style={styles.docBtnRow}>
+                      <TouchableOpacity
+                        style={styles.docMiniBtn}
+                        onPress={() => pickImage(setAadhaarUri, true)}
+                      >
+                        <Camera size={12} color="#003893" />
+                        <Text style={styles.docMiniBtnText}>Camera</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.docMiniBtn}
+                        onPress={() => pickImage(setAadhaarUri, false)}
+                      >
+                        <ImageIcon size={12} color="#003893" />
+                        <Text style={styles.docMiniBtnText}>Gallery</Text>
+                      </TouchableOpacity>
+                    </View>
                   </View>
+
+                  {/* Shop / Business Photo */}
+                  <View style={styles.docCard}>
+                    <View style={styles.docCardHeader}>
+                      <Building2 size={15} color={shopPhotoUri ? '#059669' : '#94a3b8'} />
+                      <Text style={[styles.docCardTitle, shopPhotoUri ? styles.docCardTitleActive : null]}>
+                        Shop Photo
+                      </Text>
+                    </View>
+                    {shopPhotoUri ? (
+                      <Image
+                        source={{ uri: shopPhotoUri }}
+                        style={styles.docThumb}
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      <Text style={styles.docCardStatus}>Not uploaded</Text>
+                    )}
+                    <View style={styles.docBtnRow}>
+                      <TouchableOpacity
+                        style={styles.docMiniBtn}
+                        onPress={() => pickImage(setShopPhotoUri, true)}
+                      >
+                        <Camera size={12} color="#003893" />
+                        <Text style={styles.docMiniBtnText}>Camera</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.docMiniBtn}
+                        onPress={() => pickImage(setShopPhotoUri, false)}
+                      >
+                        <ImageIcon size={12} color="#003893" />
+                        <Text style={styles.docMiniBtnText}>Gallery</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+
+                  {/* Live Selfie / Owner Photo */}
+                  <View style={styles.docCard}>
+                    <View style={styles.docCardHeader}>
+                      <UserIcon size={15} color={selfieUri ? '#059669' : '#94a3b8'} />
+                      <Text style={[styles.docCardTitle, selfieUri ? styles.docCardTitleActive : null]}>
+                        Live Selfie
+                      </Text>
+                    </View>
+                    {selfieUri ? (
+                      <Image
+                        source={{ uri: selfieUri }}
+                        style={styles.docThumb}
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      <Text style={styles.docCardStatus}>Not uploaded</Text>
+                    )}
+                    <View style={styles.docBtnRow}>
+                      <TouchableOpacity
+                        style={styles.docMiniBtn}
+                        onPress={() => pickImage(setSelfieUri, true)}
+                      >
+                        <Camera size={12} color="#003893" />
+                        <Text style={styles.docMiniBtnText}>Selfie</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.docMiniBtn}
+                        onPress={() => pickImage(setSelfieUri, false)}
+                      >
+                        <ImageIcon size={12} color="#003893" />
+                        <Text style={styles.docMiniBtnText}>Gallery</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </View>
+
+                {/* Bank Account Details (Optional) */}
+                <Text style={styles.inputLabel}>Bank Account Details (Optional)</Text>
+                <View style={styles.inputBox}>
+                  <CreditCard size={16} color="#94a3b8" />
+                  <TextInput
+                    style={styles.textInput}
+                    placeholder="Account Number"
+                    placeholderTextColor="#94a3b8"
+                    keyboardType="numeric"
+                    value={accountNumber}
+                    onChangeText={setAccountNumber}
+                  />
+                </View>
+                <View style={[styles.inputBox, { marginTop: 6 }]}>
+                  <Hash size={16} color="#94a3b8" />
+                  <TextInput
+                    style={styles.textInput}
+                    placeholder="IFSC Code (e.g. SBIN0001234)"
+                    placeholderTextColor="#94a3b8"
+                    autoCapitalize="characters"
+                    value={ifsc}
+                    onChangeText={setIfsc}
+                  />
                 </View>
 
                 {/* Optional Message / Notes */}
@@ -401,33 +628,74 @@ const styles = StyleSheet.create({
   incomePillTextActive: {
     color: '#ffffff',
   },
-  docsRow: {
+  docsGrid: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 8,
     marginTop: 2,
+    marginBottom: 4,
   },
-  docBadge: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    padding: 8,
-    borderRadius: 10,
+  docCard: {
+    width: '48%',
     backgroundColor: '#f8fafc',
     borderWidth: 1,
     borderColor: '#e2e8f0',
+    borderRadius: 12,
+    padding: 10,
+    gap: 6,
   },
-  docBadgeActive: {
+  docCardActive: {
     backgroundColor: '#ecfdf5',
     borderColor: '#a7f3d0',
   },
-  docBadgeText: {
+  docCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  docCardTitle: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#475569',
+  },
+  docCardTitleActive: {
+    color: '#065f46',
+  },
+  docCardStatus: {
     fontSize: 10,
-    color: '#64748b',
+    color: '#94a3b8',
+    fontWeight: '600',
+  },
+  docCardStatusActive: {
+    color: '#059669',
     fontWeight: '700',
   },
-  docBadgeTextActive: {
-    color: '#065f46',
+  docThumb: {
+    width: '100%',
+    height: 56,
+    borderRadius: 8,
+    backgroundColor: '#e2e8f0',
+  },
+  docBtnRow: {
+    flexDirection: 'row',
+    gap: 4,
+  },
+  docMiniBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 3,
+    backgroundColor: '#eff6ff',
+    borderWidth: 1,
+    borderColor: '#bfdbfe',
+    borderRadius: 6,
+    paddingVertical: 4,
+  },
+  docMiniBtnText: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: '#003893',
   },
   submitBtn: {
     backgroundColor: '#003893',

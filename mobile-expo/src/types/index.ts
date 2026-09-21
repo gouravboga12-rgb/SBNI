@@ -181,6 +181,21 @@ export interface VendorLead {
   bankAccountDetails?: string;
   lenderId?: string;
   lenderName?: string;
+  lenderPhone?: string;
+  lender?: {
+    id?: string;
+    institutionName?: string;
+    phone?: string;
+    address?: string;
+    city?: string;
+    state?: string;
+    latitude?: number;
+    longitude?: number;
+    user?: {
+      phone?: string;
+      email?: string;
+    };
+  };
   avatarUrl?: string;
   liveSelfieUrl?: string;
   panFileUrl?: string | null;

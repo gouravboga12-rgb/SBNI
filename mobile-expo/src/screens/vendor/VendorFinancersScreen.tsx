@@ -11,6 +11,7 @@ import {
   ScrollView,
   Alert,
   Image,
+  useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -38,14 +39,26 @@ import { resolveDocumentUrl } from '../../utils/documentGenerators';
 const DEFAULT_LENDER_PHOTO = 'https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=200';
 
 const RADIUS_CHIPS = [10, 25, 50, 70, 100];
+const CATEGORIES = [
+  'All',
+  'Daily Finance',
+  'Working Capital',
+  'MSME Support',
+  'Equipment Finance',
+  'Emergency Cash',
+];
 
 export const VendorFinancersScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+  const isTablet = width >= 768;
+
   const { user, isSubscribed } = useAuth();
   const [lenders, setLenders] = useState<Lender[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('All');
   const [radiusKm, setRadiusKm] = useState(50);
   const [city, setCity] = useState(user?.vendorProfile?.city || '');
 
@@ -110,13 +123,33 @@ export const VendorFinancersScreen: React.FC = () => {
   };
 
   const filtered = lenders.filter((l) => {
-    if (!searchQuery) return true;
-    const q = searchQuery.toLowerCase();
-    return (
-      l.institutionName.toLowerCase().includes(q) ||
-      l.city.toLowerCase().includes(q) ||
-      l.loanCategories.some((c) => c.toLowerCase().includes(q))
-    );
+    // 1. Category Filter
+    if (selectedCategory && selectedCategory !== 'All') {
+      const catLower = selectedCategory.toLowerCase();
+      const hasCat =
+        l.loanCategories &&
+        l.loanCategories.some(
+          (c) => c.toLowerCase().includes(catLower) || catLower.includes(c.toLowerCase())
+        );
+      const hasType = l.institutionType && l.institutionType.toLowerCase().includes(catLower);
+      if (!hasCat && !hasType) return false;
+    }
+
+    // 2. Search Query Filter
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      const matchesName = l.institutionName.toLowerCase().includes(q);
+      const matchesCity = l.city.toLowerCase().includes(q);
+      const matchesType = l.institutionType && l.institutionType.toLowerCase().includes(q);
+      const matchesCat =
+        l.loanCategories &&
+        l.loanCategories.some((c) => c.toLowerCase().includes(q));
+      if (!matchesName && !matchesCity && !matchesType && !matchesCat) {
+        return false;
+      }
+    }
+
+    return true;
   });
 
   return (
@@ -164,12 +197,36 @@ export const VendorFinancersScreen: React.FC = () => {
             );
           })}
         </ScrollView>
+
+        {/* Categories Chips Row */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={[styles.radiusScroll, { marginTop: 6 }]}
+        >
+          {CATEGORIES.map((cat) => {
+            const active = selectedCategory === cat;
+            return (
+              <TouchableOpacity
+                key={cat}
+                style={[styles.catPill, active && styles.catPillActive]}
+                onPress={() => setSelectedCategory(cat)}
+              >
+                <Text style={[styles.catPillText, active && styles.catPillTextActive]}>
+                  {cat}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
       </View>
 
       {/* Directory List */}
       <FlatList
         data={filtered}
         keyExtractor={(item) => item.id}
+        numColumns={isTablet ? 2 : 1}
+        key={isTablet ? 'tab-fin-grid' : 'phone-fin-grid'}
         contentContainerStyle={[
           styles.listContent,
           { paddingBottom: insets.bottom + 90 },
@@ -197,11 +254,12 @@ export const VendorFinancersScreen: React.FC = () => {
               style={styles.emptyExploreBtn}
               onPress={() => {
                 setRadiusKm(100);
+                setSelectedCategory('All');
                 setSearchQuery('');
               }}
               activeOpacity={0.85}
             >
-              <Text style={styles.emptyExploreBtnText}>Reset Radius to 100 KM</Text>
+              <Text style={styles.emptyExploreBtnText}>Reset Filters & Radius</Text>
             </TouchableOpacity>
           </View>
         }
@@ -209,7 +267,7 @@ export const VendorFinancersScreen: React.FC = () => {
           const effectiveLogo = resolveDocumentUrl(item.logoUrl || item.avatarUrl || DEFAULT_LENDER_PHOTO);
 
           return (
-            <View style={styles.card}>
+            <View style={[styles.card, isTablet && styles.cardTablet]}>
               <View style={styles.cardHeader}>
                 <View style={styles.instIcon}>
                   <Image
@@ -243,8 +301,8 @@ export const VendorFinancersScreen: React.FC = () => {
                 <Text style={styles.metricChipText}>{item.successRate || '85% Approval'}</Text>
               </View>
               <View style={styles.metricChip}>
-                <Percent size={12} color="#7c3aed" />
-                <Text style={styles.metricChipText}>From {item.minInterestRate}%/mo</Text>
+                <Building2 size={12} color="#003893" />
+                <Text style={styles.metricChipText}>{item.institutionType || 'Financer'}</Text>
               </View>
             </View>
 
@@ -397,6 +455,27 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontWeight: '800',
   },
+  catPill: {
+    paddingVertical: 5,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: '#eff6ff',
+    borderWidth: 1,
+    borderColor: '#dbeafe',
+  },
+  catPillActive: {
+    backgroundColor: '#003893',
+    borderColor: '#003893',
+  },
+  catPillText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#1d4ed8',
+  },
+  catPillTextActive: {
+    color: '#ffffff',
+    fontWeight: '800',
+  },
   listContent: {
     padding: 16,
   },
@@ -412,6 +491,10 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 6,
+  },
+  cardTablet: {
+    flex: 1,
+    marginHorizontal: 6,
   },
   cardHeader: {
     flexDirection: 'row',

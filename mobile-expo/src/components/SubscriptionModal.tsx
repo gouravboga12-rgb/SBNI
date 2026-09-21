@@ -228,7 +228,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
 
   const getRazorpayHtml = (session: any) => {
     if (!session || !selectedPlan) return '';
-    const key = session.keyId || 'rzp_live_default';
+    const key = session.keyId || 'rzp_test_TUjAguyFqbDjNk';
     const isSubMode = session.mode === 'subscription' && !!session.subscriptionId;
     const effectiveAmount = session.amountPaise || Math.round(finalPayable * 100);
 
@@ -595,12 +595,47 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
 
           <WebView
             originWhitelist={['*']}
-            source={{ html: getRazorpayHtml(razorpaySession) }}
+            source={{
+              html: getRazorpayHtml(razorpaySession),
+              baseUrl: 'https://justpaisa.in',
+            }}
             onMessage={handleWebViewMessage}
             style={{ flex: 1, backgroundColor: '#0f172a' }}
             javaScriptEnabled={true}
             domStorageEnabled={true}
             startInLoadingState={true}
+            setSupportMultipleWindows={false}
+            mixedContentMode="always"
+            allowsInlineMediaPlayback={true}
+            onShouldStartLoadWithRequest={(request) => {
+              const url = request.url;
+              if (
+                url.startsWith('https://justpaisa.in') ||
+                url.startsWith('https://api.razorpay.com') ||
+                url.startsWith('https://checkout.razorpay.com') ||
+                url.startsWith('about:blank') ||
+                url.startsWith('data:')
+              ) {
+                return true;
+              }
+
+              // Handle UPI apps & custom schemes natively
+              if (
+                url.startsWith('upi://') ||
+                url.startsWith('phonepe://') ||
+                url.startsWith('paytmmp://') ||
+                url.startsWith('gpay://') ||
+                url.startsWith('tez://') ||
+                url.startsWith('intent://')
+              ) {
+                Linking.openURL(url).catch((err) => {
+                  console.warn('Could not launch payment app:', err);
+                });
+                return false;
+              }
+
+              return true;
+            }}
             renderLoading={() => (
               <View style={styles.webLoaderBox}>
                 <ActivityIndicator size="large" color="#3b82f6" />
