@@ -712,12 +712,26 @@ export async function uploadFileToEc2Api(
 // PUSH TOKENS & NOTIFICATIONS
 // ================================================================
 
-export async function savePushTokenApi(pushToken: string): Promise<any> {
+export async function savePushTokenApi(pushToken: string): Promise<{ success: boolean; message?: string }> {
   try {
     const res = await api.post('/auth/push-token', { pushToken });
+    console.log('✅ [savePushTokenApi success]:', res.data);
     return res.data;
-  } catch (e) {
-    return null;
+  } catch (e: any) {
+    console.warn('⚠️ [savePushTokenApi error]:', e?.response?.data || e?.message);
+    return { success: false, message: e?.response?.data?.message || e.message };
+  }
+}
+
+export async function testPushNotificationApi(pushToken?: string): Promise<{ success: boolean; message: string; pushToken?: string; ticket?: any }> {
+  try {
+    const res = await api.post('/auth/test-push', { pushToken });
+    return res.data;
+  } catch (e: any) {
+    return {
+      success: false,
+      message: e?.response?.data?.message || e.message || 'Failed to dispatch test notification.',
+    };
   }
 }
 
@@ -727,6 +741,15 @@ export async function getMyNotificationsApi(): Promise<{ success: boolean; data:
     return { success: true, data: res.data?.data || [] };
   } catch (e) {
     return { success: false, data: [] };
+  }
+}
+
+export async function clearMyNotificationsApi(): Promise<{ success: boolean; message?: string }> {
+  try {
+    const res = await api.delete('/cms/notifications');
+    return res.data;
+  } catch (e: any) {
+    return { success: false, message: e?.response?.data?.message || e.message };
   }
 }
 

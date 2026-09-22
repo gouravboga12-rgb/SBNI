@@ -11,6 +11,7 @@ import {
   refreshAccessToken,
   getMyProfile,
   updatePushToken,
+  testPushNotification,
 } from '../controllers/authController';
 import { authenticateUser } from '../middlewares/auth';
 import { asyncHandler } from '../middlewares/errorHandler';
@@ -30,6 +31,7 @@ router.post('/resend-otp', asyncHandler(resendOtp));
 
 // Push Notifications
 router.post('/push-token', authenticateUser, asyncHandler(updatePushToken));
+router.post('/test-push', authenticateUser, asyncHandler(testPushNotification));
 
 // Legacy & Session Routes
 router.post('/verify-otp', asyncHandler(verifyOTP));

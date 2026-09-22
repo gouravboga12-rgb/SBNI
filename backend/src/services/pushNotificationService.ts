@@ -22,10 +22,9 @@ export async function saveUserPushToken(userId: string, pushToken: string): Prom
   try {
     if (!userId || !pushToken) return false;
 
-    // Validate token format (must start with ExponentPushToken[ or ExpoPushToken[)
-    const trimmed = pushToken.trim();
-    if (!trimmed.startsWith('ExponentPushToken') && !trimmed.startsWith('ExpoPushToken')) {
-      console.warn(`[PushNotification] Invalid Expo push token format: ${trimmed}`);
+    const trimmed = String(pushToken).trim();
+    if (!trimmed || trimmed.length < 10) {
+      console.warn(`[PushNotification] Invalid push token format: ${trimmed}`);
       return false;
     }
 
@@ -34,7 +33,7 @@ export async function saveUserPushToken(userId: string, pushToken: string): Prom
       data: { pushToken: trimmed },
     });
 
-    console.log(`📱 [PushNotification] Registered push token for user ${userId}`);
+    console.log(`📱 [PushNotification] Registered push token for user ${userId}: ${trimmed}`);
     return true;
   } catch (error: any) {
     console.error(`❌ [PushNotification] Error saving push token for user ${userId}:`, error.message);
@@ -55,13 +54,15 @@ export async function sendPushNotificationToUser(
     if (!userId) return false;
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { pushToken: true, id: true },
+      select: { pushToken: true, id: true, phone: true },
     });
 
     if (!user?.pushToken) {
+      console.log(`⚠️ [PushNotification] User ${userId} (${user?.phone}) has no registered push token.`);
       return false;
     }
 
+    console.log(`📡 [PushNotification] Sending push to user ${userId} (${user.phone}) with token ${user.pushToken}`);
     const sent = await sendExpoPushNotification([user.pushToken], title, body, data);
     return sent > 0;
   } catch (err: any) {
@@ -70,6 +71,89 @@ export async function sendPushNotificationToUser(
   }
 }
 
+/**
+ * Dispatch an immediate test push notification to a user with full diagnostic return
+ */
+export async function testUserPushNotification(
+  userId: string,
+  customToken?: string
+): Promise<{ success: boolean; message: string; pushToken?: string; ticket?: any }> {
+  try {
+    let token = customToken;
+    if (!token) {
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { pushToken: true, phone: true },
+      });
+      token = user?.pushToken || undefined;
+    } else {
+      // If client provided a custom token, save it now
+      await saveUserPushToken(userId, token);
+    }
+
+    if (!token) {
+      return {
+        success: false,
+        message: 'No push token registered for your account. Tap "Re-Enable / Sync Token" to generate a token.',
+      };
+    }
+
+    const title = '🔔 JustPaisa Notification Test';
+    const body = '🎉 Push notifications are working perfectly on your device!';
+    const data = { type: 'TEST_NOTIFICATION', timestamp: Date.now() };
+
+    const message: ExpoPushMessage = {
+      to: token,
+      sound: 'default',
+      title,
+      body,
+      data,
+      priority: 'high',
+      channelId: 'default',
+    };
+
+    const response = await axios.post(EXPO_PUSH_URL, [message], {
+      headers: {
+        'Accept': 'application/json',
+        'Accept-Encoding': 'gzip, deflate',
+        'Content-Type': 'application/json',
+      },
+      timeout: 10000,
+    });
+
+    const ticket = response.data?.data?.[0];
+    console.log('🧪 [Test Push Result Ticket]:', ticket);
+
+    if (ticket?.status === 'ok') {
+      return {
+        success: true,
+        message: 'Test notification delivered successfully to your device!',
+        pushToken: token,
+        ticket,
+      };
+    } else if (ticket?.status === 'error') {
+      return {
+        success: false,
+        message: `Expo Push Error: ${ticket.message || ticket.details?.error || 'Unknown error'}`,
+        pushToken: token,
+        ticket,
+      };
+    }
+
+    return {
+      success: true,
+      message: 'Test push notification dispatched to Expo relay.',
+      pushToken: token,
+      ticket: response.data,
+    };
+  } catch (err: any) {
+    console.error('❌ [Test Push Error]:', err.message);
+    return {
+      success: false,
+      message: `Failed to send test push: ${err.message}`,
+    };
+  }
+}
 
 /**
  * Batch send push notifications to a list of Expo push tokens
@@ -85,10 +169,7 @@ export async function sendExpoPushNotification(
     const validTokens = Array.from(
       new Set(
         pushTokens.filter(
-          (t) =>
-            t &&
-            typeof t === 'string' &&
-            (t.startsWith('ExponentPushToken') || t.startsWith('ExpoPushToken'))
+          (t) => t && typeof t === 'string' && t.trim().length > 10
         )
       )
     );
@@ -124,6 +205,12 @@ export async function sendExpoPushNotification(
         });
 
         if (response.data?.data) {
+          const tickets = response.data.data;
+          tickets.forEach((ticket: any, idx: number) => {
+            if (ticket.status === 'error') {
+              console.warn(`⚠️ [PushNotification Ticket Error for ${chunk[idx]?.to}]:`, ticket.message, ticket.details);
+            }
+          });
           sentCount += chunk.length;
         }
       } catch (chunkErr: any) {

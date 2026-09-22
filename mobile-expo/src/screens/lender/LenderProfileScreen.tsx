@@ -33,7 +33,12 @@ import {
   ChevronRight,
   Camera,
   Edit3,
+  Bell,
+  CheckCircle2,
+  AlertCircle,
+  RefreshCw,
 } from 'lucide-react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../../context/AuthContext';
 import {
   updateLenderProfileApi,
@@ -41,6 +46,10 @@ import {
   fetchReferEarnStatusApi,
   cancelAutoPayApi,
 } from '../../services/api';
+import {
+  triggerTestPushNotification,
+  registerForPushNotificationsAsync,
+} from '../../services/notificationService';
 import { SubscriptionModal } from '../../components/SubscriptionModal';
 import { LocationPickerModal } from '../../components/LocationPickerModal';
 import { PolicyModal } from '../../components/PolicyModal';
@@ -70,10 +79,53 @@ export const LenderProfileScreen: React.FC = () => {
     basic: false,
     location: false,
     criteria: false,
+    notifications: false,
     policies: false,
   });
 
   const [isEditing, setIsEditing] = useState(false);
+  const [testingPush, setTestingPush] = useState(false);
+  const [pushStatus, setPushStatus] = useState<string>('Checking...');
+
+  useEffect(() => {
+    AsyncStorage.getItem('sbni_push_token').then((t) => {
+      setPushStatus(t ? 'Active & Registered' : 'Not Registered');
+    });
+  }, []);
+
+  const handleTestPush = async () => {
+    setTestingPush(true);
+    try {
+      const res = await triggerTestPushNotification();
+      if (res.success) {
+        Alert.alert('Push Notification Sent 🔔', res.message || 'Check your notification shade for the test alert!');
+        setPushStatus('Active & Registered');
+      } else {
+        Alert.alert('Push Notice', res.message || 'Could not send test notification.');
+      }
+    } catch (e: any) {
+      Alert.alert('Error', e?.message || 'Failed to send test push.');
+    } finally {
+      setTestingPush(false);
+    }
+  };
+
+  const handleSyncPushToken = async () => {
+    setTestingPush(true);
+    try {
+      const t = await registerForPushNotificationsAsync(true);
+      if (t) {
+        setPushStatus('Active & Registered');
+        Alert.alert('Push Token Synced 🎉', 'Device registered successfully with JustPaisa notification server.');
+      } else {
+        Alert.alert('Permission Notice', 'Please ensure notifications are enabled in Android App Settings.');
+      }
+    } catch (e: any) {
+      Alert.alert('Sync Error', e?.message || 'Failed to sync push token.');
+    } finally {
+      setTestingPush(false);
+    }
+  };
 
   const toggleSection = (key: string) => {
     setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -734,7 +786,68 @@ export const LenderProfileScreen: React.FC = () => {
         )}
       </View>
 
-      {/* ── ACCORDION 5: LEGAL POLICIES & CUSTOMER SUPPORT ── */}
+      {/* ── ACCORDION 5: PUSH NOTIFICATIONS & DEVICE ALERTS ── */}
+      <View style={styles.accordionCard}>
+        <TouchableOpacity
+          style={styles.accordionHeader}
+          onPress={() => toggleSection('notifications')}
+          activeOpacity={0.8}
+        >
+          <View style={styles.accordionTitleRow}>
+            <Bell size={18} color="#003893" />
+            <Text style={styles.accordionTitle}>Push Notifications & Alerts</Text>
+          </View>
+          {openSections.notifications ? <ChevronUp size={18} color="#64748b" /> : <ChevronDown size={18} color="#64748b" />}
+        </TouchableOpacity>
+
+        {openSections.notifications && (
+          <View style={styles.accordionBody}>
+            {/* Status Card */}
+            <View style={styles.notifStatusCard}>
+              <View style={styles.notifStatusRow}>
+                <View style={[styles.notifStatusDot, pushStatus.includes('Active') ? styles.dotGreen : styles.dotOrange]} />
+                <Text style={styles.notifStatusLabel}>Device Status:</Text>
+                <Text style={[styles.notifStatusVal, pushStatus.includes('Active') ? styles.valGreen : styles.valOrange]}>
+                  {pushStatus}
+                </Text>
+              </View>
+              <Text style={styles.notifStatusHint}>
+                Real-time Expo push notifications alert you immediately when nearby businesses submit financing inquiries.
+              </Text>
+            </View>
+
+            {/* Test Notification Button */}
+            <TouchableOpacity
+              style={[styles.testNotifBtn, testingPush && styles.saveBtnDisabled]}
+              onPress={handleTestPush}
+              disabled={testingPush}
+              activeOpacity={0.85}
+            >
+              {testingPush ? (
+                <ActivityIndicator size="small" color="#ffffff" />
+              ) : (
+                <>
+                  <Bell size={15} color="#ffffff" />
+                  <Text style={styles.testNotifBtnText}>Send Test Notification 🔔</Text>
+                </>
+              )}
+            </TouchableOpacity>
+
+            {/* Re-Sync Token Button */}
+            <TouchableOpacity
+              style={[styles.syncNotifBtn, testingPush && styles.saveBtnDisabled]}
+              onPress={handleSyncPushToken}
+              disabled={testingPush}
+              activeOpacity={0.85}
+            >
+              <RefreshCw size={14} color="#003893" />
+              <Text style={styles.syncNotifBtnText}>Re-Sync / Register Push Token</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
+
+      {/* ── ACCORDION 6: LEGAL POLICIES & CUSTOMER SUPPORT ── */}
       <View style={styles.accordionCard}>
         <TouchableOpacity
           style={styles.accordionHeader}
@@ -1380,5 +1493,81 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '800',
     color: '#dc2626',
+  },
+  notifStatusCard: {
+    backgroundColor: '#f8fafc',
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    marginBottom: 12,
+  },
+  notifStatusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 6,
+  },
+  notifStatusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  dotGreen: {
+    backgroundColor: '#16a34a',
+  },
+  dotOrange: {
+    backgroundColor: '#f59e0b',
+  },
+  notifStatusLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#475569',
+  },
+  notifStatusVal: {
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  valGreen: {
+    color: '#16a34a',
+  },
+  valOrange: {
+    color: '#d97706',
+  },
+  notifStatusHint: {
+    fontSize: 11,
+    color: '#64748b',
+    lineHeight: 16,
+  },
+  testNotifBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#003893',
+    paddingVertical: 11,
+    borderRadius: 12,
+    marginBottom: 8,
+  },
+  testNotifBtnText: {
+    color: '#ffffff',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  syncNotifBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#eff6ff',
+    borderWidth: 1,
+    borderColor: '#bfdbfe',
+    paddingVertical: 10,
+    borderRadius: 12,
+  },
+  syncNotifBtnText: {
+    color: '#003893',
+    fontSize: 12,
+    fontWeight: '800',
   },
 });

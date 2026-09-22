@@ -173,6 +173,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsSubscribed(subStatus.isActive);
       setActiveSubscription(subStatus.subscription || null);
       calculateSubscriptionDetails(subStatus.subscription);
+
+      // Verify and register push token
+      registerForPushNotificationsAsync().catch(() => {});
     } catch (e) {}
   };
 

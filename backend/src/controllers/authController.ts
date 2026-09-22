@@ -5,7 +5,11 @@ import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from '.
 import { Role, LenderType } from '@prisma/client';
 import { AuthenticatedRequest } from '../middlewares/auth';
 import { sendSignupOtpEmail, sendForgotPasswordOtpEmail } from '../utils/mailer';
-import { saveUserPushToken, notifyVendorsOfNewLender } from '../services/pushNotificationService';
+import {
+  saveUserPushToken,
+  notifyVendorsOfNewLender,
+  testUserPushNotification,
+} from '../services/pushNotificationService';
 
 // In-memory store for pending signup OTPs (before account creation in DB)
 interface PendingOtpRecord {
@@ -808,4 +812,19 @@ export const updatePushToken = async (req: AuthenticatedRequest, res: Response) 
     success: saved,
     message: saved ? 'Push token registered successfully' : 'Failed to register push token',
   });
+};
+
+/**
+ * Send an immediate test push notification to the logged-in user
+ */
+export const testPushNotification = async (req: AuthenticatedRequest, res: Response) => {
+  const userId = req.user?.userId;
+  const { pushToken } = req.body;
+
+  if (!userId) {
+    return res.status(401).json({ success: false, message: 'Unauthorized' });
+  }
+
+  const result = await testUserPushNotification(userId, pushToken);
+  res.json(result);
 };

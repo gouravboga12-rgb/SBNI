@@ -115,3 +115,16 @@ export const getMyNotifications = async (req: AuthenticatedRequest, res: Respons
 
   res.json({ success: true, count: notifications.length, data: notifications });
 };
+
+export const clearMyNotifications = async (req: AuthenticatedRequest, res: Response) => {
+  const userId = req.user?.userId;
+  if (!userId) {
+    return res.status(401).json({ success: false, message: 'Unauthorized' });
+  }
+
+  await prisma.notification.deleteMany({
+    where: { userId },
+  });
+
+  res.json({ success: true, message: 'All notifications cleared successfully.' });
+};

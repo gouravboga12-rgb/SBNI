@@ -7,9 +7,10 @@ import {
   TouchableOpacity,
   FlatList,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
-import { Bell, X, Sparkles, Clock, CheckCircle } from 'lucide-react-native';
-import { getMyNotificationsApi } from '../services/api';
+import { Bell, X, Sparkles, Clock, CheckCircle, Trash2 } from 'lucide-react-native';
+import { getMyNotificationsApi, clearMyNotificationsApi } from '../services/api';
 
 interface NotificationModalProps {
   visible: boolean;
@@ -19,6 +20,7 @@ interface NotificationModalProps {
 export const NotificationModal: React.FC<NotificationModalProps> = ({ visible, onClose }) => {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [clearing, setClearing] = useState(false);
 
   useEffect(() => {
     if (visible) {
@@ -43,6 +45,33 @@ export const NotificationModal: React.FC<NotificationModalProps> = ({ visible, o
     }
   };
 
+  const handleClearAll = () => {
+    Alert.alert(
+      'Clear All Notifications',
+      'Are you sure you want to clear all your notifications?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Clear All',
+          style: 'destructive',
+          onPress: async () => {
+            setClearing(true);
+            try {
+              const res = await clearMyNotificationsApi();
+              if (res?.success) {
+                setNotifications([]);
+              }
+            } catch (e) {
+              console.log('Error clearing notifications:', e);
+            } finally {
+              setClearing(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View style={styles.overlay}>
@@ -53,14 +82,33 @@ export const NotificationModal: React.FC<NotificationModalProps> = ({ visible, o
               <View style={styles.iconCircle}>
                 <Bell size={20} color="#003893" />
               </View>
-              <View>
+              <View style={{ flex: 1 }}>
                 <Text style={styles.title}>Notifications</Text>
                 <Text style={styles.subTitle}>Real-time updates & local financer alerts</Text>
               </View>
             </View>
-            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-              <X size={20} color="#64748b" />
-            </TouchableOpacity>
+            <View style={styles.headerRightActions}>
+              {notifications.length > 0 && (
+                <TouchableOpacity
+                  onPress={handleClearAll}
+                  style={styles.clearAllButton}
+                  disabled={clearing}
+                  activeOpacity={0.7}
+                >
+                  {clearing ? (
+                    <ActivityIndicator size="small" color="#dc2626" />
+                  ) : (
+                    <>
+                      <Trash2 size={13} color="#dc2626" />
+                      <Text style={styles.clearAllText}>Clear all</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              )}
+              <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+                <X size={20} color="#64748b" />
+              </TouchableOpacity>
+            </View>
           </View>
 
           {/* Body */}
@@ -160,6 +208,27 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     padding: 6,
+  },
+  headerRightActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  clearAllButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#fff1f2',
+    borderWidth: 1,
+    borderColor: '#fecdd3',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  clearAllText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#dc2626',
   },
   listContent: {
     padding: 16,

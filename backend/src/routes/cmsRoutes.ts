@@ -9,6 +9,7 @@ import {
   getPlatformSettings,
   createSupportTicket,
   getMyNotifications,
+  clearMyNotifications,
 } from '../controllers/cmsController';
 import { authenticateUser } from '../middlewares/auth';
 import { asyncHandler } from '../middlewares/errorHandler';
@@ -25,5 +26,6 @@ router.get('/settings', asyncHandler(getPlatformSettings));
 
 router.post('/tickets', authenticateUser, asyncHandler(createSupportTicket));
 router.get('/notifications', authenticateUser, asyncHandler(getMyNotifications));
+router.delete('/notifications', authenticateUser, asyncHandler(clearMyNotifications));
 
 export default router;
