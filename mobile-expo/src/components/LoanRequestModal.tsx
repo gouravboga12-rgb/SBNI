@@ -72,10 +72,16 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
   const [ifsc, setIfsc] = useState('');
 
   useEffect(() => {
-    if (visible && user) {
-      setFullName(user.name || user.fullName || '');
-      setPhone(user.phone || '');
-      setEmail(user.email || '');
+    if (visible) {
+      const nameCandidate =
+        vendorProfile?.ownerName ||
+        (user as any)?.name ||
+        (user as any)?.fullName ||
+        vendorProfile?.businessName ||
+        '';
+      setFullName(nameCandidate);
+      setPhone(user?.phone || (vendorProfile as any)?.phone || '');
+      setEmail(user?.email || (vendorProfile as any)?.email || '');
       if (vendorProfile?.annualTurnover) {
         setAnnualIncome(vendorProfile.annualTurnover);
       }

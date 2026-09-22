@@ -506,6 +506,7 @@ export async function requestWalletWithdrawal(
 
 export async function submitLoanRequest(payload: {
   lenderId: string;
+  type?: 'LOAN_APPLICATION' | 'PHONE_CALL' | 'WHATSAPP' | string;
   amount?: number;
   purpose?: string;
   businessName?: string;

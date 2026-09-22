@@ -402,13 +402,37 @@ export const ingestLead = async (req: AuthenticatedRequest, res: Response) => {
       });
 
       if (targetLender?.userId) {
-        emitToUser(targetLender.userId, 'lead:new', lead);
-        // Dispatch Expo mobile push notification to Financer
         const vendorDisplayName = (lead as any).shopName || (lead as any).vendorName || 'A Small Business';
+        const notifTitle = '🔔 New Financing Inquiry';
+        const notifBody = `${vendorDisplayName} has submitted a new business financing inquiry (${leadType}). Tap to review.`;
+
+        try {
+          await prisma.notification.create({
+            data: {
+              userId: targetLender.userId,
+              title: notifTitle,
+              message: notifBody,
+              channel: 'PUSH',
+              type: 'LEAD_ALERT',
+            },
+          });
+        } catch (dbNotifErr) {
+          console.warn('Could not insert DB notification in ingestLead:', dbNotifErr);
+        }
+
+        emitToUser(targetLender.userId, 'lead:new', lead);
+        emitToUser(targetLender.userId, 'notification', {
+          title: notifTitle,
+          message: notifBody,
+          type: 'LEAD_ALERT',
+          createdAt: new Date().toISOString(),
+        });
+
+        // Dispatch Expo mobile push notification to Financer
         sendPushNotificationToUser(
           targetLender.userId,
-          '🔔 New Financing Inquiry',
-          `${vendorDisplayName} has submitted a new business financing inquiry. Tap to review.`,
+          notifTitle,
+          notifBody,
           { type: 'LEAD_NEW', leadId: lead.id, screen: 'Reports' }
         ).catch(() => {});
       }
@@ -516,17 +540,39 @@ export const updateLeadStatus = async (req: AuthenticatedRequest, res: Response)
     // Real-time broadcast: notify vendor of status update instantly without refresh
     try {
       if (existingLead?.vendor?.userId) {
-        emitToUser(existingLead.vendor.userId, 'lead:status_updated', {
-          leadId,
-          status,
-          lead,
-        });
-        // Dispatch Expo mobile push notification to Vendor
         const isAccepted = status === 'Accepted' || status === 'Verified' || status === 'Approved' || status === 'Completed';
         const notifTitle = isAccepted ? '🎉 Financing Request Approved!' : 'Financing Request Update';
         const notifBody = isAccepted
           ? 'Your financing application has been accepted! Tap to view details and office navigation.'
           : `Your financing application status has been updated to ${status}.`;
+
+        try {
+          await prisma.notification.create({
+            data: {
+              userId: existingLead.vendor.userId,
+              title: notifTitle,
+              message: notifBody,
+              channel: 'PUSH',
+              type: 'STATUS_ALERT',
+            },
+          });
+        } catch (dbNotifErr) {
+          console.warn('Could not insert DB notification in updateLeadStatus:', dbNotifErr);
+        }
+
+        emitToUser(existingLead.vendor.userId, 'lead:status_updated', {
+          leadId,
+          status,
+          lead,
+        });
+        emitToUser(existingLead.vendor.userId, 'notification', {
+          title: notifTitle,
+          message: notifBody,
+          type: 'STATUS_ALERT',
+          createdAt: new Date().toISOString(),
+        });
+
+        // Dispatch Expo mobile push notification to Vendor
         sendPushNotificationToUser(
           existingLead.vendor.userId,
           notifTitle,

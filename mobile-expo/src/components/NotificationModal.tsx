@@ -78,37 +78,44 @@ export const NotificationModal: React.FC<NotificationModalProps> = ({ visible, o
         <View style={styles.modalCard}>
           {/* Header */}
           <View style={styles.header}>
-            <View style={styles.titleRow}>
-              <View style={styles.iconCircle}>
-                <Bell size={20} color="#003893" />
-              </View>
-              <View style={{ flex: 1 }}>
+            <View style={styles.headerTopRow}>
+              <View style={styles.headerLeft}>
+                <View style={styles.iconCircle}>
+                  <Bell size={18} color="#003893" />
+                </View>
                 <Text style={styles.title}>Notifications</Text>
-                <Text style={styles.subTitle}>Real-time updates & local financer alerts</Text>
+                {notifications.length > 0 && (
+                  <View style={styles.countBadge}>
+                    <Text style={styles.countBadgeText}>{notifications.length}</Text>
+                  </View>
+                )}
+              </View>
+
+              <View style={styles.headerRightActions}>
+                {notifications.length > 0 && (
+                  <TouchableOpacity
+                    onPress={handleClearAll}
+                    style={styles.clearAllButton}
+                    disabled={clearing}
+                    activeOpacity={0.7}
+                  >
+                    {clearing ? (
+                      <ActivityIndicator size="small" color="#dc2626" />
+                    ) : (
+                      <>
+                        <Trash2 size={12} color="#dc2626" />
+                        <Text style={styles.clearAllText}>Clear all</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                )}
+                <TouchableOpacity onPress={onClose} style={styles.closeButton} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                  <X size={20} color="#64748b" />
+                </TouchableOpacity>
               </View>
             </View>
-            <View style={styles.headerRightActions}>
-              {notifications.length > 0 && (
-                <TouchableOpacity
-                  onPress={handleClearAll}
-                  style={styles.clearAllButton}
-                  disabled={clearing}
-                  activeOpacity={0.7}
-                >
-                  {clearing ? (
-                    <ActivityIndicator size="small" color="#dc2626" />
-                  ) : (
-                    <>
-                      <Trash2 size={13} color="#dc2626" />
-                      <Text style={styles.clearAllText}>Clear all</Text>
-                    </>
-                  )}
-                </TouchableOpacity>
-              )}
-              <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-                <X size={20} color="#64748b" />
-              </TouchableOpacity>
-            </View>
+
+            <Text style={styles.subTitle}>Real-time updates & local financer alerts</Text>
           </View>
 
           {/* Body */}
@@ -175,44 +182,65 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
   },
   header: {
+    paddingHorizontal: 18,
+    paddingTop: 18,
+    paddingBottom: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9',
+    gap: 6,
+  },
+  headerTopRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    width: '100%',
   },
-  titleRow: {
+  headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 8,
+    flex: 1,
+    flexShrink: 1,
   },
   iconCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     backgroundColor: '#eff6ff',
     alignItems: 'center',
     justifyContent: 'center',
   },
   title: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '800',
     color: '#0f172a',
+  },
+  countBadge: {
+    backgroundColor: '#003893',
+    borderRadius: 10,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  countBadgeText: {
+    color: '#ffffff',
+    fontSize: 10,
+    fontWeight: '800',
   },
   subTitle: {
     fontSize: 12,
     color: '#64748b',
+    paddingLeft: 2,
   },
   closeButton: {
     padding: 6,
+    borderRadius: 20,
+    backgroundColor: '#f8fafc',
   },
   headerRightActions: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    flexShrink: 0,
   },
   clearAllButton: {
     flexDirection: 'row',
@@ -221,12 +249,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff1f2',
     borderWidth: 1,
     borderColor: '#fecdd3',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 12,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    borderRadius: 10,
   },
   clearAllText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
     color: '#dc2626',
   },

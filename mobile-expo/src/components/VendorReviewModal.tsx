@@ -118,19 +118,44 @@ export const VendorReviewModal: React.FC<VendorReviewModalProps> = ({
     );
   };
 
+  const resolveDocUrl = (uri: string | null | undefined): string | null => {
+    if (!uri || typeof uri !== 'string') return null;
+    const trimmed = uri.trim();
+    if (!trimmed) return null;
+    if (
+      trimmed.startsWith('http://') ||
+      trimmed.startsWith('https://') ||
+      trimmed.startsWith('file://') ||
+      trimmed.startsWith('content://') ||
+      trimmed.startsWith('data:')
+    ) {
+      return trimmed;
+    }
+    const clean = trimmed.startsWith('/') ? trimmed.slice(1) : trimmed;
+    return `https://justpaisa.in/${clean}`;
+  };
+
   const openGoogleMaps = () => {
-    const lat = vendor.latitude || 17.3688;
-    const lng = vendor.longitude || 78.5247;
-    const label = encodeURIComponent(`${vendor.shopName} (${vendor.vendorName})`);
-    const url = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}&query_place_id=${label}`;
-    Linking.openURL(url).catch(() => {});
+    try {
+      const lat = vendor.latitude || 17.3688;
+      const lng = vendor.longitude || 78.5247;
+      const label = encodeURIComponent(`${vendor.shopName || 'Shop'} (${vendor.vendorName || 'Vendor'})`);
+      const url = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}&query_place_id=${label}`;
+      Linking.openURL(url).catch(() => {});
+    } catch (e) {
+      console.warn('Map open error:', e);
+    }
   };
 
   const handleCall = () => {
-    if (vendor.mobileNumber && vendor.mobileNumber !== 'Not provided') {
-      Linking.openURL(`tel:${vendor.mobileNumber}`).catch(() => {});
-    } else {
-      Alert.alert('Notice', 'Mobile number not provided.');
+    try {
+      if (vendor.mobileNumber && vendor.mobileNumber !== 'Not provided') {
+        Linking.openURL(`tel:${vendor.mobileNumber}`).catch(() => {});
+      } else {
+        Alert.alert('Notice', 'Mobile number not provided.');
+      }
+    } catch (e) {
+      console.warn('Call error:', e);
     }
   };
 
@@ -138,21 +163,30 @@ export const VendorReviewModal: React.FC<VendorReviewModalProps> = ({
   const premisesPhotos: { title: string; url: string }[] = [];
   if (Array.isArray(vendor.shopPhotos) && vendor.shopPhotos.length > 0) {
     vendor.shopPhotos.forEach((p, idx) => {
-      if (p && p.trim().length > 10) {
-        premisesPhotos.push({ title: `Storefront / Premises ${idx + 1}`, url: p });
+      const resUrl = resolveDocUrl(p);
+      if (resUrl) {
+        premisesPhotos.push({ title: `Storefront / Premises ${idx + 1}`, url: resUrl });
       }
     });
   }
   if (Array.isArray(vendor.shopImages) && vendor.shopImages.length > 0) {
     vendor.shopImages.forEach((img, idx) => {
-      if (img && img.trim().length > 10 && !premisesPhotos.some((p) => p.url === img)) {
-        premisesPhotos.push({ title: `Shop Photo ${idx + 1}`, url: img });
+      const resUrl = resolveDocUrl(img);
+      if (resUrl && !premisesPhotos.some((p) => p.url === resUrl)) {
+        premisesPhotos.push({ title: `Shop Photo ${idx + 1}`, url: resUrl });
       }
     });
   }
-  if (vendor.shopPhotoUrl && vendor.shopPhotoUrl.trim().length > 10 && !premisesPhotos.some((p) => p.url === vendor.shopPhotoUrl)) {
-    premisesPhotos.push({ title: 'Shop Front Photo', url: vendor.shopPhotoUrl });
+  const mainShopPhoto = resolveDocUrl(vendor.shopPhotoUrl);
+  if (mainShopPhoto && !premisesPhotos.some((p) => p.url === mainShopPhoto)) {
+    premisesPhotos.push({ title: 'Shop Front Photo', url: mainShopPhoto });
   }
+
+  const resolvedPan = resolveDocUrl(vendor.panFileUrl);
+  const resolvedAadhaar = resolveDocUrl(vendor.aadhaarFileUrl);
+  const resolvedLicense = resolveDocUrl(vendor.shopLicensePdf);
+  const resolvedGst = resolveDocUrl(vendor.gstCertificatePdf);
+  const resolvedAvatar = resolveDocUrl(vendor.avatarUrl || vendor.liveSelfieUrl);
 
   return (
     <Modal

@@ -33,13 +33,32 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
 }) => {
   if (!visible) return null;
 
+  const resolveDocUrl = (uri: string | null | undefined): string | null => {
+    if (!uri || typeof uri !== 'string') return null;
+    const trimmed = uri.trim();
+    if (!trimmed) return null;
+    if (
+      trimmed.startsWith('http://') ||
+      trimmed.startsWith('https://') ||
+      trimmed.startsWith('file://') ||
+      trimmed.startsWith('content://') ||
+      trimmed.startsWith('data:')
+    ) {
+      return trimmed;
+    }
+    const clean = trimmed.startsWith('/') ? trimmed.slice(1) : trimmed;
+    return `https://justpaisa.in/${clean}`;
+  };
+
+  const finalUrl = resolveDocUrl(url);
+
   const handleDownloadOrOpen = () => {
-    if (url) {
-      Linking.openURL(url).catch(() => {});
+    if (finalUrl) {
+      Linking.openURL(finalUrl).catch(() => {});
     }
   };
 
-  const isPdf = url ? url.toLowerCase().includes('.pdf') : false;
+  const isPdf = finalUrl ? finalUrl.toLowerCase().includes('.pdf') : false;
 
   return (
     <Modal
@@ -70,7 +89,7 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
 
             {/* Document / Image Content Area */}
             <View style={styles.contentArea}>
-              {url ? (
+              {finalUrl ? (
                 isPdf ? (
                   <View style={styles.pdfContainer}>
                     <FileText size={64} color="#dc2626" />
@@ -96,7 +115,7 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
                     showsVerticalScrollIndicator={false}
                   >
                     <Image
-                      source={{ uri: url }}
+                      source={{ uri: finalUrl }}
                       style={styles.docImage}
                       resizeMode="contain"
                     />
@@ -112,7 +131,7 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
 
             {/* Footer Action */}
             <View style={styles.footer}>
-              {url ? (
+              {finalUrl ? (
                 <TouchableOpacity
                   style={styles.downloadBtn}
                   onPress={handleDownloadOrOpen}

@@ -1,6 +1,8 @@
-import React from 'react';
-import { View, Text, StyleSheet, Modal, TouchableOpacity, Linking, Alert } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, Modal, TouchableOpacity, Linking, Alert, ActivityIndicator } from 'react-native';
 import { ShieldCheck, Phone, MessageSquare, X } from 'lucide-react-native';
+import { useAuth } from '../context/AuthContext';
+import { submitLoanRequest } from '../services/api';
 
 interface ConsentModalProps {
   visible: boolean;
@@ -19,13 +21,49 @@ export const ConsentModal: React.FC<ConsentModalProps> = ({
   lender,
   actionType,
 }) => {
+  const { user, vendorProfile } = useAuth();
+  const [submitting, setSubmitting] = useState(false);
+
   if (!lender) return null;
 
   const handleContinue = async () => {
     try {
-      // Consent is handled server-side by the unlock API — no local storage needed
+      setSubmitting(true);
       const rawPhone = lender.phone.replace(/\D/g, '');
       const cleanPhone = rawPhone.length === 10 ? `91${rawPhone}` : rawPhone;
+
+      const callerName = vendorProfile?.ownerName || (user as any)?.name || (user as any)?.fullName || vendorProfile?.businessName || 'Business Owner';
+      const callerShop = vendorProfile?.businessName || callerName;
+      const callerPhone = user?.phone || (vendorProfile as any)?.phone || '';
+      const callerEmail = user?.email || (vendorProfile as any)?.email || '';
+
+      // Ingest Inquiry Lead to AWS backend so Financer is notified in real-time
+      try {
+        await submitLoanRequest({
+          lenderId: lender.id,
+          amount: 50000,
+          purpose: actionType === 'CALL' ? 'Direct Phone Call Inquiry' : 'WhatsApp Chat Inquiry',
+          businessName: callerShop,
+          type: actionType === 'CALL' ? 'PHONE_CALL' : 'WHATSAPP',
+          notes: `${actionType === 'CALL' ? '📞 Direct Phone Call' : '💬 WhatsApp Chat'} inquiry initiated by ${callerName} (${callerPhone}).`,
+          vendorSnapshot: {
+            vendorName: callerName,
+            shopName: callerShop,
+            phone: callerPhone,
+            emailId: callerEmail,
+            annualTurnover: vendorProfile?.annualTurnover || undefined,
+            city: vendorProfile?.city || undefined,
+            state: vendorProfile?.state || undefined,
+            shopAddress: vendorProfile?.address || undefined,
+            panCardUrl: vendorProfile?.panFileUrl || undefined,
+            aadhaarUrl: vendorProfile?.aadhaarFileUrl || undefined,
+            shopPhotoUrl: vendorProfile?.shopPhotoUrl || vendorProfile?.shopPhotos?.[0] || undefined,
+            liveSelfieUrl: vendorProfile?.liveSelfieUrl || vendorProfile?.avatarUrl || undefined,
+          },
+        });
+      } catch (submitErr) {
+        console.warn('Could not record lead on consent confirm:', submitErr);
+      }
 
       onClose();
 
@@ -33,12 +71,14 @@ export const ConsentModal: React.FC<ConsentModalProps> = ({
         Linking.openURL(`tel:${lender.phone}`);
       } else {
         const msg = encodeURIComponent(
-          `Hello ${lender.institutionName}, I found your profile on JustPaisa. I am interested in discussing business financing / loan opportunities.`
+          `Hello ${lender.institutionName}, I am ${callerName} from ${callerShop}. I found your profile on JustPaisa and would like to discuss business loan / financing opportunities.`
         );
         Linking.openURL(`https://wa.me/${cleanPhone}?text=${msg}`);
       }
     } catch (e) {
       Alert.alert('Error', 'Unable to initiate connection.');
+    } finally {
+      setSubmitting(false);
     }
   };
 
