@@ -37,16 +37,59 @@ export const StaticPolicyPage: React.FC<StaticPolicyPageProps> = ({ pageType, on
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
-    // Dynamic SEO Titles per route
-    const titles: Record<StaticPageType, string> = {
-      terms: 'Terms and Conditions | Just Paisa B2B Directory',
-      privacy: 'Privacy Policy | Just Paisa B2B Directory',
-      refund: 'Cancellation & Refund Policy | Just Paisa',
-      contact: 'Contact Us & Helpdesk | Just Paisa',
-      about: 'About Us & Company Overview | Just Paisa',
-      faq: 'Frequently Asked Questions (FAQ) | Just Paisa',
+    // Dynamic SEO Titles and Descriptions per route
+    const seoData: Record<StaticPageType, { title: string; desc: string; path: string }> = {
+      about: {
+        title: 'About Us & Company Overview | Just Paisa',
+        desc: 'Learn about Just Paisa, India premier B2B Commercial Directory & Networking platform connecting verified local vendors, businesses, and suppliers.',
+        path: '/about-us',
+      },
+      terms: {
+        title: 'Terms and Conditions | Just Paisa B2B Directory',
+        desc: 'Read the official terms and conditions for using the Just Paisa B2B platform, services, and commercial directory.',
+        path: '/terms-and-conditions',
+      },
+      privacy: {
+        title: 'Privacy Policy | Just Paisa B2B Directory',
+        desc: 'Learn how Just Paisa collects, safeguards, and respects your business data, contact credentials, and personal information.',
+        path: '/privacy-policy',
+      },
+      refund: {
+        title: 'Cancellation & Refund Policy | Just Paisa',
+        desc: 'Official cancellation and refund terms for Just Paisa VIP memberships and platform subscriptions.',
+        path: '/refund-policy',
+      },
+      contact: {
+        title: 'Contact Us & Helpdesk | Just Paisa',
+        desc: 'Get in touch with the Just Paisa support team, grievance officer, and customer helpdesk.',
+        path: '/contact-us',
+      },
+      faq: {
+        title: 'Frequently Asked Questions (FAQ) | Just Paisa',
+        desc: 'Find answers to common questions about Just Paisa B2B directory, commercial networking, and subscription benefits.',
+        path: '/faq',
+      },
     };
-    document.title = titles[pageType] || 'Just Paisa';
+
+    const currentSeo = seoData[pageType];
+    if (currentSeo) {
+      document.title = currentSeo.title;
+
+      // Update meta description
+      let metaDesc = document.querySelector('meta[name="description"]');
+      if (metaDesc) {
+        metaDesc.setAttribute('content', currentSeo.desc);
+      }
+
+      // Update canonical link
+      let canonical = document.querySelector('link[rel="canonical"]');
+      if (!canonical) {
+        canonical = document.createElement('link');
+        canonical.setAttribute('rel', 'canonical');
+        document.head.appendChild(canonical);
+      }
+      canonical.setAttribute('href', `https://justpaisa.in${currentSeo.path}`);
+    }
   }, [pageType]);
 
   const navTabs = [

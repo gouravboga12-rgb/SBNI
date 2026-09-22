@@ -58,6 +58,13 @@ export function App() {
 
     const handleLocationCheck = () => {
       const pathname = window.location.pathname;
+      let canonical = document.querySelector('link[rel="canonical"]');
+      if (!canonical) {
+        canonical = document.createElement('link');
+        canonical.setAttribute('rel', 'canonical');
+        document.head.appendChild(canonical);
+      }
+
       if (pathname.startsWith('/admin')) {
         setIsAdminRoute(true);
         setStaticPageRoute(null);
@@ -69,6 +76,8 @@ export function App() {
         setAuthRegister(false);
         setAuthViewStep('FORM');
         setAuthModalOpen(true);
+        document.title = 'Vendor & Small Shop Business Login | Just Paisa';
+        canonical.setAttribute('href', 'https://justpaisa.in/vendor-login');
       } else if (pathname === '/login') {
         setIsAdminRoute(false);
         setStaticPageRoute(null);
@@ -76,6 +85,8 @@ export function App() {
         setAuthRegister(false);
         setAuthViewStep('FORM');
         setAuthModalOpen(true);
+        document.title = 'Commercial Partner & Financer Login | Just Paisa';
+        canonical.setAttribute('href', 'https://justpaisa.in/login');
       } else if (pathname === '/terms-and-conditions' || pathname === '/terms') {
         setIsAdminRoute(false);
         setAuthModalOpen(false);
@@ -109,6 +120,8 @@ export function App() {
         setIsAdminRoute(false);
         setIsCheckoutRoute(false);
         setStaticPageRoute(null);
+        document.title = "Just Paisa App - India's Premier B2B Business Directory & Commercial Networking";
+        canonical.setAttribute('href', 'https://justpaisa.in/');
       }
     };
 
