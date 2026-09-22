@@ -52,8 +52,6 @@ import { ReferAndEarnModal } from '../../components/ReferAndEarnModal';
 import { BannerCarousel, BannerSlide } from '../../components/BannerCarousel';
 import { resolveDocumentUrl } from '../../utils/documentGenerators';
 
-const DEFAULT_LENDER_PHOTO = 'https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=200';
-
 const CATEGORIES = [
   'All',
   'Daily Finance',
@@ -517,18 +515,25 @@ export const VendorHomeScreen: React.FC = () => {
           </View>
         }
         renderItem={({ item }) => {
-          const effectiveLogo = resolveDocumentUrl(item.logoUrl || item.avatarUrl || DEFAULT_LENDER_PHOTO);
+          const rawLogo = item.logoUrl || item.avatarUrl;
+          const hasCustomLogo = rawLogo && !rawLogo.includes('unsplash.com');
 
           return (
             <View style={styles.lenderCard}>
               {/* Header: Financer Name, Type, Rating & Distance */}
               <View style={styles.cardTop}>
                 <View style={styles.instIcon}>
-                  <Image
-                    source={{ uri: effectiveLogo }}
-                    style={styles.instLogo}
-                    resizeMode="cover"
-                  />
+                  {hasCustomLogo ? (
+                    <Image
+                      source={{ uri: resolveDocumentUrl(rawLogo) }}
+                      style={styles.instLogo}
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <Text style={{ fontSize: 18, fontWeight: '800', color: '#007a33' }}>
+                      {item.institutionName ? item.institutionName.charAt(0).toUpperCase() : 'F'}
+                    </Text>
+                  )}
                 </View>
                 <View style={{ flex: 1 }}>
                   <View style={styles.nameRow}>

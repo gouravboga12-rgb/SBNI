@@ -421,8 +421,8 @@ export const LenderCard: React.FC<LenderCardProps> = ({ lender, onOpenSubscripti
 
       {/* Left Column: Financer Logo & Details */}
       {(() => {
-        const DEFAULT_LENDER_PHOTO = 'https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=200';
-        const effectiveLogo = lender.logoUrl || (lender as any).avatarUrl || (typeof window !== 'undefined' ? localStorage.getItem('sbni_lender_avatar') : null) || DEFAULT_LENDER_PHOTO;
+        const rawLogo = lender.logoUrl || (lender as any).avatarUrl || (typeof window !== 'undefined' ? localStorage.getItem('sbni_lender_avatar') : null);
+        const effectiveLogo = rawLogo && !rawLogo.includes('unsplash.com') ? rawLogo : '';
         const displayName = lender.institutionName && !lender.institutionName.toLowerCase().includes('money financer')
           ? `${lender.institutionName} Money Financer`
           : (lender.institutionName || 'Business Money Financer');
@@ -434,12 +434,18 @@ export const LenderCard: React.FC<LenderCardProps> = ({ lender, onOpenSubscripti
           >
             {/* Institution Brand Avatar / Logo */}
             <div className="w-14 h-14 min-w-[3.5rem] min-h-[3.5rem] max-w-[3.5rem] max-h-[3.5rem] rounded-2xl bg-gradient-to-br from-slate-50 to-blue-50 border border-slate-200/80 p-0.5 flex items-center justify-center shrink-0 shadow-sm group-hover:scale-105 group-hover:shadow-md transition-all duration-300 overflow-hidden">
-              <img
-                src={!imgError ? effectiveLogo : DEFAULT_LENDER_PHOTO}
-                alt={displayName}
-                className="w-full h-full object-cover rounded-xl pointer-events-none"
-                onError={() => setImgError(true)}
-              />
+              {effectiveLogo && !imgError ? (
+                <img
+                  src={effectiveLogo}
+                  alt={displayName}
+                  className="w-full h-full object-cover rounded-xl pointer-events-none"
+                  onError={() => setImgError(true)}
+                />
+              ) : (
+                <div className="w-full h-full rounded-xl bg-blue-50 flex items-center justify-center font-black text-[#003893] text-xl">
+                  {displayName.charAt(0).toUpperCase() || 'F'}
+                </div>
+              )}
             </div>
 
             {/* Institution Information */}

@@ -8,8 +8,10 @@ import {
   TextInput,
   Alert,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import * as ImagePicker from 'expo-image-picker';
 import {
   Building2,
   User,
@@ -29,10 +31,12 @@ import {
   Scale,
   FileText,
   ChevronRight,
+  Camera,
 } from 'lucide-react-native';
 import { useAuth } from '../../context/AuthContext';
 import {
   updateLenderProfileApi,
+  uploadFileToEc2Api,
   fetchReferEarnStatusApi,
   cancelAutoPayApi,
 } from '../../services/api';
@@ -40,6 +44,7 @@ import { SubscriptionModal } from '../../components/SubscriptionModal';
 import { LocationPickerModal } from '../../components/LocationPickerModal';
 import { PolicyModal } from '../../components/PolicyModal';
 import { SupportModal } from '../../components/SupportModal';
+import { resolveDocumentUrl } from '../../utils/documentGenerators';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const RADIUS_OPTIONS = [10, 25, 50, 70, 100];
@@ -130,6 +135,12 @@ export const LenderProfileScreen: React.FC = () => {
   const [pincode, setPincode] = useState(lenderProfile?.pincode || '');
   const [lat, setLat] = useState<number | undefined>(lenderProfile?.latitude);
   const [lng, setLng] = useState<number | undefined>(lenderProfile?.longitude);
+  const [avatarUrl, setAvatarUrl] = useState<string>(() => {
+    const raw = lenderProfile?.avatarUrl || lenderProfile?.logoUrl || '';
+    return raw && !raw.includes('unsplash.com') ? raw : '';
+  });
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [avatarLoadError, setAvatarLoadError] = useState(false);
 
   const [saving, setSaving] = useState(false);
   const [subModalVisible, setSubModalVisible] = useState(false);
@@ -149,6 +160,11 @@ export const LenderProfileScreen: React.FC = () => {
       if (lenderProfile.pincode) setPincode(lenderProfile.pincode);
       if (lenderProfile.latitude !== undefined) setLat(lenderProfile.latitude);
       if (lenderProfile.longitude !== undefined) setLng(lenderProfile.longitude);
+      const rawAvatar = lenderProfile.avatarUrl || lenderProfile.logoUrl || '';
+      if (rawAvatar && !rawAvatar.includes('unsplash.com')) {
+        setAvatarUrl(rawAvatar);
+        setAvatarLoadError(false);
+      }
     } else if (user?.name) {
       setContactPerson(user.name);
     }
@@ -160,6 +176,88 @@ export const LenderProfileScreen: React.FC = () => {
       refreshUserData();
     }, [])
   );
+
+  const handlePickAvatar = () => {
+    Alert.alert('Financer Profile Photo', 'Select photo source to update your profile photo:', [
+      {
+        text: 'Take Photo (Camera)',
+        onPress: async () => {
+          const { status } = await ImagePicker.requestCameraPermissionsAsync();
+          if (status !== 'granted') {
+            Alert.alert('Permission Denied', 'Camera permission is required to take photo.');
+            return;
+          }
+          const result = await ImagePicker.launchCameraAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: true,
+            aspect: [1, 1],
+            quality: 0.8,
+            base64: true,
+          });
+          if (!result.canceled && result.assets && result.assets[0].base64) {
+            uploadAvatar(result.assets[0].base64);
+          }
+        },
+      },
+      {
+        text: 'Choose from Gallery',
+        onPress: async () => {
+          const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+          if (status !== 'granted') {
+            Alert.alert('Permission Denied', 'Gallery permission is required to pick photo.');
+            return;
+          }
+          const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: true,
+            aspect: [1, 1],
+            quality: 0.8,
+            base64: true,
+          });
+          if (!result.canceled && result.assets && result.assets[0].base64) {
+            uploadAvatar(result.assets[0].base64);
+          }
+        },
+      },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  };
+
+  const uploadAvatar = async (base64: string) => {
+    setUploadingAvatar(true);
+    try {
+      const fileName = `financer_avatar_${Date.now()}.jpg`;
+      const res = await uploadFileToEc2Api(base64, 'avatars', fileName, 'AVATAR');
+      const uploadedUrl = res.fileUrl || res.fullUrl;
+      if (res.success && uploadedUrl) {
+        setAvatarUrl(uploadedUrl);
+        setAvatarLoadError(false);
+
+        // Instantly save to database as well
+        const saveRes = await updateLenderProfileApi({
+          avatarUrl: uploadedUrl,
+          logoUrl: uploadedUrl,
+          institutionName: institutionName.trim(),
+          contactPersonName: contactPerson.trim(),
+        });
+        if (saveRes.success) {
+          updateLenderProfileState({
+            avatarUrl: uploadedUrl,
+            logoUrl: uploadedUrl,
+          });
+          Alert.alert('Photo Updated 🎉', 'Financer profile photo updated successfully.');
+        } else {
+          Alert.alert('Photo Uploaded', 'Photo uploaded. Tap Save Profile at the bottom to sync all changes.');
+        }
+      } else {
+        Alert.alert('Upload Failed', res.message || 'Could not upload photo. Please try again.');
+      }
+    } catch (e: any) {
+      Alert.alert('Upload Error', e.message || 'Failed to upload photo.');
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -176,6 +274,8 @@ export const LenderProfileScreen: React.FC = () => {
         pincode: pincode.trim(),
         latitude: lat,
         longitude: lng,
+        avatarUrl: avatarUrl || undefined,
+        logoUrl: avatarUrl || undefined,
       };
 
       const res = await updateLenderProfileApi(payload);
@@ -204,13 +304,44 @@ export const LenderProfileScreen: React.FC = () => {
       style={styles.container}
       contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 90 }]}
     >
-      {/* Top Financer Profile Header Card */}
+      {/* Top Financer Profile Header Card with Avatar & Camera Edit */}
       <View style={styles.headerCard}>
-        <View style={styles.instIcon}>
-          <Building2 size={30} color="#007a33" />
-        </View>
+        <TouchableOpacity
+          style={styles.avatarWrapper}
+          onPress={handlePickAvatar}
+          activeOpacity={0.8}
+          accessibilityLabel="Edit financer profile photo"
+        >
+          <View style={styles.avatarCircle}>
+            {uploadingAvatar ? (
+              <ActivityIndicator size="small" color="#007a33" />
+            ) : avatarUrl && !avatarLoadError ? (
+              <Image
+                source={{ uri: resolveDocumentUrl(avatarUrl) }}
+                style={styles.avatarImage}
+                onError={() => setAvatarLoadError(true)}
+              />
+            ) : (
+              <Building2 size={34} color="#007a33" />
+            )}
+          </View>
+          <View style={styles.cameraBadge}>
+            <Camera size={13} color="#ffffff" />
+          </View>
+        </TouchableOpacity>
+
         <Text style={styles.instName}>{institutionName}</Text>
         <Text style={styles.contactPersonText}>Manager: {contactPerson || user?.name}</Text>
+        
+        <TouchableOpacity
+          style={styles.editPhotoPrompt}
+          onPress={handlePickAvatar}
+          activeOpacity={0.7}
+        >
+          <Camera size={12} color="#007a33" />
+          <Text style={styles.editPhotoPromptText}>Edit Profile Photo</Text>
+        </TouchableOpacity>
+
         <View style={styles.badgeRow}>
           <View style={styles.roleBadge}>
             <Text style={styles.roleBadgeText}>Business Financer Hub</Text>
@@ -636,6 +767,62 @@ const styles = StyleSheet.create({
     marginBottom: 14,
     borderWidth: 1,
     borderColor: '#e2e8f0',
+  },
+  avatarWrapper: {
+    position: 'relative',
+    marginBottom: 8,
+  },
+  avatarCircle: {
+    width: 76,
+    height: 76,
+    borderRadius: 38,
+    backgroundColor: '#ecfdf5',
+    borderWidth: 2,
+    borderColor: '#a7f3d0',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  avatarImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 38,
+  },
+  cameraBadge: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: '#007a33',
+    borderWidth: 2,
+    borderColor: '#ffffff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  editPhotoPrompt: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: '#ecfdf5',
+    borderWidth: 1,
+    borderColor: '#a7f3d0',
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 14,
+    marginTop: 8,
+    marginBottom: 2,
+  },
+  editPhotoPromptText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#007a33',
   },
   instIcon: {
     width: 60,

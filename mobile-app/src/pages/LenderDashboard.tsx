@@ -225,31 +225,37 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
     );
   });
 
+  const sanitizeAvatarUrl = (url?: string | null): string => {
+    if (!url || typeof url !== 'string') return '';
+    if (url.includes('unsplash.com')) return '';
+    return url;
+  };
+
   const [currentUserObj, setCurrentUserObj] = useState<any>(() => resolveInitialLenderDetails(currentUser));
   const [lenderAvatarUrl, setLenderAvatarUrl] = useState<string>(() => {
     try { localStorage.removeItem('sbni_lender_avatar'); } catch (e) { }
-    const direct = currentUser?.lenderProfile?.logoUrl || currentUser?.lenderProfile?.avatarUrl;
+    const direct = sanitizeAvatarUrl(currentUser?.lenderProfile?.logoUrl || currentUser?.lenderProfile?.avatarUrl);
     if (direct) return direct;
     if (currentUser?.email) {
-      return localStorage.getItem(`sbni_lender_avatar_${currentUser.email}`) || 'https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=200';
+      return sanitizeAvatarUrl(localStorage.getItem(`sbni_lender_avatar_${currentUser.email}`));
     }
-    return 'https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=200';
+    return '';
   });
 
   useEffect(() => {
     const token = getToken();
     if (!currentUser || !token) {
       setCurrentUserObj(null);
-      setLenderAvatarUrl('https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=200');
+      setLenderAvatarUrl('');
       return;
     }
 
     setCurrentUserObj(resolveInitialLenderDetails(currentUser));
-    const direct = currentUser?.lenderProfile?.logoUrl || currentUser?.lenderProfile?.avatarUrl;
+    const direct = sanitizeAvatarUrl(currentUser?.lenderProfile?.logoUrl || currentUser?.lenderProfile?.avatarUrl);
     const userKey = currentUser?.email ? `sbni_lender_avatar_${currentUser.email}` : null;
-    const saved = userKey ? localStorage.getItem(userKey) : null;
+    const saved = userKey ? sanitizeAvatarUrl(localStorage.getItem(userKey)) : '';
     if (direct || saved) {
-      setLenderAvatarUrl(direct || saved || 'https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=200');
+      setLenderAvatarUrl(direct || saved || '');
     }
 
     // Live query fresh database profile for this authenticated lender
@@ -1517,14 +1523,20 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
 
                   <div
                     onClick={() => fileInputRef.current?.click()}
-                    className="relative w-16 h-16 md:w-20 md:h-20 rounded-full border-2 border-white/80 shadow-2xl z-10 shrink-0 cursor-pointer transition-transform hover:scale-105 overflow-hidden group"
+                    className="relative w-16 h-16 md:w-20 md:h-20 rounded-full border-2 border-white/80 shadow-2xl z-10 shrink-0 cursor-pointer transition-transform hover:scale-105 overflow-hidden group bg-white/10 flex items-center justify-center"
                     title="Click to change profile picture"
                   >
-                    <img
-                      src={lenderAvatarUrl || 'https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=200'}
-                      alt={currentUserObj.name}
-                      className="w-full h-full object-cover rounded-full"
-                    />
+                    {lenderAvatarUrl ? (
+                      <img
+                        src={lenderAvatarUrl}
+                        alt={currentUserObj.name}
+                        className="w-full h-full object-cover rounded-full"
+                      />
+                    ) : (
+                      <span className="text-2xl font-black text-white">
+                        {currentUserObj?.name ? currentUserObj.name.charAt(0).toUpperCase() : 'F'}
+                      </span>
+                    )}
                     <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-full">
                       <Camera className="w-5 h-5 text-white" />
                     </div>
