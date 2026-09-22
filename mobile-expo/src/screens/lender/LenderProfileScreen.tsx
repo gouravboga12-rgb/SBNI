@@ -32,6 +32,7 @@ import {
   FileText,
   ChevronRight,
   Camera,
+  Edit3,
 } from 'lucide-react-native';
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -63,14 +64,16 @@ export const LenderProfileScreen: React.FC = () => {
     updateLenderProfileState,
   } = useAuth();
 
-  // Accordion open/close state
+  // Accordion open/close state - collapsed by default so user clicks to open
   const [openSections, setOpenSections] = useState<{ [key: string]: boolean }>({
-    membership: true,
-    basic: true,
-    location: true,
-    criteria: true,
-    policies: true,
+    membership: false,
+    basic: false,
+    location: false,
+    criteria: false,
+    policies: false,
   });
+
+  const [isEditing, setIsEditing] = useState(false);
 
   const toggleSection = (key: string) => {
     setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -353,6 +356,45 @@ export const LenderProfileScreen: React.FC = () => {
             </Text>
           </View>
         </View>
+
+        {/* Top Header Edit Mode & Save Action Buttons */}
+        <View style={styles.headerActionRow}>
+          <TouchableOpacity
+            style={isEditing ? styles.cancelEditBtn : styles.editProfileBtn}
+            onPress={() => {
+              if (!isEditing) {
+                setIsEditing(true);
+                setOpenSections((prev) => ({ ...prev, basic: true }));
+              } else {
+                setIsEditing(false);
+              }
+            }}
+            activeOpacity={0.8}
+          >
+            <Edit3 size={14} color={isEditing ? '#dc2626' : '#003893'} />
+            <Text style={isEditing ? styles.cancelEditBtnText : styles.editProfileBtnText}>
+              {isEditing ? 'Cancel Edit' : 'Edit Profile'}
+            </Text>
+          </TouchableOpacity>
+
+          {isEditing && (
+            <TouchableOpacity
+              style={[styles.topSaveBtn, saving && styles.saveBtnDisabled]}
+              onPress={handleSave}
+              disabled={saving}
+              activeOpacity={0.85}
+            >
+              {saving ? (
+                <ActivityIndicator size="small" color="#ffffff" />
+              ) : (
+                <>
+                  <Save size={14} color="#ffffff" />
+                  <Text style={styles.topSaveBtnText}>Save Changes</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
 
       {/* ── ACCORDION 1: MEMBERSHIP & BILLING DETAILS ── */}
@@ -479,6 +521,41 @@ export const LenderProfileScreen: React.FC = () => {
               <Mail size={16} color="#94a3b8" />
               <Text style={styles.readOnlyText}>{user?.email || 'lender@justpaisa.in'}</Text>
             </View>
+
+            {/* In-Accordion Profile Photo Upload Card */}
+            <View style={styles.photoUploadBox}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.photoUploadTitle}>Financer Profile Photo</Text>
+                <Text style={styles.photoUploadSub}>
+                  {avatarUrl ? 'Photo uploaded & active on marketplace' : 'Upload official logo or owner photo'}
+                </Text>
+              </View>
+              <TouchableOpacity
+                style={styles.photoUploadBtn}
+                onPress={handlePickAvatar}
+                activeOpacity={0.8}
+              >
+                <Camera size={14} color="#ffffff" />
+                <Text style={styles.photoUploadBtnText}>{avatarUrl ? 'Change' : 'Upload'}</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* In-Accordion Section Save Button */}
+            <TouchableOpacity
+              style={[styles.sectionSaveBtn, saving && styles.saveBtnDisabled]}
+              onPress={handleSave}
+              disabled={saving}
+              activeOpacity={0.85}
+            >
+              {saving ? (
+                <ActivityIndicator size="small" color="#ffffff" />
+              ) : (
+                <>
+                  <Save size={14} color="#ffffff" />
+                  <Text style={styles.sectionSaveBtnText}>Save Entity Details</Text>
+                </>
+              )}
+            </TouchableOpacity>
           </View>
         )}
       </View>
@@ -558,6 +635,23 @@ export const LenderProfileScreen: React.FC = () => {
                 />
               </View>
             </View>
+
+            {/* In-Accordion Location Save Button */}
+            <TouchableOpacity
+              style={[styles.sectionSaveBtn, saving && styles.saveBtnDisabled]}
+              onPress={handleSave}
+              disabled={saving}
+              activeOpacity={0.85}
+            >
+              {saving ? (
+                <ActivityIndicator size="small" color="#ffffff" />
+              ) : (
+                <>
+                  <Save size={14} color="#ffffff" />
+                  <Text style={styles.sectionSaveBtnText}>Save Operating Location</Text>
+                </>
+              )}
+            </TouchableOpacity>
           </View>
         )}
       </View>
@@ -619,6 +713,23 @@ export const LenderProfileScreen: React.FC = () => {
                 />
               </View>
             </View>
+
+            {/* In-Accordion Criteria Save Button */}
+            <TouchableOpacity
+              style={[styles.sectionSaveBtn, saving && styles.saveBtnDisabled]}
+              onPress={handleSave}
+              disabled={saving}
+              activeOpacity={0.85}
+            >
+              {saving ? (
+                <ActivityIndicator size="small" color="#ffffff" />
+              ) : (
+                <>
+                  <Save size={14} color="#ffffff" />
+                  <Text style={styles.sectionSaveBtnText}>Save Financing Criteria</Text>
+                </>
+              )}
+            </TouchableOpacity>
           </View>
         )}
       </View>
@@ -705,23 +816,6 @@ export const LenderProfileScreen: React.FC = () => {
           </View>
         )}
       </View>
-
-      {/* Save Button */}
-      <TouchableOpacity
-        style={[styles.saveBtn, saving && styles.saveBtnDisabled]}
-        onPress={handleSave}
-        disabled={saving}
-        activeOpacity={0.85}
-      >
-        {saving ? (
-          <ActivityIndicator size="small" color="#ffffff" />
-        ) : (
-          <>
-            <Save size={18} color="#ffffff" />
-            <Text style={styles.saveBtnText}>Save Financer Profile</Text>
-          </>
-        )}
-      </TouchableOpacity>
 
       {/* Modals */}
       <SubscriptionModal
@@ -887,6 +981,127 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#92400e',
     fontWeight: '700',
+  },
+  headerActionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    marginTop: 14,
+    width: '100%',
+  },
+  editProfileBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#eff6ff',
+    borderWidth: 1,
+    borderColor: '#bfdbfe',
+    paddingVertical: 9,
+    paddingHorizontal: 16,
+    borderRadius: 14,
+    flex: 1,
+  },
+  editProfileBtnText: {
+    color: '#003893',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  cancelEditBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#fff1f2',
+    borderWidth: 1,
+    borderColor: '#fecdd3',
+    paddingVertical: 9,
+    paddingHorizontal: 16,
+    borderRadius: 14,
+    flex: 1,
+  },
+  cancelEditBtnText: {
+    color: '#dc2626',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  topSaveBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#007a33',
+    paddingVertical: 9,
+    paddingHorizontal: 16,
+    borderRadius: 14,
+    flex: 1,
+    shadowColor: '#007a33',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  topSaveBtnText: {
+    color: '#ffffff',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  photoUploadBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#f0fdf4',
+    borderWidth: 1,
+    borderColor: '#bbf7d0',
+    borderRadius: 14,
+    padding: 12,
+    marginTop: 12,
+    marginBottom: 4,
+  },
+  photoUploadTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#007a33',
+  },
+  photoUploadSub: {
+    fontSize: 11,
+    color: '#059669',
+    marginTop: 2,
+  },
+  photoUploadBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#007a33',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+  },
+  photoUploadBtnText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  sectionSaveBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#007a33',
+    paddingVertical: 11,
+    borderRadius: 12,
+    marginTop: 14,
+    shadowColor: '#007a33',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  sectionSaveBtnText: {
+    color: '#ffffff',
+    fontSize: 13,
+    fontWeight: '800',
   },
   accordionCard: {
     backgroundColor: '#ffffff',

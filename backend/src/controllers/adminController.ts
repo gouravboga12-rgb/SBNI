@@ -4,6 +4,7 @@ import { AuthenticatedRequest } from '../middlewares/auth';
 import { calculateStackedSubscriptionDates } from './subscriptionController';
 import { emitToUser, emitToAdmin } from '../services/socketService';
 import { sendSubscriptionInvoiceEmail } from '../utils/mailer';
+import { sendPushNotificationToUser } from '../services/pushNotificationService';
 
 export const getAdminDashboardStats = async (req: AuthenticatedRequest, res: Response) => {
   const [
@@ -100,7 +101,39 @@ export const updateVendorKYCStatus = async (req: AuthenticatedRequest, res: Resp
       kycStatus,
       kycRejectionReason: kycStatus === 'REJECTED' ? kycRejectionReason : null,
     },
+    include: { user: true },
   });
+
+  if (vendor?.userId) {
+    const isApproved = kycStatus === 'VERIFIED' || kycStatus === 'APPROVED';
+    const notifTitle = isApproved ? '🛡️ KYC Status Verified!' : 'KYC Verification Update';
+    const notifBody = isApproved
+      ? 'Congratulations! Your business KYC verification has been approved.'
+      : `Your KYC status was updated: ${kycRejectionReason || kycStatus}.`;
+
+    try {
+      await prisma.notification.create({
+        data: {
+          userId: vendor.userId,
+          title: notifTitle,
+          message: notifBody,
+          channel: 'PUSH',
+          type: 'SYSTEM_ALERT',
+        },
+      });
+    } catch (e) {}
+
+    sendPushNotificationToUser(vendor.userId, notifTitle, notifBody, {
+      type: 'KYC_STATUS_UPDATE',
+      kycStatus,
+      screen: 'Profile',
+    }).catch(() => {});
+
+    emitToUser(vendor.userId, 'vendor:kyc_updated', {
+      kycStatus,
+      kycRejectionReason,
+    });
+  }
 
   res.json({ success: true, message: `Vendor KYC Status updated to ${kycStatus}.`, data: vendor });
 };

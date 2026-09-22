@@ -36,6 +36,7 @@ import {
   Headphones,
   Scale,
   ChevronRight,
+  Edit3,
 } from 'lucide-react-native';
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -66,19 +67,21 @@ export const VendorProfileScreen: React.FC = () => {
     updateVendorProfileState,
   } = useAuth();
 
-  // Accordion open/close states
+  // Accordion open/close states - collapsed by default so user clicks to open
   const [openSections, setOpenSections] = useState<{ [key: string]: boolean }>({
-    membership: true,
-    basic: true,
+    membership: false,
+    basic: false,
     location: false,
     kyc: false,
     photos: false,
-    policies: true,
+    policies: false,
   });
 
   const toggleSection = (key: string) => {
     setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
   };
+
+  const [isEditing, setIsEditing] = useState(false);
 
   // Form State
   const [ownerName, setOwnerName] = useState(vendorProfile?.ownerName || user?.name || '');
@@ -91,6 +94,12 @@ export const VendorProfileScreen: React.FC = () => {
   const [pincode, setPincode] = useState(vendorProfile?.pincode || '');
   const [lat, setLat] = useState<number | undefined>(vendorProfile?.latitude);
   const [lng, setLng] = useState<number | undefined>(vendorProfile?.longitude);
+  const [avatarUrl, setAvatarUrl] = useState<string>(() => {
+    const raw = vendorProfile?.avatarUrl || '';
+    return raw && !raw.includes('unsplash.com') ? raw : '';
+  });
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [avatarLoadError, setAvatarLoadError] = useState(false);
 
   // KYC Docs
   const [panUrl, setPanUrl] = useState(vendorProfile?.panFileUrl || '');
@@ -127,6 +136,11 @@ export const VendorProfileScreen: React.FC = () => {
       if (vendorProfile.aadhaarFileUrl) setAadhaarUrl(vendorProfile.aadhaarFileUrl);
       if (vendorProfile.shopPhotoUrl || vendorProfile.shopPhotos?.[0]) {
         setShopPhotoUrl(vendorProfile.shopPhotoUrl || vendorProfile.shopPhotos?.[0] || '');
+      }
+      const rawAvatar = vendorProfile.avatarUrl || '';
+      if (rawAvatar && !rawAvatar.includes('unsplash.com')) {
+        setAvatarUrl(rawAvatar);
+        setAvatarLoadError(false);
       }
     } else if (user?.name) {
       setOwnerName(user.name);
@@ -168,6 +182,85 @@ export const VendorProfileScreen: React.FC = () => {
       .then((enabled) => setIsReferEarnEnabled(enabled))
       .catch(() => {});
   }, []);
+
+  const handlePickAvatar = () => {
+    Alert.alert('Business Profile Photo', 'Select photo source to update your profile photo:', [
+      {
+        text: 'Take Photo (Camera)',
+        onPress: async () => {
+          const { status } = await ImagePicker.requestCameraPermissionsAsync();
+          if (status !== 'granted') {
+            Alert.alert('Permission Denied', 'Camera permission required.');
+            return;
+          }
+          const result = await ImagePicker.launchCameraAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: true,
+            aspect: [1, 1],
+            quality: 0.8,
+            base64: true,
+          });
+          if (!result.canceled && result.assets && result.assets[0].base64) {
+            uploadAvatar(result.assets[0].base64);
+          }
+        },
+      },
+      {
+        text: 'Choose from Gallery',
+        onPress: async () => {
+          const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+          if (status !== 'granted') {
+            Alert.alert('Permission Denied', 'Gallery permission required.');
+            return;
+          }
+          const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: true,
+            aspect: [1, 1],
+            quality: 0.8,
+            base64: true,
+          });
+          if (!result.canceled && result.assets && result.assets[0].base64) {
+            uploadAvatar(result.assets[0].base64);
+          }
+        },
+      },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  };
+
+  const uploadAvatar = async (base64: string) => {
+    setUploadingAvatar(true);
+    try {
+      const fileName = `vendor_avatar_${Date.now()}.jpg`;
+      const res = await uploadFileToEc2Api(base64, 'avatars', fileName, 'AVATAR');
+      const uploadedUrl = res.fileUrl || res.fullUrl;
+      if (res.success && uploadedUrl) {
+        setAvatarUrl(uploadedUrl);
+        setAvatarLoadError(false);
+
+        const saveRes = await updateVendorProfileApi({
+          avatarUrl: uploadedUrl,
+          ownerName: ownerName.trim(),
+          businessName: businessName.trim(),
+        });
+        if (saveRes.success) {
+          updateVendorProfileState({
+            avatarUrl: uploadedUrl,
+          });
+          Alert.alert('Photo Updated 🎉', 'Business profile photo updated successfully.');
+        } else {
+          Alert.alert('Photo Uploaded', 'Photo uploaded. Remember to save profile to sync.');
+        }
+      } else {
+        Alert.alert('Upload Failed', res.message || 'Could not upload photo.');
+      }
+    } catch (e: any) {
+      Alert.alert('Upload Error', e.message || 'Failed to upload photo.');
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
 
   const handlePickAndUpload = async (docType: 'PAN' | 'AADHAAR' | 'SHOP') => {
     Alert.alert('Upload Document', 'Select photo source:', [
@@ -250,6 +343,8 @@ export const VendorProfileScreen: React.FC = () => {
         pincode: pincode.trim(),
         latitude: lat,
         longitude: lng,
+        avatarUrl: avatarUrl || undefined,
+        logoUrl: avatarUrl || undefined,
         panFileUrl: panUrl || undefined,
         aadhaarFileUrl: aadhaarUrl || undefined,
         shopPhotoUrl: shopPhotoUrl || undefined,
@@ -281,13 +376,43 @@ export const VendorProfileScreen: React.FC = () => {
       style={styles.container}
       contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 90 }]}
     >
-      {/* Top Profile Header Card */}
+      {/* Top Profile Header Card with Avatar, Edit Toggle & Save Action */}
       <View style={styles.profileHeaderCard}>
-        <View style={styles.avatarCircle}>
-          <Store size={30} color="#003893" />
-        </View>
+        <TouchableOpacity
+          style={styles.avatarWrapper}
+          onPress={handlePickAvatar}
+          activeOpacity={0.8}
+        >
+          <View style={styles.avatarCircle}>
+            {uploadingAvatar ? (
+              <ActivityIndicator size="small" color="#003893" />
+            ) : avatarUrl && !avatarLoadError ? (
+              <Image
+                source={{ uri: resolveDocumentUrl(avatarUrl) }}
+                style={styles.avatarImage}
+                onError={() => setAvatarLoadError(true)}
+              />
+            ) : (
+              <Store size={32} color="#003893" />
+            )}
+          </View>
+          <View style={styles.cameraBadge}>
+            <Camera size={13} color="#ffffff" />
+          </View>
+        </TouchableOpacity>
+
         <Text style={styles.headerName}>{businessName || 'My Business Enterprise'}</Text>
         <Text style={styles.headerSub}>Owner: {ownerName || user?.name || user?.phone}</Text>
+
+        <TouchableOpacity
+          style={styles.editPhotoPrompt}
+          onPress={handlePickAvatar}
+          activeOpacity={0.7}
+        >
+          <Camera size={12} color="#003893" />
+          <Text style={styles.editPhotoPromptText}>Edit Profile Photo</Text>
+        </TouchableOpacity>
+
         <View style={styles.badgeRow}>
           <View style={styles.roleBadge}>
             <Text style={styles.roleBadgeText}>Small Shop Business</Text>
@@ -298,6 +423,45 @@ export const VendorProfileScreen: React.FC = () => {
               {isSubscribed ? `VIP Active (${daysRemaining} Days)` : 'Free Account'}
             </Text>
           </View>
+        </View>
+
+        {/* Top Header Edit Mode & Save Action Buttons */}
+        <View style={styles.headerActionRow}>
+          <TouchableOpacity
+            style={isEditing ? styles.cancelEditBtn : styles.editProfileBtn}
+            onPress={() => {
+              if (!isEditing) {
+                setIsEditing(true);
+                setOpenSections((prev) => ({ ...prev, basic: true }));
+              } else {
+                setIsEditing(false);
+              }
+            }}
+            activeOpacity={0.8}
+          >
+            <Edit3 size={14} color={isEditing ? '#dc2626' : '#003893'} />
+            <Text style={isEditing ? styles.cancelEditBtnText : styles.editProfileBtnText}>
+              {isEditing ? 'Cancel Edit' : 'Edit Profile'}
+            </Text>
+          </TouchableOpacity>
+
+          {isEditing && (
+            <TouchableOpacity
+              style={[styles.topSaveBtn, saving && styles.saveBtnDisabled]}
+              onPress={handleSaveProfile}
+              disabled={saving}
+              activeOpacity={0.85}
+            >
+              {saving ? (
+                <ActivityIndicator size="small" color="#ffffff" />
+              ) : (
+                <>
+                  <Save size={14} color="#ffffff" />
+                  <Text style={styles.topSaveBtnText}>Save Changes</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          )}
         </View>
       </View>
 
@@ -435,6 +599,41 @@ export const VendorProfileScreen: React.FC = () => {
                 placeholderTextColor="#94a3b8"
               />
             </View>
+
+            {/* In-Accordion Profile Photo Upload Card */}
+            <View style={styles.photoUploadBox}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.photoUploadTitle}>Business Profile Photo</Text>
+                <Text style={styles.photoUploadSub}>
+                  {avatarUrl ? 'Photo uploaded & active on marketplace' : 'Upload shop owner or storefront photo'}
+                </Text>
+              </View>
+              <TouchableOpacity
+                style={styles.photoUploadBtn}
+                onPress={handlePickAvatar}
+                activeOpacity={0.8}
+              >
+                <Camera size={14} color="#ffffff" />
+                <Text style={styles.photoUploadBtnText}>{avatarUrl ? 'Change' : 'Upload'}</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* In-Accordion Section Save Button */}
+            <TouchableOpacity
+              style={[styles.sectionSaveBtn, saving && styles.saveBtnDisabled]}
+              onPress={handleSaveProfile}
+              disabled={saving}
+              activeOpacity={0.85}
+            >
+              {saving ? (
+                <ActivityIndicator size="small" color="#ffffff" />
+              ) : (
+                <>
+                  <Save size={14} color="#ffffff" />
+                  <Text style={styles.sectionSaveBtnText}>Save Personal Details</Text>
+                </>
+              )}
+            </TouchableOpacity>
           </View>
         )}
       </View>
@@ -514,6 +713,23 @@ export const VendorProfileScreen: React.FC = () => {
                 />
               </View>
             </View>
+
+            {/* In-Accordion Location Save Button */}
+            <TouchableOpacity
+              style={[styles.sectionSaveBtn, saving && styles.saveBtnDisabled]}
+              onPress={handleSaveProfile}
+              disabled={saving}
+              activeOpacity={0.85}
+            >
+              {saving ? (
+                <ActivityIndicator size="small" color="#ffffff" />
+              ) : (
+                <>
+                  <Save size={14} color="#ffffff" />
+                  <Text style={styles.sectionSaveBtnText}>Save Shop Location</Text>
+                </>
+              )}
+            </TouchableOpacity>
           </View>
         )}
       </View>
@@ -742,23 +958,6 @@ export const VendorProfileScreen: React.FC = () => {
         )}
       </View>
 
-      {/* Save Profile Floating Action Button */}
-      <TouchableOpacity
-        style={[styles.saveBtn, saving && styles.saveBtnDisabled]}
-        onPress={handleSaveProfile}
-        disabled={saving}
-        activeOpacity={0.85}
-      >
-        {saving ? (
-          <ActivityIndicator size="small" color="#ffffff" />
-        ) : (
-          <>
-            <Save size={18} color="#ffffff" />
-            <Text style={styles.saveBtnText}>Save All Changes</Text>
-          </>
-        )}
-      </TouchableOpacity>
-
       {/* Modals */}
       <SubscriptionModal
         visible={subModalVisible}
@@ -804,14 +1003,61 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e2e8f0',
   },
+  avatarWrapper: {
+    position: 'relative',
+    marginBottom: 8,
+  },
   avatarCircle: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 76,
+    height: 76,
+    borderRadius: 38,
     backgroundColor: '#eff6ff',
+    borderWidth: 2,
+    borderColor: '#bfdbfe',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 8,
+    overflow: 'hidden',
+  },
+  avatarImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 38,
+  },
+  cameraBadge: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: '#003893',
+    borderWidth: 2,
+    borderColor: '#ffffff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  editPhotoPrompt: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: '#eff6ff',
+    borderWidth: 1,
+    borderColor: '#bfdbfe',
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 14,
+    marginTop: 8,
+    marginBottom: 2,
+  },
+  editPhotoPromptText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#003893',
   },
   headerName: {
     fontSize: 18,
@@ -867,6 +1113,127 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#92400e',
     fontWeight: '700',
+  },
+  headerActionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    marginTop: 14,
+    width: '100%',
+  },
+  editProfileBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#eff6ff',
+    borderWidth: 1,
+    borderColor: '#bfdbfe',
+    paddingVertical: 9,
+    paddingHorizontal: 16,
+    borderRadius: 14,
+    flex: 1,
+  },
+  editProfileBtnText: {
+    color: '#003893',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  cancelEditBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#fff1f2',
+    borderWidth: 1,
+    borderColor: '#fecdd3',
+    paddingVertical: 9,
+    paddingHorizontal: 16,
+    borderRadius: 14,
+    flex: 1,
+  },
+  cancelEditBtnText: {
+    color: '#dc2626',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  topSaveBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#003893',
+    paddingVertical: 9,
+    paddingHorizontal: 16,
+    borderRadius: 14,
+    flex: 1,
+    shadowColor: '#003893',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  topSaveBtnText: {
+    color: '#ffffff',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  photoUploadBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#eff6ff',
+    borderWidth: 1,
+    borderColor: '#bfdbfe',
+    borderRadius: 14,
+    padding: 12,
+    marginTop: 12,
+    marginBottom: 4,
+  },
+  photoUploadTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#003893',
+  },
+  photoUploadSub: {
+    fontSize: 11,
+    color: '#2563eb',
+    marginTop: 2,
+  },
+  photoUploadBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#003893',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+  },
+  photoUploadBtnText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  sectionSaveBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#003893',
+    paddingVertical: 11,
+    borderRadius: 12,
+    marginTop: 14,
+    shadowColor: '#003893',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  sectionSaveBtnText: {
+    color: '#ffffff',
+    fontSize: 13,
+    fontWeight: '800',
   },
   accordionCard: {
     backgroundColor: '#ffffff',
