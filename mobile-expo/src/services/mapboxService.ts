@@ -15,7 +15,8 @@ export interface LocationResult {
 }
 
 export const MAPBOX_TOKEN =
-  process.env.EXPO_PUBLIC_MAPBOX_TOKEN || '';
+  process.env.EXPO_PUBLIC_MAPBOX_TOKEN ||
+  '';
 
 /**
  * 1. Forward Geocode Search (Place / City / Address autocomplete)

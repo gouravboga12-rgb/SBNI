@@ -912,7 +912,7 @@ export async function getRazorpayKey(): Promise<string> {
       return data.keyId;
     }
   } catch (e) {}
-  return 'rzp_live_TexGNKmorGENez';
+  return ((import.meta as any).env?.VITE_RAZORPAY_KEY_ID as string) || '';
 }
 
 export async function createRazorpayPaymentSession(

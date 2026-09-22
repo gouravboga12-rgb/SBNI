@@ -228,7 +228,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
 
   const getRazorpayHtml = (session: any) => {
     if (!session || !selectedPlan) return '';
-    const key = session.keyId || 'rzp_live_TexGNKmorGENez';
+    const key = session.keyId || process.env.EXPO_PUBLIC_RAZORPAY_KEY_ID || '';
     const isSubMode = session.mode === 'subscription' && !!session.subscriptionId;
     const effectiveAmount = session.amountPaise || Math.round(finalPayable * 100);
 
