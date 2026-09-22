@@ -174,8 +174,33 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
     }
   };
 
-  const hasPan = Boolean(panUri || vendorProfile?.panFileUrl || vendorProfile?.panNumber);
-  const hasAadhaar = Boolean(aadhaarUri || vendorProfile?.aadhaarFileUrl || vendorProfile?.aadhaarNumber);
+  const resolveDocUrl = (uri: string | null | undefined): string | null => {
+    if (!uri) return null;
+    if (
+      uri.startsWith('http://') ||
+      uri.startsWith('https://') ||
+      uri.startsWith('file://') ||
+      uri.startsWith('content://') ||
+      uri.startsWith('data:')
+    ) {
+      return uri;
+    }
+    const clean = uri.startsWith('/') ? uri.slice(1) : uri;
+    return `https://justpaisa.in/${clean}`;
+  };
+
+  const isPanUpdated = Boolean(panUri && (panUri.startsWith('file://') || panUri.startsWith('content://') || panUri !== vendorProfile?.panFileUrl));
+  const isAadhaarUpdated = Boolean(aadhaarUri && (aadhaarUri.startsWith('file://') || aadhaarUri.startsWith('content://') || aadhaarUri !== vendorProfile?.aadhaarFileUrl));
+  const isShopUpdated = Boolean(shopPhotoUri && (shopPhotoUri.startsWith('file://') || shopPhotoUri.startsWith('content://') || shopPhotoUri !== (vendorProfile?.shopPhotoUrl || vendorProfile?.shopPhotos?.[0])));
+  const isSelfieUpdated = Boolean(selfieUri && (selfieUri.startsWith('file://') || selfieUri.startsWith('content://') || selfieUri !== (vendorProfile?.liveSelfieUrl || vendorProfile?.avatarUrl)));
+
+  const resolvedPan = resolveDocUrl(panUri || vendorProfile?.panFileUrl);
+  const resolvedAadhaar = resolveDocUrl(aadhaarUri || vendorProfile?.aadhaarFileUrl);
+  const resolvedShopPhoto = resolveDocUrl(shopPhotoUri || vendorProfile?.shopPhotoUrl || vendorProfile?.shopPhotos?.[0]);
+  const resolvedSelfie = resolveDocUrl(selfieUri || vendorProfile?.liveSelfieUrl || vendorProfile?.avatarUrl);
+
+  const hasPan = Boolean(resolvedPan);
+  const hasAadhaar = Boolean(resolvedAadhaar);
 
   return (
     <Modal
@@ -316,12 +341,17 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
                         PAN Card
                       </Text>
                     </View>
-                    {panUri ? (
-                      <Image
-                        source={{ uri: panUri }}
-                        style={styles.docThumb}
-                        resizeMode="cover"
-                      />
+                    {resolvedPan ? (
+                      <View style={styles.thumbWrapper}>
+                        <Image
+                          source={{ uri: resolvedPan }}
+                          style={styles.docThumb}
+                          resizeMode="cover"
+                        />
+                        <View style={[styles.thumbBadge, isPanUpdated ? styles.thumbBadgeUpdated : styles.thumbBadgeAuto]}>
+                          <Text style={styles.thumbBadgeText}>{isPanUpdated ? 'Updated ✓' : 'Auto-Attached ✓'}</Text>
+                        </View>
+                      </View>
                     ) : (
                       <Text style={[styles.docCardStatus, hasPan && styles.docCardStatusActive]}>
                         {hasPan ? '✓ Auto-Attached' : 'Pending'}
@@ -353,12 +383,17 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
                         Aadhaar
                       </Text>
                     </View>
-                    {aadhaarUri ? (
-                      <Image
-                        source={{ uri: aadhaarUri }}
-                        style={styles.docThumb}
-                        resizeMode="cover"
-                      />
+                    {resolvedAadhaar ? (
+                      <View style={styles.thumbWrapper}>
+                        <Image
+                          source={{ uri: resolvedAadhaar }}
+                          style={styles.docThumb}
+                          resizeMode="cover"
+                        />
+                        <View style={[styles.thumbBadge, isAadhaarUpdated ? styles.thumbBadgeUpdated : styles.thumbBadgeAuto]}>
+                          <Text style={styles.thumbBadgeText}>{isAadhaarUpdated ? 'Updated ✓' : 'Auto-Attached ✓'}</Text>
+                        </View>
+                      </View>
                     ) : (
                       <Text style={[styles.docCardStatus, hasAadhaar && styles.docCardStatusActive]}>
                         {hasAadhaar ? '✓ Auto-Attached' : 'Pending'}
@@ -385,17 +420,22 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
                   {/* Shop / Business Photo */}
                   <View style={styles.docCard}>
                     <View style={styles.docCardHeader}>
-                      <Building2 size={15} color={shopPhotoUri ? '#059669' : '#94a3b8'} />
-                      <Text style={[styles.docCardTitle, shopPhotoUri ? styles.docCardTitleActive : null]}>
+                      <Building2 size={15} color={resolvedShopPhoto ? '#059669' : '#94a3b8'} />
+                      <Text style={[styles.docCardTitle, resolvedShopPhoto ? styles.docCardTitleActive : null]}>
                         Shop Photo
                       </Text>
                     </View>
-                    {shopPhotoUri ? (
-                      <Image
-                        source={{ uri: shopPhotoUri }}
-                        style={styles.docThumb}
-                        resizeMode="cover"
-                      />
+                    {resolvedShopPhoto ? (
+                      <View style={styles.thumbWrapper}>
+                        <Image
+                          source={{ uri: resolvedShopPhoto }}
+                          style={styles.docThumb}
+                          resizeMode="cover"
+                        />
+                        <View style={[styles.thumbBadge, isShopUpdated ? styles.thumbBadgeUpdated : styles.thumbBadgeAuto]}>
+                          <Text style={styles.thumbBadgeText}>{isShopUpdated ? 'Updated ✓' : 'Auto-Attached ✓'}</Text>
+                        </View>
+                      </View>
                     ) : (
                       <Text style={styles.docCardStatus}>Not uploaded</Text>
                     )}
@@ -420,17 +460,22 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
                   {/* Live Selfie / Owner Photo */}
                   <View style={styles.docCard}>
                     <View style={styles.docCardHeader}>
-                      <UserIcon size={15} color={selfieUri ? '#059669' : '#94a3b8'} />
-                      <Text style={[styles.docCardTitle, selfieUri ? styles.docCardTitleActive : null]}>
+                      <UserIcon size={15} color={resolvedSelfie ? '#059669' : '#94a3b8'} />
+                      <Text style={[styles.docCardTitle, resolvedSelfie ? styles.docCardTitleActive : null]}>
                         Live Selfie
                       </Text>
                     </View>
-                    {selfieUri ? (
-                      <Image
-                        source={{ uri: selfieUri }}
-                        style={styles.docThumb}
-                        resizeMode="cover"
-                      />
+                    {resolvedSelfie ? (
+                      <View style={styles.thumbWrapper}>
+                        <Image
+                          source={{ uri: resolvedSelfie }}
+                          style={styles.docThumb}
+                          resizeMode="cover"
+                        />
+                        <View style={[styles.thumbBadge, isSelfieUpdated ? styles.thumbBadgeUpdated : styles.thumbBadgeAuto]}>
+                          <Text style={styles.thumbBadgeText}>{isSelfieUpdated ? 'Updated ✓' : 'Auto-Attached ✓'}</Text>
+                        </View>
+                      </View>
                     ) : (
                       <Text style={styles.docCardStatus}>Not uploaded</Text>
                     )}
@@ -670,11 +715,37 @@ const styles = StyleSheet.create({
     color: '#059669',
     fontWeight: '700',
   },
-  docThumb: {
+  thumbWrapper: {
+    position: 'relative',
     width: '100%',
     height: 56,
     borderRadius: 8,
+    overflow: 'hidden',
     backgroundColor: '#e2e8f0',
+  },
+  docThumb: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#e2e8f0',
+  },
+  thumbBadge: {
+    position: 'absolute',
+    top: 3,
+    right: 3,
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  thumbBadgeUpdated: {
+    backgroundColor: 'rgba(5, 150, 105, 0.92)',
+  },
+  thumbBadgeAuto: {
+    backgroundColor: 'rgba(2, 132, 199, 0.92)',
+  },
+  thumbBadgeText: {
+    color: '#ffffff',
+    fontSize: 8,
+    fontWeight: '800',
   },
   docBtnRow: {
     flexDirection: 'row',

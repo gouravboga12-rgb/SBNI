@@ -45,6 +45,11 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
   const [shopPhotoFile, setShopPhotoFile] = useState<File | null>(null);
   const [liveSelfieFile, setLiveSelfieFile] = useState<File | null>(null);
 
+  const [panPreviewUrl, setPanPreviewUrl] = useState<string | null>(null);
+  const [aadhaarPreviewUrl, setAadhaarPreviewUrl] = useState<string | null>(null);
+  const [shopPhotoPreviewUrl, setShopPhotoPreviewUrl] = useState<string | null>(null);
+  const [liveSelfiePreviewUrl, setLiveSelfiePreviewUrl] = useState<string | null>(null);
+
   const [formError, setFormError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
 
@@ -56,6 +61,15 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
   const [gstHostedUrl, setGstHostedUrl] = useState('');
   const [cachedVp, setCachedVp] = useState<any>({});
   const [isUploadingDoc, setIsUploadingDoc] = useState(false);
+
+  const resolveDocUrl = (uri: string | null | undefined): string | null => {
+    if (!uri) return null;
+    if (uri.startsWith('http://') || uri.startsWith('https://') || uri.startsWith('blob:') || uri.startsWith('data:')) {
+      return uri;
+    }
+    const clean = uri.startsWith('/') ? uri.slice(1) : uri;
+    return `https://justpaisa.in/${clean}`;
+  };
 
   // Auto-populate from logged-in vendor profile details and registered documents from AWS RDS
   useEffect(() => {
@@ -435,9 +449,13 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
                 <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200">
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs font-extrabold text-slate-800">PAN Card *</span>
-                    {panHostedUrl || panFile ? (
+                    {panPreviewUrl ? (
+                      <span className="text-[10px] font-extrabold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3" /> Updated ✓
+                      </span>
+                    ) : (panHostedUrl || panFile) ? (
                       <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded flex items-center gap-1">
-                        <CheckCircle2 className="w-3 h-3" /> Auto-Attached
+                        <CheckCircle2 className="w-3 h-3" /> Auto-Attached ✓
                       </span>
                     ) : (
                       <span className="text-[10px] text-rose-600 font-bold">Required</span>
@@ -450,19 +468,41 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
                       onChange={async (e) => {
                         if (e.target.files?.[0]) {
                           const file = e.target.files[0];
+                          const preview = URL.createObjectURL(file);
+                          setPanPreviewUrl(preview);
+                          setPanFile(file);
                           const url = await handleFileUploadToEc2(file, 'documents', 'PAN');
                           if (url) setPanHostedUrl(url);
                         }
                       }}
                       className="hidden"
                     />
-                    <UploadCloud className="w-5 h-5 text-[#003893] mx-auto mb-1" />
-                    <div className="text-[11px] font-bold text-slate-700 truncate">
-                      {panHostedUrl ? (cachedVp.panNumber ? `PAN: ${cachedVp.panNumber}` : 'PAN Card Verified') : (panFile ? panFile.name : 'Upload PAN Card')}
-                    </div>
-                    <div className="text-[9px] text-slate-400">
-                      {panHostedUrl ? '✓ Verified on Account (Click to Change)' : 'PDF, JPG, PNG'}
-                    </div>
+                    {panPreviewUrl || panHostedUrl ? (
+                      <div className="flex items-center gap-2 text-left">
+                        <img
+                          src={panPreviewUrl || resolveDocUrl(panHostedUrl)!}
+                          alt="PAN"
+                          className="w-10 h-10 rounded-lg object-cover border border-slate-200 shrink-0"
+                          onError={(e) => {
+                            (e.currentTarget as HTMLElement).style.display = 'none';
+                          }}
+                        />
+                        <div className="min-w-0 flex-1">
+                          <div className="text-[11px] font-bold text-slate-700 truncate">
+                            {panPreviewUrl ? 'New PAN Photo' : (cachedVp.panNumber ? `PAN: ${cachedVp.panNumber}` : 'PAN Card Attached')}
+                          </div>
+                          <div className="text-[9px] text-slate-400">Click to Change</div>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <UploadCloud className="w-5 h-5 text-[#003893] mx-auto mb-1" />
+                        <div className="text-[11px] font-bold text-slate-700 truncate">
+                          {panFile ? panFile.name : 'Upload PAN Card'}
+                        </div>
+                        <div className="text-[9px] text-slate-400">PDF, JPG, PNG</div>
+                      </>
+                    )}
                   </label>
                 </div>
 
@@ -470,9 +510,13 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
                 <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200">
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs font-extrabold text-slate-800">Aadhaar Card *</span>
-                    {aadhaarHostedUrl || aadhaarFile ? (
+                    {aadhaarPreviewUrl ? (
+                      <span className="text-[10px] font-extrabold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3" /> Updated ✓
+                      </span>
+                    ) : (aadhaarHostedUrl || aadhaarFile) ? (
                       <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded flex items-center gap-1">
-                        <CheckCircle2 className="w-3 h-3" /> Auto-Attached
+                        <CheckCircle2 className="w-3 h-3" /> Auto-Attached ✓
                       </span>
                     ) : (
                       <span className="text-[10px] text-rose-600 font-bold">Required</span>
@@ -485,19 +529,41 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
                       onChange={async (e) => {
                         if (e.target.files?.[0]) {
                           const file = e.target.files[0];
+                          const preview = URL.createObjectURL(file);
+                          setAadhaarPreviewUrl(preview);
+                          setAadhaarFile(file);
                           const url = await handleFileUploadToEc2(file, 'documents', 'AADHAAR');
                           if (url) setAadhaarHostedUrl(url);
                         }
                       }}
                       className="hidden"
                     />
-                    <UploadCloud className="w-5 h-5 text-[#003893] mx-auto mb-1" />
-                    <div className="text-[11px] font-bold text-slate-700 truncate">
-                      {aadhaarHostedUrl ? (cachedVp.aadhaarNumber ? `Aadhaar: ${cachedVp.aadhaarNumber}` : 'Aadhaar Verified') : (aadhaarFile ? aadhaarFile.name : 'Upload Aadhaar Card')}
-                    </div>
-                    <div className="text-[9px] text-slate-400">
-                      {aadhaarHostedUrl ? '✓ Verified on Account (Click to Change)' : 'PDF, JPG, PNG'}
-                    </div>
+                    {aadhaarPreviewUrl || aadhaarHostedUrl ? (
+                      <div className="flex items-center gap-2 text-left">
+                        <img
+                          src={aadhaarPreviewUrl || resolveDocUrl(aadhaarHostedUrl)!}
+                          alt="Aadhaar"
+                          className="w-10 h-10 rounded-lg object-cover border border-slate-200 shrink-0"
+                          onError={(e) => {
+                            (e.currentTarget as HTMLElement).style.display = 'none';
+                          }}
+                        />
+                        <div className="min-w-0 flex-1">
+                          <div className="text-[11px] font-bold text-slate-700 truncate">
+                            {aadhaarPreviewUrl ? 'New Aadhaar Photo' : (cachedVp.aadhaarNumber ? `Aadhaar: ${cachedVp.aadhaarNumber}` : 'Aadhaar Attached')}
+                          </div>
+                          <div className="text-[9px] text-slate-400">Click to Change</div>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <UploadCloud className="w-5 h-5 text-[#003893] mx-auto mb-1" />
+                        <div className="text-[11px] font-bold text-slate-700 truncate">
+                          {aadhaarFile ? aadhaarFile.name : 'Upload Aadhaar Card'}
+                        </div>
+                        <div className="text-[9px] text-slate-400">PDF, JPG, PNG</div>
+                      </>
+                    )}
                   </label>
                 </div>
               </div>
@@ -511,9 +577,13 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
                       <Store className="w-3.5 h-3.5 text-[#003893]" />
                       Shop / Business Photo
                     </span>
-                    {shopPhotoHostedUrl || shopPhotoFile ? (
+                    {shopPhotoPreviewUrl ? (
+                      <span className="text-[10px] font-extrabold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3" /> Updated ✓
+                      </span>
+                    ) : (shopPhotoHostedUrl || shopPhotoFile) ? (
                       <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded flex items-center gap-1">
-                        <CheckCircle2 className="w-3 h-3" /> Auto-Attached
+                        <CheckCircle2 className="w-3 h-3" /> Auto-Attached ✓
                       </span>
                     ) : (
                       <span className="text-[10px] font-semibold text-slate-500 bg-slate-200 px-1.5 py-0.5 rounded">Optional</span>
@@ -526,19 +596,41 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
                       onChange={async (e) => {
                         if (e.target.files?.[0]) {
                           const file = e.target.files[0];
+                          const preview = URL.createObjectURL(file);
+                          setShopPhotoPreviewUrl(preview);
+                          setShopPhotoFile(file);
                           const url = await handleFileUploadToEc2(file, 'shops', 'SHOP_PREMISES');
                           if (url) setShopPhotoHostedUrl(url);
                         }
                       }}
                       className="hidden"
                     />
-                    <Camera className="w-5 h-5 text-[#003893] mx-auto mb-1" />
-                    <div className="text-[11px] font-bold text-slate-700 truncate">
-                      {shopPhotoHostedUrl ? 'Storefront Photo Attached' : (shopPhotoFile ? shopPhotoFile.name : 'Upload Shop Photo')}
-                    </div>
-                    <div className="text-[9px] text-slate-400">
-                      {shopPhotoHostedUrl ? '✓ Stored on Account (Click to Change)' : 'Shop / Business Exterior'}
-                    </div>
+                    {shopPhotoPreviewUrl || shopPhotoHostedUrl ? (
+                      <div className="flex items-center gap-2 text-left">
+                        <img
+                          src={shopPhotoPreviewUrl || resolveDocUrl(shopPhotoHostedUrl)!}
+                          alt="Shop Photo"
+                          className="w-10 h-10 rounded-lg object-cover border border-slate-200 shrink-0"
+                          onError={(e) => {
+                            (e.currentTarget as HTMLElement).style.display = 'none';
+                          }}
+                        />
+                        <div className="min-w-0 flex-1">
+                          <div className="text-[11px] font-bold text-slate-700 truncate">
+                            {shopPhotoPreviewUrl ? 'New Shop Photo' : 'Storefront Photo Attached'}
+                          </div>
+                          <div className="text-[9px] text-slate-400">Click to Change</div>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <Camera className="w-5 h-5 text-[#003893] mx-auto mb-1" />
+                        <div className="text-[11px] font-bold text-slate-700 truncate">
+                          {shopPhotoFile ? shopPhotoFile.name : 'Upload Shop Photo'}
+                        </div>
+                        <div className="text-[9px] text-slate-400">Shop / Business Exterior</div>
+                      </>
+                    )}
                   </label>
                 </div>
 
@@ -549,9 +641,13 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
                       <UserCheck className="w-3.5 h-3.5 text-[#003893]" />
                       Live Photo / Profile
                     </span>
-                    {liveSelfieHostedUrl || liveSelfieFile ? (
+                    {liveSelfiePreviewUrl ? (
+                      <span className="text-[10px] font-extrabold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3" /> Updated ✓
+                      </span>
+                    ) : (liveSelfieHostedUrl || liveSelfieFile) ? (
                       <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded flex items-center gap-1">
-                        <CheckCircle2 className="w-3 h-3" /> Auto-Attached
+                        <CheckCircle2 className="w-3 h-3" /> Auto-Attached ✓
                       </span>
                     ) : (
                       <span className="text-[10px] font-semibold text-slate-500 bg-slate-200 px-1.5 py-0.5 rounded">Optional</span>
@@ -565,19 +661,41 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
                       onChange={async (e) => {
                         if (e.target.files?.[0]) {
                           const file = e.target.files[0];
+                          const preview = URL.createObjectURL(file);
+                          setLiveSelfiePreviewUrl(preview);
+                          setLiveSelfieFile(file);
                           const url = await handleFileUploadToEc2(file, 'avatars', 'SELFIE');
                           if (url) setLiveSelfieHostedUrl(url);
                         }
                       }}
                       className="hidden"
                     />
-                    <Camera className="w-5 h-5 text-[#003893] mx-auto mb-1" />
-                    <div className="text-[11px] font-bold text-slate-700 truncate">
-                      {liveSelfieHostedUrl ? 'Live Profile Photo Attached' : (liveSelfieFile ? liveSelfieFile.name : 'Live Photo / Selfie')}
-                    </div>
-                    <div className="text-[9px] text-slate-400">
-                      {liveSelfieHostedUrl ? '✓ Stored on Account (Click to Change)' : 'Person Standing in Front'}
-                    </div>
+                    {liveSelfiePreviewUrl || liveSelfieHostedUrl ? (
+                      <div className="flex items-center gap-2 text-left">
+                        <img
+                          src={liveSelfiePreviewUrl || resolveDocUrl(liveSelfieHostedUrl)!}
+                          alt="Live Photo"
+                          className="w-10 h-10 rounded-lg object-cover border border-slate-200 shrink-0"
+                          onError={(e) => {
+                            (e.currentTarget as HTMLElement).style.display = 'none';
+                          }}
+                        />
+                        <div className="min-w-0 flex-1">
+                          <div className="text-[11px] font-bold text-slate-700 truncate">
+                            {liveSelfiePreviewUrl ? 'New Live Selfie' : 'Profile Photo Attached'}
+                          </div>
+                          <div className="text-[9px] text-slate-400">Click to Change</div>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <Camera className="w-5 h-5 text-[#003893] mx-auto mb-1" />
+                        <div className="text-[11px] font-bold text-slate-700 truncate">
+                          {liveSelfieFile ? liveSelfieFile.name : 'Live Photo / Selfie'}
+                        </div>
+                        <div className="text-[9px] text-slate-400">Person Standing in Front</div>
+                      </>
+                    )}
                   </label>
                 </div>
               </div>

@@ -393,32 +393,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       return;
     }
     if (!photoFile) {
-      setFormError('Please upload your passport size photo / profile photo to proceed.');
+      setFormError('Please upload your Passport Size Photo to proceed.');
       return;
     }
-    if (!panFile) {
-      setFormError('Please upload your PAN card document to proceed.');
+    if (businessCategory === 'Small Shop Business' && !panFile) {
+      setFormError('Please upload your PAN Card Document to proceed.');
       return;
     }
     if (!aadhaarFile) {
-      setFormError('Please upload your Aadhaar card document to proceed.');
+      setFormError('Please upload your Aadhaar Card Document to proceed.');
       return;
-    }
-
-    // Small Shop Business requires all 6 KYC files & photos
-    if (businessCategory === 'Small Shop Business') {
-      if (!licenseFile) {
-        setFormError('Please upload your Business License / GST document to proceed (compulsory for Small Shop Business).');
-        return;
-      }
-      if (!shopPhotoFile) {
-        setFormError('Please upload your Shop / Local Startup Business Photo to proceed (compulsory for Small Shop Business).');
-        return;
-      }
-      if (!liveSelfieFile) {
-        setFormError('Please upload your Live Photo in Front of Shop / Business to proceed (compulsory for Small Shop Business).');
-        return;
-      }
     }
 
     setIsSubmitting(true);
@@ -1426,8 +1410,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     <ShieldCheck className="w-4 h-4 shrink-0 mt-0.5 text-[#003893]" />
                     <span>
                       {businessCategory === 'Small Shop Business'
-                        ? 'Small Shop Business: All 6 documents (Passport Photo, PAN Card, Aadhaar Card, Business License / GST, Shop Photo, Live Photo in Front of Shop) are compulsory.'
-                        : 'Local Startup Business: Passport Size Photo, PAN Card and Aadhaar Card are mandatory. Business License / GST, Shop Photo and Live Photo are optional.'}
+                        ? 'Small Shop Business: Passport Photo, PAN Card and Aadhaar Card are mandatory. Shop Photo is optional.'
+                        : 'Local Startup Business: Passport Photo and Aadhaar Card are mandatory.'}
                     </span>
                   </div>
                 </div>
@@ -1752,40 +1736,105 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     )}
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {/* 2. PAN Card (Always Required) */}
-                    <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs font-extrabold text-slate-800">PAN Card *</span>
-                        {panFile ? (
-                          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded flex items-center gap-1">
-                            <CheckCircle2 className="w-3 h-3" /> Uploaded
-                          </span>
-                        ) : (
-                          <span className="text-[10px] text-rose-600 font-bold bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200">
-                            Required
-                          </span>
-                        )}
-                      </div>
-                      <label className="border-2 border-dashed border-slate-300 hover:border-[#003893] rounded-xl p-2.5 text-center cursor-pointer block bg-white transition-colors">
-                        <input
-                          type="file"
-                          accept="image/*,.pdf"
-                          onChange={(e) => handleFileSelect(e.target.files?.[0], setPanFile)}
-                          className="hidden"
-                        />
-                        <Upload className="w-5 h-5 text-[#003893] mx-auto mb-1" />
-                        <div className="text-[11px] font-bold text-slate-700 truncate">
-                          {panFile ? panFile.name : 'Upload PAN Card *'}
+                  {businessCategory === 'Small Shop Business' ? (
+                    <>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {/* 2. PAN Card (Required for Small Shop Business) */}
+                        <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-xs font-extrabold text-slate-800">2. PAN Card *</span>
+                            {panFile ? (
+                              <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded flex items-center gap-1">
+                                <CheckCircle2 className="w-3 h-3" /> Uploaded
+                              </span>
+                            ) : (
+                              <span className="text-[10px] text-rose-600 font-bold bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200">
+                                Required
+                              </span>
+                            )}
+                          </div>
+                          <label className="border-2 border-dashed border-slate-300 hover:border-[#003893] rounded-xl p-2.5 text-center cursor-pointer block bg-white transition-colors">
+                            <input
+                              type="file"
+                              accept="image/*,.pdf"
+                              onChange={(e) => handleFileSelect(e.target.files?.[0], setPanFile)}
+                              className="hidden"
+                            />
+                            <Upload className="w-5 h-5 text-[#003893] mx-auto mb-1" />
+                            <div className="text-[11px] font-bold text-slate-700 truncate">
+                              {panFile ? panFile.name : 'Upload PAN Card *'}
+                            </div>
+                            <div className="text-[9px] text-slate-400">PDF, JPG, PNG up to 5MB</div>
+                          </label>
                         </div>
-                        <div className="text-[9px] text-slate-400">PDF, JPG, PNG up to 5MB</div>
-                      </label>
-                    </div>
 
-                    {/* 3. Aadhaar Card (Always Required) */}
+                        {/* 3. Aadhaar Card (Required) */}
+                        <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-xs font-extrabold text-slate-800">3. Aadhaar Card *</span>
+                            {aadhaarFile ? (
+                              <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded flex items-center gap-1">
+                                <CheckCircle2 className="w-3 h-3" /> Uploaded
+                              </span>
+                            ) : (
+                              <span className="text-[10px] text-rose-600 font-bold bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200">
+                                Required
+                              </span>
+                            )}
+                          </div>
+                          <label className="border-2 border-dashed border-slate-300 hover:border-[#003893] rounded-xl p-2.5 text-center cursor-pointer block bg-white transition-colors">
+                            <input
+                              type="file"
+                              accept="image/*,.pdf"
+                              onChange={(e) => handleFileSelect(e.target.files?.[0], setAadhaarFile)}
+                              className="hidden"
+                            />
+                            <Upload className="w-5 h-5 text-[#003893] mx-auto mb-1" />
+                            <div className="text-[11px] font-bold text-slate-700 truncate">
+                              {aadhaarFile ? aadhaarFile.name : 'Upload Aadhaar Card *'}
+                            </div>
+                            <div className="text-[9px] text-slate-400">PDF, JPG, PNG up to 5MB</div>
+                          </label>
+                        </div>
+                      </div>
+
+                      {/* 4. Shop / Business Photo (Optional for Small Shop Business) */}
+                      <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs font-extrabold text-slate-800 flex items-center gap-1">
+                            <Store className="w-3.5 h-3.5 text-[#003893]" />
+                            4. Shop / Business Photo (Optional)
+                          </span>
+                          {shopPhotoFile ? (
+                            <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded flex items-center gap-1">
+                              <CheckCircle2 className="w-3 h-3" /> Uploaded
+                            </span>
+                          ) : (
+                            <span className="text-[10px] font-semibold text-slate-500 bg-slate-200 px-1.5 py-0.5 rounded">
+                              Optional
+                            </span>
+                          )}
+                        </div>
+                        <label className="border-2 border-dashed border-slate-300 hover:border-[#003893] rounded-xl p-2.5 text-center cursor-pointer block bg-white transition-colors">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => handleFileSelect(e.target.files?.[0], setShopPhotoFile)}
+                            className="hidden"
+                          />
+                          <Camera className="w-5 h-5 text-[#003893] mx-auto mb-1" />
+                          <div className="text-[11px] font-bold text-slate-700 truncate">
+                            {shopPhotoFile ? shopPhotoFile.name : 'Upload Shop / Business Photo (Optional)'}
+                          </div>
+                          <div className="text-[9px] text-slate-400">Shop / Business Exterior / Interior Photo (Max 5MB)</div>
+                        </label>
+                      </div>
+                    </>
+                  ) : (
+                    /* Local Startup Business: Only Aadhaar Card (Passport photo is Card 1 above) */
                     <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200">
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs font-extrabold text-slate-800">Aadhaar Card *</span>
+                        <span className="text-xs font-extrabold text-slate-800">2. Aadhaar Card *</span>
                         {aadhaarFile ? (
                           <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded flex items-center gap-1">
                             <CheckCircle2 className="w-3 h-3" /> Uploaded
@@ -1810,125 +1859,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                         <div className="text-[9px] text-slate-400">PDF, JPG, PNG up to 5MB</div>
                       </label>
                     </div>
-                  </div>
-
-                  {/* 4. Business License / GST (Required for Small Shop Business, Optional for Local Startup) */}
-                  <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs font-extrabold text-slate-800">
-                        Business License / GST {businessCategory === 'Small Shop Business' ? '*' : ''}
-                      </span>
-                      {licenseFile ? (
-                        <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded flex items-center gap-1">
-                          <CheckCircle2 className="w-3 h-3" /> Uploaded
-                        </span>
-                      ) : businessCategory === 'Small Shop Business' ? (
-                        <span className="text-[10px] text-rose-600 font-bold bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200">
-                          Required
-                        </span>
-                      ) : (
-                        <span className="text-[10px] font-semibold text-slate-500 bg-slate-200 px-1.5 py-0.5 rounded">
-                          Optional
-                        </span>
-                      )}
-                    </div>
-                    <label className="border-2 border-dashed border-slate-300 hover:border-[#003893] rounded-xl p-2.5 text-center cursor-pointer block bg-white transition-colors">
-                      <input
-                        type="file"
-                        accept="image/*,.pdf"
-                        onChange={(e) => handleFileSelect(e.target.files?.[0], setLicenseFile)}
-                        className="hidden"
-                      />
-                      <Upload className="w-5 h-5 text-[#003893] mx-auto mb-1" />
-                      <div className="text-[11px] font-bold text-slate-700 truncate">
-                        {licenseFile
-                          ? licenseFile.name
-                          : businessCategory === 'Small Shop Business'
-                          ? 'Upload Shop / Trade License / GST *'
-                          : 'Upload Shop / Trade License / GST (Optional)'}
-                      </div>
-                      <div className="text-[9px] text-slate-400">PDF, JPG, PNG up to 5MB</div>
-                    </label>
-                  </div>
-
-                  {/* 5. Shop / Local Startup Business Photo (Required for Small Shop Business, Optional for Local Startup) */}
-                  <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs font-extrabold text-slate-800">
-                        Shop / Local Startup Business Photo {businessCategory === 'Small Shop Business' ? '*' : ''}
-                      </span>
-                      {shopPhotoFile ? (
-                        <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded flex items-center gap-1">
-                          <CheckCircle2 className="w-3 h-3" /> Uploaded
-                        </span>
-                      ) : businessCategory === 'Small Shop Business' ? (
-                        <span className="text-[10px] text-rose-600 font-bold bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200">
-                          Required
-                        </span>
-                      ) : (
-                        <span className="text-[10px] font-semibold text-slate-500 bg-slate-200 px-1.5 py-0.5 rounded">
-                          Optional
-                        </span>
-                      )}
-                    </div>
-                    <label className="border-2 border-dashed border-slate-300 hover:border-[#003893] rounded-xl p-2.5 text-center cursor-pointer block bg-white transition-colors">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => handleFileSelect(e.target.files?.[0], setShopPhotoFile)}
-                        className="hidden"
-                      />
-                      <Camera className="w-5 h-5 text-[#003893] mx-auto mb-1" />
-                      <div className="text-[11px] font-bold text-slate-700 truncate">
-                        {shopPhotoFile
-                          ? shopPhotoFile.name
-                          : businessCategory === 'Small Shop Business'
-                          ? 'Upload Shop / Business Photo *'
-                          : 'Upload Shop / Business Photo (Optional)'}
-                      </div>
-                      <div className="text-[9px] text-slate-400">Shop / Business Exterior / Interior Photo (Max 5MB)</div>
-                    </label>
-                  </div>
-
-                  {/* 6. Live Photo in Front of Shop / Business (Required for Small Shop Business, Optional for Local Startup) */}
-                  <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs font-extrabold text-slate-800">
-                        Live Photo in Front of Shop / Business {businessCategory === 'Small Shop Business' ? '*' : ''}
-                      </span>
-                      {liveSelfieFile ? (
-                        <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded flex items-center gap-1">
-                          <CheckCircle2 className="w-3 h-3" /> Uploaded
-                        </span>
-                      ) : businessCategory === 'Small Shop Business' ? (
-                        <span className="text-[10px] text-rose-600 font-bold bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200">
-                          Required
-                        </span>
-                      ) : (
-                        <span className="text-[10px] font-semibold text-slate-500 bg-slate-200 px-1.5 py-0.5 rounded">
-                          Optional
-                        </span>
-                      )}
-                    </div>
-                    <label className="border-2 border-dashed border-slate-300 hover:border-[#003893] rounded-xl p-2.5 text-center cursor-pointer block bg-white transition-colors">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        capture="user"
-                        onChange={(e) => handleFileSelect(e.target.files?.[0], setLiveSelfieFile)}
-                        className="hidden"
-                      />
-                      <Camera className="w-5 h-5 text-[#003893] mx-auto mb-1" />
-                      <div className="text-[11px] font-bold text-slate-700 truncate">
-                        {liveSelfieFile
-                          ? liveSelfieFile.name
-                          : businessCategory === 'Small Shop Business'
-                          ? 'Live Photo with Person in Front of Shop / Business *'
-                          : 'Live Photo with Person in Front of Shop / Business (Optional)'}
-                      </div>
-                      <div className="text-[9px] text-slate-400">Person Standing in Front of Shop / Business (Max 5MB)</div>
-                    </label>
-                  </div>
+                  )}
                 </div>
 
                 {/* Account Security & Password */}

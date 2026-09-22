@@ -293,25 +293,20 @@ export const LoginScreen: React.FC = () => {
         Alert.alert('Missing Document', 'Please upload Passport Photo / Profile Photo.');
         return;
       }
-      if (!panFile) {
-        Alert.alert('Missing Document', 'Please upload PAN Card Document.');
-        return;
-      }
-      if (!aadhaarFile) {
-        Alert.alert('Missing Document', 'Please upload Aadhaar Card Document.');
-        return;
-      }
       if (vendorCategory === 'Small Shop Business') {
-        if (!licenseFile) {
-          Alert.alert('Missing Document', 'Please upload Business License / GST for Small Shop Business.');
+        if (!panFile) {
+          Alert.alert('Missing Document', 'Please upload PAN Card Document.');
           return;
         }
-        if (!shopPhotoFile) {
-          Alert.alert('Missing Document', 'Please upload Shop / Business Photo.');
+        if (!aadhaarFile) {
+          Alert.alert('Missing Document', 'Please upload Aadhaar Card Document.');
           return;
         }
-        if (!liveSelfieFile) {
-          Alert.alert('Missing Document', 'Please upload Live Photo in Front of Shop.');
+        // Shop photo is optional
+      } else {
+        // Local Startup Business
+        if (!aadhaarFile) {
+          Alert.alert('Missing Document', 'Please upload Aadhaar Card Document.');
           return;
         }
       }
@@ -754,7 +749,7 @@ export const LoginScreen: React.FC = () => {
                   <View style={styles.typeTitleRow}>
                     <Text style={styles.typeChoiceTitleBlue}>1. Small Shop Business</Text>
                     <View style={styles.compulsoryBadge}>
-                      <Text style={styles.compulsoryBadgeText}>All 6 KYC Compulsory</Text>
+                      <Text style={styles.compulsoryBadgeText}>3 Mandatory • 1 Optional</Text>
                     </View>
                   </View>
                   <Text style={styles.typeChoiceDesc}>
@@ -765,7 +760,7 @@ export const LoginScreen: React.FC = () => {
               <View style={styles.typeInfoPillBlue}>
                 <ShieldCheck size={14} color="#003893" />
                 <Text style={styles.typeInfoTextBlue}>
-                  Requires Passport Photo, PAN, Aadhaar, License/GST, Shop Photo & Live Selfie
+                  Requires Passport Photo, PAN & Aadhaar (Shop Photo Optional)
                 </Text>
               </View>
               <View style={styles.continueRowBlue}>
@@ -791,7 +786,7 @@ export const LoginScreen: React.FC = () => {
                   <View style={styles.typeTitleRow}>
                     <Text style={styles.typeChoiceTitleIndigo}>2. Local Startup Business</Text>
                     <View style={styles.optionalBadge}>
-                      <Text style={styles.optionalBadgeText}>3 Mandatory • 3 Optional</Text>
+                      <Text style={styles.optionalBadgeText}>2 Mandatory Docs</Text>
                     </View>
                   </View>
                   <Text style={styles.typeChoiceDesc}>
@@ -802,7 +797,7 @@ export const LoginScreen: React.FC = () => {
               <View style={styles.typeInfoPillIndigo}>
                 <Zap size={14} color="#4338ca" />
                 <Text style={styles.typeInfoTextIndigo}>
-                  Mandatory: Photo, PAN & Aadhaar (License & Shop Photos are Optional)
+                  Mandatory: Passport Photo & Aadhaar Card only
                 </Text>
               </View>
               <View style={styles.continueRowIndigo}>
@@ -873,8 +868,8 @@ export const LoginScreen: React.FC = () => {
                 {isRegister
                   ? isVendor
                     ? vendorCategory === 'Small Shop Business'
-                      ? 'Enter your shop details & all 6 required KYC verification documents.'
-                      : 'Enter your startup details & KYC documents (3 required, 3 optional).'
+                      ? 'Enter your shop details & required KYC verification documents (3 mandatory, 1 optional).'
+                      : 'Enter your startup details & required KYC documents (Passport Photo & Aadhaar Card only).'
                     : 'Sign up as a Business Money Financer. We will verify your official email with OTP.'
                   : isVendor
                   ? 'Login to discover and connect with verified nearby business financers'
@@ -1137,18 +1132,18 @@ export const LoginScreen: React.FC = () => {
                   ))}
                 </ScrollView>
 
-                {/* Section: 6 KYC Document Uploads */}
+                {/* Section: KYC Document Uploads */}
                 <View style={styles.sectionHeader}>
                   <Upload size={16} color="#003893" />
                   <Text style={styles.sectionHeaderTitle}>Photo & KYC Document Uploads</Text>
                 </View>
                 <Text style={styles.docHelpNotice}>
                   {vendorCategory === 'Small Shop Business'
-                    ? 'All 6 documents are compulsory for Small Shop Business verification.'
-                    : 'Photo, PAN & Aadhaar are mandatory. License & Shop photos are optional.'}
+                    ? 'Passport Photo, PAN Card & Aadhaar Card are mandatory. Shop photo is optional.'
+                    : 'Passport Photo & Aadhaar Card are mandatory for Local Startup Business.'}
                 </Text>
 
-                {/* 1. Passport Photo */}
+                {/* 1. Passport Photo (Mandatory for both) */}
                 <View style={styles.docCard}>
                   <View style={styles.docCardHead}>
                     <Text style={styles.docCardTitle}>1. Passport Size / Profile Photo *</Text>
@@ -1180,42 +1175,46 @@ export const LoginScreen: React.FC = () => {
                   )}
                 </View>
 
-                {/* 2. PAN Card */}
-                <View style={styles.docCard}>
-                  <View style={styles.docCardHead}>
-                    <Text style={styles.docCardTitle}>2. PAN Card Document *</Text>
-                    <View style={panFile ? styles.badgeUploaded : styles.badgeRequired}>
-                      <Text style={panFile ? styles.badgeUploadedText : styles.badgeRequiredText}>
-                        {panFile ? '✓ Uploaded' : 'Required'}
-                      </Text>
+                {/* Small Shop Business: 2. PAN Card */}
+                {vendorCategory === 'Small Shop Business' && (
+                  <View style={styles.docCard}>
+                    <View style={styles.docCardHead}>
+                      <Text style={styles.docCardTitle}>2. PAN Card Document *</Text>
+                      <View style={panFile ? styles.badgeUploaded : styles.badgeRequired}>
+                        <Text style={panFile ? styles.badgeUploadedText : styles.badgeRequiredText}>
+                          {panFile ? '✓ Uploaded' : 'Required'}
+                        </Text>
+                      </View>
                     </View>
-                  </View>
-                  {panFile ? (
-                    <View style={styles.previewRow}>
-                      <Image source={{ uri: panFile.uri }} style={styles.previewThumb} />
-                      <Text style={styles.previewFileName} numberOfLines={1}>{panFile.name}</Text>
+                    {panFile ? (
+                      <View style={styles.previewRow}>
+                        <Image source={{ uri: panFile.uri }} style={styles.previewThumb} />
+                        <Text style={styles.previewFileName} numberOfLines={1}>{panFile.name}</Text>
+                        <TouchableOpacity
+                          style={styles.changeBtn}
+                          onPress={() => pickDocument('PAN Card', setPanFile, 'pan')}
+                        >
+                          <Text style={styles.changeBtnText}>Change</Text>
+                        </TouchableOpacity>
+                      </View>
+                    ) : (
                       <TouchableOpacity
-                        style={styles.changeBtn}
+                        style={styles.uploadPlaceholder}
                         onPress={() => pickDocument('PAN Card', setPanFile, 'pan')}
                       >
-                        <Text style={styles.changeBtnText}>Change</Text>
+                        <Upload size={20} color="#003893" />
+                        <Text style={styles.uploadPlaceholderText}>Upload PAN Card Photo</Text>
                       </TouchableOpacity>
-                    </View>
-                  ) : (
-                    <TouchableOpacity
-                      style={styles.uploadPlaceholder}
-                      onPress={() => pickDocument('PAN Card', setPanFile, 'pan')}
-                    >
-                      <Upload size={20} color="#003893" />
-                      <Text style={styles.uploadPlaceholderText}>Upload PAN Card Photo</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
+                    )}
+                  </View>
+                )}
 
-                {/* 3. Aadhaar Card */}
+                {/* Aadhaar Card: Card 3 for Shop, Card 2 for Startup */}
                 <View style={styles.docCard}>
                   <View style={styles.docCardHead}>
-                    <Text style={styles.docCardTitle}>3. Aadhaar Card Document *</Text>
+                    <Text style={styles.docCardTitle}>
+                      {vendorCategory === 'Small Shop Business' ? '3. Aadhaar Card Document *' : '2. Aadhaar Card Document *'}
+                    </Text>
                     <View style={aadhaarFile ? styles.badgeUploaded : styles.badgeRequired}>
                       <Text style={aadhaarFile ? styles.badgeUploadedText : styles.badgeRequiredText}>
                         {aadhaarFile ? '✓ Uploaded' : 'Required'}
@@ -1244,107 +1243,39 @@ export const LoginScreen: React.FC = () => {
                   )}
                 </View>
 
-                {/* 4. Business License / GST */}
-                <View style={styles.docCard}>
-                  <View style={styles.docCardHead}>
-                    <Text style={styles.docCardTitle}>
-                      4. Business License / GST {vendorCategory === 'Small Shop Business' ? '*' : '(Optional)'}
-                    </Text>
-                    <View style={licenseFile ? styles.badgeUploaded : vendorCategory === 'Small Shop Business' ? styles.badgeRequired : styles.badgeOptional}>
-                      <Text style={licenseFile ? styles.badgeUploadedText : vendorCategory === 'Small Shop Business' ? styles.badgeRequiredText : styles.badgeOptionalText}>
-                        {licenseFile ? '✓ Uploaded' : vendorCategory === 'Small Shop Business' ? 'Required' : 'Optional'}
-                      </Text>
+                {/* Small Shop Business: 4. Shop / Business Photo (Optional) */}
+                {vendorCategory === 'Small Shop Business' && (
+                  <View style={styles.docCard}>
+                    <View style={styles.docCardHead}>
+                      <Text style={styles.docCardTitle}>4. Shop / Business Photo (Optional)</Text>
+                      <View style={shopPhotoFile ? styles.badgeUploaded : styles.badgeOptional}>
+                        <Text style={shopPhotoFile ? styles.badgeUploadedText : styles.badgeOptionalText}>
+                          {shopPhotoFile ? '✓ Uploaded' : 'Optional'}
+                        </Text>
+                      </View>
                     </View>
-                  </View>
-                  {licenseFile ? (
-                    <View style={styles.previewRow}>
-                      <Image source={{ uri: licenseFile.uri }} style={styles.previewThumb} />
-                      <Text style={styles.previewFileName} numberOfLines={1}>{licenseFile.name}</Text>
+                    {shopPhotoFile ? (
+                      <View style={styles.previewRow}>
+                        <Image source={{ uri: shopPhotoFile.uri }} style={styles.previewThumb} />
+                        <Text style={styles.previewFileName} numberOfLines={1}>{shopPhotoFile.name}</Text>
+                        <TouchableOpacity
+                          style={styles.changeBtn}
+                          onPress={() => pickDocument('Shop Photo', setShopPhotoFile, 'shop')}
+                        >
+                          <Text style={styles.changeBtnText}>Change</Text>
+                        </TouchableOpacity>
+                      </View>
+                    ) : (
                       <TouchableOpacity
-                        style={styles.changeBtn}
-                        onPress={() => pickDocument('Business License', setLicenseFile, 'license')}
-                      >
-                        <Text style={styles.changeBtnText}>Change</Text>
-                      </TouchableOpacity>
-                    </View>
-                  ) : (
-                    <TouchableOpacity
-                      style={styles.uploadPlaceholder}
-                      onPress={() => pickDocument('Business License', setLicenseFile, 'license')}
-                    >
-                      <Upload size={20} color="#003893" />
-                      <Text style={styles.uploadPlaceholderText}>Upload Trade License / GST</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-
-                {/* 5. Shop / Business Photo */}
-                <View style={styles.docCard}>
-                  <View style={styles.docCardHead}>
-                    <Text style={styles.docCardTitle}>
-                      5. Shop / Business Photo {vendorCategory === 'Small Shop Business' ? '*' : '(Optional)'}
-                    </Text>
-                    <View style={shopPhotoFile ? styles.badgeUploaded : vendorCategory === 'Small Shop Business' ? styles.badgeRequired : styles.badgeOptional}>
-                      <Text style={shopPhotoFile ? styles.badgeUploadedText : vendorCategory === 'Small Shop Business' ? styles.badgeRequiredText : styles.badgeOptionalText}>
-                        {shopPhotoFile ? '✓ Uploaded' : vendorCategory === 'Small Shop Business' ? 'Required' : 'Optional'}
-                      </Text>
-                    </View>
-                  </View>
-                  {shopPhotoFile ? (
-                    <View style={styles.previewRow}>
-                      <Image source={{ uri: shopPhotoFile.uri }} style={styles.previewThumb} />
-                      <Text style={styles.previewFileName} numberOfLines={1}>{shopPhotoFile.name}</Text>
-                      <TouchableOpacity
-                        style={styles.changeBtn}
+                        style={styles.uploadPlaceholder}
                         onPress={() => pickDocument('Shop Photo', setShopPhotoFile, 'shop')}
                       >
-                        <Text style={styles.changeBtnText}>Change</Text>
+                        <Camera size={20} color="#003893" />
+                        <Text style={styles.uploadPlaceholderText}>Upload Shop Exterior / Interior Photo</Text>
                       </TouchableOpacity>
-                    </View>
-                  ) : (
-                    <TouchableOpacity
-                      style={styles.uploadPlaceholder}
-                      onPress={() => pickDocument('Shop Photo', setShopPhotoFile, 'shop')}
-                    >
-                      <Camera size={20} color="#003893" />
-                      <Text style={styles.uploadPlaceholderText}>Upload Shop Exterior / Interior Photo</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-
-                {/* 6. Live Photo in Front of Shop */}
-                <View style={styles.docCard}>
-                  <View style={styles.docCardHead}>
-                    <Text style={styles.docCardTitle}>
-                      6. Live Photo in Front of Shop {vendorCategory === 'Small Shop Business' ? '*' : '(Optional)'}
-                    </Text>
-                    <View style={liveSelfieFile ? styles.badgeUploaded : vendorCategory === 'Small Shop Business' ? styles.badgeRequired : styles.badgeOptional}>
-                      <Text style={liveSelfieFile ? styles.badgeUploadedText : vendorCategory === 'Small Shop Business' ? styles.badgeRequiredText : styles.badgeOptionalText}>
-                        {liveSelfieFile ? '✓ Uploaded' : vendorCategory === 'Small Shop Business' ? 'Required' : 'Optional'}
-                      </Text>
-                    </View>
+                    )}
                   </View>
-                  {liveSelfieFile ? (
-                    <View style={styles.previewRow}>
-                      <Image source={{ uri: liveSelfieFile.uri }} style={styles.previewThumb} />
-                      <Text style={styles.previewFileName} numberOfLines={1}>{liveSelfieFile.name}</Text>
-                      <TouchableOpacity
-                        style={styles.changeBtn}
-                        onPress={() => pickDocument('Live Photo in Front of Shop', setLiveSelfieFile, 'shop_front')}
-                      >
-                        <Text style={styles.changeBtnText}>Change</Text>
-                      </TouchableOpacity>
-                    </View>
-                  ) : (
-                    <TouchableOpacity
-                      style={styles.uploadPlaceholder}
-                      onPress={() => pickDocument('Live Photo in Front of Shop', setLiveSelfieFile, 'shop_front')}
-                    >
-                      <Camera size={20} color="#003893" />
-                      <Text style={styles.uploadPlaceholderText}>Take Photo in Front of Shop</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
+                )}
 
                 {/* Section: Account Security */}
                 <View style={styles.sectionHeader}>
