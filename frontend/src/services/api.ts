@@ -912,7 +912,7 @@ export async function getRazorpayKey(): Promise<string> {
       return data.keyId;
     }
   } catch (e) {}
-  return 'rzp_test_TUjAguyFqbDjNk';
+  return 'rzp_live_TexGNKmorGENez';
 }
 
 export async function createRazorpayPaymentSession(
