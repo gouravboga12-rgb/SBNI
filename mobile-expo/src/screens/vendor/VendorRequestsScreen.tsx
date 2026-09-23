@@ -330,7 +330,12 @@ export const VendorRequestsScreen: React.FC = () => {
 
       {/* Full Application Details Inspection Modal */}
       {selectedRequest && (
-        <Modal visible={true} animationType="slide" transparent>
+        <Modal
+          visible={true}
+          animationType="slide"
+          transparent
+          onRequestClose={() => setSelectedRequest(null)}
+        >
           <View style={styles.modalOverlay}>
             <View style={[styles.modalCard, isTablet && styles.modalCardTablet]}>
               <View style={styles.modalHeader}>
@@ -371,13 +376,13 @@ export const VendorRequestsScreen: React.FC = () => {
                     ]}
                   >
                     Current Status:{' '}
-                    <strong>
+                    <Text style={{ fontWeight: '700' }}>
                       {selectedRequest.status === 'Accepted'
                         ? '✓ Accepted by Financer'
                         : selectedRequest.status === 'Rejected'
                         ? '✕ Rejected'
                         : '⏳ Under Review'}
-                    </strong>
+                    </Text>
                   </Text>
                   <Text style={styles.statusCalloutSub}>
                     {selectedRequest.status === 'Accepted'
