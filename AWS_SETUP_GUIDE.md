@@ -115,7 +115,7 @@ DATABASE_URL="postgresql://sbni_user:SBNIMoneyPostgres2026!@localhost:5432/sbni_
 JWT_SECRET="SBNI_SUPER_SECURE_JWT_SECRET_KEY_2026_@FINTECH"
 JWT_REFRESH_SECRET="SBNI_SUPER_SECURE_REFRESH_SECRET_KEY_2026_@FINTECH"
 SUPER_ADMIN_EMAIL="srinivaspolepalli10@gmail.com"
-SUPER_ADMIN_PASSWORD="Srinivas@10"
+SUPER_ADMIN_PASSWORD="Srinivas@1010"
 ```
 
 ---
@@ -126,7 +126,7 @@ SUPER_ADMIN_PASSWORD="Srinivas@10"
 # Push Prisma Schema to AWS PostgreSQL Database
 npx prisma db push
 
-# Seed Super Admin Account (srinivaspolepalli10@gmail.com / Srinivas@10)
+# Seed Super Admin Account (srinivaspolepalli10@gmail.com / Srinivas@1010)
 npx prisma db seed
 
 # Build Production TypeScript Backend
@@ -208,5 +208,5 @@ sudo systemctl reload nginx
 Once deployed, access `/admin` on your application:
 - **Route:** `http://<your-domain-or-ip>/admin`
 - **Admin Email:** `srinivaspolepalli10@gmail.com`
-- **Admin Password:** `Srinivas@10`
+- **Admin Password:** `Srinivas@1010`
 - **Role:** `SUPER_ADMIN`

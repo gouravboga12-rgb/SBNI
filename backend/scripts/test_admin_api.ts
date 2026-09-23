@@ -2,7 +2,7 @@ async function testAdmin() {
   const loginRes = await fetch('http://localhost:5000/api/v1/auth/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email: 'srinivaspolepalli10@gmail.com', password: 'Srinivas@10' }),
+    body: JSON.stringify({ email: 'srinivaspolepalli10@gmail.com', password: 'Srinivas@1010' }),
   });
   const loginData = await loginRes.json() as any;
   console.log('LOGIN DATA:', JSON.stringify(loginData, null, 2));

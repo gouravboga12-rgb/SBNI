@@ -8,7 +8,7 @@ async function main() {
 
   // 1. Password hash for default accounts
   const defaultPasswordHash = await bcrypt.hash('SBNIMoney@2026', 10);
-  const adminPasswordHash = await bcrypt.hash('Srinivas@10', 10);
+  const adminPasswordHash = await bcrypt.hash('Srinivas@1010', 10);
 
   // 2. Super Admin Account
   const adminUser = await prisma.user.upsert({

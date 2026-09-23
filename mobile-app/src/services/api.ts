@@ -1264,23 +1264,8 @@ export async function adminLoginApi(
   }
 }
 
-async function adminFetch<T = any>(path: string, options: RequestInit = {}, retry = true): Promise<T> {
-  let token = localStorage.getItem('sbni_admin_token');
-
-  let hasAdminUser = false;
-  try {
-    const u = JSON.parse(localStorage.getItem('sbni_admin_user') || '{}');
-    if (u?.role === 'SUPER_ADMIN') hasAdminUser = true;
-  } catch {}
-
-  if ((!token || !hasAdminUser) && retry) {
-    try {
-      const loginRes = await adminLoginApi('srinivaspolepalli10@gmail.com', 'Srinivas@10');
-      if (loginRes.success && loginRes.token) {
-        token = loginRes.token;
-      }
-    } catch {}
-  }
+async function adminFetch<T = any>(path: string, options: RequestInit = {}): Promise<T> {
+  const token = localStorage.getItem('sbni_admin_token');
 
   const res = await fetch(`${API_BASE}${path}`, {
     cache: 'no-store',
@@ -1294,14 +1279,7 @@ async function adminFetch<T = any>(path: string, options: RequestInit = {}, retr
     },
   });
 
-  if ((res.status === 401 || res.status === 403) && retry) {
-    try {
-      const loginRes = await adminLoginApi('srinivaspolepalli10@gmail.com', 'Srinivas@10');
-      if (loginRes.success && loginRes.token) {
-        return adminFetch<T>(path, options, false);
-      }
-    } catch {}
-
+  if (res.status === 401 || res.status === 403) {
     localStorage.removeItem('sbni_admin_token');
     localStorage.removeItem('sbni_admin_user');
     window.dispatchEvent(new Event('sbni_admin_auth_expired'));
