@@ -387,15 +387,18 @@ export const StaticPolicyPage: React.FC<StaticPolicyPageProps> = ({ pageType, on
                 </section>
 
                 <section className="space-y-2">
-                  <h2 className="text-base font-extrabold text-slate-900 font-heading">7. Grievance Officer & Contact</h2>
+                  <h2 className="text-base font-extrabold text-slate-900 font-heading">7. Legal Entity & Grievance Officer</h2>
                   <p>
-                    In accordance with the Information Technology Act 2000, the Digital Personal Data Protection Act 2023, and rules made thereunder, the Grievance Officer for Just Paisa is:
+                    In accordance with the Information Technology Act 2000, the Digital Personal Data Protection Act (DPDPA 2023), and rules made thereunder, the legal entity details and Grievance Officer for Just Paisa are:
                   </p>
-                  <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-xs space-y-1">
-                    <p><strong>Grievance Officer:</strong> Srinivas Polepalli</p>
-                    <p><strong>Entity:</strong> Just Paisa</p>
-                    <p><strong>Email:</strong> srinivaspolepalli10@gmail.com</p>
-                    <p><strong>Address:</strong> Hyderabad, Telangana, India</p>
+                  <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-xs space-y-1.5">
+                    <p><strong>Legal Entity Name:</strong> Just Paisa (Registered Micro Enterprise)</p>
+                    <p><strong>MSME Udyam Registration No:</strong> UDYAM-AP-13-0101061</p>
+                    <p><strong>Labour Department Registration (LIN):</strong> AP-08-52-015-04472896 (AP Shops &amp; Establishments Act)</p>
+                    <p><strong>Proprietor / Grievance Officer:</strong> Polepalli Srinivasulu</p>
+                    <p><strong>Official Contact Email:</strong> <a href="mailto:srinivaspolepalli10@gmail.com" className="text-blue-600 underline font-semibold">srinivaspolepalli10@gmail.com</a></p>
+                    <p><strong>Official Contact Phone:</strong> +91 8886284648</p>
+                    <p><strong>Registered Office Address:</strong> Door No: 6-6-26, Current Office Colony, Pamur Village &amp; Mandal, Prakasam District, Andhra Pradesh - 523108, India</p>
                   </div>
                 </section>
               </div>
