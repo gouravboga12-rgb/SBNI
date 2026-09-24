@@ -65,9 +65,9 @@
       "apiUrl": "https://justpaisa.in/api",
       "wsUrl": "https://justpaisa.in",
       "eas": {
-        "projectId": "cc531adf-480e-4deb-8f5d-bfa22156dcdb"
+        "projectId": "67cc8724-be6e-458b-b74e-7f2165c41e4c"
       }
     },
-    "owner": "zoro45"
+    "owner": "gouravboga"
   }
 }
