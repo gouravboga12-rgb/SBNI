@@ -255,10 +255,10 @@ export const StaticPolicyPage: React.FC<StaticPolicyPageProps> = ({ pageType, on
               <section className="space-y-2">
                 <h2 className="text-base font-extrabold text-slate-900 flex items-center gap-2 font-heading">
                   <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                  2. User Verification & Document Security
+                  2. User Verification & Information Security
                 </h2>
                 <p>
-                  All GST numbers, Aadhaar details, PAN cards, and business documentation uploaded during digital verification are encrypted with 256-bit SSL encryption. Data is shared exclusively with verified commercial partners upon your explicit mutual request.
+                  All profile details, shop addresses, and contact credentials provided during digital onboarding are protected with 256-bit SSL encryption. Contact details are shared exclusively with verified commercial partners upon your explicit mutual request.
                 </p>
               </section>
 
@@ -331,7 +331,7 @@ export const StaticPolicyPage: React.FC<StaticPolicyPageProps> = ({ pageType, on
                   <ul className="list-disc pl-5 space-y-1 text-xs sm:text-sm">
                     <li><strong>Account & Profile Details:</strong> Business owner name, enterprise/shop name, phone number, email address, physical address.</li>
                     <li><strong>Location Information:</strong> Geographic coordinates (latitude and longitude via GPS/Mapbox) to show nearby commercial businesses and financers.</li>
-                    <li><strong>Business Verification Credentials:</strong> GSTIN, PAN, and business registration or shop certificates uploaded for profile authenticity.</li>
+                    <li><strong>Shop Profile Media:</strong> Optional shop storefront photo uploaded to display in the business directory listing.</li>
                     <li><strong>Transaction Records:</strong> Subscription invoices and activation logs processed securely via Razorpay.</li>
                   </ul>
                 </section>
@@ -343,8 +343,8 @@ export const StaticPolicyPage: React.FC<StaticPolicyPageProps> = ({ pageType, on
                   </p>
                   <ul className="list-disc pl-5 space-y-1 text-xs sm:text-sm">
                     <li><strong>Location (Fine/Coarse):</strong> Used to calculate distance and display nearby verified commercial listings within your service radius.</li>
-                    <li><strong>Camera & Media / Photos:</strong> Used solely to capture and upload shop storefront photos and verification documents during KYC onboarding.</li>
-                    <li><strong>Notifications:</strong> Used to alert you in real-time about incoming commercial inquiries, profile verification updates, and subscription status.</li>
+                    <li><strong>Camera & Media / Photos:</strong> Used solely to capture and upload shop storefront photos for your directory listing.</li>
+                    <li><strong>Notifications:</strong> Used to alert you in real-time about incoming commercial inquiries, profile updates, and subscription status.</li>
                   </ul>
                 </section>
 

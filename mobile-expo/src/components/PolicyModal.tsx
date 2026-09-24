@@ -105,16 +105,16 @@ export const PolicyModal: React.FC<PolicyModalProps> = ({
               <View style={styles.policySection}>
                 <Text style={styles.sectionHeader}>Terms of Service & User Agreement</Text>
                 <Text style={styles.paragraph}>
-                  1. <Text style={styles.bold}>Platform Role:</Text> JustPaisa is a commercial marketplace connecting local shop owners with registered money financers and NBFCs. JustPaisa does not act as a lender or broker and charges 0% commission on loan disbursement amounts.
+                  1. <Text style={styles.bold}>Platform Role:</Text> JustPaisa is a commercial B2B directory connecting local shop owners with business financers and commercial facilitators. JustPaisa is NOT a bank, NBFC, or direct lender.
                 </Text>
                 <Text style={styles.paragraph}>
-                  2. <Text style={styles.bold}>KYC & Verification:</Text> All business owners and financers agree that all uploaded government identity documents (PAN, Aadhaar, Shop License, GST) are genuine and accurate representations of legal entities.
+                  2. <Text style={styles.bold}>Business Profiles:</Text> All shop owners and commercial partners agree that provided profile information, shop locations, and contact credentials are genuine representations of commercial entities.
                 </Text>
                 <Text style={styles.paragraph}>
-                  3. <Text style={styles.bold}>Subscription Validity & Stacking:</Text> Paid membership plans provide direct contact access and radius matching. Plan validity stacks continuously upon renewals and plan upgrades.
+                  3. <Text style={styles.bold}>Subscription Validity:</Text> Paid membership plans provide direct contact access and radius matching. Plan validity stacks continuously upon renewals and plan upgrades.
                 </Text>
                 <Text style={styles.paragraph}>
-                  4. <Text style={styles.bold}>Zero Commission Guarantee:</Text> All loan agreements, interest terms, and repayments are negotiated strictly and directly between the lender and borrower.
+                  4. <Text style={styles.bold}>Direct Communication:</Text> All commercial discussions and mutual agreements are negotiated strictly and directly between registered businesses.
                 </Text>
               </View>
             )}
@@ -123,16 +123,19 @@ export const PolicyModal: React.FC<PolicyModalProps> = ({
               <View style={styles.policySection}>
                 <Text style={styles.sectionHeader}>Privacy & Data Protection Policy</Text>
                 <Text style={styles.paragraph}>
-                  1. <Text style={styles.bold}>Data Collection:</Text> We collect business profile information, shop location coordinates, contact details, and uploaded KYC documents solely for the purpose of business matchmaking and verification.
+                  1. <Text style={styles.bold}>Non-Lending Declaration:</Text> JustPaisa is strictly a communication directory and does not provide loans or consumer credit.
                 </Text>
                 <Text style={styles.paragraph}>
-                  2. <Text style={styles.bold}>256-Bit Encryption:</Text> All user data, KYC files, and payment interactions are encrypted using industry-standard 256-bit SSL encryption.
+                  2. <Text style={styles.bold}>Data Collection:</Text> We collect business profile information (shop name, location coordinates, contact phone number, and optional storefront photo) solely for directory discovery.
                 </Text>
                 <Text style={styles.paragraph}>
-                  3. <Text style={styles.bold}>Contact Privacy:</Text> Your contact details are only shared with a financer when you explicitly initiate an inquiry, phone call, or WhatsApp chat with consent.
+                  3. <Text style={styles.bold}>256-Bit Encryption:</Text> All user data, contact requests, and payment interactions are encrypted using industry-standard 256-bit SSL encryption.
                 </Text>
                 <Text style={styles.paragraph}>
-                  4. <Text style={styles.bold}>No Third-Party Sale:</Text> We never sell or lease user data to third-party telemarketers or unauthorized agencies.
+                  4. <Text style={styles.bold}>Contact Privacy:</Text> Your contact details are only shared with a financer when you explicitly initiate an inquiry, phone call, or WhatsApp chat with consent.
+                </Text>
+                <Text style={styles.paragraph}>
+                  5. <Text style={styles.bold}>Account Deletion:</Text> You can request full deletion of your account and personal data at any time from your Profile settings or by emailing srinivaspolepalli10@gmail.com.
                 </Text>
               </View>
             )}
