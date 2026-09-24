@@ -271,47 +271,91 @@ export const StaticPolicyPage: React.FC<StaticPolicyPageProps> = ({ pageType, on
               </div>
             </div>
 
-            <div className="space-y-6 text-slate-700 text-sm leading-relaxed">
-              <section className="space-y-2">
-                <h2 className="text-base font-extrabold text-slate-900 font-heading">1. Information We Collect</h2>
+              <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs leading-relaxed space-y-1 mb-4">
+                <p className="font-bold">Applicability & Non-Lending Disclosure:</p>
                 <p>
-                  To deliver accurate B2B location-based directory discovery, we collect business contact details, company names, business addresses, geographic coordinates (latitude and longitude via GPS/Mapbox), email addresses, phone numbers, and identity verification credentials (such as PAN, GSTIN, and business registration certificates).
+                  This Privacy Policy applies to the <strong>Just Paisa</strong> platform, website (<strong>justpaisa.in</strong>), and the <strong>Just Paisa Mobile Application</strong> (Package: <code>com.justpaisa.app</code>). 
+                  Just Paisa is strictly a commercial B2B contact directory and communication facilitator. Just Paisa is <strong>NOT</strong> a bank, non-banking financial company (NBFC), moneylender, loan distributor, credit provider, or financial intermediary. Just Paisa does not issue loans, collect loan installments, make credit underwriting decisions, or offer consumer credit.
                 </p>
-              </section>
+              </div>
 
-              <section className="space-y-2">
-                <h2 className="text-base font-extrabold text-slate-900 font-heading">2. Purpose of Data Processing</h2>
-                <p>
-                  Data is processed strictly for authenticating business profiles, facilitating contact discovery between registered commercial enterprises, processing SaaS subscription payments via licensed payment aggregators (Razorpay), providing customer support, and complying with statutory recordkeeping obligations.
-                </p>
-              </section>
+              <div className="space-y-6 text-slate-700 text-sm leading-relaxed">
+                <section className="space-y-2">
+                  <h2 className="text-base font-extrabold text-slate-900 font-heading">1. Information We Collect</h2>
+                  <p>
+                    To deliver accurate B2B location-based directory discovery and business verification, we collect:
+                  </p>
+                  <ul className="list-disc pl-5 space-y-1 text-xs sm:text-sm">
+                    <li><strong>Account & Profile Details:</strong> Business owner name, enterprise/shop name, phone number, email address, physical address.</li>
+                    <li><strong>Location Information:</strong> Geographic coordinates (latitude and longitude via GPS/Mapbox) to show nearby commercial businesses and financers.</li>
+                    <li><strong>Business Verification Credentials:</strong> GSTIN, PAN, and business registration or shop certificates uploaded for profile authenticity.</li>
+                    <li><strong>Transaction Records:</strong> Subscription invoices and activation logs processed securely via Razorpay.</li>
+                  </ul>
+                </section>
 
-              <section className="space-y-2">
-                <h2 className="text-base font-extrabold text-slate-900 font-heading">3. Data Security & Encryption</h2>
-                <p>
-                  All data in transit is encrypted using 256-bit TLS/SSL encryption. Documents and databases are hosted on secured cloud infrastructure located within India in full compliance with Indian data sovereignty and RBI guidelines.
-                </p>
-              </section>
+                <section className="space-y-2">
+                  <h2 className="text-base font-extrabold text-slate-900 font-heading">2. Device Permissions Usage</h2>
+                  <p>
+                    The Just Paisa mobile application requests access to the following device permissions only when necessary:
+                  </p>
+                  <ul className="list-disc pl-5 space-y-1 text-xs sm:text-sm">
+                    <li><strong>Location (Fine/Coarse):</strong> Used to calculate distance and display nearby verified commercial listings within your service radius.</li>
+                    <li><strong>Camera & Media / Photos:</strong> Used solely to capture and upload shop storefront photos and verification documents during KYC onboarding.</li>
+                    <li><strong>Notifications:</strong> Used to alert you in real-time about incoming commercial inquiries, profile verification updates, and subscription status.</li>
+                  </ul>
+                </section>
 
-              <section className="space-y-2">
-                <h2 className="text-base font-extrabold text-slate-900 font-heading">4. Data Sharing & Third Parties</h2>
-                <p>
-                  We do NOT sell or rent your personal or business data to third-party marketing companies. Data is shared exclusively with partner businesses when you explicitly unlock a contact or initiate a communication request.
-                </p>
-              </section>
+                <section className="space-y-2">
+                  <h2 className="text-base font-extrabold text-slate-900 font-heading">3. Purpose of Data Processing</h2>
+                  <p>
+                    Data is processed strictly for authenticating business profiles, facilitating contact discovery between registered commercial enterprises, processing SaaS subscription payments via licensed payment aggregators (Razorpay), providing customer support, and complying with statutory recordkeeping obligations under Indian law.
+                  </p>
+                </section>
 
-              <section className="space-y-2">
-                <h2 className="text-base font-extrabold text-slate-900 font-heading">5. Grievance Officer</h2>
-                <p>
-                  In accordance with the Information Technology Act 2000 and rules made thereunder, the Grievance Officer for Just Paisa is:
-                </p>
-                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-xs space-y-1">
-                  <p><strong>Grievance Officer:</strong> Srinivas Polepalli</p>
-                  <p><strong>Email:</strong> srinivaspolepalli10@gmail.com</p>
-                  <p><strong>Address:</strong> Hyderabad, Telangana, India</p>
-                </div>
-              </section>
-            </div>
+                <section className="space-y-2">
+                  <h2 className="text-base font-extrabold text-slate-900 font-heading">4. Data Security & Encryption</h2>
+                  <p>
+                    All data in transit is protected using industry-standard 256-bit TLS/SSL encryption. Documents and databases are stored on secured cloud infrastructure located within India in full compliance with Indian data sovereignty and DPDPA 2023 guidelines.
+                  </p>
+                </section>
+
+                <section className="space-y-2">
+                  <h2 className="text-base font-extrabold text-slate-900 font-heading">5. Data Sharing & Third Parties</h2>
+                  <p>
+                    We do <strong>NOT</strong> sell, trade, or rent your personal or business data to third-party advertisers or brokers. Business contact information is shared exclusively with registered commercial users when you explicitly initiate an inquiry, unlock a contact, or respond to a mutual communication request.
+                  </p>
+                </section>
+
+                <section className="space-y-2">
+                  <h2 className="text-base font-extrabold text-slate-900 font-heading">6. Data Retention & Account Deletion Policy</h2>
+                  <p>
+                    You have the right to request deletion of your Just Paisa account and all associated personal and business data at any time.
+                  </p>
+                  <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-xs space-y-2">
+                    <p className="font-semibold text-slate-800">How to request account and data deletion:</p>
+                    <ol className="list-decimal pl-5 space-y-1">
+                      <li><strong>In-App:</strong> Navigate to your <strong>Profile / Settings</strong> tab within the Just Paisa mobile app or website and select <strong>Delete Account</strong>.</li>
+                      <li><strong>Email Request:</strong> Send an email from your registered email address to <a href="mailto:srinivaspolepalli10@gmail.com" className="text-blue-600 underline font-semibold">srinivaspolepalli10@gmail.com</a> with the subject <em>"Account Deletion Request"</em> along with your registered mobile number.</li>
+                    </ol>
+                    <p className="text-slate-500">
+                      Upon receiving your deletion request, your profile, active listings, documents, and contact details will be permanently removed from our active database within 30 days, except for transaction records required to be retained under Indian statutory taxation and accounting laws.
+                    </p>
+                  </div>
+                </section>
+
+                <section className="space-y-2">
+                  <h2 className="text-base font-extrabold text-slate-900 font-heading">7. Grievance Officer & Contact</h2>
+                  <p>
+                    In accordance with the Information Technology Act 2000, the Digital Personal Data Protection Act 2023, and rules made thereunder, the Grievance Officer for Just Paisa is:
+                  </p>
+                  <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-xs space-y-1">
+                    <p><strong>Grievance Officer:</strong> Srinivas Polepalli</p>
+                    <p><strong>Entity:</strong> Just Paisa (SBNI Marketplace)</p>
+                    <p><strong>Email:</strong> srinivaspolepalli10@gmail.com</p>
+                    <p><strong>Address:</strong> Hyderabad, Telangana, India</p>
+                  </div>
+                </section>
+              </div>
           </article>
         )}
 
