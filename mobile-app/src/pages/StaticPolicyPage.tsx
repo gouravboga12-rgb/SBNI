@@ -288,7 +288,7 @@ export const StaticPolicyPage: React.FC<StaticPolicyPageProps> = ({ pageType, on
                   <ul className="list-disc pl-5 space-y-1 text-xs sm:text-sm">
                     <li><strong>Account & Profile Details:</strong> Business owner name, enterprise/shop name, phone number, email address, physical address.</li>
                     <li><strong>Location Information:</strong> Geographic coordinates (latitude and longitude via GPS/Mapbox) to show nearby commercial businesses and financers.</li>
-                    <li><strong>Shop Profile Media:</strong> Optional shop storefront photo uploaded to display in the business directory listing.</li>
+                    <li><strong>Shop Verification & Media (Optional):</strong> Shop storefront photos and Shop & Establishment certificate (Labour Certificate / Trade License) uploaded solely to authenticate local merchant listings in the directory.</li>
                     <li><strong>Transaction Records:</strong> Subscription invoices and activation logs processed securely via Razorpay.</li>
                   </ul>
                 </section>
@@ -300,7 +300,7 @@ export const StaticPolicyPage: React.FC<StaticPolicyPageProps> = ({ pageType, on
                   </p>
                   <ul className="list-disc pl-5 space-y-1 text-xs sm:text-sm">
                     <li><strong>Location (Fine/Coarse):</strong> Used to calculate distance and display nearby verified commercial listings within your service radius.</li>
-                    <li><strong>Camera & Media / Photos:</strong> Used solely to capture and upload shop storefront photos for your directory listing.</li>
+                    <li><strong>Camera & Media / Photos:</strong> Used solely to capture and upload shop storefront photos or Labour / Shop Establishment certificates for merchant verification.</li>
                     <li><strong>Notifications:</strong> Used to alert you in real-time about incoming commercial inquiries, profile updates, and subscription status.</li>
                   </ul>
                 </section>
@@ -350,7 +350,7 @@ export const StaticPolicyPage: React.FC<StaticPolicyPageProps> = ({ pageType, on
                   </p>
                   <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-xs space-y-1">
                     <p><strong>Grievance Officer:</strong> Srinivas Polepalli</p>
-                    <p><strong>Entity:</strong> Just Paisa (SBNI Marketplace)</p>
+                    <p><strong>Entity:</strong> Just Paisa</p>
                     <p><strong>Email:</strong> srinivaspolepalli10@gmail.com</p>
                     <p><strong>Address:</strong> Hyderabad, Telangana, India</p>
                   </div>
