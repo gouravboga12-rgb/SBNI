@@ -32,7 +32,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onOpenPolicies }) 
   const handleToggleRole = () => {
     const nextRole = isVendor ? 'LENDER' : 'VENDOR';
     switchRole(nextRole);
-    Alert.alert('Account Switched', `Now operating as ${nextRole === 'VENDOR' ? 'Shop Vendor' : 'Business Money Financer'}.`);
+    Alert.alert('Account Switched', `Now operating as ${nextRole === 'VENDOR' ? 'Shop Vendor' : 'Commercial Partner'}.`);
   };
 
   const handleLogout = () => {
@@ -55,7 +55,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onOpenPolicies }) 
         <Text style={styles.userPhone}>+91 {user?.phone || '9553921237'}</Text>
         <View style={styles.roleBadge}>
           <Text style={styles.roleBadgeText}>
-            {isVendor ? 'Local Shop / Vendor' : 'Verified Money Financer'}
+            {isVendor ? 'Local Shop / Vendor' : 'Verified Commercial Partner'}
           </Text>
         </View>
       </View>

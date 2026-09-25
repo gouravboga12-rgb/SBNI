@@ -47,8 +47,11 @@ export const updateLenderProfile = async (req: AuthenticatedRequest, res: Respon
   const parsedRadius = lendingRadiusKm !== undefined && lendingRadiusKm !== null && !isNaN(Number(lendingRadiusKm)) ? parseFloat(String(lendingRadiusKm)) : undefined;
 
   let financerName = institutionName;
-  if (financerName && !financerName.toLowerCase().includes('money financer')) {
-    financerName = `${financerName} Money Financer`;
+  if (financerName) {
+    financerName = financerName.replace(/money financer/gi, 'Commercial Partner');
+    if (!financerName.toLowerCase().includes('commercial partner') && !financerName.toLowerCase().includes('partner')) {
+      financerName = `${financerName} Commercial Partner`;
+    }
   }
 
   // Update user phone / email if provided
@@ -117,7 +120,7 @@ export const updateLenderProfile = async (req: AuthenticatedRequest, res: Respon
     },
     create: {
       userId: userId!,
-      institutionName: financerName || 'Business Money Financer',
+      institutionName: financerName || 'Commercial Partner',
       institutionType: mapLenderTypeEnum(institutionType),
       registrationNumber: registrationNumber || 'REG-1001',
       loanCategories: Array.isArray(loanCategories) ? JSON.stringify(loanCategories) : JSON.stringify(['Business Loan']),
@@ -125,7 +128,7 @@ export const updateLenderProfile = async (req: AuthenticatedRequest, res: Respon
       maxLoanAmount: maxLoanAmount !== undefined && maxLoanAmount !== null ? parseFloat(String(maxLoanAmount)) : 100000,
       minInterestRate: minInterestRate !== undefined && minInterestRate !== null ? parseFloat(String(minInterestRate)) : 9.5,
       address: address || 'Default Address',
-      place: place || 'Financial District',
+      place: place || 'Commercial District',
       city: city || 'Hyderabad',
       state: state || 'Telangana',
       country: country || 'India',

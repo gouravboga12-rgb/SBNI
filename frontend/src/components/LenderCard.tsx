@@ -423,9 +423,10 @@ export const LenderCard: React.FC<LenderCardProps> = ({ lender, onOpenSubscripti
       {(() => {
         const rawLogo = lender.logoUrl || (lender as any).avatarUrl || (typeof window !== 'undefined' ? localStorage.getItem('sbni_lender_avatar') : null);
         const effectiveLogo = rawLogo && !rawLogo.includes('unsplash.com') ? rawLogo : '';
-        const displayName = lender.institutionName && !lender.institutionName.toLowerCase().includes('money financer')
-          ? `${lender.institutionName} Money Financer`
-          : (lender.institutionName || 'Business Money Financer');
+        let instClean = (lender.institutionName || 'Commercial Partner').replace(/money financer/gi, 'Commercial Partner');
+        const displayName = instClean && !instClean.toLowerCase().includes('commercial partner') && !instClean.toLowerCase().includes('partner')
+          ? `${instClean} Commercial Partner`
+          : (instClean || 'Commercial Partner');
 
         return (
           <div 

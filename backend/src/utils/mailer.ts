@@ -66,7 +66,7 @@ export async function sendSignupOtpEmail({
   role?: string;
 }) {
   const isVendor = role === 'VENDOR';
-  const roleLabel = isVendor ? 'Small Shop / Local Startup Business' : 'Business Money Financer (Lender)';
+  const roleLabel = isVendor ? 'Small Shop / Local Startup Business' : 'Commercial Partner';
   const primaryColor = isVendor ? '#003893' : '#007a33';
 
   const html = `
@@ -161,7 +161,7 @@ export async function sendForgotPasswordOtpEmail({
   role?: string;
 }) {
   const isVendor = role === 'VENDOR';
-  const roleLabel = isVendor ? 'Small Shop / Local Startup Business' : 'Business Money Financer';
+  const roleLabel = isVendor ? 'Small Shop / Local Startup Business' : 'Commercial Partner';
   const primaryColor = isVendor ? '#003893' : '#007a33';
 
   const html = `
@@ -276,7 +276,7 @@ export async function sendSubscriptionInvoiceEmail({
   isAutoPay = false,
 }: SubscriptionInvoiceMailParams) {
   const isVendor = role === 'VENDOR';
-  const roleLabel = isVendor ? 'Small Shop / Startup Business' : 'Business Money Financer';
+  const roleLabel = isVendor ? 'Small Shop / Startup Business' : 'Commercial Partner';
   const primaryColor = isVendor ? '#003893' : '#007a33';
   const issueDateStr = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
   const startStr = new Date(startDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });

@@ -86,14 +86,14 @@ export const ReferAndEarnModal: React.FC<ReferAndEarnModalProps> = ({
     try {
       await Share.share({
         title: 'Join JustPaisa Partner Network',
-        message: `Connect with 100% verified business money financers and shops on JustPaisa!\n\nSign up with my partner referral link and get welcome reward cashback:\n👉 ${referralLink}\n\nReferral Code: ${referralCode}`,
+        message: `Connect with 100% verified commercial partners and shops on JustPaisa!\n\nSign up with my partner referral link and get welcome reward cashback:\n👉 ${referralLink}\n\nReferral Code: ${referralCode}`,
       });
     } catch {}
   };
 
   const handleWhatsAppShare = () => {
     const text = encodeURIComponent(
-      `Hey! Connect with 100% verified business money financers and shops on JustPaisa.\n\nSign up with my partner referral link and get welcome reward cashback in your wallet:\n👉 ${referralLink}\n\nReferral Code: ${referralCode}`
+      `Hey! Connect with 100% verified commercial partners and shops on JustPaisa.\n\nSign up with my partner referral link and get welcome reward cashback in your wallet:\n👉 ${referralLink}\n\nReferral Code: ${referralCode}`
     );
     Linking.openURL(`https://wa.me/?text=${text}`).catch(() => {});
   };
@@ -121,7 +121,7 @@ export const ReferAndEarnModal: React.FC<ReferAndEarnModalProps> = ({
                 </View>
                 <View>
                   <Text style={styles.headerTitle}>Refer & Earn Rewards 🎁</Text>
-                  <Text style={styles.headerSub}>Invite shop businesses and money financers</Text>
+                  <Text style={styles.headerSub}>Invite shop businesses and commercial partners</Text>
                 </View>
               </View>
               <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
@@ -139,7 +139,7 @@ export const ReferAndEarnModal: React.FC<ReferAndEarnModalProps> = ({
                 <Text style={styles.heroPreTitle}>EXCLUSIVE PARTNER PROGRAM</Text>
                 <Text style={styles.heroTitle}>Earn up to ₹500 Cashback</Text>
                 <Text style={styles.heroDesc}>
-                  Share your link with businesses or money financers. When they subscribe, earn instant cashback directly in your wallet!
+                  Share your link with businesses or commercial partners. When they subscribe, earn instant cashback directly in your wallet!
                 </Text>
 
                 {/* Referral Code & Link Box */}

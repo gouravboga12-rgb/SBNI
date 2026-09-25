@@ -279,7 +279,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             `This account is registered as a ${
               result.user.role === 'VENDOR'
                 ? 'Small Shop / Local Startup Business'
-                : 'Business Money Financer'
+                : 'Commercial Partner'
             }. Please log in using the correct portal.`
           );
           setIsSubmitting(false);
@@ -905,7 +905,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     Please Login to Subscribe
                   </div>
                   <p className="text-slate-700 font-medium leading-relaxed">
-                    To choose and pay for a subscription plan, please select whether you are logging in as a <span className="font-extrabold text-[#003893]">Small Shop Business, Local Startup Business (Customer/Vendor)</span> or a <span className="font-extrabold text-[#007a33]">Business Money Financer (Lender)</span>:
+                    To choose and pay for a subscription plan, please select whether you are logging in as a <span className="font-extrabold text-[#003893]">Small Shop Business, Local Startup Business (Customer/Vendor)</span> or a <span className="font-extrabold text-[#007a33]">Commercial Partner</span>:
                   </p>
                 </div>
               </div>
@@ -922,7 +922,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     Small Shop Business, Local Startup Business
                   </h3>
                   <p className="text-xs text-slate-600 font-medium mt-0.5 leading-relaxed">
-                    Any small shop business or local startup business can login to check nearby business financers for money
+                    Any small shop business or local startup business can login to check nearby commercial partners
                   </p>
                 </div>
               </div>
@@ -957,7 +957,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               </div>
             </div>
 
-            {/* Business Money Financer */}
+            {/* Commercial Partner */}
             <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-br from-emerald-50/90 via-slate-50 to-emerald-50/40 border-2 border-emerald-200/80 shadow-md space-y-4 hover:border-[#007a33] transition-all">
               <div className="flex items-center gap-3.5">
                 <div className="w-12 h-12 rounded-2xl bg-[#007a33] text-white flex items-center justify-center shrink-0 shadow-md">
@@ -965,10 +965,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 </div>
                 <div>
                   <h3 className="text-lg font-extrabold text-[#007a33] font-heading leading-snug">
-                    Business Money Financer
+                    Commercial Partner
                   </h3>
                   <p className="text-xs text-slate-600 font-medium mt-0.5 leading-relaxed">
-                    Sign up or login as a Business Money Financer to provide Business Money directly to verified small shop and local startup businesses nearby.
+                    Sign up or login as a Commercial Partner to connect directly with verified small shops and local startup businesses nearby.
                   </p>
                 </div>
               </div>
@@ -985,7 +985,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   }}
                   className="py-3 px-3 rounded-xl bg-[#007a33] hover:bg-[#005e27] text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-md transition-all active:scale-[0.98]"
                 >
-                  <User className="w-4 h-4 shrink-0" /> Login as Financer
+                  <User className="w-4 h-4 shrink-0" /> Login as Partner
                 </button>
 
                 <button
@@ -998,7 +998,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   }}
                   className="py-3 px-3 rounded-xl bg-white hover:bg-emerald-50 text-[#007a33] border-2 border-[#007a33] font-extrabold text-xs flex items-center justify-center gap-2 shadow-sm transition-all active:scale-[0.98]"
                 >
-                  <UserPlus className="w-4 h-4 shrink-0" /> Sign Up as Financer
+                  <UserPlus className="w-4 h-4 shrink-0" /> Sign Up as Partner
                 </button>
               </div>
             </div>
@@ -1175,7 +1175,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   ? isRegister
                     ? businessCategory
                     : 'Small Shop / Local Startup Business'
-                  : 'Business Money Financer'}
+                  : 'Commercial Partner'}
               </div>
             </div>
 
@@ -1194,10 +1194,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   {isRegister
                     ? isVendor
                       ? `${businessCategory} Sign Up`
-                      : 'Business Money Financer Registration'
+                      : 'Commercial Partner Registration'
                     : isVendor
                     ? 'Small Shop / Local Startup Business Login'
-                    : 'Business Money Financer Login'}
+                    : 'Commercial Partner Login'}
                 </h2>
                 <p className="text-xs text-slate-500 font-medium mt-0.5">
                   {isRegister
@@ -1205,10 +1205,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       ? businessCategory === 'Small Shop Business'
                         ? 'Enter your shop details & all 6 required KYC verification documents.'
                         : 'Enter your startup details & required KYC verification documents (3 required, 3 optional).'
-                      : 'Sign up as a Business Money Financer. We will verify your official email with OTP.'
+                      : 'Sign up as a Commercial Partner. We will verify your official email with OTP.'
                     : isVendor
-                    ? 'Login as small shop business or local startup business owner to check nearby business financers for money'
-                    : 'Login as Business Money Financer to provide Business Money directly to verified small businesses'}
+                    ? 'Login as small shop business or local startup business owner to check nearby commercial partners'
+                    : 'Login as Commercial Partner to connect directly with verified small businesses'}
                 </p>
               </div>
             </div>
@@ -2619,7 +2619,7 @@ const LenderRegisterForm: React.FC<LenderRegisterFormProps> = ({
   const [lName, setLName] = useState('');
   const [lInstitution, setLInstitution] = useState('');
   const [isCustomFinancerName, setIsCustomFinancerName] = useState(false);
-  const [lType, setLType] = useState('Money Financer');
+  const [lType, setLType] = useState('Commercial Partner');
   const [lPhone, setLPhone] = useState('');
   const [lEmail, setLEmail] = useState('');
   const [lAddress, setLAddress] = useState('');
@@ -2691,12 +2691,12 @@ const LenderRegisterForm: React.FC<LenderRegisterFormProps> = ({
     }
   };
 
-  // Auto-sync Contact Officer Name to "Name Money Financer" (e.g. Gourav -> Gourav Money Financer)
+  // Auto-sync Contact Officer Name to "Name Commercial Partner" (e.g. Gourav -> Gourav Commercial Partner)
   const handleNameChange = (nameVal: string) => {
     setLName(nameVal);
     if (!isCustomFinancerName) {
       if (nameVal.trim().length > 0) {
-        setLInstitution(`${nameVal.trim()} Money Financer`);
+        setLInstitution(`${nameVal.trim()} Commercial Partner`);
       } else {
         setLInstitution('');
       }
@@ -2709,8 +2709,8 @@ const LenderRegisterForm: React.FC<LenderRegisterFormProps> = ({
   };
 
   const handleFinancerNameBlur = () => {
-    if (lInstitution.trim().length > 0 && !lInstitution.toLowerCase().includes('money financer')) {
-      setLInstitution(`${lInstitution.trim()} Money Financer`);
+    if (lInstitution.trim().length > 0 && !lInstitution.toLowerCase().includes('commercial partner')) {
+      setLInstitution(`${lInstitution.trim()} Commercial Partner`);
     }
   };
 
@@ -2722,16 +2722,16 @@ const LenderRegisterForm: React.FC<LenderRegisterFormProps> = ({
     }
 
     let finalFinancerName = lInstitution.trim();
-    if (finalFinancerName.length > 0 && !finalFinancerName.toLowerCase().includes('money financer')) {
-      finalFinancerName = `${finalFinancerName} Money Financer`;
+    if (finalFinancerName.length > 0 && !finalFinancerName.toLowerCase().includes('commercial partner')) {
+      finalFinancerName = `${finalFinancerName} Commercial Partner`;
     }
     if (!finalFinancerName && lName.trim()) {
-      finalFinancerName = `${lName.trim()} Money Financer`;
+      finalFinancerName = `${lName.trim()} Commercial Partner`;
     }
 
     let lat = lDetectedLocation?.latitude || 17.3850;
     let lng = lDetectedLocation?.longitude || 78.4867;
-    let placeName = lDetectedLocation?.place || lCity || 'Financial District';
+    let placeName = lDetectedLocation?.place || lCity || 'Commercial District';
 
     onFormReady({
       name: lName,
@@ -2739,7 +2739,7 @@ const LenderRegisterForm: React.FC<LenderRegisterFormProps> = ({
       phone: lPhone,
       password: lPassword,
       institutionName: finalFinancerName,
-      institutionType: lType || 'Money Financer',
+      institutionType: lType || 'Commercial Partner',
       address: lAddress,
       place: placeName,
       city: lCity,
@@ -2823,22 +2823,22 @@ const LenderRegisterForm: React.FC<LenderRegisterFormProps> = ({
       </div>
 
       {field('Full Name / Contact Officer', 'Enter Contact Officer Name (e.g. Gourav)', lName, handleNameChange)}
-      {field('Business Money Revenue', 'e.g. Gourav Money Financer', lInstitution, handleFinancerNameChange, 'text', true, handleFinancerNameBlur)}
+      {field('Commercial Partner Business Name', 'e.g. Gourav Commercial Partner', lInstitution, handleFinancerNameChange, 'text', true, handleFinancerNameBlur)}
 
       <div>
-        <label className="block text-xs font-bold text-slate-700 mb-1">Business Financer Type *</label>
+        <label className="block text-xs font-bold text-slate-700 mb-1">Partner Account Type *</label>
         <select
           value={lType}
           onChange={(e) => setLType(e.target.value)}
           className="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-medium text-slate-900 outline-none focus:border-[#007a33]"
         >
-          <option value="Money Financer">Money Financer</option>
+          <option value="Commercial Partner">Commercial Partner</option>
         </select>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {field('Mobile Number', '+91 98200 11223', lPhone, setLPhone, 'tel')}
-        {field('Official Email ID (For OTP)', 'financer@gmail.com', lEmail, setLEmail, 'email')}
+        {field('Official Email ID (For OTP)', 'partner@gmail.com', lEmail, setLEmail, 'email')}
       </div>
 
       {/* Office Address & Mapbox GPS Option */}

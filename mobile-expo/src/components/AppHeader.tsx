@@ -56,7 +56,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   const isVendor = role === 'VENDOR';
-  const displayName = user?.name || user?.fullName || (isVendor ? 'Shop Owner' : 'Financer');
+  const displayName = user?.name || user?.fullName || (isVendor ? 'Shop Owner' : 'Commercial Partner');
   const initial = displayName.charAt(0).toUpperCase();
 
   const handleMenuClick = (action?: () => void) => {
@@ -113,7 +113,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                   ]}
                   numberOfLines={1}
                 >
-                  {isVendor ? 'Shop' : 'Financer'}
+                  {isVendor ? 'Shop' : 'Partner'}
                 </Text>
               </View>
             )}
@@ -193,7 +193,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                     {displayName}
                   </Text>
                   <Text style={styles.drawerUserRole}>
-                    {isVendor ? '🏪 Small Shop / Startup Account' : '🏦 Money Financer Account'}
+                    {isVendor ? '🏪 Small Shop / Startup Account' : '🤝 Commercial Partner Account'}
                   </Text>
                 </View>
               </View>
@@ -229,7 +229,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                     <Store size={18} color="#059669" />
                   )}
                   <Text style={styles.drawerItemLabel}>
-                    {isVendor ? 'Discover Financers' : 'Shop / Startup Requests'}
+                    {isVendor ? 'Discover Partners' : 'Shop / Startup Requests'}
                   </Text>
                 </View>
                 <ChevronRight size={16} color="#94a3b8" />

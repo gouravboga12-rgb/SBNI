@@ -142,7 +142,7 @@ export async function registerLender(payload: {
       }
       return { success: true, token, user };
     }
-    return { success: false, message: res.data?.message || 'Financer registration failed' };
+    return { success: false, message: res.data?.message || 'Partner registration failed' };
   } catch (err: any) {
     return { success: false, message: err.response?.data?.message || err.message || 'Server connection failed.' };
   }
@@ -253,15 +253,19 @@ export async function fetchLenders(params?: {
     const res = await api.get('/vendors/lenders/search', { params });
     const rawLenders = res.data?.data || [];
     const parsedLenders: Lender[] = rawLenders.map((l: any) => {
-      let instName = l.institutionName || 'Business Money Financer';
+      let instName = l.institutionName || 'Commercial Partner';
+      instName = instName.replace(/money financer/gi, 'Commercial Partner');
+      if (!instName.toLowerCase().includes('commercial partner') && !instName.toLowerCase().includes('partner')) {
+        instName = `${instName} Commercial Partner`;
+      }
       return {
         id: l.id,
         institutionName: instName,
-        institutionType: l.institutionType || 'Money Financer',
+        institutionType: (l.institutionType || 'Commercial Partner').replace(/money financer/gi, 'Commercial Partner'),
         logoUrl: l.logoUrl || l.avatarUrl || undefined,
         avatarUrl: l.avatarUrl || l.logoUrl || undefined,
         registrationNumber: l.registrationNumber || l.id,
-        loanCategories: l.loanCategories || ['Daily Finance', 'Business Loan'],
+        loanCategories: l.loanCategories || ['Commercial Supply', 'Working Capital'],
         minLoanAmount: l.minLoanAmount !== undefined ? Number(l.minLoanAmount) : 5000,
         maxLoanAmount: l.maxLoanAmount !== undefined ? Number(l.maxLoanAmount) : 100000,
         minInterestRate: l.minInterestRate || 1.5,
@@ -278,7 +282,7 @@ export async function fetchLenders(params?: {
         rating: l.rating || 4.8,
         reviewCount: l.reviewCount || 12,
         successRate: l.successRate || '85% - 95%',
-        contactPersonName: l.contactPersonName || 'Financer Manager',
+        contactPersonName: l.contactPersonName || 'Partner Representative',
         contactUnlocked: l.contactUnlocked || false,
         phone: l.phone || '',
         email: l.email || undefined,
@@ -327,7 +331,7 @@ export async function updateLenderProfileApi(payload: any): Promise<{ success: b
     const res = await api.put('/lenders/profile', payload);
     return { success: res.data?.success, data: res.data?.data, message: res.data?.message };
   } catch (err: any) {
-    return { success: false, message: err.response?.data?.message || 'Failed to update financer profile.' };
+    return { success: false, message: err.response?.data?.message || 'Failed to update partner profile.' };
   }
 }
 

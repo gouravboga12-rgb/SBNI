@@ -100,7 +100,7 @@ export const VendorFinancersScreen: React.FC = () => {
         lender.contactUnlocked = true;
       } else {
         Alert.alert(
-          'Unlock Financer Contacts 🔒',
+          'Unlock Partner Contacts 🔒',
           'Unlock unlimited phone & WhatsApp contacts with a JustPaisa plan.',
           [
             { text: 'Later', style: 'cancel' },
@@ -159,7 +159,7 @@ export const VendorFinancersScreen: React.FC = () => {
             <Search size={18} color="#94a3b8" />
             <TextInput
               style={styles.searchInput}
-              placeholder="Search by financer name, city, loan type..."
+              placeholder="Search by partner name, city, service type..."
               placeholderTextColor="#94a3b8"
               value={searchQuery}
               onChangeText={setSearchQuery}
@@ -244,9 +244,9 @@ export const VendorFinancersScreen: React.FC = () => {
             <View style={styles.emptyIconBox}>
               <Building2 size={32} color="#003893" />
             </View>
-            <Text style={styles.emptyCardTitle}>No Financers Found</Text>
+            <Text style={styles.emptyCardTitle}>No Commercial Partners Found</Text>
             <Text style={styles.emptyCardDesc}>
-              No active financers found matching your search or radius. Try expanding your radius or changing your search terms.
+              No active commercial partners found matching your search or radius. Try expanding your radius or changing your search terms.
             </Text>
             <TouchableOpacity
               style={styles.emptyExploreBtn}
@@ -283,14 +283,14 @@ export const VendorFinancersScreen: React.FC = () => {
                 </View>
                 <View style={{ flex: 1 }}>
                   <View style={styles.titleRow}>
-                    <Text style={styles.instName}>{item.institutionName}</Text>
+                    <Text style={styles.instName}>{(item.institutionName || 'Commercial Partner').replace(/money financer/gi, 'Commercial Partner')}</Text>
                     <View style={styles.verifiedPill}>
                       <CheckCircle2 size={12} color="#16a34a" />
                       <Text style={styles.verifiedPillText}>Verified</Text>
                     </View>
                   </View>
                   <Text style={styles.subText}>
-                    {item.institutionType} • {item.city}, {item.state}
+                    {(item.institutionType || 'Commercial Partner').replace(/money financer/gi, 'Commercial Partner')} • {item.city}, {item.state}
                   </Text>
                 </View>
               </View>
@@ -307,7 +307,7 @@ export const VendorFinancersScreen: React.FC = () => {
               </View>
               <View style={styles.metricChip}>
                 <Building2 size={12} color="#003893" />
-                <Text style={styles.metricChipText}>{item.institutionType || 'Financer'}</Text>
+                <Text style={styles.metricChipText}>{(item.institutionType || 'Partner').replace(/money financer/gi, 'Commercial Partner')}</Text>
               </View>
             </View>
 

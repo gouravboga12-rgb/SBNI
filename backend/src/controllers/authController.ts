@@ -50,8 +50,8 @@ export const sendSignupOtp = async (req: Request, res: Response) => {
 
   if (existingUser && !existingUser.isDeleted) {
     if (existingUser.role !== role) {
-      const existingRoleLabel = existingUser.role === 'VENDOR' ? 'Small Shop / Local Startup Business' : 'Business Money Financer (Lender)';
-      const attemptedRoleLabel = role === 'VENDOR' ? 'Small Shop / Local Startup Business' : 'Business Money Financer (Lender)';
+      const existingRoleLabel = existingUser.role === 'VENDOR' ? 'Small Shop / Local Startup Business' : 'Commercial Partner';
+      const attemptedRoleLabel = role === 'VENDOR' ? 'Small Shop / Local Startup Business' : 'Commercial Partner';
       return res.status(400).json({
         success: false,
         message: `This email is already registered as a ${existingRoleLabel}. It cannot be registered as a ${attemptedRoleLabel}. Accounts are kept strictly separate.`,
@@ -180,8 +180,8 @@ export const registerUser = async (req: Request, res: Response) => {
       } catch (e) {}
     } else {
       if (existingUser.role !== role) {
-        const existingRoleLabel = existingUser.role === 'VENDOR' ? 'Small Shop / Local Startup Business' : 'Business Money Financer (Lender)';
-        const attemptedRoleLabel = role === 'VENDOR' ? 'Small Shop / Local Startup Business' : 'Business Money Financer (Lender)';
+        const existingRoleLabel = existingUser.role === 'VENDOR' ? 'Small Shop / Local Startup Business' : 'Commercial Partner';
+        const attemptedRoleLabel = role === 'VENDOR' ? 'Small Shop / Local Startup Business' : 'Commercial Partner';
         return res.status(400).json({
           success: false,
           message: `This account is already registered as a ${existingRoleLabel}. It cannot be registered as a ${attemptedRoleLabel}.`,
@@ -296,9 +296,10 @@ export const registerUser = async (req: Request, res: Response) => {
           },
         });
       } else if (role === 'LENDER') {
-        let financerName = businessName || req.body.institutionName || name || 'Business Money Financer';
-        if (!financerName.toLowerCase().includes('money financer')) {
-          financerName = `${financerName} Money Financer`;
+        let financerName = businessName || req.body.institutionName || name || 'Commercial Partner';
+        financerName = financerName.replace(/money financer/gi, 'Commercial Partner');
+        if (!financerName.toLowerCase().includes('commercial partner') && !financerName.toLowerCase().includes('partner')) {
+          financerName = `${financerName} Commercial Partner`;
         }
 
         let lenderLat = 17.3850;
@@ -326,14 +327,14 @@ export const registerUser = async (req: Request, res: Response) => {
             minLoanAmount: minLoanAmount ? parseFloat(minLoanAmount) : 10000,
             maxLoanAmount: maxLoanAmount ? parseFloat(maxLoanAmount) : 100000,
             lendingRadiusKm: lendingRadiusKm ? parseFloat(lendingRadiusKm) : 50,
-            address: address || 'Financial Center',
-            place: req.body.place || 'Financial District',
+            address: address || 'Commercial Center',
+            place: req.body.place || 'Commercial District',
             city: city || 'Hyderabad',
             state: state || 'Telangana',
             pincode: pincode || '500001',
             latitude: lenderLat,
             longitude: lenderLng,
-            contactPersonName: name || 'Lending Officer',
+            contactPersonName: name || 'Partner Representative',
             successRate: req.body.successRate || '80% - 90%',
             verificationStatus: 'VERIFIED',
             avatarUrl: req.body.avatarUrl || req.body.logoUrl || null,
@@ -418,7 +419,7 @@ export const loginUser = async (req: Request, res: Response) => {
     if (role === 'VENDOR' && user.role === 'LENDER') {
       return res.status(403).json({
         success: false,
-        message: 'This account is registered as a Business Money Financer (Lender). Please select "Login as Financer" to log in.',
+        message: 'This account is registered as a Commercial Partner. Please select "Login as Commercial Partner" to log in.',
       });
     }
     if (role === 'LENDER' && user.role === 'VENDOR') {
@@ -429,7 +430,7 @@ export const loginUser = async (req: Request, res: Response) => {
     }
     return res.status(403).json({
       success: false,
-      message: `Access denied. This account cannot be logged into as ${role === 'VENDOR' ? 'a Small Shop Business' : 'a Business Money Financer'}.`,
+      message: `Access denied. This account cannot be logged into as ${role === 'VENDOR' ? 'a Small Shop Business' : 'a Commercial Partner'}.`,
     });
   }
 
@@ -446,14 +447,14 @@ export const loginUser = async (req: Request, res: Response) => {
       const newLp = await prisma.lenderProfile.create({
         data: {
           userId: user.id,
-          institutionName: `${officerName} Money Financer`,
+          institutionName: `${officerName} Commercial Partner`,
           institutionType: 'FINANCIAL_INSTITUTION',
           registrationNumber: 'REG-' + Math.floor(100000 + Math.random() * 900000),
           loanCategories: JSON.stringify(['Business Loan', 'MSME Working Capital']),
           minLoanAmount: 10000,
           maxLoanAmount: 100000,
           lendingRadiusKm: 50,
-          address: 'Financial Center',
+          address: 'Commercial Center',
           city: 'Hyderabad',
           state: 'Telangana',
           pincode: '500001',
@@ -566,7 +567,7 @@ export const forgotPasswordRequest = async (req: Request, res: Response) => {
     if (role === 'VENDOR' && user.role === 'LENDER') {
       return res.status(403).json({
         success: false,
-        message: 'This account is registered as a Business Money Financer (Lender). Please reset password from the Financer section.',
+        message: 'This account is registered as a Commercial Partner. Please reset password from the Commercial Partner section.',
       });
     }
     if (role === 'LENDER' && user.role === 'VENDOR') {

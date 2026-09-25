@@ -224,14 +224,14 @@ export const getAllLenders = async (req: AuthenticatedRequest, res: Response) =>
         await prisma.lenderProfile.create({
           data: {
             userId: u.id,
-            institutionName: `${officerName} Money Financer`,
+            institutionName: `${officerName} Commercial Partner`,
             institutionType: 'FINANCIAL_INSTITUTION',
             registrationNumber: 'REG-' + Math.floor(100000 + Math.random() * 900000),
             loanCategories: JSON.stringify(['Business Loan', 'MSME Working Capital']),
             minLoanAmount: 10000,
             maxLoanAmount: 100000,
             lendingRadiusKm: 50,
-            address: 'Financial Center',
+            address: 'Commercial Center',
             city: 'Hyderabad',
             state: 'Telangana',
             pincode: '500001',
@@ -960,7 +960,7 @@ export const createFraudReport = async (req: AuthenticatedRequest, res: Response
       data: {
         vendorId: resolvedVendor.id,
         lenderId: resolvedLenderId,
-        reportedBy: reportedBy || (req.user as any)?.name || req.user?.email || 'Business Money Financer',
+        reportedBy: reportedBy || (req.user as any)?.name || req.user?.email || 'Commercial Partner',
         reason,
         evidenceUrl: evidenceUrl || null,
         status: 'PENDING',

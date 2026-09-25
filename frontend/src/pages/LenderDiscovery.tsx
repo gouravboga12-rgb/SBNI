@@ -61,10 +61,10 @@ export const LenderDiscovery: React.FC<LenderDiscoveryProps> = ({
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
           <div>
             <h1 className="text-3xl sm:text-4xl font-extrabold text-white font-heading">
-              Find <span className="gradient-text">Verified Business Money Financers (Lenders)</span> Nearby
+              Find <span className="gradient-text">Verified Commercial Partners</span> Nearby
             </h1>
             <p className="text-sm text-slate-300 mt-1">
-              Search nearby business money financers and lenders using distance radius and category filters.
+              Search nearby verified commercial partners using distance radius and category filters.
             </p>
           </div>
 

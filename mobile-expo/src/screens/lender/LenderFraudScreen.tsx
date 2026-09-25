@@ -94,7 +94,7 @@ export const LenderFraudScreen: React.FC = () => {
         shopName: shopName.trim(),
         vendorName: vendorName.trim() || undefined,
         vendorPhone: phone.trim() || undefined,
-        reportedBy: user?.name || user?.email || 'Money Financer',
+        reportedBy: user?.name || user?.email || 'Commercial Partner',
         reason: reason.trim(),
       });
 

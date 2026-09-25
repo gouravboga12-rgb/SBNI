@@ -45,7 +45,7 @@ const LENDER_BANNER_SLIDES: BannerSlide[] = [
   {
     id: 'lb-1',
     image: require('../../../assets/banners/lender_banner_1.png'),
-    title: 'Direct Borrower Marketplace for Money Financers',
+    title: 'Direct Business Marketplace for Commercial Partners',
     badge: '⚡ Verified Businesses',
   },
   {
@@ -194,11 +194,11 @@ export const LenderHomeScreen: React.FC = () => {
 
       {/* Hero Cards Container (Mirrors Website LenderDashboard) */}
       <View style={[styles.heroCardsContainer, isTablet && styles.heroCardsTablet]}>
-        {/* Financer Welcome Header */}
+        {/* Commercial Partner Welcome Header */}
         <View style={[styles.headerCard, isTablet && styles.heroCardTabletItem]}>
           <View style={{ flex: 1 }}>
             <Text style={styles.institutionTitle} numberOfLines={1}>
-              {lenderProfile?.institutionName || user?.name || 'Business Money Financer'}
+              {lenderProfile?.institutionName?.replace(/money financer/gi, 'Commercial Partner') || user?.name || 'Commercial Partner'}
             </Text>
             <TouchableOpacity
               onPress={() => setLocationPromptVisible(true)}
@@ -211,7 +211,7 @@ export const LenderHomeScreen: React.FC = () => {
             </TouchableOpacity>
           </View>
           <View style={styles.activeStatusBadge}>
-            <Text style={styles.activeStatusText}>Active Lending</Text>
+            <Text style={styles.activeStatusText}>Active Partner</Text>
           </View>
         </View>
 
@@ -221,18 +221,18 @@ export const LenderHomeScreen: React.FC = () => {
             <View style={styles.membershipBadge}>
               <Crown size={12} color={isSubscribed ? '#16a34a' : '#d97706'} />
               <Text style={styles.membershipBadgeText}>
-                {isSubscribed ? `VIP Financer Active (${daysRemaining} Days)` : 'Standard Account'}
+                {isSubscribed ? `VIP Partner Active (${daysRemaining} Days)` : 'Standard Account'}
               </Text>
             </View>
             <Headphones size={20} color="#007a33" />
           </View>
           <Text style={styles.membershipTitle}>
-            {isSubscribed ? `VIP Financer (${daysRemaining} Days Remaining)` : 'Financer Network Membership'}
+            {isSubscribed ? `VIP Partner (${daysRemaining} Days Remaining)` : 'Partner Network Membership'}
           </Text>
           <Text style={styles.membershipDesc}>
             {isSubscribed
               ? `Valid until ${formattedEndDate || 'Active'}. Full unlimited verified shop leads and direct applicant contacts.`
-              : 'Upgrade to VIP for unlimited leads across your full lending radius.'}
+              : 'Upgrade to VIP for unlimited leads across your full service radius.'}
           </Text>
           <TouchableOpacity
             style={styles.membershipBtn}
@@ -240,7 +240,7 @@ export const LenderHomeScreen: React.FC = () => {
             activeOpacity={0.85}
           >
             <Text style={styles.membershipBtnText}>
-              {isSubscribed ? 'Extend Validity / Upgrade' : 'Upgrade to VIP Financer'}
+              {isSubscribed ? 'Extend Validity / Upgrade' : 'Upgrade to VIP Partner'}
             </Text>
           </TouchableOpacity>
         </View>
@@ -278,7 +278,7 @@ export const LenderHomeScreen: React.FC = () => {
               <Text style={styles.referBadge}>Cashback</Text>
             </View>
             <Text style={styles.referSub}>
-              Earn instant cashback for every business or financer you invite!
+              Earn instant cashback for every business or partner you invite!
             </Text>
           </View>
           <ArrowRight size={18} color="#9333ea" />
@@ -295,7 +295,7 @@ export const LenderHomeScreen: React.FC = () => {
           <Text style={styles.radiusCurrentValue}>{activeRadius} km</Text>
         </View>
         <Text style={styles.radiusSectionDesc}>
-          Select your active lending distance. Vendors within this radius will be notified when you register and can apply for loans.
+          Select your active service distance. Businesses within this radius will be notified of your presence and can submit commercial inquiries.
         </Text>
         <View style={styles.radiusPillsRow}>
           {RADIUS_OPTIONS.map((km) => {
@@ -329,7 +329,7 @@ export const LenderHomeScreen: React.FC = () => {
           </View>
           <Text style={styles.emptyCardTitle}>No Inbound Enquiries Yet</Text>
           <Text style={styles.emptyCardDesc}>
-            You haven't received any loan applications yet. Explore Discovered Businesses to review nearby shops within your {activeRadius} km lending radius.
+            You haven't received any commercial inquiries yet. Explore Discovered Businesses to review nearby shops within your {activeRadius} km service radius.
           </Text>
           <TouchableOpacity
             style={styles.emptyExploreBtn}
@@ -477,7 +477,7 @@ export const LenderHomeScreen: React.FC = () => {
         visible={referModalVisible}
         onClose={() => setReferModalVisible(false)}
         userRole="LENDER"
-        userName={lenderProfile?.institutionName || user?.name || 'Financer'}
+        userName={lenderProfile?.institutionName?.replace(/money financer/gi, 'Commercial Partner') || user?.name || 'Commercial Partner'}
       />
 
       {/* Subscription Modal */}

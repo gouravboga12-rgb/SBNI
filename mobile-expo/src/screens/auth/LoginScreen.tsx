@@ -121,7 +121,8 @@ export const LoginScreen: React.FC = () => {
 
   // Lender Register Fields
   const [institutionName, setInstitutionName] = useState('');
-  const [institutionType, setInstitutionType] = useState('Money Financer');
+  const [isCustomInstitutionName, setIsCustomInstitutionName] = useState(false);
+  const [institutionType, setInstitutionType] = useState('Commercial Partner');
   const [lendingRadiusKm, setLendingRadiusKm] = useState(50);
   const [minLoanAmount, setMinLoanAmount] = useState('10000');
   const [maxLoanAmount, setMaxLoanAmount] = useState('500000');
@@ -319,8 +320,8 @@ export const LoginScreen: React.FC = () => {
         return;
       }
     } else {
-      if (!institutionName.trim()) {
-        Alert.alert('Missing Field', 'Please enter Financer / Institution Name.');
+      if (!institutionName.trim() && !fullName.trim()) {
+        Alert.alert('Missing Field', 'Please enter Commercial Partner Business Name or Contact Person Name.');
         return;
       }
       if (!fullName.trim()) {
@@ -473,15 +474,26 @@ export const LoginScreen: React.FC = () => {
 
         await login(regRes.token, regRes.user);
       } else {
-        // Register Lender
+        // Register Lender / Commercial Partner
+        let finalInstName = institutionName.trim();
+        if (finalInstName.length > 0 && !finalInstName.toLowerCase().includes('commercial partner') && !finalInstName.toLowerCase().includes('partner')) {
+          finalInstName = `${finalInstName} Commercial Partner`;
+        }
+        if (!finalInstName && fullName.trim()) {
+          finalInstName = `${fullName.trim()} Commercial Partner`;
+        }
+        if (!finalInstName) {
+          finalInstName = 'Commercial Partner';
+        }
+
         const regRes = await registerLender({
           name: fullName.trim(),
           email: otpTargetEmail,
           phone: phone.trim().replace(/\D/g, ''),
           password,
-          institutionName: institutionName.trim(),
-          institutionType,
-          address: address.trim() || 'Financial District',
+          institutionName: finalInstName,
+          institutionType: 'Commercial Partner',
+          address: address.trim() || 'Commercial District',
           city: city.trim() || 'Hyderabad',
           state: state.trim() || 'Telangana',
           pincode: pincode.trim() || '500001',
@@ -610,7 +622,7 @@ export const LoginScreen: React.FC = () => {
                     Small Shop Business, Local Startup Business
                   </Text>
                   <Text style={styles.selectCardDesc}>
-                    Any small shop business or local startup business can login to check nearby business financers for money.
+                    Any small shop business or local startup business can login to discover and connect with nearby commercial partners.
                   </Text>
                 </View>
               </View>
@@ -644,7 +656,7 @@ export const LoginScreen: React.FC = () => {
               </View>
             </View>
 
-            {/* Card 2: Business Money Financer */}
+            {/* Card 2: Commercial Partner */}
             <View style={styles.selectCardLender}>
               <View style={styles.selectCardHeader}>
                 <View style={styles.selectIconBoxLender}>
@@ -652,10 +664,10 @@ export const LoginScreen: React.FC = () => {
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.selectCardTitleLender}>
-                    Business Money Financer
+                    Commercial Partner
                   </Text>
                   <Text style={styles.selectCardDesc}>
-                    Sign up or login as a Business Money Financer to provide Business Money directly to verified small shop and local startup businesses nearby.
+                    Sign up or login as a Commercial Partner to connect directly with verified small shop and local startup businesses nearby.
                   </Text>
                 </View>
               </View>
@@ -671,7 +683,7 @@ export const LoginScreen: React.FC = () => {
                   activeOpacity={0.85}
                 >
                   <User size={16} color="#ffffff" />
-                  <Text style={styles.selectLoginBtnText}>Login as Financer</Text>
+                  <Text style={styles.selectLoginBtnText}>Login as Partner</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -684,7 +696,7 @@ export const LoginScreen: React.FC = () => {
                   activeOpacity={0.85}
                 >
                   <UserPlus size={16} color="#007a33" />
-                  <Text style={styles.selectSignUpBtnTextLender}>Sign Up as Financer</Text>
+                  <Text style={styles.selectSignUpBtnTextLender}>Sign Up as Partner</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -693,7 +705,7 @@ export const LoginScreen: React.FC = () => {
             <View style={styles.trustBadgeRow}>
               <ShieldCheck size={14} color="#64748b" />
               <Text style={styles.trustBadgeText}>
-                100% Verified FinTech Portal • Direct Financer Contact • 0% Commission
+                100% Verified B2B Directory • Direct Commercial Contact • 0% Commission
               </Text>
             </View>
           </View>
@@ -843,7 +855,7 @@ export const LoginScreen: React.FC = () => {
                     isVendor ? { color: '#003893' } : { color: '#007a33' },
                   ]}
                 >
-                  {isVendor ? (isRegister ? vendorCategory : 'Shop / Startup') : 'Money Financer'}
+                  {isVendor ? (isRegister ? vendorCategory : 'Shop / Startup') : 'Commercial Partner'}
                 </Text>
               </View>
             </View>
@@ -859,10 +871,10 @@ export const LoginScreen: React.FC = () => {
                 {isRegister
                   ? isVendor
                     ? `${vendorCategory} Sign Up`
-                    : 'Business Money Financer Registration'
+                    : 'Commercial Partner Registration'
                   : isVendor
                   ? 'Small Shop / Local Startup Business Login'
-                  : 'Business Money Financer Login'}
+                  : 'Commercial Partner Login'}
               </Text>
               <Text style={styles.formSub}>
                 {isRegister
@@ -870,10 +882,10 @@ export const LoginScreen: React.FC = () => {
                     ? vendorCategory === 'Small Shop Business'
                       ? 'Enter your shop details & required KYC verification documents (3 mandatory, 1 optional).'
                       : 'Enter your startup details & required KYC documents (Passport Photo & Aadhaar Card only).'
-                    : 'Sign up as a Business Money Financer. We will verify your official email with OTP.'
+                    : 'Sign up as a Commercial Partner. We will verify your official email with OTP.'
                   : isVendor
-                  ? 'Login to discover and connect with verified nearby business financers'
-                  : 'Login to provide business capital to verified local shops & startups'}
+                  ? 'Login to discover and connect with verified nearby commercial partners'
+                  : 'Login to connect with verified local shops & startups'}
               </Text>
             </View>
 
@@ -935,7 +947,7 @@ export const LoginScreen: React.FC = () => {
                     <ActivityIndicator color="#ffffff" />
                   ) : (
                     <Text style={styles.actionBtnText}>
-                      Login as {isVendor ? 'Shop / Startup' : 'Financer'}
+                      Login as {isVendor ? 'Shop / Startup' : 'Commercial Partner'}
                     </Text>
                   )}
                 </TouchableOpacity>
@@ -949,7 +961,7 @@ export const LoginScreen: React.FC = () => {
                     }}
                   >
                     <Text style={[styles.toggleAction, { color: primaryColor }]}>
-                      {isVendor ? 'Sign Up as Shop' : 'Sign Up as Financer'}
+                      {isVendor ? 'Sign Up as Shop' : 'Sign Up as Commercial Partner'}
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -1390,19 +1402,7 @@ export const LoginScreen: React.FC = () => {
               <View style={styles.formBody}>
                 <View style={styles.sectionHeader}>
                   <Building2 size={16} color="#007a33" />
-                  <Text style={[styles.sectionHeaderTitle, { color: '#007a33' }]}>Financer Profile</Text>
-                </View>
-
-                <Text style={styles.inputLabel}>Institution / Financer Name *</Text>
-                <View style={styles.inputBox}>
-                  <Building2 size={18} color="#94a3b8" style={styles.inputIcon} />
-                  <TextInput
-                    style={styles.textInput}
-                    placeholder="e.g. Apex Financers"
-                    placeholderTextColor="#94a3b8"
-                    value={institutionName}
-                    onChangeText={setInstitutionName}
-                  />
+                  <Text style={[styles.sectionHeaderTitle, { color: '#007a33' }]}>Commercial Partner Profile</Text>
                 </View>
 
                 <Text style={styles.inputLabel}>Contact Person Full Name *</Text>
@@ -1413,7 +1413,31 @@ export const LoginScreen: React.FC = () => {
                     placeholder="e.g. Ramesh Reddy"
                     placeholderTextColor="#94a3b8"
                     value={fullName}
-                    onChangeText={setFullName}
+                    onChangeText={(val) => {
+                      setFullName(val);
+                      if (!isCustomInstitutionName) {
+                        if (val.trim().length > 0) {
+                          setInstitutionName(`${val.trim()} Commercial Partner`);
+                        } else {
+                          setInstitutionName('');
+                        }
+                      }
+                    }}
+                  />
+                </View>
+
+                <Text style={styles.inputLabel}>Commercial Partner Business Name *</Text>
+                <View style={styles.inputBox}>
+                  <Building2 size={18} color="#94a3b8" style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.textInput}
+                    placeholder="e.g. Ramesh Commercial Partner"
+                    placeholderTextColor="#94a3b8"
+                    value={institutionName}
+                    onChangeText={(val) => {
+                      setIsCustomInstitutionName(true);
+                      setInstitutionName(val);
+                    }}
                   />
                 </View>
 

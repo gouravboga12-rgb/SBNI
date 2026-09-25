@@ -64,7 +64,7 @@ export const CustomTabBar: React.FC<CustomTabBarProps> = ({
       label = 'Home';
     } else if (route.name === 'Financers') {
       IconComponent = Users;
-      label = 'Financers';
+      label = 'Partners';
     } else if (route.name === 'Businesses') {
       IconComponent = Users;
       label = 'Businesses';

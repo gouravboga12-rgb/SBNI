@@ -1430,7 +1430,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                     </span>
                   </div>
                   <h2 className="text-xl sm:text-2xl font-extrabold font-heading text-white pt-1">
-                    Business Money Financers (Lenders) Near You
+                    Commercial Partners Near You
                   </h2>
                   <div className="text-xs text-slate-300 flex items-center gap-1.5 pt-0.5">
                     <MapPin className="w-4 h-4 text-rose-400 shrink-0" />
@@ -1490,7 +1490,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                   <input
                     type="text"
-                    placeholder="Search by financer institution name, loan category, or place..."
+                    placeholder="Search by commercial partner name, category, or place..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="w-full bg-white/10 text-white placeholder-slate-400 border border-white/20 rounded-2xl pl-11 pr-4 py-3 text-xs font-semibold focus:outline-none focus:bg-white/20 focus:border-white transition-all backdrop-blur-md"
@@ -1505,7 +1505,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
             {/* Results Count Bar */}
             <div className="flex items-center justify-between px-1">
               <div className="text-xs text-slate-600 font-bold">
-                Found <strong className="text-[#003893] font-black">{filteredLenders.length}</strong> eligible financer{filteredLenders.length === 1 ? '' : 's'} within service coverage of{' '}
+                Found <strong className="text-[#003893] font-black">{filteredLenders.length}</strong> eligible partner{filteredLenders.length === 1 ? '' : 's'} within service coverage of{' '}
                 <strong className="text-slate-900">{searchLocation.place || searchLocation.city}</strong>
               </div>
               <button
@@ -1529,13 +1529,13 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                     <span>🚀 Coverage Expanding Soon</span>
                   </div>
                   <h3 className="font-extrabold text-slate-900 text-lg sm:text-xl font-heading">
-                    No Registered Financers in This Area Yet
+                    No Registered Commercial Partners in This Area Yet
                   </h3>
                   <p className="text-xs text-slate-600 max-w-md mx-auto leading-relaxed">
-                    Currently, there are no registered business money financers covering <strong className="text-slate-900">{searchLocation.place || searchLocation.city}</strong> within their active radius.
+                    Currently, there are no registered commercial partners covering <strong className="text-slate-900">{searchLocation.place || searchLocation.city}</strong> within their active radius.
                   </p>
                   <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed pt-1">
-                    New verified financers and NBFC partners are onboarding and will be available in your location soon. For now, please explore adjacent business hubs or try searching a nearby city.
+                    New verified commercial partners are onboarding and will be available in your location soon. For now, please explore adjacent business hubs or try searching a nearby city.
                   </p>
                 </div>
 
@@ -1618,9 +1618,9 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-2xl font-extrabold text-slate-900 font-heading">My Applications & Financer Connections</h2>
+                  <h2 className="text-2xl font-extrabold text-slate-900 font-heading">My Inquiries & Partner Connections</h2>
                   <p className="text-xs text-slate-500 font-medium">
-                    Track your loan submissions and navigate to financer offices once approved
+                    Track your business inquiries and navigate to partner offices once approved
                   </p>
                 </div>
               </div>
@@ -1633,7 +1633,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                   <div>
                     <h3 className="text-lg font-extrabold text-slate-900 font-heading">No Inquiries Submitted Yet</h3>
                     <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1.5 leading-relaxed">
-                      You haven't submitted any inquiries yet. Explore verified financers and click <strong>Inquire Now</strong> to connect with lenders.
+                      You haven't submitted any inquiries yet. Explore verified commercial partners and click <strong>Inquire Now</strong> to connect directly.
                     </p>
                   </div>
                   <div className="pt-2">
@@ -1642,7 +1642,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                       className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs shadow-md transition-all active:scale-95 cursor-pointer inline-flex items-center gap-2"
                     >
                       <Search className="w-3.5 h-3.5" />
-                      <span>Explore Verified Financers</span>
+                      <span>Explore Commercial Partners</span>
                     </button>
                   </div>
                 </div>
@@ -1693,15 +1693,15 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                         <div className="flex items-start justify-between gap-3 flex-wrap sm:flex-nowrap">
                           <div>
                             <h3 className="font-extrabold text-slate-900 text-base">{app.title || app.shopName || 'Men\'s Store'}</h3>
-                            <p className="text-xs text-blue-900 font-bold mt-0.5">Financer: {app.lenderName}</p>
+                            <p className="text-xs text-blue-900 font-bold mt-0.5">Partner: {app.lenderName}</p>
                           </div>
 
-                          {/* Direct Financer Call & WhatsApp Action Buttons */}
+                          {/* Direct Partner Call & WhatsApp Action Buttons */}
                           <div className="flex items-center gap-2 shrink-0">
                             <a
                               href={callUrl}
                               className="px-3.5 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 font-extrabold text-xs flex items-center gap-1.5 shadow-xs transition-all active:scale-95 cursor-pointer hover:border-emerald-400"
-                              title={`Call Financer (${effectivePhone})`}
+                              title={`Call Partner (${effectivePhone})`}
                             >
                               <Phone className="w-3.5 h-3.5 text-emerald-600" />
                               <span>Call</span>
@@ -1740,7 +1740,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                               className="w-full py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-sm transition-all active:scale-95 cursor-pointer"
                             >
                               <Navigation className="w-4 h-4 text-white" />
-                              <span>🧭 Navigate to Financer Office (Google Maps)</span>
+                              <span>🧭 Navigate to Partner Office (Google Maps)</span>
                             </a>
                           ) : isRejected ? (
                             <div className="w-full space-y-2">
@@ -2735,7 +2735,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
           }`}
         >
           <Building2 className="w-5 h-5 sm:w-6 sm:h-6 text-slate-600" />
-          <span>Financers</span>
+          <span>Partners</span>
         </button>
 
         {/* Floating Action Button */}

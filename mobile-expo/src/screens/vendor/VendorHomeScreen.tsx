@@ -54,37 +54,37 @@ import { resolveDocumentUrl } from '../../utils/documentGenerators';
 
 const CATEGORIES = [
   'All',
-  'Daily Finance',
+  'Commercial Supply',
   'Working Capital',
   'MSME Support',
-  'Equipment Finance',
-  'Emergency Cash',
+  'Equipment & Inventory',
+  'Trade Partner',
 ];
 
 const VENDOR_BANNER_SLIDES: BannerSlide[] = [
   {
     id: 'vb-1',
     image: require('../../../assets/banners/vendor_banner_1.png'),
-    title: 'Instant Working Capital for Small Shops & Startups',
-    badge: '⚡ Direct Financers',
+    title: 'Instant Commercial Partners for Small Shops & Startups',
+    badge: '⚡ Direct Partners',
   },
   {
     id: 'vb-2',
     image: require('../../../assets/banners/vendor_banner_2.png'),
-    title: 'Zero Collateral Daily Business Financing Nearby',
-    badge: '✓ 100% Verified Financers',
+    title: 'Zero Brokerage Direct B2B Business Network Nearby',
+    badge: '✓ 100% Verified Partners',
   },
   {
     id: 'vb-3',
     image: require('../../../assets/banners/vendor_banner_3.png'),
-    title: 'Grow Your Shop Inventory with Fast Local Financing',
+    title: 'Grow Your Shop Inventory with Local Commercial Partners',
     badge: '🏪 Small Shop Support',
   },
   {
     id: 'vb-4',
     image: require('../../../assets/banners/vendor_banner_4.png'),
-    title: 'Direct Financer Contact • 0% Broker Commission',
-    badge: '⭐ Transparent Capital',
+    title: 'Direct Partner Contact • 0% Broker Commission',
+    badge: '⭐ Transparent Network',
   },
 ];
 
@@ -174,8 +174,8 @@ export const VendorHomeScreen: React.FC = () => {
         lender.contactUnlocked = true;
       } else {
         Alert.alert(
-          'Unlock Financer Contacts 🔒',
-          'Unlock direct phone and WhatsApp contact with all verified financers with a membership plan.',
+          'Unlock Partner Contacts 🔒',
+          'Unlock direct phone and WhatsApp contact with all verified commercial partners with a membership plan.',
           [
             { text: 'Later', style: 'cancel' },
             { text: 'View Plans', onPress: () => setSubModalVisible(true) },
@@ -260,7 +260,7 @@ export const VendorHomeScreen: React.FC = () => {
                 <View style={{ flex: 1 }}>
                   <Text style={styles.fraudTitle}>🚨 ACCOUNT UNDER VERIFICATION REVIEW</Text>
                   <Text style={styles.fraudDesc}>
-                    Your account has restricted loan application privileges. Please contact support.
+                    Your account has restricted inquiry privileges. Please contact support.
                   </Text>
                 </View>
               </View>
@@ -303,7 +303,7 @@ export const VendorHomeScreen: React.FC = () => {
                   Find Nearby Commercial Partners
                 </Text>
                 <Text style={styles.partnersDesc}>
-                  Discover verified commercial vendors & money financers within 10 KM for direct collaboration.
+                  Discover verified commercial vendors & partners within 10 KM for direct collaboration.
                 </Text>
                 <TouchableOpacity
                   style={styles.searchPartnersBtn}
@@ -439,7 +439,7 @@ export const VendorHomeScreen: React.FC = () => {
                 <Search size={18} color="#94a3b8" />
                 <TextInput
                   style={styles.searchInput}
-                  placeholder="Search financers by name, area, loan type..."
+                  placeholder="Search commercial partners by name, area, service type..."
                   placeholderTextColor="#94a3b8"
                   value={searchQuery}
                   onChangeText={setSearchQuery}
@@ -473,7 +473,7 @@ export const VendorHomeScreen: React.FC = () => {
             <View style={styles.resultsRow}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 <Text style={styles.resultsTitle}>
-                  Recommended Financers ({filteredLenders.length})
+                  Recommended Commercial Partners ({filteredLenders.length})
                 </Text>
                 <View style={styles.nearbyBadge}>
                   <Text style={styles.nearbyBadgeText}>⚡ Nearby</Text>
@@ -625,7 +625,7 @@ export const VendorHomeScreen: React.FC = () => {
           <View style={styles.statutoryFooter}>
             <ShieldCheck size={16} color="#64748b" />
             <Text style={styles.statutoryText}>
-              JustPaisa is a B2B discovery and directory network connecting verified small commercial businesses directly with independent capital financers. We do not act as a lender or broker.
+              JustPaisa is a B2B discovery and directory network connecting verified small commercial businesses directly with independent commercial partners. We do not act as a lender or broker.
             </Text>
           </View>
         }

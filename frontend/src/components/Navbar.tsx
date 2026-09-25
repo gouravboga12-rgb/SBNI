@@ -129,7 +129,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   ) : (
                     <>
                       <Building2 className="w-4 h-4 text-[#047857]" />
-                      <span>Business Money Financer Account</span>
+                      <span>Commercial Partner Account</span>
                     </>
                   )}
                 </div>
@@ -325,7 +325,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 >
                   <div className="flex items-center gap-3">
                     {isVendor ? <Building2 className="w-4 h-4 text-emerald-600" /> : <Store className="w-4 h-4 text-blue-600" />}
-                    <span>{isVendor ? 'Business Money Financers (Lenders)' : 'Shop / Startup Business Requests'}</span>
+                    <span>{isVendor ? 'Commercial Partners' : 'Shop / Startup Business Requests'}</span>
                   </div>
                   <ChevronRight className="w-4 h-4 text-slate-400" />
                 </button>

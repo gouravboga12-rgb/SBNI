@@ -306,11 +306,11 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
               )}
             </div>
             <div>
-              <div className="text-[11px] font-bold text-[#003893] uppercase tracking-wider">Business Money Financer</div>
-              <h3 className="font-extrabold text-slate-900 text-base leading-tight">{lender.institutionName}</h3>
+              <div className="text-[11px] font-bold text-[#003893] uppercase tracking-wider">Commercial Partner</div>
+              <h3 className="font-extrabold text-slate-900 text-base leading-tight">{(lender.institutionName || 'Commercial Partner').replace(/money financer/gi, 'Commercial Partner')}</h3>
               <div className="text-xs text-emerald-700 font-bold flex items-center gap-1 mt-0.5">
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                <span>{lender.institutionType && lender.institutionType !== 'NBFC' ? `${lender.institutionType} Financer` : 'Verified Financer Partner'}</span>
+                <span>Verified Commercial Partner</span>
               </div>
             </div>
           </div>

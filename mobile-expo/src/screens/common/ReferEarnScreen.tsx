@@ -33,7 +33,7 @@ export const ReferEarnScreen: React.FC = () => {
 
   const handleShareWhatsApp = () => {
     const text = encodeURIComponent(
-      `🔥 Connect with verified local business money financers on JustPaisa with 0% middleman commission!\n\nSign up with my invite link and get instant bonus:\n${shareLink}`
+      `🔥 Connect with verified local commercial partners on JustPaisa with 0% middleman commission!\n\nSign up with my invite link and get instant bonus:\n${shareLink}`
     );
     Linking.openURL(`https://wa.me/?text=${text}`);
   };

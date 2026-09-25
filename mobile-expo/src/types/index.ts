@@ -92,7 +92,7 @@ export interface LenderProfile {
 export interface Lender {
   id: string;
   institutionName: string;
-  institutionType: 'Bank' | 'NBFC' | 'Financial Institution' | 'Money Financer' | string;
+  institutionType: 'Bank' | 'NBFC' | 'Financial Institution' | 'Money Financer' | 'Commercial Partner' | string;
   logoUrl?: string;
   avatarUrl?: string;
   registrationNumber?: string;

@@ -272,7 +272,7 @@ export async function loginUser(
         return {
           success: false,
           message: `This account is registered as a ${
-            u.role === 'VENDOR' ? 'Small Shop / Local Startup Business' : 'Business Money Financer (Lender)'
+            u.role === 'VENDOR' ? 'Small Shop / Local Startup Business' : 'Commercial Partner'
           }. Please log in through the correct portal.`,
         };
       }
@@ -377,7 +377,7 @@ export async function registerLender(payload: {
       const user = data.data?.user || {};
       const fullLenderProfile = user.lenderProfile || {
         institutionName: payload.institutionName,
-        institutionType: 'Money Financer',
+        institutionType: 'Commercial Partner',
         contactPersonName: payload.name,
         minLoanAmount: payload.minLoanAmount,
         maxLoanAmount: payload.maxLoanAmount,
@@ -596,9 +596,10 @@ export async function fetchLenders(params?: {
 
     const rawLenders = data.data || [];
     const parsedLenders: Lender[] = rawLenders.map((l: any) => {
-      let instName = l.institutionName || 'Business Money Financer';
-      if (!instName.toLowerCase().includes('money financer')) {
-        instName = `${instName} Money Financer`;
+      let instName = l.institutionName || 'Commercial Partner';
+      instName = instName.replace(/money financer/gi, 'Commercial Partner');
+      if (!instName.toLowerCase().includes('commercial partner') && !instName.toLowerCase().includes('partner')) {
+        instName = `${instName} Commercial Partner`;
       }
       return {
         id: l.id,

@@ -26,10 +26,11 @@ export const LenderContactConsentModal: React.FC<LenderContactConsentModalProps>
 }) => {
   if (!isOpen || !lender) return null;
 
+  let instClean = (lender.institutionName || 'Commercial Partner').replace(/money financer/gi, 'Commercial Partner');
   const lenderName =
-    lender.institutionName && !lender.institutionName.toLowerCase().includes('money financer')
-      ? `${lender.institutionName} Money Financer`
-      : lender.institutionName || 'Business Money Financer';
+    instClean && !instClean.toLowerCase().includes('commercial partner') && !instClean.toLowerCase().includes('partner')
+      ? `${instClean} Commercial Partner`
+      : instClean || 'Commercial Partner';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-200">

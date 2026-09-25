@@ -80,7 +80,7 @@ export const ReferAndEarnModal: React.FC<ReferAndEarnModalProps> = ({
 
   const handleWhatsAppShare = () => {
     const message = encodeURIComponent(
-      `Hey! Connect with 100% verified business money financers and shops on JustPaisa.\n\nSign up with my partner referral link and get welcome reward cashback in your wallet for subscription upgrades:\n👉 ${referralLink}\n\nReferral Code: ${referralCode}`
+      `Hey! Connect with 100% verified commercial partners and shops on JustPaisa.\n\nSign up with my partner referral link and get welcome reward cashback in your wallet for subscription upgrades:\n👉 ${referralLink}\n\nReferral Code: ${referralCode}`
     );
     window.open(`https://wa.me/?text=${message}`, '_blank');
   };

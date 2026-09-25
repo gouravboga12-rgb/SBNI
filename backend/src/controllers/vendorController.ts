@@ -257,9 +257,10 @@ export const searchLenders = async (req: AuthenticatedRequest, res: Response) =>
     const maskedPhone = rawPhone.substring(0, 3) + '******' + rawPhone.substring(rawPhone.length - 2);
     const maskedEmail = lender.user?.email ? lender.user.email.replace(/(.{2})(.*)(?=@)/, '$1***') : 'contact***@lender.com';
 
-    let formattedInstName = lender.institutionName || 'Business Money Financer';
-    if (!formattedInstName.toLowerCase().includes('money financer')) {
-      formattedInstName = `${formattedInstName} Money Financer`;
+    let formattedInstName = lender.institutionName || 'Commercial Partner';
+    formattedInstName = formattedInstName.replace(/money financer/gi, 'Commercial Partner');
+    if (!formattedInstName.toLowerCase().includes('commercial partner') && !formattedInstName.toLowerCase().includes('partner')) {
+      formattedInstName = `${formattedInstName} Commercial Partner`;
     }
 
     return {

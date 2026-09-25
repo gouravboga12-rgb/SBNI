@@ -41,7 +41,7 @@ export async function configureNotificationChannels(): Promise<void> {
       });
 
       await Notifications.setNotificationChannelAsync('leads', {
-        name: 'JustPaisa Financing Inquiries',
+        name: 'JustPaisa Commercial Inquiries',
         importance: Notifications.AndroidImportance.HIGH,
         vibrationPattern: [0, 500, 250, 500],
         lightColor: '#10b981',
@@ -78,7 +78,7 @@ export async function registerForPushNotificationsAsync(showPrompt = false): Pro
       if (showPrompt) {
         Alert.alert(
           'Notifications Disabled',
-          'Please enable notification permissions in your Android Settings to receive instant financing inquiries and lead alerts.'
+          'Please enable notification permissions in your Android Settings to receive instant commercial inquiries and business lead alerts.'
         );
       }
       return undefined;

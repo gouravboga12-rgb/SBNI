@@ -117,7 +117,7 @@ export const VendorRequestsScreen: React.FC = () => {
       <View style={styles.filterHeader}>
         <Text style={styles.headerTitle}>My Inquiries</Text>
         <Text style={styles.headerSub}>
-          Track your direct business inquiries and connect with verified financers
+          Track your direct business inquiries and connect with verified commercial partners
         </Text>
 
         {/* Live Search Input */}
@@ -125,7 +125,7 @@ export const VendorRequestsScreen: React.FC = () => {
           <Search size={16} color="#94a3b8" />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search by financer name, notes, or status..."
+            placeholder="Search by partner name, notes, or status..."
             placeholderTextColor="#94a3b8"
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -192,7 +192,7 @@ export const VendorRequestsScreen: React.FC = () => {
             <Text style={styles.emptySub}>
               {searchQuery || statusFilter !== 'All'
                 ? 'No inquiries match your current search or filter criteria.'
-                : "You haven't submitted any inquiries yet. Explore verified financers and click Inquire Now to connect with lenders."}
+                : "You haven't submitted any inquiries yet. Explore verified commercial partners and click Inquire Now to connect directly."}
             </Text>
             <TouchableOpacity
               style={styles.exploreBtn}
@@ -200,7 +200,7 @@ export const VendorRequestsScreen: React.FC = () => {
               activeOpacity={0.85}
             >
               <Search size={15} color="#ffffff" />
-              <Text style={styles.exploreBtnText}>Explore Verified Financers</Text>
+              <Text style={styles.exploreBtnText}>Explore Commercial Partners</Text>
             </TouchableOpacity>
           </View>
         }
@@ -224,7 +224,8 @@ export const VendorRequestsScreen: React.FC = () => {
           const cleanPhone = (rawPhone || '').replace(/\D/g, '') || '9553921237';
           const effectivePhone = cleanPhone.length >= 10 ? cleanPhone.slice(-10) : cleanPhone;
 
-          const financerName = item.lenderName || (item.lender as any)?.institutionName || 'Business Money Financer';
+          const rawInstName = item.lenderName || (item.lender as any)?.institutionName || 'Commercial Partner';
+          const financerName = rawInstName.replace(/money financer/gi, 'Commercial Partner');
           const whatsAppMsg = encodeURIComponent(
             `Hello ${financerName}, I am contacting you regarding my business enquiry #${(item.id || '').substring(0, 8)} on Just Paisa App.`
           );
@@ -287,7 +288,7 @@ export const VendorRequestsScreen: React.FC = () => {
                   activeOpacity={0.8}
                 >
                   <Phone size={13} color="#15803d" />
-                  <Text style={styles.callBtnText}>Call Financer</Text>
+                  <Text style={styles.callBtnText}>Call Partner</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -378,7 +379,7 @@ export const VendorRequestsScreen: React.FC = () => {
                     Current Status:{' '}
                     <Text style={{ fontWeight: '700' }}>
                       {selectedRequest.status === 'Accepted'
-                        ? '✓ Accepted by Financer'
+                        ? '✓ Accepted by Partner'
                         : selectedRequest.status === 'Rejected'
                         ? '✕ Rejected'
                         : '⏳ Under Review'}
@@ -386,18 +387,18 @@ export const VendorRequestsScreen: React.FC = () => {
                   </Text>
                   <Text style={styles.statusCalloutSub}>
                     {selectedRequest.status === 'Accepted'
-                      ? 'The financer has approved your inquiry. You can call them directly or navigate to their office location on Google Maps.'
-                      : 'Your financing request is currently being reviewed by the financer partner.'}
+                      ? 'The commercial partner has approved your inquiry. You can call them directly or navigate to their office location on Google Maps.'
+                      : 'Your commercial inquiry is currently being reviewed by the partner.'}
                   </Text>
                 </View>
 
-                {/* Financer Info Card */}
+                {/* Partner Info Card */}
                 <View style={styles.sectionBox}>
-                  <Text style={styles.sectionTitle}>Financer Information</Text>
+                  <Text style={styles.sectionTitle}>Partner Information</Text>
                   <View style={styles.infoRow}>
-                    <Text style={styles.infoLabel}>Institution</Text>
+                    <Text style={styles.infoLabel}>Commercial Partner</Text>
                     <Text style={styles.infoValue}>
-                      {selectedRequest.lenderName || (selectedRequest.lender as any)?.institutionName || 'Verified Financer'}
+                      {(selectedRequest.lenderName || (selectedRequest.lender as any)?.institutionName || 'Commercial Partner').replace(/money financer/gi, 'Commercial Partner')}
                     </Text>
                   </View>
                   <View style={styles.infoRow}>
@@ -436,7 +437,7 @@ export const VendorRequestsScreen: React.FC = () => {
                       }}
                     >
                       <Navigation size={18} color="#ffffff" />
-                      <Text style={styles.fullNavBtnText}>Open Financer Office in Google Maps</Text>
+                      <Text style={styles.fullNavBtnText}>Open Partner Office in Google Maps</Text>
                     </TouchableOpacity>
                   </View>
                 )}

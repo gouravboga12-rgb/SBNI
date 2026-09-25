@@ -76,10 +76,11 @@ export const initSocket = (userId?: string, role?: string): Socket => {
   socket.on('lender:new_nearby', async (data) => {
     console.log('📍 [Socket Event] lender:new_nearby received:', data);
     try {
+      const partnerName = (data?.financerName || data?.institutionName || 'A verified commercial partner').replace(/money financer/gi, 'Commercial Partner');
       await Notifications.scheduleNotificationAsync({
         content: {
-          title: 'New Financer in Your Area! 🚀',
-          body: `${data?.financerName || data?.institutionName || 'A verified business financer'} is now lending within ${data?.radiusKm || data?.distanceKm || 50} km. Tap to inquire.`,
+          title: 'New Commercial Partner in Your Area! 🚀',
+          body: `${partnerName} is now active within ${data?.radiusKm || data?.distanceKm || 50} km. Tap to connect.`,
           data: { url: 'justpaisa://financers', lenderId: data?.lenderId },
           sound: true,
           priority: Notifications.AndroidNotificationPriority.MAX,
@@ -92,10 +93,14 @@ export const initSocket = (userId?: string, role?: string): Socket => {
   socket.on('new_lender_in_radius', async (data) => {
     console.log('📍 [Socket Event] new_lender_in_radius received:', data);
     try {
+      const rawTitle = data?.title || 'New Commercial Partner in Your Area! 🤝';
+      const cleanTitle = rawTitle.replace(/financer/gi, 'Commercial Partner');
+      const rawBody = data?.message || `${data?.institutionName || 'A new partner'} is now active within ${data?.distanceKm || 50} km of your shop.`;
+      const cleanBody = rawBody.replace(/financer/gi, 'commercial partner').replace(/lending/gi, 'active');
       await Notifications.scheduleNotificationAsync({
         content: {
-          title: data?.title || 'New Financer in Your Area! 💰',
-          body: data?.message || `${data?.institutionName || 'A new financer'} is now lending within ${data?.distanceKm || 50} km of your shop.`,
+          title: cleanTitle,
+          body: cleanBody,
           data: { url: 'justpaisa://financers', lenderId: data?.lenderId },
           sound: true,
           priority: Notifications.AndroidNotificationPriority.MAX,
@@ -111,8 +116,8 @@ export const initSocket = (userId?: string, role?: string): Socket => {
       const shopOrVendor = data?.vendorSnapshot?.shopName || data?.shopName || data?.vendor?.businessName || 'a verified vendor';
       await Notifications.scheduleNotificationAsync({
         content: {
-          title: 'New Loan Enquiry Received 🔔',
-          body: `New enquiry from ${shopOrVendor}. Tap to review KYC files and details.`,
+          title: 'New Commercial Enquiry Received 🔔',
+          body: `New enquiry from ${shopOrVendor}. Tap to review details.`,
           data: { url: 'justpaisa://reports', screen: 'Reports', leadId: data?.id },
           sound: true,
           priority: Notifications.AndroidNotificationPriority.MAX,
@@ -128,10 +133,10 @@ export const initSocket = (userId?: string, role?: string): Socket => {
       const isAccepted = data?.status === 'Accepted' || data?.status === 'Verified' || data?.status === 'Approved' || data?.status === 'Completed';
       await Notifications.scheduleNotificationAsync({
         content: {
-          title: isAccepted ? '🎉 Financing Request Approved!' : `Loan Enquiry ${data?.status || 'Updated'} 📋`,
+          title: isAccepted ? '🎉 Commercial Inquiry Accepted!' : `Business Enquiry ${data?.status || 'Updated'} 📋`,
           body: isAccepted
-            ? 'Your financing application has been accepted! Tap to view details and office navigation.'
-            : `Your financing application status has been updated to ${data?.status}.`,
+            ? 'Your commercial inquiry has been accepted! Tap to view details and office navigation.'
+            : `Your commercial inquiry status has been updated to ${data?.status}.`,
           data: { url: 'justpaisa://requests', screen: 'Requests', leadId: data?.leadId },
           sound: true,
           priority: Notifications.AndroidNotificationPriority.MAX,

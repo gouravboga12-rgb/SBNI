@@ -139,10 +139,11 @@ function resolveInitialLenderDetails(currentUser: any) {
     }
 
     let financerName = profile?.institutionName || '';
-    if (!financerName || financerName === 'Business Money Financer' || financerName.includes('@')) {
-      financerName = `${officer} Money Financer`;
-    } else if (!financerName.toLowerCase().includes('money financer')) {
-      financerName = `${financerName} Money Financer`;
+    financerName = financerName.replace(/money financer/gi, 'Commercial Partner');
+    if (!financerName || financerName === 'Commercial Partner' || financerName.includes('@')) {
+      financerName = `${officer} Commercial Partner`;
+    } else if (!financerName.toLowerCase().includes('commercial partner') && !financerName.toLowerCase().includes('partner')) {
+      financerName = `${financerName} Commercial Partner`;
     }
 
     return {
@@ -153,7 +154,7 @@ function resolveInitialLenderDetails(currentUser: any) {
       city: profile?.city || 'Hyderabad',
       state: profile?.state || 'Telangana',
       regNo: profile?.registrationNumber || 'REG-FIN-1001',
-      institutionType: 'Money Financer',
+      institutionType: 'Commercial Partner',
       minLoan: profile?.minLoanAmount ?? 10000,
       maxLoan: profile?.maxLoanAmount ?? 100000,
       minRate: profile?.minInterestRate || 9.5,
@@ -377,7 +378,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
           const lp = u.lenderProfile;
 
           let officer = lp?.contactPersonName || u.name || u.fullName || '';
-          if (!officer || officer.includes('@') || officer === 'Credit Officer' || officer === 'Business Money Financer') {
+          if (!officer || officer.includes('@') || officer === 'Credit Officer' || officer === 'Business Money Financer' || officer === 'Commercial Partner') {
             if (u.email?.toLowerCase().includes('gourav')) officer = 'Gourav';
             else if (u.email) {
               const handle = u.email.split('@')[0].replace(/[0-9_.-]/g, ' ').trim();
@@ -386,10 +387,11 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
           }
 
           let financer = lp?.institutionName || '';
-          if (!financer || financer === 'Business Money Financer' || financer.includes('@')) {
-            financer = `${officer} Money Financer`;
-          } else if (!financer.toLowerCase().includes('money financer')) {
-            financer = `${financer} Money Financer`;
+          financer = financer.replace(/money financer/gi, 'Commercial Partner');
+          if (!financer || financer === 'Commercial Partner' || financer.includes('@')) {
+            financer = `${officer} Commercial Partner`;
+          } else if (!financer.toLowerCase().includes('commercial partner') && !financer.toLowerCase().includes('partner')) {
+            financer = `${financer} Commercial Partner`;
           }
 
           if (lp?.avatarUrl || lp?.logoUrl) {
@@ -416,7 +418,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
             city: lp?.city || 'Hyderabad',
             state: lp?.state || 'Telangana',
             regNo: lp?.registrationNumber || 'REG-FIN-1001',
-            institutionType: 'Money Financer',
+            institutionType: 'Commercial Partner',
             minLoan: lp?.minLoanAmount ?? 5000,
             maxLoan: lp?.maxLoanAmount ?? 100000,
             minRate: lp?.minInterestRate || 9.5,
@@ -472,7 +474,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
         await updateLenderProfileApi({
           avatarUrl: hostedUrl,
           logoUrl: hostedUrl,
-          institutionName: currentUserObj?.name || 'Business Money Financer',
+          institutionName: currentUserObj?.name || 'Commercial Partner',
           contactPersonName: currentUserObj?.contactPerson || 'Credit Officer',
           minLoanAmount: currentUserObj?.minLoan || 5000,
           maxLoanAmount: currentUserObj?.maxLoan || 100000,
@@ -541,8 +543,9 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
     setIsSavingLenderProfile(true);
     try {
       let instName = lenderEditForm.institutionName.trim();
-      if (!instName.toLowerCase().includes('money financer')) {
-        instName = `${instName} Money Financer`;
+      instName = instName.replace(/money financer/gi, 'Commercial Partner');
+      if (!instName.toLowerCase().includes('commercial partner') && !instName.toLowerCase().includes('partner')) {
+        instName = `${instName} Commercial Partner`;
       }
 
       const updatedUserObj = {
@@ -1552,7 +1555,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                     <div className="text-xs text-blue-200 font-medium">Welcome Back,</div>
                     <h2 className="text-2xl md:text-3xl font-extrabold text-white font-heading">{currentUserObj.name}</h2>
                     <div className="inline-flex px-3.5 py-1 rounded-full bg-emerald-500/25 text-emerald-200 text-xs font-bold border border-emerald-400/40 shadow-sm backdrop-blur-md">
-                      Business Money Financer Account
+                      Commercial Partner Account
                     </div>
                   </div>
 
@@ -1587,7 +1590,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
               ) : (
                 <div className="card-blue-header p-5 md:p-6 shadow-lg relative overflow-hidden flex flex-col justify-between lg:col-span-2 min-h-[160px]">
                   <div className="space-y-2 z-10">
-                    <div className="text-xs text-blue-200 font-medium uppercase tracking-wider">Business Money Financer Portal</div>
+                    <div className="text-xs text-blue-200 font-medium uppercase tracking-wider">Commercial Partner Portal</div>
                     <h2 className="text-2xl md:text-3xl font-extrabold text-white font-heading">Local Business Lending CRM</h2>
                     <p className="text-xs text-blue-100 max-w-lg leading-relaxed">
                       Log in to inspect verified local shop applicants, review KYC documents, and approve working capital requests.
@@ -1727,16 +1730,16 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                       <Lock className="w-6 h-6" />
                     </div>
                     <div className="space-y-1">
-                      <h4 className="text-base font-extrabold text-slate-900 font-heading">Financer Sign In Required</h4>
+                      <h4 className="text-base font-extrabold text-slate-900 font-heading">Partner Sign In Required</h4>
                       <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                        Please log in to your Money Financer account to view recent applicant verification requests.
+                        Please log in to your Commercial Partner account to view recent applicant verification requests.
                       </p>
                     </div>
                     <button
                       onClick={onOpenAuth}
                       className="btn-sbni-blue py-2.5 px-6 text-xs font-extrabold shadow-md mx-auto flex items-center gap-1.5 cursor-pointer"
                     >
-                      <span>Log In as Money Financer</span>
+                      <span>Log In as Commercial Partner</span>
                     </button>
                   </div>
                 ) : requests.length === 0 ? (
@@ -1744,7 +1747,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                     <Clock className="w-10 h-10 text-slate-400 mx-auto" />
                     <div className="font-bold text-slate-700 text-sm">No Recent Applied Requests</div>
                     <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                      Vendors who submit loan requests specifically to your business money financer account will appear here.
+                      Vendors who submit inquiries specifically to your commercial partner account will appear here.
                     </p>
                     <button onClick={handleBusinessesClick} className="btn-sbni-green text-xs py-2 px-4 font-bold mx-auto">
                       Explore All Registered Shop Businesses
@@ -2040,16 +2043,16 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                 <FileText className="w-8 h-8" />
               </div>
               <div className="space-y-2">
-                <h3 className="text-xl font-extrabold text-slate-900 font-heading">Financer Login Required</h3>
+                <h3 className="text-xl font-extrabold text-slate-900 font-heading">Partner Login Required</h3>
                 <p className="text-xs text-slate-500 max-w-sm mx-auto leading-relaxed">
-                  Please log in to your Business Money Financer account to access your loan inspection history and applicant verification reports.
+                  Please log in to your Commercial Partner account to access your lead inspection history and applicant verification reports.
                 </p>
               </div>
               <button
                 onClick={onOpenAuth}
                 className="btn-sbni-blue py-3 px-8 text-xs font-extrabold shadow-lg mx-auto flex items-center gap-2 cursor-pointer"
               >
-                <span>Log In as Business Money Financer</span>
+                <span>Log In as Commercial Partner</span>
               </button>
             </div>
           ) : (
@@ -3013,16 +3016,16 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                 <Lock className="w-8 h-8" />
               </div>
               <div className="space-y-2">
-                <h3 className="text-xl font-extrabold text-slate-900 font-heading">Financer Login Required</h3>
+                <h3 className="text-xl font-extrabold text-slate-900 font-heading">Partner Login Required</h3>
                 <p className="text-xs text-slate-500 max-w-sm mx-auto leading-relaxed">
-                  Please log in to your Business Money Financer account to view or edit your lending institution details, interest rates, and service radius.
+                  Please log in to your Commercial Partner account to view or edit your partner business details, rates, and service radius.
                 </p>
               </div>
               <button
                 onClick={onOpenAuth}
                 className="btn-sbni-blue py-3 px-8 text-xs font-extrabold shadow-lg mx-auto flex items-center gap-2 cursor-pointer"
               >
-                <span>Log In as Business Money Financer</span>
+                <span>Log In as Commercial Partner</span>
               </button>
             </div>
           ) : (
@@ -3082,7 +3085,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                     <span className="truncate max-w-[200px] sm:max-w-none">{isEditingLenderProfile ? lenderEditForm.contactPerson || currentUserObj.contactPerson : currentUserObj.contactPerson}</span>
                     <span className="text-slate-300">•</span>
                     <span className="text-slate-500 font-medium">
-                      Money Financer
+                      Commercial Partner
                     </span>
                   </div>
 
