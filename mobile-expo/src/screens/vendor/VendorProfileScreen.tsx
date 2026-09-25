@@ -1063,6 +1063,21 @@ export const VendorProfileScreen: React.FC = () => {
         )}
       </View>
 
+      {/* ── LOGOUT OPTION ── */}
+      <TouchableOpacity
+        style={styles.logoutBtn}
+        onPress={() => {
+          Alert.alert('Confirm Logout', 'Are you sure you want to sign out of your account?', [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Logout', style: 'destructive', onPress: logout },
+          ]);
+        }}
+        activeOpacity={0.85}
+      >
+        <LogOut size={18} color="#dc2626" />
+        <Text style={styles.logoutBtnText}>Logout</Text>
+      </TouchableOpacity>
+
       {/* Modals */}
       <SubscriptionModal
         visible={subModalVisible}
@@ -1788,5 +1803,28 @@ const styles = StyleSheet.create({
     color: '#003893',
     fontSize: 12,
     fontWeight: '800',
+  },
+  logoutBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#fff1f2',
+    borderWidth: 1.5,
+    borderColor: '#fecdd3',
+    borderRadius: 16,
+    paddingVertical: 14,
+    marginTop: 14,
+    marginBottom: 30,
+    shadowColor: '#dc2626',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  logoutBtnText: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#dc2626',
   },
 });

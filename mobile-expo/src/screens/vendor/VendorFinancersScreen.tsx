@@ -37,6 +37,16 @@ import { LoanRequestModal } from '../../components/LoanRequestModal';
 import { LocationPickerModal } from '../../components/LocationPickerModal';
 import { resolveDocumentUrl } from '../../utils/documentGenerators';
 
+const cleanPartnerType = (type?: string): string => {
+  if (!type) return 'Commercial Partner';
+  return type
+    .replace(/NBFC/gi, 'Commercial Enterprise')
+    .replace(/FINANCIAL_INSTITUTION/gi, 'Commercial Partner')
+    .replace(/money financer/gi, 'Commercial Partner')
+    .replace(/Financer/gi, 'Commercial Partner')
+    .replace(/Lender/gi, 'Partner');
+};
+
 const RADIUS_CHIPS = [10, 25, 50, 70, 100];
 const CATEGORIES = [
   'All',
@@ -307,7 +317,7 @@ export const VendorFinancersScreen: React.FC = () => {
                     </View>
                   </View>
                   <Text style={styles.subText}>
-                    {(item.institutionType || 'Commercial Partner').replace(/money financer/gi, 'Commercial Partner')} • {item.city}, {item.state}
+                    {cleanPartnerType(item.institutionType)} • {item.city}, {item.state}
                   </Text>
                 </View>
               </View>
@@ -324,7 +334,7 @@ export const VendorFinancersScreen: React.FC = () => {
               </View>
               <View style={styles.metricChip}>
                 <Building2 size={12} color="#003893" />
-                <Text style={styles.metricChipText}>{(item.institutionType || 'Partner').replace(/money financer/gi, 'Commercial Partner')}</Text>
+                <Text style={styles.metricChipText}>{cleanPartnerType(item.institutionType)}</Text>
               </View>
             </View>
 

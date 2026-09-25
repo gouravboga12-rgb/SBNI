@@ -40,6 +40,8 @@ import {
   Headphones,
   User,
   Crown,
+  Coins,
+  TrendingUp,
 } from 'lucide-react-native';
 import { useAuth } from '../../context/AuthContext';
 import { fetchLenders, unlockLenderContact, fetchReferEarnStatusApi } from '../../services/api';
@@ -530,134 +532,117 @@ export const VendorHomeScreen: React.FC = () => {
         renderItem={({ item }) => {
           const rawLogo = item.logoUrl || item.avatarUrl;
           const hasCustomLogo = rawLogo && !rawLogo.includes('unsplash.com');
+          const cleanInstName = (item.institutionName || 'Commercial Partner').replace(/money financer/gi, 'Commercial Partner');
+          const minAmt = (item.minLoanAmount || 5000).toLocaleString('en-IN');
+          const maxAmt = (item.maxLoanAmount || 100000).toLocaleString('en-IN');
+          const successRateText = item.successRate && item.successRate.toLowerCase().includes('success rate')
+            ? item.successRate
+            : `${item.successRate || '85% - 95%'} Success Rate on Borrowing Money`;
 
           return (
-            <View style={styles.lenderCard}>
-              {/* Header: Partner Name, Type, Rating & Distance */}
-              <View style={styles.cardTop}>
-                <View style={styles.instIcon}>
+            <View style={styles.cleanLenderCard}>
+              {/* Top Row: Logo, Name & Verified Partner badge */}
+              <View style={styles.cleanCardTop}>
+                <View style={styles.cleanLogoBox}>
                   {hasCustomLogo ? (
                     <Image
                       source={{ uri: resolveDocumentUrl(rawLogo) }}
-                      style={styles.instLogo}
+                      style={styles.cleanLogoImg}
                       resizeMode="cover"
                     />
                   ) : (
-                    <Text style={{ fontSize: 18, fontWeight: '800', color: '#007a33' }}>
-                      {item.institutionName ? item.institutionName.charAt(0).toUpperCase() : 'F'}
-                    </Text>
+                    <View style={styles.cleanLogoFallback}>
+                      <Text style={styles.cleanLogoFallbackText}>
+                        {cleanInstName.charAt(0).toUpperCase() || 'P'}
+                      </Text>
+                    </View>
                   )}
                 </View>
-                <View style={{ flex: 1 }}>
-                  <View style={styles.nameRow}>
-                    <Text style={styles.instName}>{item.institutionName}</Text>
-                    <View style={styles.verifiedBadge}>
-                      <CheckCircle2 size={12} color="#16a34a" />
-                      <Text style={styles.verifiedText}>Verified</Text>
-                    </View>
-                  </View>
-                  <Text style={styles.instType}>
-                    {item.institutionType} • {item.registrationNumber || 'Registered'}
+
+                <View style={{ flex: 1, justifyContent: 'center' }}>
+                  <Text style={styles.cleanInstName} numberOfLines={1}>
+                    {cleanInstName}
                   </Text>
+                  <View style={styles.cleanVerifiedBadge}>
+                    <CheckCircle2 size={13} color="#16a34a" />
+                    <Text style={styles.cleanVerifiedText}>Verified Partner</Text>
+                  </View>
                 </View>
               </View>
 
-            {/* Rating & Distance Badges */}
-            <View style={styles.metaRow}>
-              <View style={styles.metaBadge}>
-                <MapPin size={13} color="#e11d48" />
-                <Text style={styles.metaBadgeText}>
-                  {item.distanceKm ? `${item.distanceKm} km away` : item.city}
+              {/* Success Rate Pill Banner */}
+              <View style={styles.cleanSuccessPill}>
+                <TrendingUp size={14} color="#059669" />
+                <Text style={styles.cleanSuccessText}>{successRateText}</Text>
+              </View>
+
+              {/* Limit Pill Banner */}
+              <View style={styles.cleanLimitPill}>
+                <Coins size={14} color="#1d4ed8" />
+                <Text style={styles.cleanLimitText}>Limit: ₹{minAmt} to ₹{maxAmt}</Text>
+              </View>
+
+              {/* Location & Radius Pill Banner */}
+              <View style={styles.cleanLocPill}>
+                <View style={styles.cleanPulseDot} />
+                <MapPin size={13} color="#059669" />
+                <Text style={styles.cleanLocText} numberOfLines={2}>
+                  {item.distanceKm ? `${item.distanceKm} KM away` : '0.7 KM away'} • Lending Office Location, {item.place ? `${item.place}, ` : ''}{item.city || 'Hyderabad'} (Inside {item.lendingRadiusKm || 100} KM Radius)
                 </Text>
               </View>
-              <View style={styles.metaBadge}>
-                <Sparkles size={13} color="#f59e0b" />
-                <Text style={styles.metaBadgeText}>★ {item.rating || '4.8'}</Text>
-              </View>
-              <View style={[styles.metaBadge, { backgroundColor: '#ecfdf5' }]}>
-                <Percent size={13} color="#10b981" />
-                <Text style={[styles.metaBadgeText, { color: '#047857' }]}>
-                  {item.successRate || '85% Match Rate'}
-                </Text>
-              </View>
-            </View>
 
-            {/* Deal Limits Banner */}
-            <View style={styles.detailsGrid}>
-              <View style={[styles.detailBox, { flex: 1 }]}>
-                <Text style={styles.detailLabel}>Commercial Deal Range</Text>
-                <Text style={styles.detailValue}>
-                  ₹{(item.minLoanAmount || 10000).toLocaleString('en-IN')} - ₹
-                  {(item.maxLoanAmount || 500000).toLocaleString('en-IN')}
-                </Text>
-              </View>
-            </View>
-
-            {/* Loan Categories Pills */}
-            <View style={styles.tagsRow}>
-              {item.loanCategories.map((cat, i) => (
-                <View key={i} style={styles.tagPill}>
-                  <Text style={styles.tagText}>{cat}</Text>
-                </View>
-              ))}
-            </View>
-
-            {/* Card Action Buttons: Call, WhatsApp, Inquire */}
-            <View style={styles.actionRow}>
+              {/* Action Buttons */}
               {isSubscribed ? (
-                <>
+                <View style={styles.cleanSubscribedRow}>
                   <TouchableOpacity
-                    style={styles.callBtn}
-                    onPress={() => handleContactAction(item, 'CALL')}
-                    activeOpacity={0.8}
-                  >
-                    <Phone size={14} color="#003893" />
-                    <Text style={styles.callBtnText}>Call</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={styles.whatsAppActionBtn}
-                    onPress={() => handleContactAction(item, 'WHATSAPP')}
-                    activeOpacity={0.8}
-                  >
-                    <MessageSquare size={14} color="#ffffff" />
-                    <Text style={styles.whatsAppActionBtnText}>WhatsApp</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={styles.applyBtn}
+                    style={styles.cleanPrimaryInquireBtn}
                     onPress={() => handleOpenLoanRequest(item)}
                     activeOpacity={0.85}
                   >
-                    <FileText size={14} color="#ffffff" />
-                    <Text style={styles.applyBtnText}>Inquire</Text>
-                  </TouchableOpacity>
-                </>
-              ) : (
-                <>
-                  <TouchableOpacity
-                    style={styles.unlockContactBtn}
-                    onPress={() => setSubModalVisible(true)}
-                    activeOpacity={0.85}
-                  >
-                    <Zap size={14} color="#d97706" fill="#f59e0b" />
-                    <Text style={styles.unlockContactBtnText}>Unlock Direct Contact</Text>
+                    <FileText size={15} color="#ffffff" />
+                    <Text style={styles.cleanPrimaryInquireText}>Inquire Now</Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity
-                    style={styles.lockedApplyBtn}
+                    style={styles.cleanCallBtn}
+                    onPress={() => handleContactAction(item, 'CALL')}
+                    activeOpacity={0.8}
+                  >
+                    <Phone size={16} color="#003893" />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.cleanWhatsAppBtn}
+                    onPress={() => handleContactAction(item, 'WHATSAPP')}
+                    activeOpacity={0.8}
+                  >
+                    <MessageSquare size={16} color="#ffffff" />
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <View style={styles.cleanUnsubscribedCol}>
+                  <TouchableOpacity
+                    style={styles.cleanBigInquireBtn}
                     onPress={() => setSubModalVisible(true)}
                     activeOpacity={0.85}
                   >
-                    <Lock size={13} color="#fde047" />
-                    <Text style={styles.applyBtnText}>Inquire 🔒</Text>
+                    <Lock size={15} color="#fde047" />
+                    <Text style={styles.cleanBigInquireText}>Inquire Now</Text>
                   </TouchableOpacity>
-                </>
+
+                  <TouchableOpacity
+                    style={styles.cleanUnlockLink}
+                    onPress={() => setSubModalVisible(true)}
+                    activeOpacity={0.7}
+                  >
+                    <Zap size={13} color="#d97706" fill="#f59e0b" />
+                    <Text style={styles.cleanUnlockLinkText}>Unlock Direct Contact</Text>
+                  </TouchableOpacity>
+                </View>
               )}
             </View>
-          </View>
-        );
-      }}
+          );
+        }}
         ListFooterComponent={
           <View style={styles.statutoryFooter}>
             <ShieldCheck size={16} color="#64748b" />
@@ -1388,5 +1373,208 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: '#64748b',
     lineHeight: 15,
+  },
+  cleanLenderCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    borderLeftWidth: 4,
+    borderLeftColor: '#003893',
+    padding: 16,
+    marginBottom: 14,
+    shadowColor: '#0f172a',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  cleanCardTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 10,
+  },
+  cleanLogoBox: {
+    width: 58,
+    height: 58,
+    borderRadius: 16,
+    backgroundColor: '#eff6ff',
+    borderWidth: 1.5,
+    borderColor: '#bfdbfe',
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cleanLogoImg: {
+    width: '100%',
+    height: '100%',
+  },
+  cleanLogoFallback: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#eff6ff',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cleanLogoFallbackText: {
+    fontSize: 22,
+    fontWeight: '900',
+    color: '#003893',
+  },
+  cleanInstName: {
+    fontSize: 16,
+    fontWeight: '900',
+    color: '#0f172a',
+    marginBottom: 4,
+  },
+  cleanVerifiedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#dcfce7',
+    borderWidth: 1,
+    borderColor: '#bbf7d0',
+    alignSelf: 'flex-start',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+  },
+  cleanVerifiedText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#15803d',
+  },
+  cleanSuccessPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#ecfdf5',
+    borderWidth: 1,
+    borderColor: '#a7f3d0',
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    marginBottom: 6,
+  },
+  cleanSuccessText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#065f46',
+  },
+  cleanLimitPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#eff6ff',
+    borderWidth: 1,
+    borderColor: '#dbeafe',
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    marginBottom: 6,
+  },
+  cleanLimitText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#1e40af',
+  },
+  cleanLocPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#ecfdf5',
+    borderWidth: 1,
+    borderColor: '#a7f3d0',
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    marginBottom: 12,
+  },
+  cleanPulseDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
+    backgroundColor: '#059669',
+  },
+  cleanLocText: {
+    flex: 1,
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#065f46',
+    lineHeight: 15,
+  },
+  cleanBigInquireBtn: {
+    backgroundColor: '#002870',
+    borderRadius: 14,
+    paddingVertical: 13,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    shadowColor: '#002870',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 5,
+    elevation: 3,
+  },
+  cleanBigInquireText: {
+    color: '#ffffff',
+    fontSize: 15,
+    fontWeight: '900',
+  },
+  cleanUnlockLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+    marginTop: 10,
+    paddingVertical: 4,
+  },
+  cleanUnlockLinkText: {
+    color: '#b45309',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  cleanSubscribedRow: {
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'center',
+  },
+  cleanPrimaryInquireBtn: {
+    flex: 1,
+    backgroundColor: '#003893',
+    borderRadius: 12,
+    paddingVertical: 11,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  cleanPrimaryInquireText: {
+    color: '#ffffff',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  cleanCallBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: '#eff6ff',
+    borderWidth: 1,
+    borderColor: '#bfdbfe',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cleanWhatsAppBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: '#16a34a',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cleanUnsubscribedCol: {
+    marginTop: 2,
   },
 });

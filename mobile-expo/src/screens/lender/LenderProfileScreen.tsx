@@ -421,7 +421,7 @@ export const LenderProfileScreen: React.FC = () => {
           </View>
         </TouchableOpacity>
 
-        <Text style={styles.instName}>{institutionName}</Text>
+        <Text style={styles.instName}>{(institutionName || 'Commercial Partner').replace(/money financer/gi, 'Commercial Partner')}</Text>
         <Text style={styles.contactPersonText}>Manager: {contactPerson || user?.name}</Text>
         
         <TouchableOpacity
@@ -753,7 +753,7 @@ export const LenderProfileScreen: React.FC = () => {
         >
           <View style={styles.accordionTitleRow}>
             <Compass size={18} color="#007a33" />
-            <Text style={styles.accordionTitle}>Financing Criteria & Radius</Text>
+            <Text style={styles.accordionTitle}>Commercial Criteria & Radius</Text>
           </View>
           {openSections.criteria ? <ChevronUp size={18} color="#64748b" /> : <ChevronDown size={18} color="#64748b" />}
         </TouchableOpacity>
@@ -814,7 +814,7 @@ export const LenderProfileScreen: React.FC = () => {
               ) : (
                 <>
                   <Save size={14} color="#ffffff" />
-                  <Text style={styles.sectionSaveBtnText}>Save Financing Criteria</Text>
+                  <Text style={styles.sectionSaveBtnText}>Save Commercial Criteria</Text>
                 </>
               )}
             </TouchableOpacity>
@@ -923,6 +923,21 @@ export const LenderProfileScreen: React.FC = () => {
           </View>
         )}
       </View>
+
+      {/* ── LOGOUT OPTION ── */}
+      <TouchableOpacity
+        style={styles.logoutBtn}
+        onPress={() => {
+          Alert.alert('Confirm Logout', 'Are you sure you want to sign out of your Partner Account?', [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Logout', style: 'destructive', onPress: logout },
+          ]);
+        }}
+        activeOpacity={0.85}
+      >
+        <LogOut size={18} color="#dc2626" />
+        <Text style={styles.logoutBtnText}>Logout</Text>
+      </TouchableOpacity>
 
       {/* Modals */}
       <SubscriptionModal
@@ -1577,5 +1592,28 @@ const styles = StyleSheet.create({
     color: '#003893',
     fontSize: 12,
     fontWeight: '800',
+  },
+  logoutBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#fff1f2',
+    borderWidth: 1.5,
+    borderColor: '#fecdd3',
+    borderRadius: 16,
+    paddingVertical: 14,
+    marginTop: 14,
+    marginBottom: 30,
+    shadowColor: '#dc2626',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  logoutBtnText: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#dc2626',
   },
 });

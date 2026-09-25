@@ -62,6 +62,12 @@ const cleanPlanText = (str?: string): string => {
     .replace(/seeking capital/gi, 'seeking commercial partnerships');
 };
 
+interface SubscriptionModalProps {
+  visible: boolean;
+  onClose: () => void;
+  onSuccess?: () => void;
+}
+
 export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
   visible,
   onClose,
