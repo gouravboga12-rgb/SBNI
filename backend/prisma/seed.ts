@@ -28,32 +28,32 @@ async function main() {
   });
   console.log('✅ Super Admin created:', adminUser.email);
 
-  // 3. Subscription Plans (Vendor & Lender)
+  // 3. Subscription Plans (Vendor & Commercial Partner)
   const plans = [
     // --- VENDOR PLANS ---
     {
       code: 'VENDOR_WEEKLY',
       name: 'Weekly Starter Plan',
-      description: 'Start exploring nearby business financers',
-      price: 79,
+      description: 'Start exploring nearby verified commercial partners',
+      price: 40,
       originalPrice: 99,
-      durationDays: 7,
+      durationDays: 14,
       isPopular: false,
       isBestValue: false,
       roleTarget: 'VENDOR',
       isActive: true,
       features: JSON.stringify([
-        'Unlock up to 5 Financer Contacts',
+        'Unlock up to 5 Commercial Partner Contacts',
         'Direct Phone & WhatsApp Access',
-        'Verified Financer Trust Badge',
+        'Verified Commercial Partner Trust Badge',
         'Dedicated Help Desk Support',
       ]),
     },
     {
       code: 'VENDOR_MONTHLY',
       name: 'Monthly Growth Plan',
-      description: 'Most popular plan for small shop businesses seeking capital',
-      price: 199,
+      description: 'Most popular plan for small shop businesses seeking commercial partnerships',
+      price: 59,
       originalPrice: 299,
       durationDays: 30,
       isPopular: true,
@@ -61,9 +61,9 @@ async function main() {
       roleTarget: 'VENDOR',
       isActive: true,
       features: JSON.stringify([
-        'Unlimited Financer Phone & WhatsApp Unlocks',
+        'Unlimited Partner Phone & WhatsApp Unlocks',
         'Direct Email & Branch Contact Access',
-        'Pan-India Financer Discovery',
+        'Pan-India Partner Discovery',
         'Priority Application Routing',
         'Dedicated Account Manager',
       ]),
@@ -71,8 +71,8 @@ async function main() {
     {
       code: 'VENDOR_QUARTERLY',
       name: 'Quarterly Business Plan',
-      description: '3 Months uninterrupted financer discovery suite',
-      price: 349,
+      description: '3 Months uninterrupted commercial partner discovery suite',
+      price: 150,
       originalPrice: 499,
       durationDays: 90,
       isPopular: false,
@@ -82,8 +82,8 @@ async function main() {
       features: JSON.stringify([
         'Everything in Monthly Growth Plan',
         'Priority KYC Document Storage',
-        'Multi-Financer Rate Comparison Tool',
-        'New Financer Instant Alerts',
+        'Multi-Partner Comparison Tool',
+        'New Partner Instant Alerts',
       ]),
     },
     {
@@ -105,14 +105,14 @@ async function main() {
       ]),
     },
 
-    // --- LENDER (FINANCER) PLANS ---
+    // --- LENDER (COMMERCIAL PARTNER) PLANS ---
     {
       code: 'LENDER_WEEKLY',
-      name: 'Financer Weekly Starter',
-      description: '7 Days trial access for business financers',
-      price: 79,
+      name: 'Commercial Partner Weekly Starter',
+      description: '14 Days trial access for commercial partners',
+      price: 40,
       originalPrice: 99,
-      durationDays: 7,
+      durationDays: 14,
       isPopular: false,
       isBestValue: false,
       roleTarget: 'LENDER',
@@ -125,9 +125,9 @@ async function main() {
     },
     {
       code: 'LENDER_MONTHLY',
-      name: 'Financer Monthly Plan',
-      description: 'Most popular plan for NBFCs & financial institutions',
-      price: 199,
+      name: 'Commercial Partner Monthly Plan',
+      description: 'Most popular plan for commercial partners & enterprises',
+      price: 99,
       originalPrice: 249,
       durationDays: 30,
       isPopular: true,
@@ -143,9 +143,9 @@ async function main() {
     },
     {
       code: 'LENDER_QUARTERLY',
-      name: 'Financer Quarterly Growth',
-      description: '3 Months uninterrupted business financing suite',
-      price: 399,
+      name: 'Commercial Partner Quarterly Growth',
+      description: '3 Months uninterrupted business networking suite',
+      price: 180,
       originalPrice: 499,
       durationDays: 90,
       isPopular: false,
@@ -161,7 +161,7 @@ async function main() {
     },
     {
       code: 'LENDER_ANNUAL',
-      name: 'Financer Annual VIP Plan',
+      name: 'Commercial Partner Annual VIP Plan',
       description: '1 Year maximum visibility & premium leads',
       price: 599,
       originalPrice: 999,
@@ -174,7 +174,7 @@ async function main() {
         '365 Days Full Platform Access',
         'Unlimited Premium Lead Discovery',
         'Custom Product Promotion Listing',
-        'Featured Top Badge on Financer Directory',
+        'Featured Top Badge on Partner Directory',
       ]),
     },
   ];

@@ -39,6 +39,34 @@ export const calculateStackedSubscriptionDates = async (
   return { startDate, endDate };
 };
 
+export const sanitizePlanText = (str: string): string => {
+  if (!str) return str;
+  return str
+    .replace(/Financer Weekly Starter/gi, 'Commercial Partner Weekly Starter')
+    .replace(/Financer Monthly Plan/gi, 'Commercial Partner Monthly Plan')
+    .replace(/Financer Quarterly Growth/gi, 'Commercial Partner Quarterly Growth')
+    .replace(/Financer Annual VIP Plan/gi, 'Commercial Partner Annual VIP Plan')
+    .replace(/Financer Directory/gi, 'Partner Directory')
+    .replace(/financer directory/gi, 'partner directory')
+    .replace(/Financers/g, 'Commercial Partners')
+    .replace(/financers/g, 'commercial partners')
+    .replace(/Financer/g, 'Commercial Partner')
+    .replace(/financer/g, 'commercial partner')
+    .replace(/business financers/gi, 'commercial partners')
+    .replace(/NBFCs & financial institutions/gi, 'Commercial Enterprises & Partners')
+    .replace(/business financing suite/gi, 'business networking suite')
+    .replace(/financer discovery suite/gi, 'partner discovery suite')
+    .replace(/nearby business financers/gi, 'nearby commercial partners')
+    .replace(/Multi-Financer Rate Comparison Tool/gi, 'Multi-Partner Comparison Tool')
+    .replace(/New Financer Instant Alerts/gi, 'New Partner Instant Alerts')
+    .replace(/Unlock lender contacts/gi, 'Unlock partner contacts')
+    .replace(/All Verified Lenders/gi, 'All Verified Partners')
+    .replace(/with Lenders/gi, 'with Partners')
+    .replace(/Direct NBFC & Bank Directory/gi, 'Direct Commercial Partner Directory')
+    .replace(/Custom Loan Requirement Broadcast to 100\+ Lenders/gi, 'Custom Business Requirement Broadcast to 100+ Partners')
+    .replace(/seeking capital/gi, 'seeking commercial partnerships');
+};
+
 export const getSubscriptionPlans = async (req: Request, res: Response) => {
   const role = req.query.role as string;
   const whereClause: any = { isActive: true };
@@ -60,7 +88,9 @@ export const getSubscriptionPlans = async (req: Request, res: Response) => {
     }
     return {
       ...plan,
-      features: parsedFeatures,
+      name: sanitizePlanText(plan.name),
+      description: sanitizePlanText(plan.description),
+      features: parsedFeatures.map((f: string) => sanitizePlanText(f)),
     };
   });
 
@@ -1206,7 +1236,9 @@ export const getMyActiveSubscription = async (req: AuthenticatedRequest, res: Re
         plan: subscription.plan
           ? {
               ...subscription.plan,
-              features: parsedFeatures,
+              name: sanitizePlanText(subscription.plan.name),
+              description: sanitizePlanText(subscription.plan.description),
+              features: parsedFeatures.map((f: string) => sanitizePlanText(f)),
             }
           : null,
       },

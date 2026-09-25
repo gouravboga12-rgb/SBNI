@@ -39,6 +39,34 @@ declare global {
   }
 }
 
+const cleanPlanText = (str?: string): string => {
+  if (!str) return '';
+  return str
+    .replace(/Financer Weekly Starter/gi, 'Commercial Partner Weekly Starter')
+    .replace(/Financer Monthly Plan/gi, 'Commercial Partner Monthly Plan')
+    .replace(/Financer Quarterly Growth/gi, 'Commercial Partner Quarterly Growth')
+    .replace(/Financer Annual VIP Plan/gi, 'Commercial Partner Annual VIP Plan')
+    .replace(/Financer Directory/gi, 'Partner Directory')
+    .replace(/financer directory/gi, 'partner directory')
+    .replace(/Financers/g, 'Commercial Partners')
+    .replace(/financers/g, 'commercial partners')
+    .replace(/Financer/g, 'Commercial Partner')
+    .replace(/financer/g, 'commercial partner')
+    .replace(/business financers/gi, 'commercial partners')
+    .replace(/NBFCs & financial institutions/gi, 'Commercial Enterprises & Partners')
+    .replace(/business financing suite/gi, 'business networking suite')
+    .replace(/financer discovery suite/gi, 'partner discovery suite')
+    .replace(/nearby business financers/gi, 'nearby commercial partners')
+    .replace(/Multi-Financer Rate Comparison Tool/gi, 'Multi-Partner Comparison Tool')
+    .replace(/New Financer Instant Alerts/gi, 'New Partner Instant Alerts')
+    .replace(/Unlock lender contacts/gi, 'Unlock partner contacts')
+    .replace(/All Verified Lenders/gi, 'All Verified Partners')
+    .replace(/with Lenders/gi, 'with Partners')
+    .replace(/Direct NBFC & Bank Directory/gi, 'Direct Commercial Partner Directory')
+    .replace(/Custom Loan Requirement Broadcast to 100\+ Lenders/gi, 'Custom Business Requirement Broadcast to 100+ Partners')
+    .replace(/seeking capital/gi, 'seeking commercial partnerships');
+};
+
 export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
   isOpen,
   onClose,
@@ -530,7 +558,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
 
           <p className="text-xs text-slate-600 font-medium">
             {isUpgrading
-              ? `You are currently on ${activeSub?.plan?.name || 'an active plan'}. Select a higher tier plan below for extended validity, higher priority, and maximum savings.`
+              ? `You are currently on ${cleanPlanText(activeSub?.plan?.name) || 'an active plan'}. Select a higher tier plan below for extended validity, higher priority, and maximum savings.`
               : isLender
               ? 'Unlock unlimited business profile verifications, verified directory reports, GST details, and direct commercial partner access.'
               : 'Unlock direct phone numbers, WhatsApp connect, and verified business partner details. Zero middleman fees.'}
@@ -628,7 +656,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                   </div>
 
                   <h3 className="text-xs sm:text-sm font-bold text-slate-900 font-heading mb-1 leading-snug">
-                    {plan.name}
+                    {cleanPlanText(plan.name)}
                   </h3>
 
                   <div className="flex items-baseline gap-1 mb-1.5">
@@ -639,7 +667,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                   </div>
 
                   <p className="text-[10px] text-slate-500 mb-2.5 leading-tight min-h-[24px]">
-                    {plan.description}
+                    {cleanPlanText(plan.description)}
                   </p>
 
                   <ul className="space-y-1 mb-3">
@@ -649,7 +677,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                         className="flex items-start gap-1 text-[10px] text-slate-700 font-medium leading-tight"
                       >
                         <Check className="w-3 h-3 text-emerald-600 flex-shrink-0 mt-0.5" />
-                        <span>{feat}</span>
+                        <span>{cleanPlanText(feat)}</span>
                       </li>
                     ))}
                   </ul>
