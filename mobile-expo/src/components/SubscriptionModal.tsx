@@ -407,7 +407,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                 </View>
                 <View>
                   <Text style={styles.headerTitle}>VIP Membership</Text>
-                  <Text style={styles.headerSub}>0% Commission • Unlimited Financer Discovery</Text>
+                  <Text style={styles.headerSub}>0% Commission • Unlimited Partner Discovery</Text>
                 </View>
               </View>
               <TouchableOpacity onPress={onClose} style={styles.closeBtn}>

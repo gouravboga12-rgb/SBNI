@@ -80,7 +80,7 @@ export const ReferEarnScreen: React.FC = () => {
         </View>
         <Text style={styles.heroTitle}>Refer & Earn ₹500 Every Time</Text>
         <Text style={styles.heroSub}>
-          Invite friends, shop owners, or financers to JustPaisa and earn real withdrawable cash!
+          Invite friends, shop owners, or commercial partners to JustPaisa and earn real withdrawable cash!
         </Text>
       </View>
 

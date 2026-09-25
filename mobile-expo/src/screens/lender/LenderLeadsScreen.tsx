@@ -94,7 +94,7 @@ export const LenderLeadsScreen: React.FC = () => {
         vendorName: selectedLeadForFraud?.vendorName,
         vendorPhone: selectedLeadForFraud?.mobileNumber,
         leadId: selectedLeadForFraud?.id,
-        reportedBy: user?.name || user?.email || 'Financer Partner',
+        reportedBy: user?.name || user?.email || 'Commercial Partner',
         reason: fraudReason.trim(),
       });
 
@@ -266,7 +266,7 @@ export const LenderLeadsScreen: React.FC = () => {
                         Linking.openURL(
                           `https://wa.me/${cleanPhone}?text=Hello%20${encodeURIComponent(
                             item.shopName
-                          )},%20we%20have%20reviewed%20your%20loan%20enquiry%20on%20JustPaisa.`
+                          )},%20we%20have%20reviewed%20your%20business%20enquiry%20on%20JustPaisa.`
                         );
                       }}
                     >
@@ -315,7 +315,7 @@ export const LenderLeadsScreen: React.FC = () => {
             <View style={styles.fraudInputBox}>
               <TextInput
                 style={styles.fraudTextInput}
-                placeholder="Describe false information, loan default history, or fraudulent behavior..."
+                placeholder="Describe false information, default history, or fraudulent behavior..."
                 placeholderTextColor="#94a3b8"
                 multiline
                 value={fraudReason}

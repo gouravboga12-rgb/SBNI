@@ -520,7 +520,7 @@ export const VendorHomeScreen: React.FC = () => {
 
           return (
             <View style={styles.lenderCard}>
-              {/* Header: Financer Name, Type, Rating & Distance */}
+              {/* Header: Partner Name, Type, Rating & Distance */}
               <View style={styles.cardTop}>
                 <View style={styles.instIcon}>
                   {hasCustomLogo ? (

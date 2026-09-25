@@ -90,8 +90,8 @@ export const LenderProfileScreen: React.FC = () => {
 
   const handleDeleteAccount = () => {
     Alert.alert(
-      'Delete Financer Account Permanently',
-      'Are you sure you want to permanently delete your Just Paisa financer account? All your institutional details, service radius settings, active leads, and associated records will be permanently erased. This action CANNOT be undone.',
+      'Delete Commercial Partner Account Permanently',
+      'Are you sure you want to permanently delete your Just Paisa commercial partner account? All your institutional details, service radius settings, active leads, and associated records will be permanently erased. This action CANNOT be undone.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -105,7 +105,7 @@ export const LenderProfileScreen: React.FC = () => {
               if (res.success) {
                 Alert.alert(
                   'Account Deleted',
-                  'Your financer account and all associated data have been permanently deleted from Just Paisa.',
+                  'Your commercial partner account and all associated data have been permanently deleted from Just Paisa.',
                   [{ text: 'OK', onPress: logout }]
                 );
               } else {
@@ -269,7 +269,7 @@ export const LenderProfileScreen: React.FC = () => {
   );
 
   const handlePickAvatar = () => {
-    Alert.alert('Financer Profile Photo', 'Select photo source to update your profile photo:', [
+    Alert.alert('Partner Profile Photo', 'Select photo source to update your profile photo:', [
       {
         text: 'Take Photo (Camera)',
         onPress: async () => {
@@ -317,7 +317,7 @@ export const LenderProfileScreen: React.FC = () => {
   const uploadAvatar = async (base64: string) => {
     setUploadingAvatar(true);
     try {
-      const fileName = `financer_avatar_${Date.now()}.jpg`;
+      const fileName = `partner_avatar_${Date.now()}.jpg`;
       const res = await uploadFileToEc2Api(base64, 'avatars', fileName, 'AVATAR');
       const uploadedUrl = res.fileUrl || res.fullUrl;
       if (res.success && uploadedUrl) {
@@ -336,7 +336,7 @@ export const LenderProfileScreen: React.FC = () => {
             avatarUrl: uploadedUrl,
             logoUrl: uploadedUrl,
           });
-          Alert.alert('Photo Updated 🎉', 'Financer profile photo updated successfully.');
+          Alert.alert('Photo Updated 🎉', 'Partner profile photo updated successfully.');
         } else {
           Alert.alert('Photo Uploaded', 'Photo uploaded. Tap Save Profile at the bottom to sync all changes.');
         }
@@ -372,7 +372,7 @@ export const LenderProfileScreen: React.FC = () => {
       const res = await updateLenderProfileApi(payload);
       if (res.success) {
         updateLenderProfileState(payload);
-        Alert.alert('Profile Saved 🎉', 'Financer profile & operating radius updated successfully.');
+        Alert.alert('Profile Saved 🎉', 'Partner profile & operating radius updated successfully.');
       } else {
         Alert.alert('Notice', res.message || 'Could not update profile.');
       }
@@ -395,13 +395,13 @@ export const LenderProfileScreen: React.FC = () => {
       style={styles.container}
       contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 90 }]}
     >
-      {/* Top Financer Profile Header Card with Avatar & Camera Edit */}
+      {/* Top Partner Profile Header Card with Avatar & Camera Edit */}
       <View style={styles.headerCard}>
         <TouchableOpacity
           style={styles.avatarWrapper}
           onPress={handlePickAvatar}
           activeOpacity={0.8}
-          accessibilityLabel="Edit financer profile photo"
+          accessibilityLabel="Edit partner profile photo"
         >
           <View style={styles.avatarCircle}>
             {uploadingAvatar ? (
@@ -435,12 +435,12 @@ export const LenderProfileScreen: React.FC = () => {
 
         <View style={styles.badgeRow}>
           <View style={styles.roleBadge}>
-            <Text style={styles.roleBadgeText}>Business Financer Hub</Text>
+            <Text style={styles.roleBadgeText}>Commercial Partner Hub</Text>
           </View>
           <View style={isSubscribed ? styles.subActiveBadge : styles.subInactiveBadge}>
             <Crown size={12} color={isSubscribed ? '#16a34a' : '#d97706'} />
             <Text style={isSubscribed ? styles.subActiveText : styles.subInactiveText}>
-              {isSubscribed ? `VIP Financer (${daysRemaining} Days)` : 'Standard'}
+              {isSubscribed ? `VIP Partner (${daysRemaining} Days)` : 'Standard'}
             </Text>
           </View>
         </View>
@@ -506,7 +506,7 @@ export const LenderProfileScreen: React.FC = () => {
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
                   <Crown size={18} color="#047857" />
                   <Text style={styles.vipActiveTitle}>
-                    VIP Financer Active • {daysRemaining} Days Remaining
+                    VIP Partner Active • {daysRemaining} Days Remaining
                   </Text>
                 </View>
                 <Text style={styles.vipActiveSub}>
@@ -540,9 +540,9 @@ export const LenderProfileScreen: React.FC = () => {
               </View>
             ) : (
               <View style={styles.vipInactiveBox}>
-                <Text style={styles.inactiveTitle}>Standard Financer Account</Text>
+                <Text style={styles.inactiveTitle}>Standard Partner Account</Text>
                 <Text style={styles.inactiveSub}>
-                  Upgrade to VIP Financer for unlimited applicant leads, direct calling, and priority discovery across your radius.
+                  Upgrade to VIP Partner for unlimited applicant leads, direct calling, and priority discovery across your radius.
                 </Text>
                 <TouchableOpacity
                   style={styles.upgradeBtn}
@@ -550,7 +550,7 @@ export const LenderProfileScreen: React.FC = () => {
                   activeOpacity={0.85}
                 >
                   <Crown size={16} color="#ffffff" />
-                  <Text style={styles.upgradeBtnText}>Upgrade to VIP Financer</Text>
+                  <Text style={styles.upgradeBtnText}>Upgrade to VIP Partner</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -558,7 +558,7 @@ export const LenderProfileScreen: React.FC = () => {
         )}
       </View>
 
-      {/* ── ACCORDION 2: FINANCER COMPANY & CONTACT INFO ── */}
+      {/* ── ACCORDION 2: COMMERCIAL PARTNER COMPANY & CONTACT INFO ── */}}
       <View style={styles.accordionCard}>
         <TouchableOpacity
           style={styles.accordionHeader}
@@ -567,7 +567,7 @@ export const LenderProfileScreen: React.FC = () => {
         >
           <View style={styles.accordionTitleRow}>
             <Building2 size={18} color="#007a33" />
-            <Text style={styles.accordionTitle}>Financer Entity & Contact</Text>
+            <Text style={styles.accordionTitle}>Partner Entity & Contact</Text>
           </View>
           {openSections.basic ? <ChevronUp size={18} color="#64748b" /> : <ChevronDown size={18} color="#64748b" />}
         </TouchableOpacity>
@@ -613,7 +613,7 @@ export const LenderProfileScreen: React.FC = () => {
             {/* In-Accordion Profile Photo Upload Card */}
             <View style={styles.photoUploadBox}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.photoUploadTitle}>Financer Profile Photo</Text>
+                <Text style={styles.photoUploadTitle}>Partner Profile Photo</Text>
                 <Text style={styles.photoUploadSub}>
                   {avatarUrl ? 'Photo uploaded & active on marketplace' : 'Upload official logo or owner photo'}
                 </Text>
@@ -889,7 +889,7 @@ export const LenderProfileScreen: React.FC = () => {
             <TouchableOpacity
               style={styles.logoutRow}
               onPress={() => {
-                Alert.alert('Sign Out', 'Are you sure you want to sign out of your Financer Account?', [
+                Alert.alert('Sign Out', 'Are you sure you want to sign out of your Partner Account?', [
                   { text: 'Cancel', style: 'cancel' },
                   { text: 'Sign Out', style: 'destructive', onPress: logout },
                 ]);
@@ -898,7 +898,7 @@ export const LenderProfileScreen: React.FC = () => {
             >
               <View style={styles.policyRowLeft}>
                 <LogOut size={16} color="#64748b" />
-                <Text style={[styles.logoutRowText, { color: '#64748b' }]}>Sign Out of Financer Account</Text>
+                <Text style={[styles.logoutRowText, { color: '#64748b' }]}>Sign Out of Partner Account</Text>
               </View>
             </TouchableOpacity>
 
@@ -916,7 +916,7 @@ export const LenderProfileScreen: React.FC = () => {
                   <Trash2 size={16} color="#dc2626" />
                 )}
                 <Text style={styles.deleteAccountRowText}>
-                  {isDeletingAccount ? 'Deleting Account...' : 'Delete Financer Account Permanently'}
+                  {isDeletingAccount ? 'Deleting Account...' : 'Delete Partner Account Permanently'}
                 </Text>
               </View>
             </TouchableOpacity>

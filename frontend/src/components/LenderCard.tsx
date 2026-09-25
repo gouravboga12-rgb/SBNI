@@ -419,7 +419,7 @@ export const LenderCard: React.FC<LenderCardProps> = ({ lender, onOpenSubscripti
       {/* Background Subtle Gradient Glow */}
       <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50/50 rounded-full blur-2xl pointer-events-none group-hover:bg-blue-100/60 transition-colors" />
 
-      {/* Left Column: Financer Logo & Details */}
+      {/* Left Column: Partner Logo & Details */}
       {(() => {
         const rawLogo = lender.logoUrl || (lender as any).avatarUrl || (typeof window !== 'undefined' ? localStorage.getItem('sbni_lender_avatar') : null);
         const effectiveLogo = rawLogo && !rawLogo.includes('unsplash.com') ? rawLogo : '';

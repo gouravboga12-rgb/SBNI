@@ -142,12 +142,12 @@ export const LenderHomeScreen: React.FC = () => {
       if (res.success) {
         updateLenderProfileState({ lendingRadiusKm: km });
         Alert.alert(
-          'Lending Radius Updated! 📍',
-          `Your active lending radius is now ${km} km. All registered local shops and startups within ${km} km can discover your financing options.`
+          'Service Radius Updated! 📍',
+          `Your active service radius is now ${km} km. All registered local shops and startups within ${km} km can discover your business profile.`
         );
       }
     } catch (e) {
-      Alert.alert('Notice', 'Could not update lending radius.');
+      Alert.alert('Notice', 'Could not update service radius.');
     } finally {
       setUpdatingRadius(false);
     }
@@ -285,12 +285,12 @@ export const LenderHomeScreen: React.FC = () => {
         </TouchableOpacity>
       )}
 
-      {/* Core Requirement: Active Lending Radius Area Selector */}
+      {/* Core Requirement: Active Service Radius Area Selector */}}
       <View style={styles.radiusSection}>
         <View style={styles.radiusHeader}>
           <View style={styles.radiusTitleRow}>
             <Compass size={18} color="#007a33" />
-            <Text style={styles.radiusSectionTitle}>Active Lending Radius Area</Text>
+            <Text style={styles.radiusSectionTitle}>Active Service Radius Area</Text>
           </View>
           <Text style={styles.radiusCurrentValue}>{activeRadius} km</Text>
         </View>

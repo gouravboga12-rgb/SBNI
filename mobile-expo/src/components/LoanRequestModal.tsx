@@ -225,7 +225,7 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
             <View style={{ flex: 1 }}>
               <Text style={styles.headerTitle}>Enquire Form</Text>
               <Text style={styles.headerSub} numberOfLines={1}>
-                Forwarding to {lender.institutionName || 'Financer'}
+                Forwarding to {lender.institutionName || 'Commercial Partner'}
               </Text>
             </View>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
@@ -241,7 +241,7 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
                 </View>
                 <Text style={styles.successTitle}>Enquiry Submitted Successfully!</Text>
                 <Text style={styles.successSub}>
-                  Your enquiry has been dispatched directly to <Text style={{ fontWeight: '800', color: '#0f172a' }}>{lender.institutionName}</Text>. The financer will verify your details and connect with you.
+                  Your enquiry has been dispatched directly to <Text style={{ fontWeight: '800', color: '#0f172a' }}>{lender.institutionName}</Text>. The partner will verify your details and connect with you.
                 </Text>
 
                 <View style={styles.successCard}>
@@ -252,7 +252,7 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
                     Annual Income: <Text style={{ color: '#0f172a', fontWeight: '800' }}>{annualIncome}</Text>
                   </Text>
                   <Text style={styles.successCardRow}>
-                    Financer Phone: <Text style={{ color: '#003893', fontWeight: '800' }}>{lender.phone || 'Available in Directory'}</Text>
+                    Partner Phone: <Text style={{ color: '#003893', fontWeight: '800' }}>{lender.phone || 'Available in Directory'}</Text>
                   </Text>
                 </View>
 

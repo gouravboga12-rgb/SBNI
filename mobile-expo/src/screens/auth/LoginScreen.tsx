@@ -1470,7 +1470,7 @@ export const LoginScreen: React.FC = () => {
                 </View>
 
                 {/* Service Radius */}
-                <Text style={styles.inputLabel}>Lending Service Area Radius *</Text>
+                <Text style={styles.inputLabel}>Service Area Radius *</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.turnoverScroll}>
                   {RADIUS_OPTIONS.map((rad) => (
                     <TouchableOpacity

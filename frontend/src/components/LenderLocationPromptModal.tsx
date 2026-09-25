@@ -138,11 +138,11 @@ export const LenderLocationPromptModal: React.FC<LenderLocationPromptModalProps>
           <div className="text-center space-y-1.5 pt-1">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-extrabold shadow-xs">
               <Compass className="w-3.5 h-3.5 text-emerald-600 animate-spin" style={{ animationDuration: '6s' }} />
-              <span>Financer Office & Lending Service Area</span>
+              <span>Commercial Partner Office & Service Area</span>
             </div>
 
             <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 font-heading leading-tight">
-              Confirm Your Lending Office Location
+              Confirm Your Business Office Location
             </h2>
 
             <p className="text-xs text-slate-500 font-medium max-w-md mx-auto leading-relaxed">

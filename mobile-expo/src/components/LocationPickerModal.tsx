@@ -210,7 +210,7 @@ export const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
               <View style={{ flex: 1 }}>
                 <Text style={styles.gpsTitle}>Use Current GPS Location</Text>
                 <Text style={styles.gpsSubtitle}>
-                  Automatically find financers closest to your shop (Mapbox Verified)
+                  Automatically find commercial partners closest to your shop (Mapbox Verified)
                 </Text>
               </View>
             </TouchableOpacity>
@@ -321,11 +321,11 @@ export const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
 
             {/* Radius Selector */}
             <Text style={styles.sectionLabel}>
-              Financer Distance Radius:{' '}
+              Partner Discovery Radius:{' '}
               <Text style={{ color: '#003893', fontWeight: '900' }}>{selectedRadius} km</Text>
             </Text>
             <Text style={styles.radiusHelp}>
-              Only display business financers operating within this radius
+              Only display commercial partners operating within this radius
             </Text>
             <View style={styles.radiusRow}>
               {RADIUS_PRESETS.map((km) => {

@@ -115,7 +115,7 @@ export const NotificationModal: React.FC<NotificationModalProps> = ({ visible, o
               </View>
             </View>
 
-            <Text style={styles.subTitle}>Real-time updates & local financer alerts</Text>
+            <Text style={styles.subTitle}>Real-time updates & local partner alerts</Text>
           </View>
 
           {/* Body */}
@@ -127,7 +127,7 @@ export const NotificationModal: React.FC<NotificationModalProps> = ({ visible, o
             <View style={styles.centerBox}>
               <Bell size={40} color="#cbd5e1" />
               <Text style={styles.emptyText}>No notifications yet</Text>
-              <Text style={styles.emptySub}>We will alert you when new financers join in your area!</Text>
+              <Text style={styles.emptySub}>We will alert you when new commercial partners join in your area!</Text>
             </View>
           ) : (
             <FlatList

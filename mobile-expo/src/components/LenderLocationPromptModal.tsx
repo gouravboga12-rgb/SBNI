@@ -143,12 +143,12 @@ export const LenderLocationPromptModal: React.FC<LenderLocationPromptModalProps>
             <View style={styles.badgeRow}>
               <View style={styles.badge}>
                 <Compass size={13} color="#059669" />
-                <Text style={styles.badgeText}>Financer Office & Lending Service Area</Text>
+                <Text style={styles.badgeText}>Commercial Partner Office & Service Area</Text>
               </View>
             </View>
 
             {/* Header Title & Subtitle */}
-            <Text style={styles.title}>Confirm Your Lending Office Location</Text>
+            <Text style={styles.title}>Confirm Your Business Office Location</Text>
             <Text style={styles.subtitle}>
               JustPaisa connects you with local shop owners and startups looking for business funding within your service radius. Ensure your office location is accurate.
             </Text>

@@ -192,7 +192,7 @@ export const LenderReportsScreen: React.FC = () => {
         vendorName: reportingLead.vendorName,
         vendorPhone: reportingLead.mobileNumber,
         reason: fraudReason.trim(),
-        reportedBy: user?.name || user?.email || 'Financer Partner',
+        reportedBy: user?.name || user?.email || 'Commercial Partner',
       });
 
       if (res.success) {
@@ -257,9 +257,9 @@ export const LenderReportsScreen: React.FC = () => {
       <View style={styles.topCard}>
         <View style={styles.titleRow}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.title}>Financing Requests & Reports</Text>
+            <Text style={styles.title}>Business Enquiries & Reports</Text>
             <Text style={styles.subTitle}>
-              Manage customer loan requests, approve or reject applications, and inspect KYC files
+              Manage business enquiries, approve or reject applications, and inspect KYC files
             </Text>
           </View>
           <TouchableOpacity
@@ -433,7 +433,7 @@ export const LenderReportsScreen: React.FC = () => {
                       ? '📞 Phone Call inquiry'
                       : item.inquiryType === 'WHATSAPP'
                       ? '💬 WhatsApp inquiry'
-                      : '📝 Loan Application submitted')}
+                      : '📝 Business Enquiry submitted')}
                 </Text>
               </View>
 
@@ -576,7 +576,7 @@ export const LenderReportsScreen: React.FC = () => {
             </View>
 
             <Text style={styles.modalSub}>
-              Reporting will flag this borrower across the JustPaisa Risk Network and notify other financers in your district.
+              Reporting will flag this applicant across the JustPaisa Risk Network and notify other commercial partners in your district.
             </Text>
 
             {reportingLead && (
@@ -646,7 +646,7 @@ export const LenderReportsScreen: React.FC = () => {
             </View>
 
             <Text style={styles.modalSub}>
-              Collective intelligence protecting business financers against defaults and fake documents.
+              Collective intelligence protecting commercial partners against fraud and fake documents.
             </Text>
 
             {loadingFrauds ? (

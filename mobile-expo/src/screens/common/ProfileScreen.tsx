@@ -74,7 +74,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onOpenPolicies }) 
             </View>
             <View>
               <Text style={styles.menuTitle}>
-                Switch to {isVendor ? 'Financer Hub' : 'Vendor Dashboard'}
+                Switch to {isVendor ? 'Partner Hub' : 'Vendor Dashboard'}
               </Text>
               <Text style={styles.menuSub}>Toggle your marketplace active view</Text>
             </View>

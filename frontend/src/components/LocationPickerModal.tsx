@@ -182,10 +182,10 @@ export const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
             </div>
             <div>
               <h3 className="text-base sm:text-lg font-extrabold font-heading">
-                {title || (isLenderMode ? 'Configure Lending Area & Service Radius' : 'Select Search Location')}
+                {title || (isLenderMode ? 'Configure Business Area & Service Radius' : 'Select Search Location')}
               </h3>
               <p className="text-[11px] text-blue-200 font-medium">
-                {subtitle || (isLenderMode ? 'Small businesses within this radius will discover your financer profile' : 'Discover nearby business financers')}
+                {subtitle || (isLenderMode ? 'Small businesses within this radius will discover your partner profile' : 'Discover nearby commercial partners')}
               </p>
             </div>
           </div>
@@ -351,7 +351,7 @@ export const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
               <div className="flex items-center justify-between">
                 <label className="block text-xs font-extrabold text-[#003893] flex items-center gap-1.5">
                   <Radio className="w-4 h-4 text-blue-600" />
-                  <span>Configured Lending Service Radius</span>
+                  <span>Configured Service Radius</span>
                 </label>
                 <span className="bg-[#003893] text-white text-xs font-black px-2.5 py-0.5 rounded-full shadow-xs">
                   {radiusKm} KM
@@ -360,7 +360,7 @@ export const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
 
               <p className="text-[11px] text-slate-600 leading-relaxed font-medium">
                 Small shop businesses within <strong className="text-slate-900">{radiusKm} KM</strong> of{' '}
-                <strong className="text-slate-900">{place || city}</strong> will discover your financer profile.
+                <strong className="text-slate-900">{place || city}</strong> will discover your business partner profile.
               </p>
 
               {/* Radius Quick Selector Chips */}

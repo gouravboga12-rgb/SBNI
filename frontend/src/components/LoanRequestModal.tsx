@@ -349,7 +349,7 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
               <div className="p-3 rounded-2xl bg-white border border-emerald-200 text-xs text-left space-y-1 max-w-sm mx-auto">
                 <div className="text-slate-500 font-medium">Status: <span className="font-bold text-amber-600">Pending Verification</span></div>
                 <div className="text-slate-500 font-medium">Annual Income: <span className="font-bold text-slate-900">{annualIncome}</span></div>
-                <div className="text-slate-500 font-medium">Financer Contact: <span className="font-bold text-slate-900">{lender.phone}</span></div>
+                <div className="text-slate-500 font-medium">Partner Contact: <span className="font-bold text-slate-900">{lender.phone}</span></div>
               </div>
 
               <button
