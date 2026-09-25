@@ -333,7 +333,13 @@ export const LenderHomeScreen: React.FC = () => {
           </Text>
           <TouchableOpacity
             style={styles.emptyExploreBtn}
-            onPress={() => navigation.navigate('Businesses')}
+            onPress={() => {
+              if (!isSubscribed) {
+                setSubModalVisible(true);
+              } else {
+                navigation.navigate('Businesses');
+              }
+            }}
             activeOpacity={0.85}
           >
             <Text style={styles.emptyExploreBtnText}>Browse Discovered Businesses</Text>
@@ -341,24 +347,30 @@ export const LenderHomeScreen: React.FC = () => {
         </View>
       ) : (
         leads.map((item) => {
-        const isPending = item.status.toLowerCase().includes('pend');
-        const isAccepted = item.status.toLowerCase().includes('accept') || item.status === 'Verified';
+        const isPending = (item.status || '').toLowerCase().includes('pend');
+        const isAccepted = (item.status || '').toLowerCase().includes('accept') || item.status === 'Verified';
 
         return (
           <TouchableOpacity
             key={item.id}
             style={styles.leadCard}
             activeOpacity={0.9}
-            onPress={() => setSelectedVendorForReview(item)}
+            onPress={() => {
+              if (!isSubscribed) {
+                setSubModalVisible(true);
+                return;
+              }
+              setSelectedVendorForReview(item);
+            }}
           >
             <View style={styles.leadTop}>
               <View style={styles.shopIcon}>
                 <Store size={22} color="#007a33" />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.shopName}>{item.shopName}</Text>
+                <Text style={styles.shopName}>{item.shopName || 'Shop'}</Text>
                 <Text style={styles.vendorName}>
-                  {item.vendorName} • {item.city}
+                  {item.vendorName || 'Business Owner'} • {item.city || 'City'}
                 </Text>
               </View>
               <View
@@ -375,7 +387,7 @@ export const LenderHomeScreen: React.FC = () => {
                     isPending && { color: '#d97706' },
                   ]}
                 >
-                  {item.status}
+                  {item.status || 'Pending'}
                 </Text>
               </View>
             </View>
@@ -399,7 +411,13 @@ export const LenderHomeScreen: React.FC = () => {
             {/* Inspect KYC Action */}
             <TouchableOpacity
               style={styles.inspectQuickBtn}
-              onPress={() => setSelectedVendorForReview(item)}
+              onPress={() => {
+                if (!isSubscribed) {
+                  setSubModalVisible(true);
+                  return;
+                }
+                setSelectedVendorForReview(item);
+              }}
             >
               <Eye size={13} color="#003893" />
               <Text style={styles.inspectQuickBtnText}>Open Shop Profile & Inspect KYC Details</Text>
@@ -431,7 +449,16 @@ export const LenderHomeScreen: React.FC = () => {
                 <>
                   <TouchableOpacity
                     style={styles.circleBtn}
-                    onPress={() => Linking.openURL(`tel:${item.mobileNumber}`)}
+                    onPress={() => {
+                      if (!isSubscribed) {
+                        setSubModalVisible(true);
+                        return;
+                      }
+                      const rawPhone = String(item.mobileNumber).replace(/\D/g, '');
+                      if (rawPhone.length >= 10) {
+                        Linking.openURL(`tel:${rawPhone}`).catch(() => {});
+                      }
+                    }}
                   >
                     <Phone size={16} color="#007a33" />
                   </TouchableOpacity>
@@ -439,13 +466,17 @@ export const LenderHomeScreen: React.FC = () => {
                   <TouchableOpacity
                     style={styles.circleBtn}
                     onPress={() => {
-                      const clean = item.mobileNumber.replace(/\D/g, '');
+                      if (!isSubscribed) {
+                        setSubModalVisible(true);
+                        return;
+                      }
+                      const clean = String(item.mobileNumber).replace(/\D/g, '');
                       const cleanPhone = clean.length === 10 ? `91${clean}` : clean;
                       Linking.openURL(
                         `https://wa.me/${cleanPhone}?text=Hello%20${encodeURIComponent(
-                          item.shopName
+                          item.shopName || 'Shop'
                         )},%20regarding%20your%20business%20enquiry%20on%20JustPaisa...`
-                      );
+                      ).catch(() => {});
                     }}
                   >
                     <MessageSquare size={16} color="#16a34a" />

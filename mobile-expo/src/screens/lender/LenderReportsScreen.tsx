@@ -223,16 +223,17 @@ export const LenderReportsScreen: React.FC = () => {
     }
   };
 
-  const pendingCount = leads.filter((l) => l.status.toLowerCase().includes('pend')).length;
-  const acceptedCount = leads.filter((l) => l.status.toLowerCase().includes('accept')).length;
-  const rejectedCount = leads.filter((l) => l.status.toLowerCase().includes('reject')).length;
+  const pendingCount = leads.filter((l) => (l.status || '').toLowerCase().includes('pend')).length;
+  const acceptedCount = leads.filter((l) => (l.status || '').toLowerCase().includes('accept')).length;
+  const rejectedCount = leads.filter((l) => (l.status || '').toLowerCase().includes('reject')).length;
   const fraudCount = leads.filter((l) => !!l.isFraud).length;
 
   const filteredLeads = leads.filter((l) => {
     // 1. Status filter
-    if (filter === 'PENDING' && !l.status.toLowerCase().includes('pend')) return false;
-    if (filter === 'ACCEPTED' && !l.status.toLowerCase().includes('accept')) return false;
-    if (filter === 'REJECTED' && !l.status.toLowerCase().includes('reject')) return false;
+    const statusLower = (l.status || '').toLowerCase();
+    if (filter === 'PENDING' && !statusLower.includes('pend')) return false;
+    if (filter === 'ACCEPTED' && !statusLower.includes('accept')) return false;
+    if (filter === 'REJECTED' && !statusLower.includes('reject')) return false;
     if (filter === 'FRAUD' && !l.isFraud) return false;
 
     // 2. Search query filter
@@ -351,9 +352,9 @@ export const LenderReportsScreen: React.FC = () => {
           />
         }
         renderItem={({ item }) => {
-          const isPending = item.status.toLowerCase().includes('pend');
-          const isAccepted = item.status.toLowerCase().includes('accept') || item.status === 'Verified';
-          const isRejected = item.status.toLowerCase().includes('reject');
+          const isPending = (item.status || '').toLowerCase().includes('pend');
+          const isAccepted = (item.status || '').toLowerCase().includes('accept') || item.status === 'Verified';
+          const isRejected = (item.status || '').toLowerCase().includes('reject');
           const isFraud = !!item.isFraud;
 
           return (

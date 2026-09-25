@@ -27,12 +27,14 @@ import {
   Store,
   X,
   Navigation,
+  Lock,
 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../context/AuthContext';
 import { fetchVendorProfilesForLenderApi } from '../../services/api';
 import { DiscoveredBusiness } from '../../types';
 import { resolveDocumentUrl } from '../../utils/documentGenerators';
+import { SubscriptionModal } from '../../components/SubscriptionModal';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -51,7 +53,8 @@ export const LenderBusinessesScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const isTablet = width >= 768;
-  const { lenderProfile } = useAuth();
+  const { lenderProfile, isSubscribed } = useAuth();
+  const [subModalVisible, setSubModalVisible] = useState(false);
   const [businesses, setBusinesses] = useState<DiscoveredBusiness[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -135,6 +138,10 @@ export const LenderBusinessesScreen: React.FC = () => {
   };
 
   const handleCall = (phone?: string) => {
+    if (!isSubscribed) {
+      setSubModalVisible(true);
+      return;
+    }
     const raw = (phone || '').replace(/\D/g, '');
     if (raw.length >= 10) {
       Linking.openURL(`tel:${raw}`).catch(() => {
@@ -146,6 +153,10 @@ export const LenderBusinessesScreen: React.FC = () => {
   };
 
   const handleWhatsApp = (phone?: string, shopName?: string) => {
+    if (!isSubscribed) {
+      setSubModalVisible(true);
+      return;
+    }
     const raw = (phone || '').replace(/\D/g, '');
     if (raw.length >= 10) {
       const cleanPhone = raw.length === 10 ? `91${raw}` : raw;
@@ -172,8 +183,8 @@ export const LenderBusinessesScreen: React.FC = () => {
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase();
     return (
-      b.shopName.toLowerCase().includes(q) ||
-      b.vendorName.toLowerCase().includes(q) ||
+      (b.shopName && b.shopName.toLowerCase().includes(q)) ||
+      (b.vendorName && b.vendorName.toLowerCase().includes(q)) ||
       (b.category && b.category.toLowerCase().includes(q)) ||
       (b.city && b.city.toLowerCase().includes(q)) ||
       (b.place && b.place.toLowerCase().includes(q))
@@ -254,6 +265,29 @@ export const LenderBusinessesScreen: React.FC = () => {
             }}
             colors={['#007a33']}
           />
+        }
+        ListHeaderComponent={
+          !isSubscribed ? (
+            <View style={styles.vipNoticeCard}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
+                <View style={styles.vipNoticeIconBox}>
+                  <Lock size={20} color="#b45309" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.vipNoticeTitle}>Membership Required 🔒</Text>
+                  <Text style={styles.vipNoticeSub}>
+                    Subscribe to unlock direct calls, WhatsApp chats & Google Maps directions with registered businesses.
+                  </Text>
+                </View>
+              </View>
+              <TouchableOpacity
+                style={styles.vipNoticeBtn}
+                onPress={() => setSubModalVisible(true)}
+              >
+                <Text style={styles.vipNoticeBtnText}>View Plans</Text>
+              </TouchableOpacity>
+            </View>
+          ) : null
         }
         ListEmptyComponent={
           <View style={styles.emptyCard}>
@@ -356,6 +390,10 @@ export const LenderBusinessesScreen: React.FC = () => {
                   <TouchableOpacity
                     style={styles.mapBtn}
                     onPress={() => {
+                      if (!isSubscribed) {
+                        setSubModalVisible(true);
+                        return;
+                      }
                       const lat = item.latitude || 17.3688;
                       const lng = item.longitude || 78.5247;
                       Linking.openURL(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`).catch(() => {});
@@ -368,7 +406,13 @@ export const LenderBusinessesScreen: React.FC = () => {
 
                   <TouchableOpacity
                     style={styles.moreInfoBtn}
-                    onPress={() => setSelectedBusinessForInfo(item)}
+                    onPress={() => {
+                      if (!isSubscribed) {
+                        setSubModalVisible(true);
+                        return;
+                      }
+                      setSelectedBusinessForInfo(item);
+                    }}
                     activeOpacity={0.8}
                   >
                     <Info size={14} color="#003893" />
@@ -474,9 +518,13 @@ export const LenderBusinessesScreen: React.FC = () => {
                   <TouchableOpacity
                     style={styles.directionsBtn}
                     onPress={() => {
+                      if (!isSubscribed) {
+                        setSubModalVisible(true);
+                        return;
+                      }
                       const lat = selectedBusinessForInfo.latitude || 17.3688;
                       const lng = selectedBusinessForInfo.longitude || 78.5247;
-                      Linking.openURL(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`);
+                      Linking.openURL(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`).catch(() => {});
                     }}
                     activeOpacity={0.8}
                   >
@@ -551,6 +599,12 @@ export const LenderBusinessesScreen: React.FC = () => {
           </View>
         </View>
       </Modal>
+
+      {/* Subscription Modal */}
+      <SubscriptionModal
+        visible={subModalVisible}
+        onClose={() => setSubModalVisible(false)}
+      />
     </View>
   );
 };
@@ -1089,5 +1143,47 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '800',
     color: '#475569',
+  },
+  vipNoticeCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#fffbeb',
+    borderWidth: 1.5,
+    borderColor: '#fde68a',
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 12,
+    gap: 10,
+  },
+  vipNoticeIconBox: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    backgroundColor: '#fef3c7',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  vipNoticeTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#92400e',
+  },
+  vipNoticeSub: {
+    fontSize: 11,
+    color: '#b45309',
+    marginTop: 2,
+    lineHeight: 15,
+  },
+  vipNoticeBtn: {
+    backgroundColor: '#007a33',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+  },
+  vipNoticeBtnText: {
+    color: '#ffffff',
+    fontSize: 11,
+    fontWeight: '800',
   },
 });

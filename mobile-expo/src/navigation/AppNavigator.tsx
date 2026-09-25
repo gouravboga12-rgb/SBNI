@@ -76,7 +76,7 @@ function LenderTabs({ onOpenSubscription }: RoleTabsProps) {
 
 export const AppNavigator: React.FC = () => {
   const navigationRef = useNavigationContainerRef();
-  const { user, token, role, isLoading } = useAuth();
+  const { user, token, role, isSubscribed, isLoading } = useAuth();
   const [subModalVisible, setSubModalVisible] = useState(false);
   const [notifModalVisible, setNotifModalVisible] = useState(false);
   const [policyModalVisible, setPolicyModalVisible] = useState(false);
@@ -125,6 +125,10 @@ export const AppNavigator: React.FC = () => {
   };
 
   const handleNavigateFinancers = () => {
+    if (!isSubscribed) {
+      setSubModalVisible(true);
+      return;
+    }
     if (navigationRef.isReady()) {
       navigationRef.navigate((role === 'VENDOR' ? 'Financers' : 'Businesses') as never);
     }
@@ -154,16 +158,16 @@ export const AppNavigator: React.FC = () => {
           onOpenRefer={() => setReferModalVisible(true)}
           onOpenNotifications={() => setNotifModalVisible(true)}
         />
-        <Stack.Navigator screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="Main">
-            {() =>
-              role === 'VENDOR' ? (
-                <VendorTabs onOpenSubscription={() => setSubModalVisible(true)} />
-              ) : (
-                <LenderTabs onOpenSubscription={() => setSubModalVisible(true)} />
-              )
-            }
-          </Stack.Screen>
+        <Stack.Navigator key={`root-nav-${role}`} screenOptions={{ headerShown: false }}>
+          {role === 'VENDOR' ? (
+            <Stack.Screen name="VendorTabs">
+              {() => <VendorTabs onOpenSubscription={() => setSubModalVisible(true)} />}
+            </Stack.Screen>
+          ) : (
+            <Stack.Screen name="LenderTabs">
+              {() => <LenderTabs onOpenSubscription={() => setSubModalVisible(true)} />}
+            </Stack.Screen>
+          )}
         </Stack.Navigator>
 
         <SubscriptionModal

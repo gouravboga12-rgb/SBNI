@@ -181,6 +181,9 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
   const [internalActiveTab, setInternalActiveTab] = useState<'home' | 'businesses' | 'reports' | 'profile'>('home');
   const activeTab = controlledActiveTab !== undefined ? controlledActiveTab : internalActiveTab;
   const setActiveTab = (tab: 'home' | 'businesses' | 'reports' | 'profile') => {
+    if (tab === 'businesses' && !checkLenderSubscribed()) {
+      return;
+    }
     setInternalActiveTab(tab);
     if (onTabChange) onTabChange(tab);
     if (tab === 'profile') setSelectedVendor(null);
@@ -1202,13 +1205,17 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
     return false;
   };
 
-  const checkLenderSubscribed = () => {
-    const subState =
+  const isLenderSubscribed = () => {
+    return (
+      !!lenderActiveSub ||
       localStorage.getItem('sbni_lender_subscribed') === 'true' ||
       localStorage.getItem('sbni_subscribed') === 'true' ||
-      localStorage.getItem('sbni_vendor_subscribed') === 'true';
+      localStorage.getItem('sbni_vendor_subscribed') === 'true'
+    );
+  };
 
-    if (!subState) {
+  const checkLenderSubscribed = () => {
+    if (!isLenderSubscribed()) {
       if (onOpenSubscription) onOpenSubscription();
       return false;
     }
@@ -1233,6 +1240,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
   };
 
   const handleBusinessesClick = () => {
+    if (!checkLenderSubscribed()) return;
     setSelectedVendor(null);
     setActiveTab('businesses');
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1853,6 +1861,25 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
 
         {/* TAB 2: BUSINESSES TAB - ALL NEARBY BUSINESSES DISCOVERY */}
         {!selectedVendor && activeTab === 'businesses' && (
+          !isLenderSubscribed() ? (
+            <div className="card-white p-12 text-center rounded-3xl border border-slate-200 shadow-sm space-y-5 max-w-lg mx-auto my-12">
+              <div className="w-16 h-16 rounded-3xl bg-amber-50 border border-amber-200 flex items-center justify-center mx-auto text-amber-700 shadow-inner">
+                <Lock className="w-8 h-8" />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-xl font-extrabold text-slate-900 font-heading">Commercial Partner Membership Required 🔒</h3>
+                <p className="text-xs text-slate-500 max-w-sm mx-auto leading-relaxed">
+                  Active membership is required to access the discovered businesses directory, view shop owners' contact details, and open GPS directions.
+                </p>
+              </div>
+              <button
+                onClick={onOpenSubscription}
+                className="btn-sbni-green py-3 px-8 text-xs font-extrabold shadow-lg mx-auto flex items-center gap-2 cursor-pointer"
+              >
+                <span>Subscribe to Unlock Businesses Directory</span>
+              </button>
+            </div>
+          ) : (
           <div className="space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
@@ -2020,7 +2047,10 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
 
                         {/* More Info Button */}
                         <button
-                          onClick={() => setMoreInfoModalBiz(biz)}
+                          onClick={() => {
+                            if (!checkLenderSubscribed()) return;
+                            setMoreInfoModalBiz(biz);
+                          }}
                           className="w-full py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer border border-slate-200/80"
                         >
                           <Info className="w-3.5 h-3.5 text-[#003893]" />
@@ -2033,6 +2063,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
               </div>
             )}
           </div>
+          )
         )}
 
         {/* TAB 3: REPORTS TAB - FULL REQUESTS TRACKING & FRAUD AUDIT */}
@@ -3665,7 +3696,7 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
             }`}
         >
           <Users className="w-5 h-5 sm:w-6 sm:h-6 text-slate-600" />
-          <span>Businesses</span>
+          <span>{isLenderSubscribed() ? 'Businesses' : 'Businesses 🔒'}</span>
         </button>
 
         {/* Floating Green Action Button */}
@@ -3935,7 +3966,12 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                   )}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 text-xs font-extrabold text-[#003893] hover:underline"
+                  onClick={(e) => {
+                    if (!checkLenderSubscribed()) {
+                      e.preventDefault();
+                    }
+                  }}
+                  className="inline-flex items-center gap-1.5 text-xs font-extrabold text-[#003893] hover:underline cursor-pointer"
                 >
                   <Navigation className="w-3.5 h-3.5" />
                   <span>Open Directions on Google Maps</span>

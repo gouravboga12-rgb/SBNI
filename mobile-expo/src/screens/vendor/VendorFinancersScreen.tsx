@@ -74,6 +74,12 @@ export const VendorFinancersScreen: React.FC = () => {
     loadLenders();
   }, [radiusKm, city]);
 
+  useEffect(() => {
+    if (!isSubscribed) {
+      setSubModalVisible(true);
+    }
+  }, [isSubscribed]);
+
   const loadLenders = async () => {
     setLoading(true);
     try {

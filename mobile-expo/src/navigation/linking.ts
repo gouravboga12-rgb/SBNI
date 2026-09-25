@@ -4,15 +4,20 @@ export const linking = {
   prefixes: [Linking.createURL('/'), 'justpaisa://', 'https://justpaisa.in'],
   config: {
     screens: {
-      Main: {
+      VendorTabs: {
         screens: {
           Home: 'home',
           Financers: 'financers',
-          Inquiries: 'requests',
-          Leads: 'leads',
-          FraudRisk: 'fraud',
-          Refer: 'refer',
+          Requests: 'requests',
           Profile: 'profile',
+        },
+      },
+      LenderTabs: {
+        screens: {
+          Home: 'lender-home',
+          Businesses: 'businesses',
+          Reports: 'reports',
+          Profile: 'lender-profile',
         },
       },
       Subscription: 'subscription',

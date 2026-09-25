@@ -56,6 +56,14 @@ export const CustomTabBar: React.FC<CustomTabBarProps> = ({
         return;
       }
 
+      // Gate: Businesses directory requires active subscription for commercial partners (mirrors website)
+      if (role === 'LENDER' && route.name === 'Businesses' && !isSubscribed) {
+        if (onOpenSubscription) {
+          onOpenSubscription();
+        }
+        return;
+      }
+
       const event = navigation.emit({
         type: 'tabPress',
         target: route.key,
@@ -78,7 +86,7 @@ export const CustomTabBar: React.FC<CustomTabBarProps> = ({
       label = isVendor && !isSubscribed ? 'Partners 🔒' : 'Partners';
     } else if (route.name === 'Businesses') {
       IconComponent = Users;
-      label = 'Businesses';
+      label = !isVendor && !isSubscribed ? 'Businesses 🔒' : 'Businesses';
     } else if (route.name === 'Requests') {
       IconComponent = FileText;
       label = 'Requests';

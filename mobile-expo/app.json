@@ -25,7 +25,7 @@
         "backgroundColor": "#003893"
       },
       "package": "com.justpaisa.app",
-      "versionCode": 6,
+      "versionCode": 7,
       "permissions": [
         "android.permission.INTERNET",
         "android.permission.ACCESS_NETWORK_STATE",

@@ -200,7 +200,13 @@ export const VendorRequestsScreen: React.FC = () => {
             </Text>
             <TouchableOpacity
               style={styles.exploreBtn}
-              onPress={() => navigation.navigate('Financers')}
+              onPress={() => {
+                if (!isSubscribed) {
+                  setSubModalVisible(true);
+                } else {
+                  navigation.navigate('Financers');
+                }
+              }}
               activeOpacity={0.85}
             >
               <Search size={15} color="#ffffff" />
@@ -319,11 +325,15 @@ export const VendorRequestsScreen: React.FC = () => {
                 {isAccepted ? (
                   <TouchableOpacity
                     style={styles.navBtn}
-                    onPress={() =>
+                    onPress={() => {
+                      if (!isSubscribed) {
+                        setSubModalVisible(true);
+                        return;
+                      }
                       Linking.openURL(
                         `https://www.google.com/maps/dir/?api=1&destination=${lenderLat},${lenderLng}`
-                      ).catch(() => {})
-                    }
+                      ).catch(() => {});
+                    }}
                     activeOpacity={0.8}
                   >
                     <Navigation size={13} color="#003893" />
@@ -445,6 +455,10 @@ export const VendorRequestsScreen: React.FC = () => {
                     <TouchableOpacity
                       style={styles.fullNavBtn}
                       onPress={() => {
+                        if (!isSubscribed) {
+                          setSubModalVisible(true);
+                          return;
+                        }
                         const lat = (selectedRequest as any).lenderLatitude || (selectedRequest.lender as any)?.latitude || 17.3850;
                         const lng = (selectedRequest as any).lenderLongitude || (selectedRequest.lender as any)?.longitude || 78.4867;
                         Linking.openURL(
