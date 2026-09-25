@@ -516,6 +516,40 @@ export function logoutUser(): void {
   window.dispatchEvent(new Event('sbni_subscription_updated'));
 }
 
+export async function deleteMyAccountApi(): Promise<{ success: boolean; message?: string }> {
+  try {
+    const token = getToken();
+    if (!token) return { success: false, message: 'You are not logged in.' };
+    const res = await apiFetch('/auth/delete-account', {
+      method: 'DELETE',
+      headers: authHeaders(token),
+    });
+    if (res?.success) {
+      logoutUser();
+    }
+    return res;
+  } catch (err: any) {
+    return { success: false, message: err.message || 'Failed to delete account.' };
+  }
+}
+
+export async function submitAccountDeletionRequestApi(data: {
+  identifier: string;
+  reason?: string;
+  confirm: boolean;
+}): Promise<{ success: boolean; message?: string }> {
+  try {
+    const res = await apiFetch('/auth/request-account-deletion', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    return res;
+  } catch (err: any) {
+    return { success: false, message: err.message || 'Failed to submit account deletion request.' };
+  }
+}
+
+
 // ================================================================
 // LENDERS
 // ================================================================

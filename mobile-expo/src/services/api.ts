@@ -754,6 +754,23 @@ export async function clearMyNotificationsApi(): Promise<{ success: boolean; mes
   }
 }
 
+export async function deleteMyAccountApi(): Promise<{ success: boolean; message?: string }> {
+  try {
+    const res = await api.delete('/auth/delete-account');
+    if (res.data?.success) {
+      await AsyncStorage.removeItem('sbni_token');
+      await AsyncStorage.removeItem('sbni_user');
+      return { success: true, message: res.data.message };
+    }
+    return { success: false, message: res.data?.message || 'Failed to delete account.' };
+  } catch (e: any) {
+    return {
+      success: false,
+      message: e?.response?.data?.message || e.message || 'Failed to delete account.',
+    };
+  }
+}
+
 // Backward-compatibility aliases
 export const sendOtp = sendSignupOtpApi;
 export const verifyOtp = verifySignupOtpApi;
@@ -766,3 +783,4 @@ export const updateLeadStatus = updateLeadStatusApi;
 export const getSubscriptionPlans = fetchSubscriptionPlans;
 export const purchasePlanWithWallet = activateSubscriptionWithWalletApi;
 export const getReferralStats = fetchMyReferralInfoApi;
+

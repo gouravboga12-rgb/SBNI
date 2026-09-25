@@ -10,6 +10,7 @@ import {
   notifyVendorsOfNewLender,
   testUserPushNotification,
 } from '../services/pushNotificationService';
+import { permanentlyDeleteUserById } from '../services/userService';
 
 // In-memory store for pending signup OTPs (before account creation in DB)
 interface PendingOtpRecord {
@@ -827,4 +828,88 @@ export const testPushNotification = async (req: AuthenticatedRequest, res: Respo
 
   const result = await testUserPushNotification(userId, pushToken);
   res.json(result);
+};
+
+/**
+ * In-App Account Deletion (Self Service)
+ * Permanently deletes the currently authenticated user's account and all associated data.
+ */
+export const deleteMyAccount = async (req: AuthenticatedRequest, res: Response) => {
+  const userId = req.user?.userId;
+
+  if (!userId) {
+    return res.status(401).json({ success: false, message: 'Authentication required to delete account.' });
+  }
+
+  try {
+    const result = await permanentlyDeleteUserById(userId);
+    if (!result.success) {
+      return res.status(404).json(result);
+    }
+    return res.json({
+      success: true,
+      message: 'Your account and all associated data have been permanently deleted from Just Paisa.',
+    });
+  } catch (error: any) {
+    console.error('deleteMyAccount error:', error);
+    return res.status(500).json({
+      success: false,
+      message: error?.message || 'Failed to delete account. Please try again or contact support.',
+    });
+  }
+};
+
+/**
+ * Public Account Deletion Request (Web portal for Google Play Store compliance)
+ * Allows users / former users to submit an account deletion request without logging into the app.
+ */
+export const submitAccountDeletionRequest = async (req: Request, res: Response) => {
+  const { identifier, reason, confirm } = req.body;
+
+  if (!identifier || typeof identifier !== 'string' || !identifier.trim()) {
+    return res.status(400).json({
+      success: false,
+      message: 'Please provide your registered mobile number or email address.',
+    });
+  }
+
+  try {
+    const cleanIdentifier = identifier.trim().toLowerCase();
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: cleanIdentifier },
+          { phone: cleanIdentifier },
+        ],
+      },
+    });
+
+    if (user) {
+      // Create a tracked high-priority support ticket for administrative execution / record
+      const ticketNumber = `DEL-${Date.now().toString(36).toUpperCase()}-${Math.floor(100 + Math.random() * 900)}`;
+      await prisma.supportTicket.create({
+        data: {
+          userId: user.id,
+          ticketNumber,
+          category: 'ACCOUNT_DELETION',
+          subject: `Play Store / Web Deletion Request for ${cleanIdentifier}`,
+          message: `User submitted account deletion request via public portal. Reason: ${reason || 'User opted to delete'}. Confirmed checkbox: ${confirm ? 'Yes' : 'No'}.`,
+          priority: 'HIGH',
+          status: 'OPEN',
+        },
+      });
+    }
+
+    // Always respond with a consistent confirmation as required by security best-practices
+    return res.json({
+      success: true,
+      message: 'Your account deletion request has been successfully recorded. If an account is associated with this contact, all personal data, KYC documents, and profiles will be permanently erased within 30 days in accordance with Google Play and DPDPA 2023 regulations.',
+    });
+  } catch (error: any) {
+    console.error('submitAccountDeletionRequest error:', error);
+    return res.status(500).json({
+      success: false,
+      message: error?.message || 'Failed to process deletion request. Please contact support at support@justpaisa.in',
+    });
+  }
 };

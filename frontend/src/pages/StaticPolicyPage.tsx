@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   ShieldCheck,
   FileText,
@@ -16,9 +16,12 @@ import {
   CheckCircle2,
   AlertTriangle,
   Compass,
+  Trash2,
+  Loader2,
 } from 'lucide-react';
 import { SBNILogo } from '../components/SBNILogo';
 import { Footer } from '../components/Footer';
+import { submitAccountDeletionRequestApi } from '../services/api';
 
 export type StaticPageType =
   | 'terms'
@@ -26,7 +29,8 @@ export type StaticPageType =
   | 'refund'
   | 'contact'
   | 'about'
-  | 'faq';
+  | 'faq'
+  | 'delete-account';
 
 interface StaticPolicyPageProps {
   pageType: StaticPageType;
@@ -34,6 +38,14 @@ interface StaticPolicyPageProps {
 }
 
 export const StaticPolicyPage: React.FC<StaticPolicyPageProps> = ({ pageType, onNavigate }) => {
+  const [delIdentifier, setDelIdentifier] = useState('');
+  const [delRole, setDelRole] = useState<'VENDOR' | 'LENDER' | 'USER'>('VENDOR');
+  const [delReason, setDelReason] = useState('');
+  const [delConfirmed, setDelConfirmed] = useState(false);
+  const [delSubmitting, setDelSubmitting] = useState(false);
+  const [delSuccessMsg, setDelSuccessMsg] = useState<string | null>(null);
+  const [delErrorMsg, setDelErrorMsg] = useState<string | null>(null);
+
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
@@ -68,6 +80,11 @@ export const StaticPolicyPage: React.FC<StaticPolicyPageProps> = ({ pageType, on
         title: 'Frequently Asked Questions (FAQ) | Just Paisa',
         desc: 'Find answers to common questions about Just Paisa B2B directory, commercial networking, and subscription benefits.',
         path: '/faq',
+      },
+      'delete-account': {
+        title: 'Request Account & Data Deletion | Just Paisa',
+        desc: 'Submit an official request to permanently delete your Just Paisa account and associated personal data.',
+        path: '/delete-account',
       },
     };
 
@@ -543,39 +560,23 @@ export const StaticPolicyPage: React.FC<StaticPolicyPageProps> = ({ pageType, on
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="p-5 rounded-2xl bg-blue-50/70 border border-blue-200 text-center space-y-2">
-                <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center mx-auto">
-                  <Phone className="w-5 h-5" />
+            <div className="p-6 rounded-2xl bg-blue-50/70 border border-blue-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-sm">
+                  <Mail className="w-6 h-6" />
                 </div>
-                <h2 className="font-bold text-slate-900 text-sm">Helpline Desk</h2>
-                <p className="text-xs text-slate-600 font-medium">+91 1800-123-7264</p>
-                <a href="tel:18001237264" className="inline-block mt-2 px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg transition-colors">
-                  Call Now
-                </a>
-              </div>
-
-              <div className="p-5 rounded-2xl bg-emerald-50/70 border border-emerald-200 text-center space-y-2">
-                <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center mx-auto">
-                  <Mail className="w-5 h-5" />
+                <div>
+                  <h2 className="font-extrabold text-slate-900 text-base font-heading">Official Customer Support &amp; Helpdesk</h2>
+                  <p className="text-sm font-bold text-blue-900 mt-0.5">support@justpaisa.in</p>
+                  <p className="text-xs text-slate-600 font-medium">srinivaspolepalli10@gmail.com</p>
                 </div>
-                <h2 className="font-bold text-slate-900 text-sm">Official Email</h2>
-                <p className="text-xs text-slate-600 font-medium break-all">srinivaspolepalli10@gmail.com</p>
-                <a href="mailto:srinivaspolepalli10@gmail.com" className="inline-block mt-2 px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg transition-colors">
-                  Send Email
-                </a>
               </div>
-
-              <div className="p-5 rounded-2xl bg-purple-50/70 border border-purple-200 text-center space-y-2">
-                <div className="w-10 h-10 rounded-xl bg-purple-600 text-white flex items-center justify-center mx-auto">
-                  <MessageSquare className="w-5 h-5" />
-                </div>
-                <h2 className="font-bold text-slate-900 text-sm">WhatsApp Connect</h2>
-                <p className="text-xs text-slate-600 font-medium">+91 98765 43210</p>
-                <a href="https://wa.me/919876543210" target="_blank" rel="noreferrer" className="inline-block mt-2 px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-lg transition-colors">
-                  Chat Live
-                </a>
-              </div>
+              <a
+                href="mailto:support@justpaisa.in"
+                className="inline-flex items-center justify-center px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition-colors shadow-sm shrink-0"
+              >
+                Send Email
+              </a>
             </div>
 
             <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-xs text-slate-600 space-y-2">
@@ -588,6 +589,224 @@ export const StaticPolicyPage: React.FC<StaticPolicyPageProps> = ({ pageType, on
             </div>
           </article>
         )}
+
+        {/* ========================================================================= */}
+        {/* 7. ACCOUNT & DATA DELETION PORTAL (GOOGLE PLAY STORE COMPLIANT)          */}
+        {/* ========================================================================= */}
+        {pageType === 'delete-account' && (
+          <article className="bg-white rounded-3xl p-6 sm:p-10 shadow-sm border border-slate-200 space-y-6">
+            <div className="flex items-center gap-3 border-b border-slate-100 pb-5">
+              <div className="w-12 h-12 rounded-2xl bg-rose-50 border border-rose-200 text-rose-600 flex items-center justify-center font-black">
+                <Trash2 className="w-6 h-6" />
+              </div>
+              <div>
+                <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-heading">
+                  Account &amp; Data Deletion Portal
+                </h1>
+                <p className="text-xs sm:text-sm text-slate-500 font-medium">
+                  Official portal to request permanent deletion of your Just Paisa account and associated personal data
+                </p>
+              </div>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-xs text-amber-900 space-y-2">
+              <p className="font-bold flex items-center gap-1.5">
+                <ShieldCheck className="w-4 h-4 text-amber-700" />
+                Google Play Policy &amp; DPDPA 2023 Compliance
+              </p>
+              <p>
+                Just Paisa respects your digital privacy rights. Users can request complete account deletion at any time, either directly within the Just Paisa mobile application (via <em>Profile &gt; Delete Account</em>) or via this web submission form without needing to reinstall the app.
+              </p>
+            </div>
+
+            {/* Submission Form */}
+            <div className="p-6 rounded-2xl bg-slate-50 border border-slate-200 space-y-4">
+              <h2 className="text-base font-extrabold text-slate-900 font-heading">
+                Submit Account Deletion Request
+              </h2>
+
+              {delSuccessMsg ? (
+                <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs space-y-2">
+                  <div className="flex items-center gap-2 font-bold text-sm">
+                    <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                    Request Successfully Submitted
+                  </div>
+                  <p>{delSuccessMsg}</p>
+                </div>
+              ) : (
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    if (!delIdentifier.trim()) {
+                      setDelErrorMsg('Please enter your registered mobile number or email address.');
+                      return;
+                    }
+                    if (!delConfirmed) {
+                      setDelErrorMsg('Please check the confirmation box to proceed.');
+                      return;
+                    }
+                    setDelErrorMsg(null);
+                    setDelSubmitting(true);
+                    try {
+                      const res = await submitAccountDeletionRequestApi({
+                        identifier: delIdentifier,
+                        reason: delReason,
+                        confirm: delConfirmed,
+                      });
+                      setDelSubmitting(false);
+                      if (res.success) {
+                        setDelSuccessMsg(res.message || 'Your account deletion request has been submitted.');
+                      } else {
+                        setDelErrorMsg(res.message || 'Failed to submit request. Please try again or email support@justpaisa.in');
+                      }
+                    } catch (err: any) {
+                      setDelSubmitting(false);
+                      setDelErrorMsg(err.message || 'Failed to submit request.');
+                    }
+                  }}
+                  className="space-y-4 text-xs"
+                >
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      Registered Mobile Number or Email ID <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={delIdentifier}
+                      onChange={(e) => setDelIdentifier(e.target.value)}
+                      placeholder="e.g. 9876543210 or yourname@gmail.com"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-semibold focus:border-rose-500 focus:outline-none bg-white"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      Account Role <span className="text-rose-500">*</span>
+                    </label>
+                    <div className="flex gap-4">
+                      <label className="flex items-center gap-1.5 cursor-pointer font-semibold text-slate-800">
+                        <input
+                          type="radio"
+                          name="role"
+                          checked={delRole === 'VENDOR'}
+                          onChange={() => setDelRole('VENDOR')}
+                        />
+                        <span>Small Shop / Vendor</span>
+                      </label>
+                      <label className="flex items-center gap-1.5 cursor-pointer font-semibold text-slate-800">
+                        <input
+                          type="radio"
+                          name="role"
+                          checked={delRole === 'LENDER'}
+                          onChange={() => setDelRole('LENDER')}
+                        />
+                        <span>Business Financer (Lender)</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      Reason for Deletion (Optional)
+                    </label>
+                    <select
+                      value={delReason}
+                      onChange={(e) => setDelReason(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold focus:border-rose-500 focus:outline-none bg-white"
+                    >
+                      <option value="">Select a reason (optional)</option>
+                      <option value="No longer using the platform">No longer using the platform</option>
+                      <option value="Closed shop or business">Closed shop or business</option>
+                      <option value="Privacy concerns">Privacy concerns</option>
+                      <option value="Created duplicate account">Created duplicate account</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-white border border-slate-200">
+                    <label className="flex items-start gap-2 cursor-pointer text-slate-700">
+                      <input
+                        type="checkbox"
+                        checked={delConfirmed}
+                        onChange={(e) => setDelConfirmed(e.target.checked)}
+                        className="mt-0.5"
+                      />
+                      <span>
+                        I understand that upon submitting this request, my Just Paisa account, profile details, KYC documents, and business listings will be permanently deleted and cannot be restored.
+                      </span>
+                    </label>
+                  </div>
+
+                  {delErrorMsg && (
+                    <p className="text-rose-600 font-bold">{delErrorMsg}</p>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={delSubmitting}
+                    className="px-6 py-3 rounded-xl bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white font-extrabold text-xs flex items-center justify-center gap-2 transition-all shadow-sm cursor-pointer"
+                  >
+                    {delSubmitting ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>Submitting Request...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Trash2 className="w-4 h-4" />
+                        <span>Submit Account Deletion Request</span>
+                      </>
+                    )}
+                  </button>
+                </form>
+              )}
+            </div>
+
+            {/* Information Disclosures */}
+            <div className="space-y-4 text-xs text-slate-600">
+              <section className="space-y-1.5">
+                <h2 className="text-sm font-extrabold text-slate-900 font-heading">
+                  1. What data is permanently deleted?
+                </h2>
+                <ul className="list-disc pl-5 space-y-1 text-slate-600">
+                  <li>Your user account profile (name, phone number, email address, password hash).</li>
+                  <li>All uploaded KYC identity documents (Aadhaar, PAN, GST, business registration certificate).</li>
+                  <li>Store location, shop photos, coordinates, and operating service radius.</li>
+                  <li>In-app communication records, inquiries, and device push notification tokens.</li>
+                </ul>
+              </section>
+
+              <section className="space-y-1.5">
+                <h2 className="text-sm font-extrabold text-slate-900 font-heading">
+                  2. What data is retained and why?
+                </h2>
+                <p>
+                  In accordance with Indian financial and taxation regulations (including the GST Act and Companies Act), records of financial billing transactions and generated tax invoices are required to be preserved for statutory audit purposes. No further commercial networking or communication occurs after account deletion.
+                </p>
+              </section>
+
+              <section className="space-y-1.5">
+                <h2 className="text-sm font-extrabold text-slate-900 font-heading">
+                  3. Retention &amp; Purge Timeline
+                </h2>
+                <p>
+                  Deletion requests submitted via the mobile app or this web portal are processed within <strong>30 days</strong>. Immediate access to your account is revoked upon verification.
+                </p>
+              </section>
+
+              <section className="space-y-1.5">
+                <h2 className="text-sm font-extrabold text-slate-900 font-heading">
+                  4. Direct Grievance &amp; Manual Support
+                </h2>
+                <p>
+                  You can also directly email our Grievance Officer at <a href="mailto:support@justpaisa.in" className="text-blue-600 font-bold underline">support@justpaisa.in</a> or <a href="mailto:srinivaspolepalli10@gmail.com" className="text-blue-600 font-bold underline">srinivaspolepalli10@gmail.com</a> with the subject <em>"Account Deletion Request"</em> along with your registered phone number.
+                </p>
+              </section>
+            </div>
+          </article>
+        )}
+
       </main>
 
       {/* Standard Footer */}

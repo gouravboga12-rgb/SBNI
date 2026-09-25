@@ -5,6 +5,7 @@ import { calculateStackedSubscriptionDates } from './subscriptionController';
 import { emitToUser, emitToAdmin } from '../services/socketService';
 import { sendSubscriptionInvoiceEmail } from '../utils/mailer';
 import { sendPushNotificationToUser } from '../services/pushNotificationService';
+import { permanentlyDeleteUserById } from '../services/userService';
 
 export const getAdminDashboardStats = async (req: AuthenticatedRequest, res: Response) => {
   const [
@@ -424,107 +425,11 @@ export const deleteUser = async (req: AuthenticatedRequest, res: Response) => {
   }
 
   try {
-    // 1. Identify the user record (either by User.id, VendorProfile.id/userId, or LenderProfile.id/userId)
-    let user = await prisma.user.findUnique({
-      where: { id: targetId },
-    });
-
-    if (!user) {
-      const vendorProf = await prisma.vendorProfile.findFirst({
-        where: { OR: [{ id: targetId }, { userId: targetId }] },
-      });
-      if (vendorProf) {
-        user = await prisma.user.findUnique({ where: { id: vendorProf.userId } });
-      }
+    const result = await permanentlyDeleteUserById(targetId);
+    if (!result.success) {
+      return res.status(404).json(result);
     }
-
-    if (!user) {
-      const lenderProf = await prisma.lenderProfile.findFirst({
-        where: { OR: [{ id: targetId }, { userId: targetId }] },
-      });
-      if (lenderProf) {
-        user = await prisma.user.findUnique({ where: { id: lenderProf.userId } });
-      }
-    }
-
-    if (!user) {
-      return res.status(404).json({ success: false, message: 'Target user account not found or already removed.' });
-    }
-
-    const resolvedUserId = user.id;
-
-    // 2. Perform atomic deletion of all relations and the user in a transaction
-    await prisma.$transaction(async (tx) => {
-      const vProfiles = await tx.vendorProfile.findMany({ where: { userId: resolvedUserId }, select: { id: true, businessName: true, ownerName: true } });
-      const vIds = vProfiles.map((p) => p.id);
-
-      const lProfiles = await tx.lenderProfile.findMany({ where: { userId: resolvedUserId }, select: { id: true, registrationNumber: true, institutionName: true } });
-      const lIds = lProfiles.map((p) => p.id);
-      const lRegs = lProfiles.map((p) => p.registrationNumber).filter(Boolean);
-      const lNames = lProfiles.map((p) => p.institutionName).filter(Boolean);
-
-      // 1. Delete all financing leads connected to this vendor or lender
-      if (vIds.length > 0) {
-        await tx.financingLead.deleteMany({ where: { vendorId: { in: vIds } } });
-        await tx.fraudReport.deleteMany({ where: { vendorId: { in: vIds } } });
-      }
-
-      if (lIds.length > 0 || lRegs.length > 0 || lNames.length > 0) {
-        await tx.financingLead.deleteMany({
-          where: {
-            OR: [
-              ...(lIds.length > 0 ? [{ lenderId: { in: lIds } }] : []),
-              ...(lRegs.length > 0 ? [{ lenderId: { in: lRegs } }] : []),
-              ...(lNames.length > 0 ? [{ lenderId: { in: lNames } }] : []),
-            ],
-          },
-        });
-        if (lIds.length > 0) {
-          await tx.fraudReport.deleteMany({ where: { lenderId: { in: lIds } } });
-        }
-      }
-
-      // Also clean up any orphan leads that contain this user's phone or email in snapshot
-      if (user.email || user.phone) {
-        const remainingLeads = await tx.financingLead.findMany({ select: { id: true, vendorSnapshot: true } });
-        const leadIdsToDelete = remainingLeads.filter(lead => {
-          if (!lead.vendorSnapshot) return false;
-          return (user.email && lead.vendorSnapshot.includes(user.email)) || (user.phone && lead.vendorSnapshot.includes(user.phone));
-        }).map(l => l.id);
-        if (leadIdsToDelete.length > 0) {
-          await tx.financingLead.deleteMany({ where: { id: { in: leadIdsToDelete } } });
-        }
-      }
-
-      // 2. Delete user's payments
-      await tx.payment.deleteMany({ where: { userId: resolvedUserId } });
-
-      // 3. Delete user's subscriptions
-      await tx.userSubscription.deleteMany({ where: { userId: resolvedUserId } });
-
-      // 4. Delete KYC documents
-      await tx.kYCDocument.deleteMany({ where: { userId: resolvedUserId } });
-
-      // 5. Delete notifications
-      await tx.notification.deleteMany({ where: { userId: resolvedUserId } });
-
-      // 6. Delete support tickets
-      await tx.supportTicket.deleteMany({ where: { userId: resolvedUserId } });
-
-      // 7. Delete vendor profile if exists
-      await tx.vendorProfile.deleteMany({ where: { userId: resolvedUserId } });
-
-      // 8. Delete lender profile if exists
-      await tx.lenderProfile.deleteMany({ where: { userId: resolvedUserId } });
-
-      // 9. Delete the user record
-      await tx.user.delete({ where: { id: resolvedUserId } });
-    });
-
-    return res.json({
-      success: true,
-      message: `Account (${user.email}) and all associated records permanently removed from database.`,
-    });
+    return res.json(result);
   } catch (error: any) {
     console.error('deleteUser error:', error);
     return res.status(500).json({

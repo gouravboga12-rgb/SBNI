@@ -12,6 +12,8 @@ import {
   getMyProfile,
   updatePushToken,
   testPushNotification,
+  deleteMyAccount,
+  submitAccountDeletionRequest,
 } from '../controllers/authController';
 import { authenticateUser } from '../middlewares/auth';
 import { asyncHandler } from '../middlewares/errorHandler';
@@ -32,6 +34,10 @@ router.post('/resend-otp', asyncHandler(resendOtp));
 // Push Notifications
 router.post('/push-token', authenticateUser, asyncHandler(updatePushToken));
 router.post('/test-push', authenticateUser, asyncHandler(testPushNotification));
+
+// Account Deletion Routes (Self-Service In-App & Public Google Play Store Deletion)
+router.delete('/delete-account', authenticateUser, asyncHandler(deleteMyAccount));
+router.post('/request-account-deletion', asyncHandler(submitAccountDeletionRequest));
 
 // Legacy & Session Routes
 router.post('/verify-otp', asyncHandler(verifyOTP));

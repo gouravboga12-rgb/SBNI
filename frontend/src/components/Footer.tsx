@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { SBNILogo } from './SBNILogo';
-import { ShieldCheck, Mail, Phone, MapPin, FileText, Lock, RefreshCcw, AlertTriangle } from 'lucide-react';
+import { ShieldCheck, Mail, Phone, MapPin, FileText, Lock, RefreshCcw, AlertTriangle, Trash2 } from 'lucide-react';
 import { PolicyModal, PolicyTab } from './PolicyModal';
 
 interface FooterProps {
@@ -94,6 +94,16 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPolicyRoute }) => {
                 >
                   <AlertTriangle className="w-3.5 h-3.5 text-slate-500" />
                   Directory Disclaimer
+                </button>
+              </li>
+              <li>
+                <button
+                  type="button"
+                  onClick={() => navigateTo('/delete-account')}
+                  className="hover:text-rose-400 transition-colors cursor-pointer text-left flex items-center gap-1.5 text-rose-300"
+                >
+                  <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+                  Request Account Deletion
                 </button>
               </li>
             </ul>

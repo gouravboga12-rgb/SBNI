@@ -111,6 +111,10 @@ export function App() {
         setIsAdminRoute(false);
         setAuthModalOpen(false);
         setStaticPageRoute('faq');
+      } else if (pathname === '/delete-account' || pathname === '/account-deletion' || pathname === '/data-deletion') {
+        setIsAdminRoute(false);
+        setAuthModalOpen(false);
+        setStaticPageRoute('delete-account');
       } else if (pathname === '/checkout' || pathname === '/pay') {
         setIsAdminRoute(false);
         setIsCheckoutRoute(true);

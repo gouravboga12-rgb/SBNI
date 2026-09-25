@@ -39,6 +39,7 @@ import {
   Edit3,
   Bell,
   RefreshCw,
+  Trash2,
 } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../../context/AuthContext';
@@ -47,6 +48,7 @@ import {
   uploadFileToEc2Api,
   fetchReferEarnStatusApi,
   cancelAutoPayApi,
+  deleteMyAccountApi,
 } from '../../services/api';
 import {
   triggerTestPushNotification,
@@ -90,6 +92,40 @@ export const VendorProfileScreen: React.FC = () => {
   };
 
   const [isEditing, setIsEditing] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      'Delete Account Permanently',
+      'Are you sure you want to permanently delete your Just Paisa account? All your profile details, KYC documents, active listings, and associated data will be completely deleted from our database. This action CANNOT be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete Permanently',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setIsDeletingAccount(true);
+              const res = await deleteMyAccountApi();
+              setIsDeletingAccount(false);
+              if (res.success) {
+                Alert.alert(
+                  'Account Deleted',
+                  'Your account and all associated data have been permanently deleted from Just Paisa.',
+                  [{ text: 'OK', onPress: logout }]
+                );
+              } else {
+                Alert.alert('Deletion Error', res.message || 'Failed to delete account. Please try again or contact support.');
+              }
+            } catch (err: any) {
+              setIsDeletingAccount(false);
+              Alert.alert('Deletion Error', err.message || 'Failed to delete account.');
+            }
+          },
+        },
+      ]
+    );
+  };
   const [testingPush, setTestingPush] = useState(false);
   const [pushStatus, setPushStatus] = useState<string>('Checking...');
 
@@ -925,68 +961,7 @@ export const VendorProfileScreen: React.FC = () => {
         )}
       </View>
 
-      {/* ── ACCORDION 6: PUSH NOTIFICATIONS & DEVICE ALERTS ── */}
-      <View style={styles.accordionCard}>
-        <TouchableOpacity
-          style={styles.accordionHeader}
-          onPress={() => toggleSection('notifications')}
-          activeOpacity={0.8}
-        >
-          <View style={styles.accordionTitleRow}>
-            <Bell size={18} color="#003893" />
-            <Text style={styles.accordionTitle}>Push Notifications & Alerts</Text>
-          </View>
-          {openSections.notifications ? <ChevronUp size={18} color="#64748b" /> : <ChevronDown size={18} color="#64748b" />}
-        </TouchableOpacity>
-
-        {openSections.notifications && (
-          <View style={styles.accordionBody}>
-            {/* Status Card */}
-            <View style={styles.notifStatusCard}>
-              <View style={styles.notifStatusRow}>
-                <View style={[styles.notifStatusDot, pushStatus.includes('Active') ? styles.dotGreen : styles.dotOrange]} />
-                <Text style={styles.notifStatusLabel}>Device Status:</Text>
-                <Text style={[styles.notifStatusVal, pushStatus.includes('Active') ? styles.valGreen : styles.valOrange]}>
-                  {pushStatus}
-                </Text>
-              </View>
-              <Text style={styles.notifStatusHint}>
-                Real-time Expo push notifications alert you when new financers join in your area, and when your loan requests update.
-              </Text>
-            </View>
-
-            {/* Test Notification Button */}
-            <TouchableOpacity
-              style={[styles.testNotifBtn, testingPush && styles.saveBtnDisabled]}
-              onPress={handleTestPush}
-              disabled={testingPush}
-              activeOpacity={0.85}
-            >
-              {testingPush ? (
-                <ActivityIndicator size="small" color="#ffffff" />
-              ) : (
-                <>
-                  <Bell size={15} color="#ffffff" />
-                  <Text style={styles.testNotifBtnText}>Send Test Notification 🔔</Text>
-                </>
-              )}
-            </TouchableOpacity>
-
-            {/* Re-Sync Token Button */}
-            <TouchableOpacity
-              style={[styles.syncNotifBtn, testingPush && styles.saveBtnDisabled]}
-              onPress={handleSyncPushToken}
-              disabled={testingPush}
-              activeOpacity={0.85}
-            >
-              <RefreshCw size={14} color="#003893" />
-              <Text style={styles.syncNotifBtnText}>Re-Sync / Register Push Token</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-      </View>
-
-      {/* ── ACCORDION 7: LEGAL POLICIES & CUSTOMER SUPPORT ── */}
+      {/* ── ACCORDION 6: LEGAL POLICIES & CUSTOMER SUPPORT ── */}
       <View style={styles.accordionCard}>
         <TouchableOpacity
           style={styles.accordionHeader}
@@ -1061,8 +1036,27 @@ export const VendorProfileScreen: React.FC = () => {
               activeOpacity={0.7}
             >
               <View style={styles.policyRowLeft}>
-                <LogOut size={16} color="#dc2626" />
-                <Text style={styles.logoutRowText}>Sign Out of My Account</Text>
+                <LogOut size={16} color="#64748b" />
+                <Text style={[styles.logoutRowText, { color: '#64748b' }]}>Sign Out of My Account</Text>
+              </View>
+            </TouchableOpacity>
+
+            {/* Permanent Account Deletion Option */}
+            <TouchableOpacity
+              style={[styles.deleteAccountRow, isDeletingAccount && styles.saveBtnDisabled]}
+              onPress={handleDeleteAccount}
+              disabled={isDeletingAccount}
+              activeOpacity={0.7}
+            >
+              <View style={styles.policyRowLeft}>
+                {isDeletingAccount ? (
+                  <ActivityIndicator size="small" color="#dc2626" />
+                ) : (
+                  <Trash2 size={16} color="#dc2626" />
+                )}
+                <Text style={styles.deleteAccountRowText}>
+                  {isDeletingAccount ? 'Deleting Account...' : 'Delete Account Permanently'}
+                </Text>
               </View>
             </TouchableOpacity>
           </View>
@@ -1701,6 +1695,20 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   logoutRowText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#dc2626',
+  },
+  deleteAccountRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 14,
+    borderTopWidth: 1,
+    borderTopColor: '#fee2e2',
+    marginTop: 4,
+  },
+  deleteAccountRowText: {
     fontSize: 13,
     fontWeight: '800',
     color: '#dc2626',

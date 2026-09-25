@@ -37,56 +37,19 @@ export const SupportModal: React.FC<SupportModalProps> = ({ isOpen, onClose }) =
           <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center">
-                <Phone className="w-5 h-5" />
-              </div>
-              <div>
-                <div className="text-xs font-bold text-slate-900">Toll-Free Helpline</div>
-                <div className="text-sm font-extrabold text-blue-900">+91 1800-123-7264 (Just Paisa)</div>
-              </div>
-            </div>
-            <a
-              href="tel:18001237264"
-              className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-colors"
-            >
-              Call Now
-            </a>
-          </div>
-
-          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
                 <Mail className="w-5 h-5" />
               </div>
               <div>
-                <div className="text-xs font-bold text-slate-900">Official Email Desk</div>
-                <div className="text-xs font-bold text-slate-600">srinivaspolepalli10@gmail.com</div>
+                <div className="text-xs font-bold text-slate-900">Official Customer Support &amp; Helpdesk</div>
+                <div className="text-sm font-extrabold text-blue-900">support@justpaisa.in</div>
+                <div className="text-[11px] font-medium text-slate-500">srinivaspolepalli10@gmail.com</div>
               </div>
             </div>
             <a
-              href="mailto:srinivaspolepalli10@gmail.com"
-              className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-colors"
+              href="mailto:support@justpaisa.in"
+              className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-colors shadow-sm"
             >
-              Send Email
-            </a>
-          </div>
-
-          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center">
-                <MessageSquare className="w-5 h-5" />
-              </div>
-              <div>
-                <div className="text-xs font-bold text-slate-900">WhatsApp Support</div>
-                <div className="text-xs font-bold text-slate-600">+91 98765 43210</div>
-              </div>
-            </div>
-            <a
-              href="https://wa.me/919876543210"
-              target="_blank"
-              rel="noreferrer"
-              className="px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold transition-colors"
-            >
-              Chat Live
+              Email Us
             </a>
           </div>
         </div>

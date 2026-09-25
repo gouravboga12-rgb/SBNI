@@ -52,44 +52,6 @@ export const SupportModal: React.FC<SupportModalProps> = ({ visible, onClose }) 
           </View>
 
           <ScrollView style={styles.body} showsVerticalScrollIndicator={false}>
-            {/* Phone Support */}
-            <View style={styles.contactItem}>
-              <View style={[styles.contactIconBox, { backgroundColor: '#eff6ff' }]}>
-                <Phone size={20} color="#003893" />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.contactLabel}>Toll-Free Customer Helpline</Text>
-                <Text style={styles.contactValue}>+91 1800-123-7264</Text>
-              </View>
-              <TouchableOpacity
-                style={styles.actionBtn}
-                onPress={() => Linking.openURL('tel:18001237264')}
-              >
-                <Text style={styles.actionBtnText}>Call Now</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* WhatsApp Support */}
-            <View style={styles.contactItem}>
-              <View style={[styles.contactIconBox, { backgroundColor: '#ecfdf5' }]}>
-                <MessageSquare size={20} color="#16a34a" />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.contactLabel}>WhatsApp Support Desk</Text>
-                <Text style={styles.contactValue}>+91 98765 43210</Text>
-              </View>
-              <TouchableOpacity
-                style={[styles.actionBtn, { backgroundColor: '#16a34a' }]}
-                onPress={() => {
-                  const msg = encodeURIComponent(
-                    'Hello JustPaisa Team, I need assistance regarding the JustPaisa app.'
-                  );
-                  Linking.openURL(`https://wa.me/919876543210?text=${msg}`);
-                }}
-              >
-                <Text style={styles.actionBtnText}>Chat Live</Text>
-              </TouchableOpacity>
-            </View>
 
             {/* Email Support */}
             <View style={styles.contactItem}>
