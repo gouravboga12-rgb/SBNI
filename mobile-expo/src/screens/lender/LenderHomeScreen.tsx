@@ -285,7 +285,7 @@ export const LenderHomeScreen: React.FC = () => {
         </TouchableOpacity>
       )}
 
-      {/* Core Requirement: Active Service Radius Area Selector */}}
+      {/* Core Requirement: Active Service Radius Area Selector */}
       <View style={styles.radiusSection}>
         <View style={styles.radiusHeader}>
           <View style={styles.radiusTitleRow}>

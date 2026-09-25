@@ -162,27 +162,18 @@ export const VendorHomeScreen: React.FC = () => {
   };
 
   const handleOpenLoanRequest = (lender: Lender) => {
+    if (!isSubscribed) {
+      setSubModalVisible(true);
+      return;
+    }
     setSelectedLenderForLoan(lender);
     setLoanModalVisible(true);
   };
 
   const handleContactAction = async (lender: Lender, type: 'CALL' | 'WHATSAPP') => {
-    if (!isSubscribed && !lender.contactUnlocked) {
-      const unlockRes = await unlockLenderContact(lender.id);
-      if (unlockRes.success && unlockRes.phone) {
-        lender.phone = unlockRes.phone;
-        lender.contactUnlocked = true;
-      } else {
-        Alert.alert(
-          'Unlock Partner Contacts 🔒',
-          'Unlock direct phone and WhatsApp contact with all verified commercial partners with a membership plan.',
-          [
-            { text: 'Later', style: 'cancel' },
-            { text: 'View Plans', onPress: () => setSubModalVisible(true) },
-          ]
-        );
-        return;
-      }
+    if (!isSubscribed) {
+      setSubModalVisible(true);
+      return;
     }
 
     setSelectedLenderForContact({
@@ -307,7 +298,13 @@ export const VendorHomeScreen: React.FC = () => {
                 </Text>
                 <TouchableOpacity
                   style={styles.searchPartnersBtn}
-                  onPress={() => navigation.navigate('Financers')}
+                  onPress={() => {
+                    if (!isSubscribed) {
+                      setSubModalVisible(true);
+                    } else {
+                      navigation.navigate('Financers');
+                    }
+                  }}
                   activeOpacity={0.85}
                 >
                   <Text style={styles.searchPartnersBtnText}>Search Nearby Partners →</Text>
@@ -377,7 +374,13 @@ export const VendorHomeScreen: React.FC = () => {
 
                 <TouchableOpacity
                   style={[styles.quickActionCard, { borderColor: '#10b981', borderWidth: 1.5 }]}
-                  onPress={() => navigation.navigate('Financers')}
+                  onPress={() => {
+                    if (!isSubscribed) {
+                      setSubModalVisible(true);
+                    } else {
+                      navigation.navigate('Financers');
+                    }
+                  }}
                   activeOpacity={0.8}
                 >
                   <View style={[styles.quickIconBox, { backgroundColor: '#059669' }]}>
@@ -480,7 +483,13 @@ export const VendorHomeScreen: React.FC = () => {
                 </View>
               </View>
               <TouchableOpacity
-                onPress={() => navigation.navigate('Financers')}
+                onPress={() => {
+                  if (!isSubscribed) {
+                    setSubModalVisible(true);
+                  } else {
+                    navigation.navigate('Financers');
+                  }
+                }}
                 activeOpacity={0.8}
               >
                 <Text style={styles.viewAllLink}>View All →</Text>
@@ -502,9 +511,13 @@ export const VendorHomeScreen: React.FC = () => {
             <TouchableOpacity
               style={styles.emptyExploreBtn}
               onPress={() => {
-                setRadiusKm(100);
-                setSelectedCategory('All');
-                setSearchQuery('');
+                if (!isSubscribed) {
+                  setSubModalVisible(true);
+                } else {
+                  setRadiusKm(100);
+                  setSelectedCategory('All');
+                  setSearchQuery('');
+                }
               }}
               activeOpacity={0.85}
             >
@@ -591,32 +604,56 @@ export const VendorHomeScreen: React.FC = () => {
 
             {/* Card Action Buttons: Call, WhatsApp, Inquire */}
             <View style={styles.actionRow}>
-              <TouchableOpacity
-                style={styles.callBtn}
-                onPress={() => handleContactAction(item, 'CALL')}
-                activeOpacity={0.8}
-              >
-                <Phone size={14} color="#003893" />
-                <Text style={styles.callBtnText}>Call</Text>
-              </TouchableOpacity>
+              {isSubscribed ? (
+                <>
+                  <TouchableOpacity
+                    style={styles.callBtn}
+                    onPress={() => handleContactAction(item, 'CALL')}
+                    activeOpacity={0.8}
+                  >
+                    <Phone size={14} color="#003893" />
+                    <Text style={styles.callBtnText}>Call</Text>
+                  </TouchableOpacity>
 
-              <TouchableOpacity
-                style={styles.whatsAppActionBtn}
-                onPress={() => handleContactAction(item, 'WHATSAPP')}
-                activeOpacity={0.8}
-              >
-                <MessageSquare size={14} color="#ffffff" />
-                <Text style={styles.whatsAppActionBtnText}>WhatsApp</Text>
-              </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.whatsAppActionBtn}
+                    onPress={() => handleContactAction(item, 'WHATSAPP')}
+                    activeOpacity={0.8}
+                  >
+                    <MessageSquare size={14} color="#ffffff" />
+                    <Text style={styles.whatsAppActionBtnText}>WhatsApp</Text>
+                  </TouchableOpacity>
 
-              <TouchableOpacity
-                style={styles.applyBtn}
-                onPress={() => handleOpenLoanRequest(item)}
-                activeOpacity={0.85}
-              >
-                <FileText size={14} color="#ffffff" />
-                <Text style={styles.applyBtnText}>Inquire</Text>
-              </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.applyBtn}
+                    onPress={() => handleOpenLoanRequest(item)}
+                    activeOpacity={0.85}
+                  >
+                    <FileText size={14} color="#ffffff" />
+                    <Text style={styles.applyBtnText}>Inquire</Text>
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <>
+                  <TouchableOpacity
+                    style={styles.unlockContactBtn}
+                    onPress={() => setSubModalVisible(true)}
+                    activeOpacity={0.85}
+                  >
+                    <Zap size={14} color="#d97706" fill="#f59e0b" />
+                    <Text style={styles.unlockContactBtnText}>Unlock Direct Contact</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.lockedApplyBtn}
+                    onPress={() => setSubModalVisible(true)}
+                    activeOpacity={0.85}
+                  >
+                    <Lock size={13} color="#fde047" />
+                    <Text style={styles.applyBtnText}>Inquire 🔒</Text>
+                  </TouchableOpacity>
+                </>
+              )}
             </View>
           </View>
         );
@@ -1300,6 +1337,40 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '800',
     color: '#ffffff',
+  },
+  unlockContactBtn: {
+    flex: 1.4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    borderRadius: 12,
+    backgroundColor: '#fffbeb',
+    borderWidth: 1.5,
+    borderColor: '#fde68a',
+  },
+  unlockContactBtnText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#92400e',
+  },
+  lockedApplyBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    borderRadius: 12,
+    backgroundColor: '#002870',
+    shadowColor: '#003893',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 2,
   },
   statutoryFooter: {
     flexDirection: 'row',

@@ -558,7 +558,7 @@ export const LenderProfileScreen: React.FC = () => {
         )}
       </View>
 
-      {/* ── ACCORDION 2: COMMERCIAL PARTNER COMPANY & CONTACT INFO ── */}}
+      {/* ── ACCORDION 2: COMMERCIAL PARTNER COMPANY & CONTACT INFO ── */}
       <View style={styles.accordionCard}>
         <TouchableOpacity
           style={styles.accordionHeader}

@@ -16,7 +16,9 @@ import {
   Users,
   Phone,
   Plus,
+  Lock,
 } from 'lucide-react-native';
+import { useAuth } from '../context/AuthContext';
 
 interface CustomTabBarProps extends BottomTabBarProps {
   role: 'VENDOR' | 'LENDER';
@@ -33,6 +35,7 @@ export const CustomTabBar: React.FC<CustomTabBarProps> = ({
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const isTablet = width >= 768;
+  const { isSubscribed } = useAuth();
 
   const isVendor = role === 'VENDOR';
   const activeColor = isVendor ? '#003893' : '#059669';
@@ -45,6 +48,14 @@ export const CustomTabBar: React.FC<CustomTabBarProps> = ({
     const isFocused = state.index === index;
 
     const onPress = () => {
+      // Gate: Commercial Partners directory requires active subscription for vendors (mirrors website)
+      if (role === 'VENDOR' && route.name === 'Financers' && !isSubscribed) {
+        if (onOpenSubscription) {
+          onOpenSubscription();
+        }
+        return;
+      }
+
       const event = navigation.emit({
         type: 'tabPress',
         target: route.key,
@@ -64,7 +75,7 @@ export const CustomTabBar: React.FC<CustomTabBarProps> = ({
       label = 'Home';
     } else if (route.name === 'Financers') {
       IconComponent = Users;
-      label = 'Partners';
+      label = isVendor && !isSubscribed ? 'Partners 🔒' : 'Partners';
     } else if (route.name === 'Businesses') {
       IconComponent = Users;
       label = 'Businesses';

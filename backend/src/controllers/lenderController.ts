@@ -317,6 +317,32 @@ export const ingestLead = async (req: AuthenticatedRequest, res: Response) => {
       });
     }
 
+    // Strict Subscription Check: Vendor must have an active subscription to submit inquiries or leads
+    const resolvedUserId = req.user?.userId || dbVendorProfile?.userId;
+    if (req.user?.role !== 'SUPER_ADMIN') {
+      if (!resolvedUserId) {
+        return res.status(401).json({
+          success: false,
+          message: 'Authentication and active membership required to connect with commercial partners.',
+        });
+      }
+
+      const activeSub = await prisma.userSubscription.findFirst({
+        where: {
+          userId: resolvedUserId,
+          status: 'ACTIVE',
+          endDate: { gte: new Date() },
+        },
+      });
+
+      if (!activeSub) {
+        return res.status(403).json({
+          success: false,
+          message: '🔒 Active Subscription Required: You must have an active JustPaisa membership plan to inquire or connect with commercial partners.',
+        });
+      }
+    }
+
     // 3. Merge verified cloud-hosted document URLs from database into snapshot so all documents are complete
     if (dbVendorProfile) {
       snap.vendorName = snap.vendorName || dbVendorProfile.ownerName;

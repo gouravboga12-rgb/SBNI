@@ -26,6 +26,7 @@ import {
   ArrowRight,
   Shield,
   Zap,
+  Lock,
 } from 'lucide-react-native';
 import { useAuth } from '../../context/AuthContext';
 import { fetchLenders, unlockLenderContact } from '../../services/api';
@@ -93,22 +94,9 @@ export const VendorFinancersScreen: React.FC = () => {
   };
 
   const handleContactAction = async (lender: Lender, type: 'CALL' | 'WHATSAPP') => {
-    if (!isSubscribed && !lender.contactUnlocked) {
-      const unlockRes = await unlockLenderContact(lender.id);
-      if (unlockRes.success && unlockRes.phone) {
-        lender.phone = unlockRes.phone;
-        lender.contactUnlocked = true;
-      } else {
-        Alert.alert(
-          'Unlock Partner Contacts 🔒',
-          'Unlock unlimited phone & WhatsApp contacts with a JustPaisa plan.',
-          [
-            { text: 'Later', style: 'cancel' },
-            { text: 'View Plans', onPress: () => setSubModalVisible(true) },
-          ]
-        );
-        return;
-      }
+    if (!isSubscribed) {
+      setSubModalVisible(true);
+      return;
     }
 
     setSelectedLenderForContact({
@@ -229,6 +217,29 @@ export const VendorFinancersScreen: React.FC = () => {
           styles.listContent,
           { paddingBottom: insets.bottom + 90 },
         ]}
+        ListHeaderComponent={
+          !isSubscribed ? (
+            <View style={styles.vipNoticeCard}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
+                <View style={styles.vipNoticeIconBox}>
+                  <Lock size={20} color="#b45309" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.vipNoticeTitle}>Membership Required 🔒</Text>
+                  <Text style={styles.vipNoticeSub}>
+                    Subscribe to unlock direct inquiries, phone calls & WhatsApp chats with commercial partners.
+                  </Text>
+                </View>
+              </View>
+              <TouchableOpacity
+                style={styles.vipNoticeBtn}
+                onPress={() => setSubModalVisible(true)}
+              >
+                <Text style={styles.vipNoticeBtnText}>View Plans</Text>
+              </TouchableOpacity>
+            </View>
+          ) : null
+        }
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -323,30 +334,52 @@ export const VendorFinancersScreen: React.FC = () => {
 
             {/* Actions */}
             <View style={styles.actionsRow}>
-              <TouchableOpacity
-                style={styles.applyBtn}
-                onPress={() => {
-                  setSelectedLenderForLoan(item);
-                  setLoanModalVisible(true);
-                }}
-              >
-                <Text style={styles.applyBtnText}>Inquire Now</Text>
-                <ArrowRight size={14} color="#ffffff" />
-              </TouchableOpacity>
+              {isSubscribed ? (
+                <>
+                  <TouchableOpacity
+                    style={styles.applyBtn}
+                    onPress={() => {
+                      setSelectedLenderForLoan(item);
+                      setLoanModalVisible(true);
+                    }}
+                  >
+                    <Text style={styles.applyBtnText}>Inquire Now</Text>
+                    <ArrowRight size={14} color="#ffffff" />
+                  </TouchableOpacity>
 
-              <TouchableOpacity
-                style={styles.circleBtn}
-                onPress={() => handleContactAction(item, 'CALL')}
-              >
-                <Phone size={18} color="#003893" />
-              </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.circleBtn}
+                    onPress={() => handleContactAction(item, 'CALL')}
+                  >
+                    <Phone size={18} color="#003893" />
+                  </TouchableOpacity>
 
-              <TouchableOpacity
-                style={styles.circleBtnGreen}
-                onPress={() => handleContactAction(item, 'WHATSAPP')}
-              >
-                <MessageSquare size={18} color="#16a34a" />
-              </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.circleBtnGreen}
+                    onPress={() => handleContactAction(item, 'WHATSAPP')}
+                  >
+                    <MessageSquare size={18} color="#16a34a" />
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <>
+                  <TouchableOpacity
+                    style={[styles.applyBtn, { backgroundColor: '#002870', flex: 1.1 }]}
+                    onPress={() => setSubModalVisible(true)}
+                  >
+                    <Lock size={13} color="#fde047" style={{ marginRight: 4 }} />
+                    <Text style={styles.applyBtnText}>Inquire Now 🔒</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.unlockContactBannerBtn}
+                    onPress={() => setSubModalVisible(true)}
+                  >
+                    <Zap size={14} color="#d97706" fill="#f59e0b" style={{ marginRight: 4 }} />
+                    <Text style={styles.unlockContactBannerBtnText}>Unlock Direct Contact</Text>
+                  </TouchableOpacity>
+                </>
+              )}
             </View>
           </View>
         );
@@ -670,6 +703,65 @@ const styles = StyleSheet.create({
   emptyExploreBtnText: {
     color: '#ffffff',
     fontSize: 12,
+    fontWeight: '800',
+  },
+  unlockContactBannerBtn: {
+    flex: 1.4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fffbeb',
+    borderWidth: 1.5,
+    borderColor: '#fde68a',
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+  },
+  unlockContactBannerBtnText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#92400e',
+  },
+  vipNoticeCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#fffbeb',
+    borderWidth: 1.5,
+    borderColor: '#fde68a',
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 12,
+    gap: 10,
+  },
+  vipNoticeIconBox: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    backgroundColor: '#fef3c7',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  vipNoticeTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#92400e',
+  },
+  vipNoticeSub: {
+    fontSize: 11,
+    color: '#b45309',
+    marginTop: 2,
+    lineHeight: 15,
+  },
+  vipNoticeBtn: {
+    backgroundColor: '#003893',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+  },
+  vipNoticeBtnText: {
+    color: '#ffffff',
+    fontSize: 11,
     fontWeight: '800',
   },
 });

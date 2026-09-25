@@ -34,6 +34,8 @@ import {
 } from 'lucide-react-native';
 import { fetchVendorMyLeadsApi } from '../../services/api';
 import { VendorLead } from '../../types';
+import { useAuth } from '../../context/AuthContext';
+import { SubscriptionModal } from '../../components/SubscriptionModal';
 
 const STATUS_FILTERS = ['All', 'Pending', 'Accepted', 'Rejected'];
 
@@ -42,6 +44,8 @@ export const VendorRequestsScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const { width } = useWindowDimensions();
   const isTablet = width >= 768;
+  const { isSubscribed } = useAuth();
+  const [subModalVisible, setSubModalVisible] = useState(false);
 
   const [requests, setRequests] = useState<VendorLead[]>([]);
   const [loading, setLoading] = useState(false);
@@ -284,7 +288,13 @@ export const VendorRequestsScreen: React.FC = () => {
               <View style={styles.cardFooter}>
                 <TouchableOpacity
                   style={styles.callBtn}
-                  onPress={() => Linking.openURL(`tel:${effectivePhone}`)}
+                  onPress={() => {
+                    if (!isSubscribed) {
+                      setSubModalVisible(true);
+                      return;
+                    }
+                    Linking.openURL(`tel:${effectivePhone}`);
+                  }}
                   activeOpacity={0.8}
                 >
                   <Phone size={13} color="#15803d" />
@@ -293,7 +303,13 @@ export const VendorRequestsScreen: React.FC = () => {
 
                 <TouchableOpacity
                   style={styles.waBtn}
-                  onPress={() => Linking.openURL(`https://wa.me/91${effectivePhone}?text=${whatsAppMsg}`)}
+                  onPress={() => {
+                    if (!isSubscribed) {
+                      setSubModalVisible(true);
+                      return;
+                    }
+                    Linking.openURL(`https://wa.me/91${effectivePhone}?text=${whatsAppMsg}`);
+                  }}
                   activeOpacity={0.8}
                 >
                   <MessageSquare size={13} color="#16a34a" />
@@ -446,6 +462,12 @@ export const VendorRequestsScreen: React.FC = () => {
           </View>
         </Modal>
       )}
+
+      {/* Subscription Modal */}
+      <SubscriptionModal
+        visible={subModalVisible}
+        onClose={() => setSubModalVisible(false)}
+      />
     </View>
   );
 };

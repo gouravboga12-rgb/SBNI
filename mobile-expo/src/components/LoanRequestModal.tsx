@@ -27,6 +27,7 @@ import {
   Image as ImageIcon,
   CreditCard,
   Hash,
+  Lock,
 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'react-native';
@@ -55,7 +56,7 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
   onClose,
   onSuccess,
 }) => {
-  const { user, vendorProfile } = useAuth();
+  const { user, vendorProfile, isSubscribed } = useAuth();
 
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
@@ -138,6 +139,15 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
   };
 
   const handleSubmit = async () => {
+    if (!isSubscribed) {
+      Alert.alert(
+        'Membership Required 🔒',
+        'Active subscription is required to submit inquiries to commercial partners.',
+        [{ text: 'Close', onPress: onClose }]
+      );
+      return;
+    }
+
     if (!fullName.trim() || !phone.trim() || !email.trim()) {
       Alert.alert('Missing Fields', 'Please ensure your Full Name, Phone, and Email are filled.');
       return;
@@ -234,7 +244,23 @@ export const LoanRequestModal: React.FC<LoanRequestModalProps> = ({
           </View>
 
           <ScrollView style={styles.formScroll} showsVerticalScrollIndicator={false}>
-            {submitted ? (
+            {!isSubscribed ? (
+              <View style={styles.lockedContainer}>
+                <View style={styles.lockedIconCircle}>
+                  <Lock size={44} color="#d97706" />
+                </View>
+                <Text style={styles.lockedTitle}>Membership Required 🔒</Text>
+                <Text style={styles.lockedSub}>
+                  You need an active JustPaisa membership plan to submit commercial inquiries and connect directly with {lender.institutionName || 'commercial partners'}.
+                </Text>
+                <TouchableOpacity
+                  style={styles.lockedBtn}
+                  onPress={onClose}
+                >
+                  <Text style={styles.lockedBtnText}>View Membership Plans</Text>
+                </TouchableOpacity>
+              </View>
+            ) : submitted ? (
               <View style={styles.successContainer}>
                 <View style={styles.successIconCircle}>
                   <CheckCircle2 size={44} color="#059669" />
@@ -847,6 +873,48 @@ const styles = StyleSheet.create({
     marginTop: 18,
   },
   doneBtnText: {
+    color: '#ffffff',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  lockedContainer: {
+    paddingVertical: 32,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+  },
+  lockedIconCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#fef3c7',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  lockedTitle: {
+    fontSize: 18,
+    fontWeight: '900',
+    color: '#0f172a',
+    textAlign: 'center',
+  },
+  lockedSub: {
+    fontSize: 13,
+    color: '#64748b',
+    textAlign: 'center',
+    marginTop: 8,
+    lineHeight: 20,
+    paddingHorizontal: 10,
+  },
+  lockedBtn: {
+    backgroundColor: '#003893',
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 14,
+    marginTop: 24,
+    width: '100%',
+    alignItems: 'center',
+  },
+  lockedBtnText: {
     color: '#ffffff',
     fontSize: 13,
     fontWeight: '800',
