@@ -60,6 +60,16 @@
         {
           "locationAlwaysAndWhenInUsePermission": "Allow JustPaisa to use your location to find nearby commercial partners within your radius."
         }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "compileSdkVersion": 36,
+            "targetSdkVersion": 36,
+            "buildToolsVersion": "36.0.0"
+          }
+        }
       ]
     ],
     "extra": {

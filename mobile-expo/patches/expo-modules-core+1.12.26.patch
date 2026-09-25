@@ -1,0 +1,47 @@
+diff --git a/node_modules/expo-modules-core/android/.gradle/9.2.0/checksums/checksums.lock b/node_modules/expo-modules-core/android/.gradle/9.2.0/checksums/checksums.lock
+new file mode 100644
+index 0000000..b65f291
+Binary files /dev/null and b/node_modules/expo-modules-core/android/.gradle/9.2.0/checksums/checksums.lock differ
+diff --git a/node_modules/expo-modules-core/android/.gradle/9.2.0/fileChanges/last-build.bin b/node_modules/expo-modules-core/android/.gradle/9.2.0/fileChanges/last-build.bin
+new file mode 100644
+index 0000000..f76dd23
+Binary files /dev/null and b/node_modules/expo-modules-core/android/.gradle/9.2.0/fileChanges/last-build.bin differ
+diff --git a/node_modules/expo-modules-core/android/.gradle/9.2.0/fileHashes/fileHashes.bin b/node_modules/expo-modules-core/android/.gradle/9.2.0/fileHashes/fileHashes.bin
+new file mode 100644
+index 0000000..bb9a84b
+Binary files /dev/null and b/node_modules/expo-modules-core/android/.gradle/9.2.0/fileHashes/fileHashes.bin differ
+diff --git a/node_modules/expo-modules-core/android/.gradle/9.2.0/fileHashes/fileHashes.lock b/node_modules/expo-modules-core/android/.gradle/9.2.0/fileHashes/fileHashes.lock
+new file mode 100644
+index 0000000..6dcfafa
+Binary files /dev/null and b/node_modules/expo-modules-core/android/.gradle/9.2.0/fileHashes/fileHashes.lock differ
+diff --git a/node_modules/expo-modules-core/android/.gradle/9.2.0/gc.properties b/node_modules/expo-modules-core/android/.gradle/9.2.0/gc.properties
+new file mode 100644
+index 0000000..e69de29
+diff --git a/node_modules/expo-modules-core/android/.gradle/buildOutputCleanup/buildOutputCleanup.lock b/node_modules/expo-modules-core/android/.gradle/buildOutputCleanup/buildOutputCleanup.lock
+new file mode 100644
+index 0000000..39b32ee
+Binary files /dev/null and b/node_modules/expo-modules-core/android/.gradle/buildOutputCleanup/buildOutputCleanup.lock differ
+diff --git a/node_modules/expo-modules-core/android/.gradle/buildOutputCleanup/cache.properties b/node_modules/expo-modules-core/android/.gradle/buildOutputCleanup/cache.properties
+new file mode 100644
+index 0000000..48bbc15
+--- /dev/null
++++ b/node_modules/expo-modules-core/android/.gradle/buildOutputCleanup/cache.properties
+@@ -0,0 +1,2 @@
++#Tue Sep 01 22:06:31 IST 2026
++gradle.version=9.2.0
+diff --git a/node_modules/expo-modules-core/android/.gradle/vcs-1/gc.properties b/node_modules/expo-modules-core/android/.gradle/vcs-1/gc.properties
+new file mode 100644
+index 0000000..e69de29
+diff --git a/node_modules/expo-modules-core/android/src/main/java/expo/modules/adapters/react/permissions/PermissionsService.kt b/node_modules/expo-modules-core/android/src/main/java/expo/modules/adapters/react/permissions/PermissionsService.kt
+index ae0a811..386f773 100644
+--- a/node_modules/expo-modules-core/android/src/main/java/expo/modules/adapters/react/permissions/PermissionsService.kt
++++ b/node_modules/expo-modules-core/android/src/main/java/expo/modules/adapters/react/permissions/PermissionsService.kt
+@@ -163,7 +163,7 @@ open class PermissionsService(val context: Context) : InternalModule, Permission
+   override fun isPermissionPresentInManifest(permission: String): Boolean {
+     try {
+       context.packageManager.getPackageInfo(context.packageName, PackageManager.GET_PERMISSIONS)?.run {
+-        return requestedPermissions.contains(permission)
++        return requestedPermissions?.contains(permission) == true
+       }
+       return false
+     } catch (e: PackageManager.NameNotFoundException) {
