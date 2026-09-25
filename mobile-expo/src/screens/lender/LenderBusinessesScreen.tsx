@@ -262,7 +262,7 @@ export const LenderBusinessesScreen: React.FC = () => {
             </View>
             <Text style={styles.emptyCardTitle}>No Businesses Found in Radius</Text>
             <Text style={styles.emptyCardDesc}>
-              Currently there are no registered small shops or startups discovered matching your criteria within {activeRadiusKm} km of your office location. Try increasing your lending radius in the Profile tab.
+              Currently there are no registered small shops or startups discovered matching your criteria within {activeRadiusKm} km of your office location. Try increasing your service radius in the Profile tab.
             </Text>
           </View>
         }

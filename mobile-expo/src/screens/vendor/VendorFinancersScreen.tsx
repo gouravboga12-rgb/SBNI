@@ -303,7 +303,7 @@ export const VendorFinancersScreen: React.FC = () => {
               </View>
               <View style={styles.metricChip}>
                 <Zap size={12} color="#16a34a" />
-                <Text style={styles.metricChipText}>{item.successRate || '85% Approval'}</Text>
+                <Text style={styles.metricChipText}>{item.successRate || '85% Match Rate'}</Text>
               </View>
               <View style={styles.metricChip}>
                 <Building2 size={12} color="#003893" />
@@ -311,10 +311,10 @@ export const VendorFinancersScreen: React.FC = () => {
               </View>
             </View>
 
-            {/* Loan Limits Banner */}
+            {/* Deal Limits Banner */}
             <View style={styles.limitsBanner}>
               <Text style={styles.limitsTitle}>
-                Limits: ₹{item.minLoanAmount?.toLocaleString('en-IN')} - ₹{item.maxLoanAmount?.toLocaleString('en-IN')}
+                Deal Size: ₹{item.minLoanAmount?.toLocaleString('en-IN')} - ₹{item.maxLoanAmount?.toLocaleString('en-IN')}
               </Text>
               <Text style={styles.limitsSub}>
                 Categories: {item.loanCategories.slice(0, 2).join(', ')}

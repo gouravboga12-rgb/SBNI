@@ -145,7 +145,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onOpenPolicies }) 
       {/* Directory Statutory Disclaimer */}
       <View style={styles.disclaimerBox}>
         <Text style={styles.disclaimerText}>
-          JustPaisa is strictly a local business directory and communication platform. No lending, loan disbursement, collection, or financial intermediation of any kind takes place through our website or infrastructure.
+          JustPaisa is strictly a local business directory and communication platform connecting commercial partners with verified local merchants.
         </Text>
       </View>
 

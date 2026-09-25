@@ -256,7 +256,7 @@ export const ReferAndEarnModal: React.FC<ReferAndEarnModalProps> = ({
                   <View style={styles.emptyBox}>
                     <Users size={32} color="#94a3b8" />
                     <Text style={styles.emptyTitle}>No Referrals Yet</Text>
-                    <Text style={styles.emptySub}>Share your code with shop owners and financers to start earning!</Text>
+                    <Text style={styles.emptySub}>Share your code with shop owners and commercial partners to start earning!</Text>
                   </View>
                 )
               ) : (

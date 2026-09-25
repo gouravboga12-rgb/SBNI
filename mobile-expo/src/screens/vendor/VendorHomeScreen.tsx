@@ -564,15 +564,15 @@ export const VendorHomeScreen: React.FC = () => {
               <View style={[styles.metaBadge, { backgroundColor: '#ecfdf5' }]}>
                 <Percent size={13} color="#10b981" />
                 <Text style={[styles.metaBadgeText, { color: '#047857' }]}>
-                  {item.successRate || '85% Approval'}
+                  {item.successRate || '85% Match Rate'}
                 </Text>
               </View>
             </View>
 
-            {/* Loan Limits Banner */}
+            {/* Deal Limits Banner */}
             <View style={styles.detailsGrid}>
               <View style={[styles.detailBox, { flex: 1 }]}>
-                <Text style={styles.detailLabel}>Lending Limit Range</Text>
+                <Text style={styles.detailLabel}>Commercial Deal Range</Text>
                 <Text style={styles.detailValue}>
                   ₹{(item.minLoanAmount || 10000).toLocaleString('en-IN')} - ₹
                   {(item.maxLoanAmount || 500000).toLocaleString('en-IN')}

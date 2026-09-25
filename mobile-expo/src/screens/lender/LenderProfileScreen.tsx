@@ -180,7 +180,7 @@ export const LenderProfileScreen: React.FC = () => {
   const handleCancelAutoPay = () => {
     Alert.alert(
       'Cancel AutoPay Subscription',
-      'Are you sure you want to cancel automatic subscription renewals? Your current VIP Financer access will remain active until the end of your billing cycle.',
+      'Are you sure you want to cancel automatic subscription renewals? Your current VIP Partner access will remain active until the end of your billing cycle.',
       [
         { text: 'Keep AutoPay', style: 'cancel' },
         {
@@ -581,7 +581,7 @@ export const LenderProfileScreen: React.FC = () => {
                 style={styles.textInput}
                 value={institutionName}
                 onChangeText={setInstitutionName}
-                placeholder="e.g. Hyderabad Capital Financers"
+                placeholder="e.g. Hyderabad Commercial Enterprises"
                 placeholderTextColor="#94a3b8"
               />
             </View>

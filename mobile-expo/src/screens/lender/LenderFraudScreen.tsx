@@ -68,7 +68,7 @@ export const LenderFraudScreen: React.FC = () => {
             shopName: 'Metro Footwear',
             vendorName: 'Vikram Singh',
             vendorPhone: '9876543200',
-            reason: 'Multiple simultaneous loan requests across 4 financers with forged KYC.',
+            reason: 'Multiple simultaneous business enquiries across 4 partners with forged KYC.',
             status: 'INVESTIGATING',
             createdAt: new Date(Date.now() - 86400000 * 7).toLocaleDateString('en-IN'),
           },

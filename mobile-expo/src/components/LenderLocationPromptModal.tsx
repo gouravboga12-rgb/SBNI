@@ -236,7 +236,7 @@ export const LenderLocationPromptModal: React.FC<LenderLocationPromptModalProps>
 
             {/* Footer Notice */}
             <Text style={styles.footerNote}>
-              You can also adjust your lending location and service radius anytime from your homepage.
+              You can also adjust your business location and service radius anytime from your homepage.
             </Text>
           </View>
         </View>

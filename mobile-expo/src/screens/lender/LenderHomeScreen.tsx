@@ -518,7 +518,7 @@ export const LenderHomeScreen: React.FC = () => {
               lendingRadiusKm: loc.lendingRadiusKm || activeRadius,
             });
             setLocationPromptVisible(false);
-            Alert.alert('Office Location Updated! 📍', `Your lending office location has been set to ${loc.city}.`);
+            Alert.alert('Office Location Updated! 📍', `Your business office location has been set to ${loc.city}.`);
           } catch (err) {
             console.warn('Error saving location:', err);
           }

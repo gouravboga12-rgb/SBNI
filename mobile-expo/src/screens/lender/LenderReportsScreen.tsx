@@ -121,7 +121,7 @@ export const LenderReportsScreen: React.FC = () => {
             shopName: 'Metro Footwear',
             vendorName: 'Vikram Singh',
             vendorPhone: '9876543200',
-            reason: 'Simultaneous loan requests across 4 financers with forged KYC documents.',
+            reason: 'Simultaneous business enquiries across 4 partners with forged KYC documents.',
             status: 'INVESTIGATING',
             createdAt: 'Recent',
           },

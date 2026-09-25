@@ -123,7 +123,7 @@ export const PolicyModal: React.FC<PolicyModalProps> = ({
               <View style={styles.policySection}>
                 <Text style={styles.sectionHeader}>Privacy & Data Protection Policy</Text>
                 <Text style={styles.paragraph}>
-                  1. <Text style={styles.bold}>Non-Lending Declaration:</Text> JustPaisa is strictly a communication directory and does not provide loans or consumer credit.
+                  1. <Text style={styles.bold}>Platform Notice:</Text> JustPaisa is strictly a local business directory and business-to-business communication platform.
                 </Text>
                 <Text style={styles.paragraph}>
                   2. <Text style={styles.bold}>Data Collection:</Text> We collect business profile information (shop name, location coordinates, contact phone number, and optional storefront photo) solely for directory discovery.
@@ -132,7 +132,7 @@ export const PolicyModal: React.FC<PolicyModalProps> = ({
                   3. <Text style={styles.bold}>256-Bit Encryption:</Text> All user data, contact requests, and payment interactions are encrypted using industry-standard 256-bit SSL encryption.
                 </Text>
                 <Text style={styles.paragraph}>
-                  4. <Text style={styles.bold}>Contact Privacy:</Text> Your contact details are only shared with a financer when you explicitly initiate an inquiry, phone call, or WhatsApp chat with consent.
+                  4. <Text style={styles.bold}>Contact Privacy:</Text> Your contact details are only shared with a commercial partner when you explicitly initiate an inquiry, phone call, or WhatsApp chat with consent.
                 </Text>
                 <Text style={styles.paragraph}>
                   5. <Text style={styles.bold}>Account Deletion:</Text> You can request full deletion of your account and personal data at any time from your Profile settings or by emailing srinivaspolepalli10@gmail.com.

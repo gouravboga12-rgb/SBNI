@@ -607,7 +607,7 @@ export const VendorProfileScreen: React.FC = () => {
               <View style={styles.vipInactiveBox}>
                 <Text style={styles.inactiveTitle}>Standard Account</Text>
                 <Text style={styles.inactiveSub}>
-                  Upgrade to VIP to view direct phone numbers, WhatsApp chats, and pan-India financer discovery.
+                  Upgrade to VIP to view direct phone numbers, WhatsApp chats, and pan-India commercial partner discovery.
                 </Text>
                 <TouchableOpacity
                   style={styles.upgradeBtn}
