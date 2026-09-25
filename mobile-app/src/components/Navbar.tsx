@@ -129,7 +129,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   ) : (
                     <>
                       <Building2 className="w-4 h-4 text-[#047857]" />
-                      <span>Business Money Financer Account</span>
+                      <span>Commercial Partner Account</span>
                     </>
                   )}
                 </div>
@@ -228,7 +228,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     <div className="min-w-0 flex-1">
                       <div className="font-extrabold text-slate-900 text-sm truncate">{currentUser.name || currentUser.email}</div>
                       <div className="text-xs text-slate-500 font-medium flex items-center gap-1.5 mt-0.5">
-                        <span className="capitalize truncate">{currentUser.role === 'VENDOR' ? 'Small Shop / Startup' : 'Business Financer'}</span>
+                        <span className="capitalize truncate">{currentUser.role === 'VENDOR' ? 'Small Shop / Startup' : 'Commercial Partner'}</span>
                         <span className="text-slate-300">•</span>
                         <span className={hasActiveSubscription ? 'text-emerald-600 font-bold shrink-0' : 'text-amber-600 font-bold shrink-0'}>
                           {hasActiveSubscription ? 'Subscribed' : 'Free Tier'}
@@ -325,7 +325,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 >
                   <div className="flex items-center gap-3">
                     {isVendor ? <Building2 className="w-4 h-4 text-emerald-600" /> : <Store className="w-4 h-4 text-blue-600" />}
-                    <span>{isVendor ? 'Business Money Financers (Lenders)' : 'Shop / Startup Business Requests'}</span>
+                    <span>{isVendor ? 'Commercial Partners' : 'Shop / Startup Business Requests'}</span>
                   </div>
                   <ChevronRight className="w-4 h-4 text-slate-400" />
                 </button>

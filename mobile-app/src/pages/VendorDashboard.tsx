@@ -19,6 +19,7 @@ import {
   checkSubscriptionStatus,
   cancelAutoPayApi,
   getToken,
+  deleteMyAccountApi,
 } from '../services/api';
 import { initSocket, onSocketEvent } from '../services/socketService';
 import {
@@ -70,6 +71,7 @@ import {
   Clock,
   ChevronDown,
   ChevronRight,
+  Trash2,
 } from 'lucide-react';
 import { ReferAndEarnModal } from '../components/ReferAndEarnModal';
 
@@ -174,6 +176,40 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
   const [locationModalMode, setLocationModalMode] = useState<'VENDOR_SEARCH' | 'GENERAL_LOCATION'>('VENDOR_SEARCH');
   const [isLocatingGPS, setIsLocatingGPS] = useState(false);
   const [locationToast, setLocationToast] = useState<string | null>(null);
+  const [lenderRadiusAlert, setLenderRadiusAlert] = useState<any>(null);
+
+  // Account Deletion States
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [deleteConfirmationInput, setDeleteConfirmationInput] = useState('');
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  const handleConfirmDeleteAccount = async () => {
+    if (deleteConfirmationInput.trim().toUpperCase() !== 'DELETE') {
+      setDeleteError('Please type DELETE to confirm account deletion.');
+      return;
+    }
+    setDeleteError(null);
+    setIsDeletingAccount(true);
+    try {
+      const res = await deleteMyAccountApi();
+      setIsDeletingAccount(false);
+      if (res.success) {
+        setIsDeleteModalOpen(false);
+        alert('Your account and all associated data have been permanently deleted.');
+        if (onLogout) {
+          onLogout('VENDOR');
+        } else {
+          window.location.href = '/';
+        }
+      } else {
+        setDeleteError(res.message || 'Failed to delete account. Please try again.');
+      }
+    } catch (e: any) {
+      setIsDeletingAccount(false);
+      setDeleteError(e.message || 'Failed to delete account.');
+    }
+  };
 
   // Applications List (Strictly Real User Applications from AWS RDS Database)
   const [vendorApplications, setVendorApplications] = useState<any[]>(() => {
@@ -322,6 +358,12 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
       window.dispatchEvent(new CustomEvent('sbni_vendor_profile_updated', { detail: data }));
     });
 
+    const unsubNewLenderInRadius = onSocketEvent('new_lender_in_radius', (data) => {
+      console.log('⚡ [Real-Time Socket] New Financer joined within radius:', data);
+      setLenderRadiusAlert(data);
+      window.dispatchEvent(new CustomEvent('sbni_lender_profile_updated'));
+    });
+
     window.addEventListener('sbni_request_submitted', loadVendorApplications);
     window.addEventListener('storage', loadVendorApplications);
     return () => {
@@ -330,6 +372,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
       unsubLenderUpdated();
       unsubWalletUpdated();
       unsubKycUpdated();
+      unsubNewLenderInRadius();
       window.removeEventListener('sbni_request_submitted', loadVendorApplications);
       window.removeEventListener('storage', loadVendorApplications);
     };
@@ -1387,7 +1430,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                     </span>
                   </div>
                   <h2 className="text-xl sm:text-2xl font-extrabold font-heading text-white pt-1">
-                    Business Money Financers (Lenders) Near You
+                    Commercial Partners Near You
                   </h2>
                   <div className="text-xs text-slate-300 flex items-center gap-1.5 pt-0.5">
                     <MapPin className="w-4 h-4 text-rose-400 shrink-0" />
@@ -1447,7 +1490,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                   <input
                     type="text"
-                    placeholder="Search by financer institution name, loan category, or place..."
+                    placeholder="Search by commercial partner name, category, or place..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="w-full bg-white/10 text-white placeholder-slate-400 border border-white/20 rounded-2xl pl-11 pr-4 py-3 text-xs font-semibold focus:outline-none focus:bg-white/20 focus:border-white transition-all backdrop-blur-md"
@@ -1462,7 +1505,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
             {/* Results Count Bar */}
             <div className="flex items-center justify-between px-1">
               <div className="text-xs text-slate-600 font-bold">
-                Found <strong className="text-[#003893] font-black">{filteredLenders.length}</strong> eligible financer{filteredLenders.length === 1 ? '' : 's'} within service coverage of{' '}
+                Found <strong className="text-[#003893] font-black">{filteredLenders.length}</strong> eligible partner{filteredLenders.length === 1 ? '' : 's'} within service coverage of{' '}
                 <strong className="text-slate-900">{searchLocation.place || searchLocation.city}</strong>
               </div>
               <button
@@ -1486,13 +1529,13 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                     <span>🚀 Coverage Expanding Soon</span>
                   </div>
                   <h3 className="font-extrabold text-slate-900 text-lg sm:text-xl font-heading">
-                    No Registered Financers in This Area Yet
+                    No Registered Commercial Partners in This Area Yet
                   </h3>
                   <p className="text-xs text-slate-600 max-w-md mx-auto leading-relaxed">
-                    Currently, there are no registered business money financers covering <strong className="text-slate-900">{searchLocation.place || searchLocation.city}</strong> within their active radius.
+                    Currently, there are no registered commercial partners covering <strong className="text-slate-900">{searchLocation.place || searchLocation.city}</strong> within their active radius.
                   </p>
                   <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed pt-1">
-                    New verified financers and NBFC partners are onboarding and will be available in your location soon. For now, please explore adjacent business hubs or try searching a nearby city.
+                    New verified commercial partners are onboarding and will be available in your location soon. For now, please explore adjacent business hubs or try searching a nearby city.
                   </p>
                 </div>
 
@@ -1544,7 +1587,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
             {/* Data Protection Footer Banner */}
             <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-center text-xs text-emerald-800 flex items-center justify-center gap-2 font-medium">
               <ShieldCheck className="w-5 h-5 text-emerald-600" />
-              <span>All business financers are verified & trusted by Just Paisa App. Your data is safe with us.</span>
+              <span>All commercial partners are verified & trusted by Just Paisa App. Your data is safe with us.</span>
             </div>
 
           </div>
@@ -1575,9 +1618,9 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-2xl font-extrabold text-slate-900 font-heading">My Applications & Financer Connections</h2>
+                  <h2 className="text-2xl font-extrabold text-slate-900 font-heading">My Inquiries & Partner Connections</h2>
                   <p className="text-xs text-slate-500 font-medium">
-                    Track your loan submissions and navigate to financer offices once approved
+                    Track your business inquiries and navigate to partner offices once approved
                   </p>
                 </div>
               </div>
@@ -1590,7 +1633,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                   <div>
                     <h3 className="text-lg font-extrabold text-slate-900 font-heading">No Inquiries Submitted Yet</h3>
                     <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1.5 leading-relaxed">
-                      You haven't submitted any inquiries yet. Explore verified financers and click <strong>Inquire Now</strong> to connect with lenders.
+                      You haven't submitted any inquiries yet. Explore verified commercial partners and click <strong>Inquire Now</strong> to connect directly.
                     </p>
                   </div>
                   <div className="pt-2">
@@ -1599,7 +1642,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                       className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs shadow-md transition-all active:scale-95 cursor-pointer inline-flex items-center gap-2"
                     >
                       <Search className="w-3.5 h-3.5" />
-                      <span>Explore Verified Financers</span>
+                      <span>Explore Commercial Partners</span>
                     </button>
                   </div>
                 </div>
@@ -1650,15 +1693,15 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                         <div className="flex items-start justify-between gap-3 flex-wrap sm:flex-nowrap">
                           <div>
                             <h3 className="font-extrabold text-slate-900 text-base">{app.title || app.shopName || 'Men\'s Store'}</h3>
-                            <p className="text-xs text-blue-900 font-bold mt-0.5">Financer: {app.lenderName}</p>
+                            <p className="text-xs text-blue-900 font-bold mt-0.5">Partner: {app.lenderName}</p>
                           </div>
 
-                          {/* Direct Financer Call & WhatsApp Action Buttons */}
+                          {/* Direct Partner Call & WhatsApp Action Buttons */}
                           <div className="flex items-center gap-2 shrink-0">
                             <a
                               href={callUrl}
                               className="px-3.5 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 font-extrabold text-xs flex items-center gap-1.5 shadow-xs transition-all active:scale-95 cursor-pointer hover:border-emerald-400"
-                              title={`Call Financer (${effectivePhone})`}
+                              title={`Call Partner (${effectivePhone})`}
                             >
                               <Phone className="w-3.5 h-3.5 text-emerald-600" />
                               <span>Call</span>
@@ -1697,7 +1740,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                               className="w-full py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-sm transition-all active:scale-95 cursor-pointer"
                             >
                               <Navigation className="w-4 h-4 text-white" />
-                              <span>🧭 Navigate to Financer Office (Google Maps)</span>
+                              <span>🧭 Navigate to Partner Office (Google Maps)</span>
                             </a>
                           ) : isRejected ? (
                             <div className="w-full space-y-2">
@@ -2595,11 +2638,11 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                 </div>
               )}
 
-              {/* ── CARD 7: ACCOUNT SESSION & SECURITY (LOGOUT) ─────────── */}
+              {/* ── CARD 7: ACCOUNT SESSION & SECURITY ─────────── */}
               <div className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200/90 shadow-sm p-3.5 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="min-w-0">
                   <h4 className="font-extrabold text-slate-900 text-xs sm:text-base font-heading leading-tight">
-                    Account Session & Security
+                    Account Session &amp; Security
                   </h4>
                   <p className="text-[11px] sm:text-xs text-slate-500 font-medium leading-tight mt-0.5">
                     Log out of your active JustPaisa app session on this device.
@@ -2610,12 +2653,50 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                   <button
                     type="button"
                     onClick={() => onLogout('VENDOR')}
-                    className="w-full sm:w-auto px-4 sm:px-5 py-2.5 rounded-xl border border-rose-500 text-rose-600 hover:bg-rose-50 font-extrabold text-xs flex items-center justify-center gap-1.5 transition-all shadow-2xs active:scale-95 cursor-pointer shrink-0"
+                    className="w-full sm:w-auto px-4 sm:px-5 py-2.5 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-100 font-extrabold text-xs flex items-center justify-center gap-1.5 transition-all shadow-2xs active:scale-95 cursor-pointer shrink-0"
                   >
-                    <LogOut className="w-4 h-4 text-rose-600" />
+                    <LogOut className="w-4 h-4 text-slate-600" />
                     <span>Log Out</span>
                   </button>
                 )}
+              </div>
+
+              {/* ── CARD 8: DANGER ZONE (ACCOUNT DELETION) ─────────── */}
+              <div className="bg-rose-50/50 rounded-2xl sm:rounded-3xl border border-rose-200/90 shadow-sm p-3.5 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-rose-600 animate-pulse"></span>
+                    <h4 className="font-extrabold text-rose-900 text-xs sm:text-base font-heading leading-tight">
+                      Delete Vendor Account
+                    </h4>
+                  </div>
+                  <p className="text-[11px] sm:text-xs text-rose-700/80 font-medium leading-tight mt-1">
+                    Permanently delete your profile, KYC documents, and business listings from Just Paisa.
+                  </p>
+                  <div className="mt-1.5 flex items-center gap-2">
+                    <a
+                      href="/delete-account"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[11px] font-bold text-rose-600 underline hover:text-rose-800"
+                    >
+                      View Account Deletion &amp; Data Retention Policy ↗
+                    </a>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDeleteConfirmationInput('');
+                    setDeleteError(null);
+                    setIsDeleteModalOpen(true);
+                  }}
+                  className="w-full sm:w-auto px-4 sm:px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs flex items-center justify-center gap-1.5 transition-all shadow-sm active:scale-95 cursor-pointer shrink-0"
+                >
+                  <Trash2 className="w-4 h-4 text-white" />
+                  <span>Delete Account</span>
+                </button>
               </div>
 
             </div>
@@ -2654,7 +2735,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
           }`}
         >
           <Building2 className="w-5 h-5 sm:w-6 sm:h-6 text-slate-600" />
-          <span>Financers</span>
+          <span>Partners</span>
         </button>
 
         {/* Floating Action Button */}
@@ -2765,6 +2846,85 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
         onClose={() => setReferModalOpen(false)}
         userRole="VENDOR"
       />
+
+      {/* Account Deletion Confirmation Modal */}
+      {isDeleteModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl space-y-4 border border-rose-200">
+            <div className="flex items-center justify-between border-b border-rose-100 pb-3">
+              <div className="flex items-center gap-2 text-rose-700 font-extrabold text-base font-heading">
+                <Trash2 className="w-5 h-5 text-rose-600" />
+                <span>Delete Vendor Account</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsDeleteModalOpen(false)}
+                className="p-1 rounded-full hover:bg-slate-100 text-slate-400 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs text-slate-600">
+              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 font-medium">
+                ⚠️ <strong>Warning: This action is permanent!</strong>
+                <p className="mt-1 text-[11px] text-rose-700">
+                  Deleting your account will permanently wipe your vendor profile, shop photos, verified KYC documents (Aadhaar, PAN, GST), and active inquiries from our AWS database.
+                </p>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-800 mb-1">
+                  Type <span className="font-mono text-rose-600">DELETE</span> to confirm:
+                </label>
+                <input
+                  type="text"
+                  value={deleteConfirmationInput}
+                  onChange={(e) => {
+                    setDeleteConfirmationInput(e.target.value);
+                    setDeleteError(null);
+                  }}
+                  placeholder="Type DELETE"
+                  className="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm font-bold focus:border-rose-500 focus:outline-none"
+                />
+              </div>
+
+              {deleteError && (
+                <p className="text-xs text-rose-600 font-semibold">{deleteError}</p>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setIsDeleteModalOpen(false)}
+                disabled={isDeletingAccount}
+                className="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 font-bold text-xs hover:bg-slate-50 cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDeleteAccount}
+                disabled={isDeletingAccount || deleteConfirmationInput.trim().toUpperCase() !== 'DELETE'}
+                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white font-extrabold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
+              >
+                {isDeletingAccount ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Deleting Account...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-3.5 h-3.5 text-white" />
+                    <span>Delete Permanently</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

@@ -1587,7 +1587,7 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
             {/* Data Protection Footer Banner */}
             <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-center text-xs text-emerald-800 flex items-center justify-center gap-2 font-medium">
               <ShieldCheck className="w-5 h-5 text-emerald-600" />
-              <span>All business financers are verified & trusted by Just Paisa App. Your data is safe with us.</span>
+              <span>All commercial partners are verified & trusted by Just Paisa App. Your data is safe with us.</span>
             </div>
 
           </div>

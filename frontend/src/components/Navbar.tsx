@@ -228,7 +228,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     <div className="min-w-0 flex-1">
                       <div className="font-extrabold text-slate-900 text-sm truncate">{currentUser.name || currentUser.email}</div>
                       <div className="text-xs text-slate-500 font-medium flex items-center gap-1.5 mt-0.5">
-                        <span className="capitalize truncate">{currentUser.role === 'VENDOR' ? 'Small Shop / Startup' : 'Business Financer'}</span>
+                        <span className="capitalize truncate">{currentUser.role === 'VENDOR' ? 'Small Shop / Startup' : 'Commercial Partner'}</span>
                         <span className="text-slate-300">•</span>
                         <span className={hasActiveSubscription ? 'text-emerald-600 font-bold shrink-0' : 'text-amber-600 font-bold shrink-0'}>
                           {hasActiveSubscription ? 'Subscribed' : 'Free Tier'}

@@ -135,7 +135,7 @@ export const LenderFraudScreen: React.FC = () => {
           <ShieldAlert size={22} color="#dc2626" />
           <View>
             <Text style={styles.headerTitle}>Fraud Risk Network</Text>
-            <Text style={styles.headerSub}>Collective intelligence protecting business financers</Text>
+            <Text style={styles.headerSub}>Collective intelligence protecting commercial partners</Text>
           </View>
         </View>
         <TouchableOpacity

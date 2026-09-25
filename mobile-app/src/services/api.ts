@@ -272,7 +272,7 @@ export async function loginUser(
         return {
           success: false,
           message: `This account is registered as a ${
-            u.role === 'VENDOR' ? 'Small Shop / Local Startup Business' : 'Business Money Financer (Lender)'
+            u.role === 'VENDOR' ? 'Small Shop / Local Startup Business' : 'Commercial Partner'
           }. Please log in through the correct portal.`,
         };
       }
@@ -377,7 +377,7 @@ export async function registerLender(payload: {
       const user = data.data?.user || {};
       const fullLenderProfile = user.lenderProfile || {
         institutionName: payload.institutionName,
-        institutionType: 'Money Financer',
+        institutionType: 'Commercial Partner',
         contactPersonName: payload.name,
         minLoanAmount: payload.minLoanAmount,
         maxLoanAmount: payload.maxLoanAmount,
@@ -516,6 +516,40 @@ export function logoutUser(): void {
   window.dispatchEvent(new Event('sbni_subscription_updated'));
 }
 
+export async function deleteMyAccountApi(): Promise<{ success: boolean; message?: string }> {
+  try {
+    const token = getToken();
+    if (!token) return { success: false, message: 'You are not logged in.' };
+    const res = await apiFetch('/auth/delete-account', {
+      method: 'DELETE',
+      headers: authHeaders(token),
+    });
+    if (res?.success) {
+      logoutUser();
+    }
+    return res;
+  } catch (err: any) {
+    return { success: false, message: err.message || 'Failed to delete account.' };
+  }
+}
+
+export async function submitAccountDeletionRequestApi(data: {
+  identifier: string;
+  reason?: string;
+  confirm: boolean;
+}): Promise<{ success: boolean; message?: string }> {
+  try {
+    const res = await apiFetch('/auth/request-account-deletion', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    return res;
+  } catch (err: any) {
+    return { success: false, message: err.message || 'Failed to submit account deletion request.' };
+  }
+}
+
+
 // ================================================================
 // LENDERS
 // ================================================================
@@ -562,9 +596,10 @@ export async function fetchLenders(params?: {
 
     const rawLenders = data.data || [];
     const parsedLenders: Lender[] = rawLenders.map((l: any) => {
-      let instName = l.institutionName || 'Business Money Financer';
-      if (!instName.toLowerCase().includes('money financer')) {
-        instName = `${instName} Money Financer`;
+      let instName = l.institutionName || 'Commercial Partner';
+      instName = instName.replace(/money financer/gi, 'Commercial Partner');
+      if (!instName.toLowerCase().includes('commercial partner') && !instName.toLowerCase().includes('partner')) {
+        instName = `${instName} Commercial Partner`;
       }
       return {
         id: l.id,
@@ -761,15 +796,15 @@ function getDefaultPlans(role: 'VENDOR' | 'LENDER'): SubscriptionPlan[] {
         id: 'v-w',
         code: 'VENDOR_WEEKLY',
         name: 'Weekly Starter Plan',
-        description: 'Start exploring nearby business financers',
+        description: 'Start exploring nearby commercial partners',
         price: 79,
         originalPrice: 99,
         durationDays: 7,
         durationLabel: '7 Days',
         features: [
-          'Unlock up to 5 Financer Contacts',
+          'Unlock up to 5 Partner Contacts',
           'Direct Phone & WhatsApp Access',
-          'Verified Financer Trust Badge',
+          'Verified Commercial Trust Badge',
           'Dedicated Help Desk Support',
         ],
         roleTarget: 'VENDOR',
@@ -778,16 +813,16 @@ function getDefaultPlans(role: 'VENDOR' | 'LENDER'): SubscriptionPlan[] {
         id: 'v-m',
         code: 'VENDOR_MONTHLY',
         name: 'Monthly Growth Plan',
-        description: 'Most popular plan for small shop businesses seeking capital',
+        description: 'Most popular plan for small businesses seeking verified partners',
         price: 199,
         originalPrice: 299,
         durationDays: 30,
         durationLabel: '30 Days',
         features: [
-          'Unlimited Financer Phone & WhatsApp Unlocks',
+          'Unlimited Commercial Partner Phone & WhatsApp Unlocks',
           'Direct Email & Branch Contact Access',
-          'Pan-India Financer Discovery',
-          'Priority Application Routing',
+          'Pan-India Partner Discovery',
+          'Priority Enquiry Routing',
           'Dedicated Account Manager',
         ],
         isPopular: true,
@@ -798,7 +833,7 @@ function getDefaultPlans(role: 'VENDOR' | 'LENDER'): SubscriptionPlan[] {
         id: 'v-q',
         code: 'VENDOR_QUARTERLY',
         name: 'Quarterly Business Plan',
-        description: '3 Months uninterrupted financer discovery suite',
+        description: '3 Months uninterrupted partner discovery suite',
         price: 349,
         originalPrice: 499,
         durationDays: 90,
@@ -806,8 +841,8 @@ function getDefaultPlans(role: 'VENDOR' | 'LENDER'): SubscriptionPlan[] {
         features: [
           'Everything in Monthly Growth Plan',
           'Priority KYC Document Storage',
-          'Multi-Financer Rate Comparison Tool',
-          'New Financer Instant Alerts',
+          'Commercial Partner Comparison Tool',
+          'New Partner Instant Alerts',
         ],
         roleTarget: 'VENDOR',
       },
@@ -835,15 +870,15 @@ function getDefaultPlans(role: 'VENDOR' | 'LENDER'): SubscriptionPlan[] {
     {
       id: 'l-w',
       code: 'LENDER_WEEKLY',
-      name: 'Financer Weekly Starter',
-      description: '7 Days trial access for business financers',
+      name: 'Partner Weekly Starter',
+      description: '7 Days trial access for commercial partners',
       price: 79,
       originalPrice: 99,
       durationDays: 7,
       durationLabel: '7 Days',
       features: [
         'Connect with Verified Shop Businesses',
-        'View Up to 10 Vendor KYC Files',
+        'View Up to 10 Vendor Business Profiles',
         'Direct Owner WhatsApp Link',
       ],
       roleTarget: 'LENDER',
@@ -851,16 +886,16 @@ function getDefaultPlans(role: 'VENDOR' | 'LENDER'): SubscriptionPlan[] {
     {
       id: 'l-m',
       code: 'LENDER_MONTHLY',
-      name: 'Financer Monthly Plan',
-      description: 'Most popular plan for NBFCs & financial institutions',
+      name: 'Partner Monthly Plan',
+      description: 'Most popular plan for verified commercial enterprises',
       price: 199,
       originalPrice: 249,
       durationDays: 30,
       durationLabel: '30 Days',
       features: [
         'Unlimited Verified Shop Business Leads',
-        'Complete KYC & GST Report Access',
-        'Direct Application Routing',
+        'Complete KYC & Business Report Access',
+        'Direct Enquiry Routing',
         'Lead Management Dashboard',
       ],
       isPopular: true,
@@ -870,8 +905,8 @@ function getDefaultPlans(role: 'VENDOR' | 'LENDER'): SubscriptionPlan[] {
     {
       id: 'l-q',
       code: 'LENDER_QUARTERLY',
-      name: 'Financer Quarterly Growth',
-      description: '3 Months uninterrupted business financing suite',
+      name: 'Partner Quarterly Growth',
+      description: '3 Months uninterrupted business networking suite',
       price: 399,
       originalPrice: 499,
       durationDays: 90,
@@ -879,7 +914,7 @@ function getDefaultPlans(role: 'VENDOR' | 'LENDER'): SubscriptionPlan[] {
       features: [
         'Everything in Monthly Plan',
         'Priority Lead Allocation',
-        'Risk & Analytics Dashboard',
+        'Business Analytics Dashboard',
         'Dedicated Relationship Support',
       ],
       roleTarget: 'LENDER',
@@ -887,7 +922,7 @@ function getDefaultPlans(role: 'VENDOR' | 'LENDER'): SubscriptionPlan[] {
     {
       id: 'l-y',
       code: 'LENDER_ANNUAL',
-      name: 'Financer Annual VIP Plan',
+      name: 'Partner Annual VIP Plan',
       description: '1 Year maximum visibility & premium leads',
       price: 599,
       originalPrice: 999,
@@ -896,8 +931,8 @@ function getDefaultPlans(role: 'VENDOR' | 'LENDER'): SubscriptionPlan[] {
       features: [
         '365 Days Full Platform Access',
         'Unlimited Premium Lead Discovery',
-        'Custom Product Promotion Listing',
-        'Featured Top Badge on Financer Directory',
+        'Custom Service Promotion Listing',
+        'Featured Top Badge on Partner Directory',
       ],
       isBestValue: true,
       roleTarget: 'LENDER',
@@ -1290,6 +1325,7 @@ async function adminFetch<T = any>(path: string, options: RequestInit = {}): Pro
   if (!res.ok) throw new Error(data?.message || `Admin API error: ${res.status}`);
   return data;
 }
+
 
 export async function adminFetchDashboardStats(): Promise<any> {
   try {

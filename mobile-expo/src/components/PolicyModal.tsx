@@ -105,7 +105,7 @@ export const PolicyModal: React.FC<PolicyModalProps> = ({
               <View style={styles.policySection}>
                 <Text style={styles.sectionHeader}>Terms of Service & User Agreement</Text>
                 <Text style={styles.paragraph}>
-                  1. <Text style={styles.bold}>Platform Role:</Text> JustPaisa is a commercial B2B directory connecting local shop owners with business financers and commercial facilitators. JustPaisa is NOT a bank, NBFC, or direct lender.
+                  1. <Text style={styles.bold}>Platform Role:</Text> JustPaisa is a commercial B2B directory connecting local shop owners with verified commercial partners and business service facilitators.
                 </Text>
                 <Text style={styles.paragraph}>
                   2. <Text style={styles.bold}>Business Profiles:</Text> All shop owners and commercial partners agree that provided profile information, shop locations, and contact credentials are genuine representations of commercial entities.

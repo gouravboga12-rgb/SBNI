@@ -208,7 +208,7 @@ export const LenderReportsScreen: React.FC = () => {
 
         Alert.alert(
           'Fraud Report Logged 🚨',
-          `Account flagged and reported to JustPaisa Risk Network. Other business financers will be alerted.`
+          `Account flagged and reported to JustPaisa Risk Network. Other commercial partners will be alerted.`
         );
         setFraudModalVisible(false);
         setReportingLead(null);

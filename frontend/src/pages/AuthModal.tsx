@@ -864,7 +864,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
                   <div className="text-xs space-y-1">
                     <div className="font-extrabold text-amber-900 text-sm">
-                      Active {currentUser.role === 'VENDOR' ? 'Small Shop Business' : 'Business Financer'} Session Detected
+                      Active {currentUser.role === 'VENDOR' ? 'Small Shop Business' : 'Commercial Partner'} Session Detected
                     </div>
                     <p className="text-amber-800 font-medium leading-relaxed">
                       You are currently signed in as <strong>{currentUser.name || currentUser.fullName || currentUser.email}</strong>. Once an account is active on this device, no other account can be accessed until you fully log out of your current session.
@@ -1220,7 +1220,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
                   <div className="text-xs space-y-1">
                     <div className="font-extrabold text-amber-900 text-sm">
-                      Active {currentUser.role === 'VENDOR' ? 'Small Shop Business' : 'Business Financer'} Session Detected
+                      Active {currentUser.role === 'VENDOR' ? 'Small Shop Business' : 'Commercial Partner'} Session Detected
                     </div>
                     <p className="text-amber-800 font-medium leading-relaxed">
                       You are currently signed in as <strong>{currentUser.name || currentUser.fullName || currentUser.email}</strong>. Logging into or registering a new account requires logging out of your active account first.
@@ -2016,7 +2016,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               {!isRegister ? (
                 <div className="space-y-2">
                   <p className="text-xs text-slate-600 font-medium">
-                    Don't have a {isVendor ? 'Small Business (Vendor)' : 'Business Financer'} account yet?
+                    Don't have a {isVendor ? 'Small Business (Vendor)' : 'Commercial Partner'} account yet?
                   </p>
                   <button
                     type="button"
@@ -2035,7 +2035,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   >
                     <UserPlus className="w-4 h-4" />
                     <span>
-                      {isVendor ? 'Sign Up as Small Business (Vendor)' : 'Sign Up as Business Financer (Lender)'}
+                      {isVendor ? 'Sign Up as Small Business (Vendor)' : 'Sign Up as Commercial Partner'}
                     </span>
                   </button>
                 </div>
@@ -2056,7 +2056,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   >
                     <User className="w-4 h-4" />
                     <span>
-                      {isVendor ? 'Login as Small Business (Vendor)' : 'Login as Business Financer (Lender)'}
+                      {isVendor ? 'Login as Small Business (Vendor)' : 'Login as Commercial Partner'}
                     </span>
                   </button>
                 </div>
@@ -2072,7 +2072,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   className="text-xs font-bold text-slate-500 hover:text-slate-800 underline"
                 >
                   {isVendor
-                    ? 'Are you a Business Financer (Lender)? Click here'
+                    ? 'Are you a Commercial Partner? Click here'
                     : 'Are you a Small Business (Vendor)? Click here'}
                 </button>
               </div>
