@@ -567,12 +567,11 @@ export const StaticPolicyPage: React.FC<StaticPolicyPageProps> = ({ pageType, on
                 </div>
                 <div>
                   <h2 className="font-extrabold text-slate-900 text-base font-heading">Official Customer Support &amp; Helpdesk</h2>
-                  <p className="text-sm font-bold text-blue-900 mt-0.5">support@justpaisa.in</p>
-                  <p className="text-xs text-slate-600 font-medium">srinivaspolepalli10@gmail.com</p>
+                  <p className="text-sm font-bold text-blue-900 mt-0.5">srinivaspolepalli10@gmail.com</p>
                 </div>
               </div>
               <a
-                href="mailto:support@justpaisa.in"
+                href="mailto:srinivaspolepalli10@gmail.com"
                 className="inline-flex items-center justify-center px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition-colors shadow-sm shrink-0"
               >
                 Send Email
@@ -657,7 +656,7 @@ export const StaticPolicyPage: React.FC<StaticPolicyPageProps> = ({ pageType, on
                       if (res.success) {
                         setDelSuccessMsg(res.message || 'Your account deletion request has been submitted.');
                       } else {
-                        setDelErrorMsg(res.message || 'Failed to submit request. Please try again or email support@justpaisa.in');
+                        setDelErrorMsg(res.message || 'Failed to submit request. Please try again or email srinivaspolepalli10@gmail.com');
                       }
                     } catch (err: any) {
                       setDelSubmitting(false);
@@ -771,7 +770,7 @@ export const StaticPolicyPage: React.FC<StaticPolicyPageProps> = ({ pageType, on
                 </h2>
                 <ul className="list-disc pl-5 space-y-1 text-slate-600">
                   <li>Your user account profile (name, phone number, email address, password hash).</li>
-                  <li>All uploaded KYC identity documents (Aadhaar, PAN, GST, business registration certificate).</li>
+                  <li>All uploaded KYC identity documents (Aadhaar, PAN).</li>
                   <li>Store location, shop photos, coordinates, and operating service radius.</li>
                   <li>In-app communication records, inquiries, and device push notification tokens.</li>
                 </ul>
@@ -800,7 +799,7 @@ export const StaticPolicyPage: React.FC<StaticPolicyPageProps> = ({ pageType, on
                   4. Direct Grievance &amp; Manual Support
                 </h2>
                 <p>
-                  You can also directly email our Grievance Officer at <a href="mailto:support@justpaisa.in" className="text-blue-600 font-bold underline">support@justpaisa.in</a> or <a href="mailto:srinivaspolepalli10@gmail.com" className="text-blue-600 font-bold underline">srinivaspolepalli10@gmail.com</a> with the subject <em>"Account Deletion Request"</em> along with your registered phone number.
+                  You can also directly email our Grievance Officer at <a href="mailto:srinivaspolepalli10@gmail.com" className="text-blue-600 font-bold underline">srinivaspolepalli10@gmail.com</a> with the subject <em>"Account Deletion Request"</em> along with your registered phone number.
                 </p>
               </section>
             </div>

@@ -909,7 +909,7 @@ export const submitAccountDeletionRequest = async (req: Request, res: Response) 
     console.error('submitAccountDeletionRequest error:', error);
     return res.status(500).json({
       success: false,
-      message: error?.message || 'Failed to process deletion request. Please contact support at support@justpaisa.in',
+      message: error?.message || 'Failed to process deletion request. Please contact support at srinivaspolepalli10@gmail.com',
     });
   }
 };

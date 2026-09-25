@@ -60,11 +60,11 @@ export const SupportModal: React.FC<SupportModalProps> = ({ visible, onClose }) 
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.contactLabel}>Official Email Desk</Text>
-                <Text style={styles.contactValue}>support@justpaisa.in</Text>
+                <Text style={styles.contactValue}>srinivaspolepalli10@gmail.com</Text>
               </View>
               <TouchableOpacity
                 style={[styles.actionBtn, { backgroundColor: '#2563eb' }]}
-                onPress={() => Linking.openURL('mailto:support@justpaisa.in')}
+                onPress={() => Linking.openURL('mailto:srinivaspolepalli10@gmail.com')}
               >
                 <Text style={styles.actionBtnText}>Email Us</Text>
               </TouchableOpacity>

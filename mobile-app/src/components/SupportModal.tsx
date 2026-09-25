@@ -41,12 +41,11 @@ export const SupportModal: React.FC<SupportModalProps> = ({ isOpen, onClose }) =
               </div>
               <div>
                 <div className="text-xs font-bold text-slate-900">Official Customer Support &amp; Helpdesk</div>
-                <div className="text-sm font-extrabold text-blue-900">support@justpaisa.in</div>
-                <div className="text-[11px] font-medium text-slate-500">srinivaspolepalli10@gmail.com</div>
+                <div className="text-sm font-extrabold text-blue-900">srinivaspolepalli10@gmail.com</div>
               </div>
             </div>
             <a
-              href="mailto:support@justpaisa.in"
+              href="mailto:srinivaspolepalli10@gmail.com"
               className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-colors shadow-sm"
             >
               Email Us

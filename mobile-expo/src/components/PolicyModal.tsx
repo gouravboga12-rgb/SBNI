@@ -150,7 +150,7 @@ export const PolicyModal: React.FC<PolicyModalProps> = ({
                   2. <Text style={styles.bold}>AutoPay Cancellation:</Text> Users can cancel recurring AutoPay renewal at any time directly from the app. Upon cancellation, current active validity remains intact until expiry.
                 </Text>
                 <Text style={styles.paragraph}>
-                  3. <Text style={styles.bold}>Refund Queries:</Text> For any technical billing disputes or duplicate payment deductions, please contact support@justpaisa.in within 48 hours for immediate investigation and resolution.
+                  3. <Text style={styles.bold}>Refund Queries:</Text> For any technical billing disputes or duplicate payment deductions, please contact srinivaspolepalli10@gmail.com within 48 hours for immediate investigation and resolution.
                 </Text>
               </View>
             )}
