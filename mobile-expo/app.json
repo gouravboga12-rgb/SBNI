@@ -25,7 +25,7 @@
         "backgroundColor": "#003893"
       },
       "package": "com.justpaisa.app",
-      "versionCode": 3,
+      "versionCode": 4,
       "permissions": [
         "android.permission.INTERNET",
         "android.permission.ACCESS_NETWORK_STATE",
@@ -59,6 +59,16 @@
         "expo-location",
         {
           "locationAlwaysAndWhenInUsePermission": "Allow JustPaisa to use your location to find nearby commercial partners within your radius."
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "compileSdkVersion": 36,
+            "targetSdkVersion": 36,
+            "buildToolsVersion": "36.0.0"
+          }
         }
       ]
     ],
