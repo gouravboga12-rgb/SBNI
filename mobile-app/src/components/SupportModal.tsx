@@ -28,7 +28,7 @@ export const SupportModal: React.FC<SupportModalProps> = ({ isOpen, onClose }) =
           </div>
           <div>
             <h2 className="text-xl font-extrabold text-slate-900 font-heading">Customer Support & Helpdesk</h2>
-            <p className="text-xs text-slate-500 font-medium">We are available 24/7 to assist your loan inquiries</p>
+            <p className="text-xs text-slate-500 font-medium">We are available to assist your business inquiries</p>
           </div>
         </div>
 

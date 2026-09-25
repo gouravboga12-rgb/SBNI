@@ -39,7 +39,6 @@ interface StaticPolicyPageProps {
 
 export const StaticPolicyPage: React.FC<StaticPolicyPageProps> = ({ pageType, onNavigate }) => {
   const [delIdentifier, setDelIdentifier] = useState('');
-  const [delRole, setDelRole] = useState<'VENDOR' | 'LENDER' | 'USER'>('VENDOR');
   const [delReason, setDelReason] = useState('');
   const [delConfirmed, setDelConfirmed] = useState(false);
   const [delSubmitting, setDelSubmitting] = useState(false);
@@ -618,6 +617,17 @@ export const StaticPolicyPage: React.FC<StaticPolicyPageProps> = ({ pageType, on
               </p>
             </div>
 
+            {/* Platform Scope & B2B Communication Notice */}
+            <div className="p-4 rounded-2xl bg-blue-50/80 border border-blue-200 text-xs text-blue-900 space-y-1">
+              <p className="font-bold text-blue-950 flex items-center gap-1.5">
+                <FileText className="w-4 h-4 text-blue-600" />
+                B2B Directory &amp; Business Communication Notice
+              </p>
+              <p>
+                Just Paisa operates strictly as a B2B business discovery and commercial communication platform connecting verified local merchants, small shop owners, and enterprise trading partners. Just Paisa does not provide financial loans, lending products, credit underwriting, or banking services.
+              </p>
+            </div>
+
             {/* Submission Form */}
             <div className="p-6 rounded-2xl bg-slate-50 border border-slate-200 space-y-4">
               <h2 className="text-base font-extrabold text-slate-900 font-heading">
@@ -677,32 +687,6 @@ export const StaticPolicyPage: React.FC<StaticPolicyPageProps> = ({ pageType, on
                       className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-semibold focus:border-rose-500 focus:outline-none bg-white"
                       required
                     />
-                  </div>
-
-                  <div>
-                    <label className="block font-bold text-slate-700 mb-1">
-                      Account Role <span className="text-rose-500">*</span>
-                    </label>
-                    <div className="flex gap-4">
-                      <label className="flex items-center gap-1.5 cursor-pointer font-semibold text-slate-800">
-                        <input
-                          type="radio"
-                          name="role"
-                          checked={delRole === 'VENDOR'}
-                          onChange={() => setDelRole('VENDOR')}
-                        />
-                        <span>Small Shop / Vendor</span>
-                      </label>
-                      <label className="flex items-center gap-1.5 cursor-pointer font-semibold text-slate-800">
-                        <input
-                          type="radio"
-                          name="role"
-                          checked={delRole === 'LENDER'}
-                          onChange={() => setDelRole('LENDER')}
-                        />
-                        <span>Business Financer (Lender)</span>
-                      </label>
-                    </div>
                   </div>
 
                   <div>
@@ -781,7 +765,7 @@ export const StaticPolicyPage: React.FC<StaticPolicyPageProps> = ({ pageType, on
                   2. What data is retained and why?
                 </h2>
                 <p>
-                  In accordance with Indian financial and taxation regulations (including the GST Act and Companies Act), records of financial billing transactions and generated tax invoices are required to be preserved for statutory audit purposes. No further commercial networking or communication occurs after account deletion.
+                  In accordance with statutory corporate and accounting recordkeeping mandates (including the Companies Act), billing invoices for subscription services are preserved strictly for statutory audit purposes. No further commercial networking or communication occurs after account deletion.
                 </p>
               </section>
 
