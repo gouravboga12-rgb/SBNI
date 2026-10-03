@@ -31,16 +31,31 @@ export interface SendMailOptions {
 }
 
 /**
- * Core send mail helper with error catching and detailed logging
+ * Core send mail helper with deliverability optimizations, clean multipart fallback, and headers
  */
 export async function sendEmail({ to, subject, html, text }: SendMailOptions): Promise<{ success: boolean; messageId?: string; error?: string }> {
   try {
+    // Generate clean plain-text fallback if not provided
+    const cleanText = text || html
+      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+      .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
     const info = await transporter.sendMail({
       from: SMTP_FROM,
       to,
+      replyTo: SMTP_USER,
       subject,
-      text: text || html.replace(/<[^>]*>?/gm, ''),
+      text: cleanText,
       html,
+      headers: {
+        'X-Priority': '1',
+        'X-MSMail-Priority': 'High',
+        'Importance': 'High',
+        'X-Mailer': 'JustPaisa Notification Service',
+      },
     });
 
     console.log(`[JustPaisa Mailer] Email dispatched successfully to ${to}. MessageId: ${info.messageId}`);
@@ -68,10 +83,25 @@ export async function sendSignupOtpEmail({
   const isVendor = role === 'VENDOR';
   const roleLabel = isVendor ? 'Small Shop / Local Startup Business' : 'Commercial Partner';
   const primaryColor = isVendor ? '#003893' : '#007a33';
+  const recipientName = name || 'Business Partner';
+
+  const plainText = [
+    `Hello ${recipientName},`,
+    '',
+    `Thank you for registering on JustPaisa (${roleLabel}).`,
+    '',
+    `Your verification code (OTP) is: ${otpCode}`,
+    '',
+    'This code is valid for 10 minutes.',
+    'For security, never share this one-time code with anyone.',
+    '',
+    'Regards,',
+    'JustPaisa Security & Operations Team',
+  ].join('\n');
 
   const html = `
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -81,7 +111,7 @@ export async function sendSignupOtpEmail({
   <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #f8fafc; padding: 40px 10px;">
     <tr>
       <td align="center">
-        <table width="100%" max-width="580" style="max-width: 580px; background-color: #ffffff; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.06); border: 1px solid #e2e8f0;">
+        <table width="100%" max-width="580" style="max-width: 580px; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid #e2e8f0;">
           
           <!-- Header Banner -->
           <tr>
@@ -100,23 +130,23 @@ export async function sendSignupOtpEmail({
               
               <h2 style="margin: 0 0 12px; color: #0f172a; font-size: 20px; font-weight: 700;">Verify Your Email Address</h2>
               <p style="margin: 0 0 20px; color: #475569; font-size: 14px; line-height: 1.6;">
-                Hello <strong>${name || 'Business Partner'}</strong>,<br>
+                Hello <strong>${recipientName}</strong>,<br>
                 Thank you for creating an account on <strong>JustPaisa</strong>. To complete your registration and activate your account, please enter the one-time verification code below:
               </p>
 
               <!-- OTP Code Display Card -->
               <table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin: 24px 0;">
                 <tr>
-                  <td align="center" style="background: #f1f5f9; border: 2px dashed ${primaryColor}; border-radius: 16px; padding: 24px 16px;">
+                  <td align="center" style="background: #f1f5f9; border: 2px dashed ${primaryColor}; border-radius: 12px; padding: 24px 16px;">
                     <span style="font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 8px;">Your 6-Digit One-Time Password (OTP)</span>
-                    <span style="font-size: 36px; font-weight: 900; letter-spacing: 10px; color: ${primaryColor}; font-family: monospace; display: block; padding-left: 10px;">${otpCode}</span>
-                    <span style="font-size: 12px; color: #e11d48; font-weight: 600; display: block; margin-top: 10px;">⏱ Valid for 10 minutes only</span>
+                    <span style="font-size: 34px; font-weight: 800; letter-spacing: 8px; color: ${primaryColor}; font-family: monospace; display: block; padding-left: 8px;">${otpCode}</span>
+                    <span style="font-size: 12px; color: #64748b; font-weight: 600; display: block; margin-top: 10px;">Valid for 10 minutes only</span>
                   </td>
                 </tr>
               </table>
 
               <p style="margin: 0 0 16px; color: #64748b; font-size: 13px; line-height: 1.5;">
-                ⚠️ <strong>Security Notice:</strong> Never share this code with anyone. JustPaisa team members will never ask for your password or OTP.
+                <strong>Security Notice:</strong> Never share this code with anyone. JustPaisa representatives will never ask for your password or OTP.
               </p>
             </td>
           </tr>
@@ -124,9 +154,9 @@ export async function sendSignupOtpEmail({
           <!-- Footer -->
           <tr>
             <td style="background-color: #f8fafc; padding: 20px 32px; border-top: 1px solid #e2e8f0; text-align: center;">
-              <p style="margin: 0; color: #94a3b8; font-size: 12px;">
+              <p style="margin: 0; color: #94a3b8; font-size: 12px; line-height: 1.5;">
                 © 2026 JustPaisa. All rights reserved.<br>
-                Need assistance? Contact us at <a href="mailto:srinivaspolepalli10@gmail.com" style="color: ${primaryColor}; text-decoration: none; font-weight: 600;">srinivaspolepalli10@gmail.com</a>
+                Need assistance? Contact our support team.
               </p>
             </td>
           </tr>
@@ -141,7 +171,8 @@ export async function sendSignupOtpEmail({
 
   return sendEmail({
     to,
-    subject: `🔐 ${otpCode} is your JustPaisa Sign Up Verification Code`,
+    subject: `Your JustPaisa verification code is ${otpCode}`,
+    text: plainText,
     html,
   });
 }
@@ -163,10 +194,25 @@ export async function sendForgotPasswordOtpEmail({
   const isVendor = role === 'VENDOR';
   const roleLabel = isVendor ? 'Small Shop / Local Startup Business' : 'Commercial Partner';
   const primaryColor = isVendor ? '#003893' : '#007a33';
+  const recipientName = name || 'User';
+
+  const plainText = [
+    `Hello ${recipientName},`,
+    '',
+    `We received a request to reset the password for your JustPaisa account (${to}).`,
+    '',
+    `Your password reset code (OTP) is: ${otpCode}`,
+    '',
+    'This code expires in 10 minutes.',
+    'If you did not request a password reset, you can safely ignore this email.',
+    '',
+    'Regards,',
+    'JustPaisa Security & Operations Team',
+  ].join('\n');
 
   const html = `
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -176,7 +222,7 @@ export async function sendForgotPasswordOtpEmail({
   <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #f8fafc; padding: 40px 10px;">
     <tr>
       <td align="center">
-        <table width="100%" max-width="580" style="max-width: 580px; background-color: #ffffff; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.06); border: 1px solid #e2e8f0;">
+        <table width="100%" max-width="580" style="max-width: 580px; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid #e2e8f0;">
           
           <!-- Header Banner -->
           <tr>
@@ -195,17 +241,17 @@ export async function sendForgotPasswordOtpEmail({
               
               <h2 style="margin: 0 0 12px; color: #0f172a; font-size: 20px; font-weight: 700;">Reset Your JustPaisa Password</h2>
               <p style="margin: 0 0 20px; color: #475569; font-size: 14px; line-height: 1.6;">
-                Hello <strong>${name || 'User'}</strong>,<br>
-                We received a request to reset the password for your JustPaisa account (<strong>${to}</strong>). Use the one-time password (OTP) code below to proceed with setting a new password:
+                Hello <strong>${recipientName}</strong>,<br>
+                We received a request to reset the password for your JustPaisa account (<strong>${to}</strong>). Use the one-time code below to proceed:
               </p>
 
               <!-- OTP Code Display Card -->
               <table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin: 24px 0;">
                 <tr>
-                  <td align="center" style="background: #fff1f2; border: 2px dashed #f43f5e; border-radius: 16px; padding: 24px 16px;">
-                    <span style="font-size: 12px; font-weight: 700; color: #9f1239; text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 8px;">Your Password Reset OTP</span>
-                    <span style="font-size: 36px; font-weight: 900; letter-spacing: 10px; color: #be123c; font-family: monospace; display: block; padding-left: 10px;">${otpCode}</span>
-                    <span style="font-size: 12px; color: #be123c; font-weight: 600; display: block; margin-top: 10px;">⏱ Code expires in 10 minutes</span>
+                  <td align="center" style="background: #fff1f2; border: 2px dashed #f43f5e; border-radius: 12px; padding: 24px 16px;">
+                    <span style="font-size: 12px; font-weight: 700; color: #9f1239; text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 8px;">Your Password Reset Code</span>
+                    <span style="font-size: 34px; font-weight: 800; letter-spacing: 8px; color: #be123c; font-family: monospace; display: block; padding-left: 8px;">${otpCode}</span>
+                    <span style="font-size: 12px; color: #be123c; font-weight: 600; display: block; margin-top: 10px;">Code expires in 10 minutes</span>
                   </td>
                 </tr>
               </table>
@@ -219,9 +265,9 @@ export async function sendForgotPasswordOtpEmail({
           <!-- Footer -->
           <tr>
             <td style="background-color: #f8fafc; padding: 20px 32px; border-top: 1px solid #e2e8f0; text-align: center;">
-              <p style="margin: 0; color: #94a3b8; font-size: 12px;">
+              <p style="margin: 0; color: #94a3b8; font-size: 12px; line-height: 1.5;">
                 © 2026 JustPaisa Security Operations.<br>
-                For security inquiries: <a href="mailto:srinivaspolepalli10@gmail.com" style="color: ${primaryColor}; text-decoration: none; font-weight: 600;">srinivaspolepalli10@gmail.com</a>
+                For security inquiries, please contact our support team.
               </p>
             </td>
           </tr>
@@ -236,7 +282,8 @@ export async function sendForgotPasswordOtpEmail({
 
   return sendEmail({
     to,
-    subject: `🔑 ${otpCode} is your JustPaisa Password Reset Code`,
+    subject: `JustPaisa: Your password reset code is ${otpCode}`,
+    text: plainText,
     html,
   });
 }
@@ -426,7 +473,7 @@ export async function sendSubscriptionInvoiceEmail({
 
   return sendEmail({
     to,
-    subject: `🧾 Tax Invoice #${invoiceNumber} - JustPaisa Subscription (${planName})`,
+    subject: `JustPaisa: Tax Invoice #${invoiceNumber} (${planName})`,
     html,
   });
 }
