@@ -20,6 +20,7 @@ import {
 import { StaticPolicyPage, StaticPageType } from './pages/StaticPolicyPage';
 import { MobileCheckout } from './pages/MobileCheckout';
 import { Lender } from './types';
+import { ArrowRight, Sparkles } from 'lucide-react';
 
 export function App() {
   const [isAdminRoute, setIsAdminRoute] = useState<boolean>(
@@ -160,6 +161,9 @@ export function App() {
             safeSetLocalStorage('sbni_vendor_subscribed', 'true');
             safeSetLocalStorage('sbni_lender_subscribed', 'true');
             window.dispatchEvent(new Event('sbni_subscription_updated'));
+          } else if (!sessionStorage.getItem('sbni_sub_popup_dismissed')) {
+            // Prompt subscription pop-up on session restore if not dismissed
+            setSubModalOpen(true);
           }
         } else {
           // Token invalid/expired — clear it
@@ -308,11 +312,13 @@ export function App() {
     }
     loadLenders();
 
-    // If user clicked subscribe while logged out, proceed to subscription modal after successful login
-    if (authSubscribeIntent) {
-      setAuthSubscribeIntent(false);
+    // Automatic Login Subscription Pop-up:
+    // Prompt newly logged-in user to subscribe to unlock full commercial features
+    sessionStorage.removeItem('sbni_sub_popup_dismissed');
+    if (!isSub) {
       setSubModalOpen(true);
     }
+    setAuthSubscribeIntent(false);
   };
 
   const handleSubscriptionSuccess = async () => {
@@ -450,6 +456,30 @@ export function App() {
         currentUser={currentUser}
       />
 
+      {/* Sticky Subscription Prompt Banner for Logged-in Unsubscribed Users */}
+      {currentUser && !hasActiveSubscription && (
+        <div className="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white px-4 py-2.5 shadow-md flex items-center justify-between gap-3 text-xs sm:text-sm font-semibold sticky top-16 z-30 border-b border-blue-500/30">
+          <div className="flex items-center gap-2.5 mx-auto sm:mx-0">
+            <span className="bg-amber-400 text-slate-900 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider flex items-center gap-1 shadow-xs">
+              <Sparkles className="w-3 h-3 text-slate-900" />
+              <span>Preview Mode</span>
+            </span>
+            <span className="text-slate-200">
+              {currentRole === 'LENDER'
+                ? 'Subscribe to unlock all small shop business inquiries, borrower contact numbers & lead financing.'
+                : 'Subscribe to unlock verified commercial partner contact numbers, WhatsApp messaging, and fast financing.'}
+            </span>
+          </div>
+          <button
+            onClick={handleOpenSubscription}
+            className="hidden sm:inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white font-extrabold text-xs shadow-md transition-all cursor-pointer active:scale-95 shrink-0"
+          >
+            <span>Subscribe Now</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+
       {/* Main Role View Container */}
       <main className="flex-grow pb-20 lg:pb-0">
         {currentRole === 'VENDOR' ? (
@@ -511,7 +541,10 @@ export function App() {
       {/* Subscription Modal */}
       <SubscriptionModal
         isOpen={subModalOpen}
-        onClose={() => setSubModalOpen(false)}
+        onClose={() => {
+          sessionStorage.setItem('sbni_sub_popup_dismissed', 'true');
+          setSubModalOpen(false);
+        }}
         onSubscriptionSuccess={handleSubscriptionSuccess}
         userRole={currentRole}
       />

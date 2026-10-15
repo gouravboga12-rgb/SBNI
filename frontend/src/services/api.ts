@@ -603,6 +603,7 @@ export async function fetchLenders(params?: {
       }
       return {
         id: l.id,
+        isDummy: !!l.isDummy,
         institutionName: instName,
         institutionType: l.institutionType || 'Financial Institution',
         logoUrl: l.logoUrl || l.avatarUrl || undefined,
@@ -634,9 +635,54 @@ export async function fetchLenders(params?: {
     });
 
     // Keep all registered financer accounts deduplicated strictly by unique ID
-    const lenders = parsedLenders.filter(
+    let lenders = parsedLenders.filter(
       (item, idx, arr) => idx === arr.findIndex((t) => t.id === item.id)
     );
+
+    const isSubscribedLocally =
+      localStorage.getItem('sbni_vendor_subscribed') === 'true' ||
+      localStorage.getItem('sbni_subscribed') === 'true' ||
+      localStorage.getItem('sbni_lender_subscribed') === 'true';
+
+    if (!isSubscribedLocally) {
+      const hasDummy = lenders.some((l) => l.isDummy || l.id === 'JP-COMMERCIAL-PARTNER-PREVIEW');
+      if (!hasDummy) {
+        const fallbackCity = params?.city || params?.place || 'Commercial Hub';
+        const dummyPartner: Lender = {
+          id: 'JP-COMMERCIAL-PARTNER-PREVIEW',
+          isDummy: true,
+          institutionName: 'Apex Growth Commercial Partner',
+          institutionType: 'NBFC',
+          logoUrl: 'https://images.unsplash.com/photo-1554469384-e58fac16e23a?w=150&auto=format&fit=crop&q=80',
+          registrationNumber: 'REG-NBFC-PREVIEW-9901',
+          loanCategories: ['Business Loan', 'Working Capital Loan', 'Daily Repayment Loan'],
+          minLoanAmount: 25000,
+          maxLoanAmount: 500000,
+          minInterestRate: 1.25,
+          address: `${fallbackCity} Commercial District`,
+          place: fallbackCity,
+          city: fallbackCity,
+          state: 'Active Hub',
+          country: 'India',
+          pincode: '500001',
+          latitude: (params?.userLat || 17.3850) + 0.009,
+          longitude: (params?.userLng || 78.4867) + 0.009,
+          lendingRadiusKm: 100.0,
+          distanceKm: 1.2,
+          rating: 4.9,
+          reviewCount: 148,
+          successRate: '92% - 96%',
+          contactPersonName: 'Senior Lending Officer',
+          contactUnlocked: false,
+          phone: '982******10',
+          email: 'par***@commercialpartner.com',
+          whatsAppUrl: null,
+        };
+        lenders = [dummyPartner, ...lenders];
+      }
+    } else {
+      lenders = lenders.filter((l) => !l.isDummy && l.id !== 'JP-COMMERCIAL-PARTNER-PREVIEW');
+    }
 
     return { lenders, total: lenders.length };
   } catch (err: any) {

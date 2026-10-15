@@ -1123,7 +1123,48 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const currentLendersList = liveLenders;
+  // Website Visitor & Pre-Subscription Dummy Commercial Partner:
+  // For unsubscribed visitors/users on the website, ensure 1 verified Commercial Partner is visible in any location
+  // so new visitors can see how partners appear, trust the platform, and proceed to register & subscribe.
+  // Once subscribed (hasActiveSubscription === true), the dummy account completely disappears.
+  const previewDummyPartner: Lender = {
+    id: 'JP-COMMERCIAL-PARTNER-PREVIEW',
+    isDummy: true,
+    institutionName: 'Apex Growth Commercial Partner',
+    institutionType: 'NBFC',
+    logoUrl: 'https://images.unsplash.com/photo-1554469384-e58fac16e23a?w=150&auto=format&fit=crop&q=80',
+    avatarUrl: 'https://images.unsplash.com/photo-1554469384-e58fac16e23a?w=150&auto=format&fit=crop&q=80',
+    registrationNumber: 'REG-NBFC-PREVIEW-9901',
+    loanCategories: ['Business Loan', 'Working Capital Loan', 'Daily Repayment Loan'],
+    minLoanAmount: 25000,
+    maxLoanAmount: 500000,
+    minInterestRate: 1.25,
+    address: `${searchLocation.place || searchLocation.city || 'Commercial Hub'} District`,
+    place: searchLocation.place || searchLocation.city || 'Commercial Hub',
+    city: searchLocation.city || 'Active Hub',
+    state: searchLocation.state || 'India',
+    country: 'India',
+    pincode: '500001',
+    latitude: (searchLocation.latitude || 17.3850) + 0.009,
+    longitude: (searchLocation.longitude || 78.4867) + 0.009,
+    lendingRadiusKm: 100.0,
+    distanceKm: 1.2,
+    rating: 4.9,
+    reviewCount: 148,
+    successRate: '92% - 96%',
+    contactPersonName: 'Senior Lending Officer',
+    contactUnlocked: false,
+    phone: '982******10',
+    email: 'par***@commercialpartner.com',
+    whatsAppUrl: null,
+  };
+
+  const rawLendersList = liveLenders.length > 0 ? liveLenders : lenders;
+  const currentLendersList = hasActiveSubscription
+    ? rawLendersList.filter((l) => !l.isDummy && l.id !== 'JP-COMMERCIAL-PARTNER-PREVIEW')
+    : (rawLendersList.some((l) => l.isDummy || l.id === 'JP-COMMERCIAL-PARTNER-PREVIEW')
+        ? rawLendersList
+        : [previewDummyPartner, ...rawLendersList]);
   const filteredLenders = currentLendersList.filter((l) =>
     l.institutionName.toLowerCase().includes(searchQuery.toLowerCase()) ||
     l.institutionType.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -1382,15 +1423,15 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                     <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto">
                       <Users className="w-6 h-6" />
                     </div>
-                    <h4 className="font-extrabold text-slate-900 text-sm">No Commercial Partners Located within Service Radius</h4>
-                    <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                      No active business partners found within their service radius of {searchLocation.place}, {searchLocation.city}. Expand your location search or explore all business listings.
+                    <h4 className="font-extrabold text-slate-900 text-sm">No Commercial Partner Available Here</h4>
+                    <p className="text-xs text-slate-600 max-w-sm mx-auto leading-relaxed">
+                      Currently there is no commercial partner available here. As soon as one is available you will get updated, or please try other areas to find commercial partners.
                     </p>
                     <button
                       onClick={() => handleTabChange('lenders')}
                       className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs shadow-sm transition-all cursor-pointer"
                     >
-                      Explore All Business Partners ({currentLendersList.length})
+                      Search Other Areas / Cities
                     </button>
                   </div>
                 ) : (
@@ -1529,13 +1570,10 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
                     <span>🚀 Coverage Expanding Soon</span>
                   </div>
                   <h3 className="font-extrabold text-slate-900 text-lg sm:text-xl font-heading">
-                    No Registered Commercial Partners in This Area Yet
+                    No Commercial Partner Available Here
                   </h3>
-                  <p className="text-xs text-slate-600 max-w-md mx-auto leading-relaxed">
-                    Currently, there are no registered commercial partners covering <strong className="text-slate-900">{searchLocation.place || searchLocation.city}</strong> within their active radius.
-                  </p>
-                  <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed pt-1">
-                    New verified commercial partners are onboarding and will be available in your location soon. For now, please explore adjacent business hubs or try searching a nearby city.
+                  <p className="text-xs sm:text-sm text-slate-600 max-w-md mx-auto leading-relaxed font-medium">
+                    Currently there is no commercial partner available here. As soon as one is available you will get updated, or please try other areas to find commercial partners.
                   </p>
                 </div>
 

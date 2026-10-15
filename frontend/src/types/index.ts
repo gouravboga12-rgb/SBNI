@@ -62,9 +62,11 @@ export interface PlanReferralRule {
 
 export interface Lender {
   id: string;
+  isDummy?: boolean;
   institutionName: string;
   institutionType: 'Bank' | 'NBFC' | 'Financial Institution' | string;
   logoUrl?: string;
+  avatarUrl?: string;
   registrationNumber: string;
   loanCategories: string[];
   minLoanAmount: number;

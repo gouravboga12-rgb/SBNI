@@ -336,8 +336,57 @@ export const searchLenders = async (req: AuthenticatedRequest, res: Response) =>
     );
   }
 
-  // Sort by nearest distance first
-  formattedLenders.sort((a, b) => a.distanceKm - b.distanceKm);
+  // 4. Pre-subscription Dummy Commercial Partner preview:
+  // If the user has NOT subscribed, inject 1 verified preview Commercial Partner in their location
+  // so they see an active partner in ANY location to build trust and encourage subscription.
+  // Once subscribed (hasActiveSubscription === true), the dummy is strictly excluded.
+  if (!hasActiveSubscription) {
+    const dummyLat = parsedLat + 0.009;
+    const dummyLng = parsedLng + 0.009;
+    const resolvedCity = city ? String(city) : (query ? String(query) : 'Local Business Hub');
+    const dummyPreviewPartner = {
+      id: 'JP-COMMERCIAL-PARTNER-PREVIEW',
+      isDummy: true,
+      institutionName: 'Apex Growth Commercial Partner',
+      institutionType: 'NBFC',
+      logoUrl: 'https://images.unsplash.com/photo-1554469384-e58fac16e23a?w=150&auto=format&fit=crop&q=80',
+      avatarUrl: 'https://images.unsplash.com/photo-1554469384-e58fac16e23a?w=150&auto=format&fit=crop&q=80',
+      registrationNumber: 'REG-NBFC-PREVIEW-9901',
+      loanCategories: ['Business Loan', 'Working Capital Loan', 'Daily Repayment Loan'],
+      minLoanAmount: 25000,
+      maxLoanAmount: 500000,
+      minInterestRate: 1.25,
+      address: `${resolvedCity} Commercial District`,
+      place: resolvedCity,
+      city: resolvedCity,
+      state: 'Active Hub',
+      country: 'India',
+      pincode: '500001',
+      latitude: dummyLat,
+      longitude: dummyLng,
+      lendingRadiusKm: 100.0,
+      contactPersonName: 'Senior Lending Officer',
+      rating: 4.9,
+      reviewCount: 148,
+      successRate: '92% - 96%',
+      distanceKm: 1.2,
+      isWithinRadius: true,
+      contactUnlocked: false,
+      phone: '982******10',
+      email: 'par***@commercialpartner.com',
+      whatsAppUrl: null,
+    };
+
+    // If no real lenders found in range, show dummy preview. If real ones exist, ensure preview is available at start
+    if (formattedLenders.length === 0) {
+      formattedLenders = [dummyPreviewPartner as any];
+    } else {
+      formattedLenders = [dummyPreviewPartner as any, ...formattedLenders.filter(l => l.id !== 'JP-COMMERCIAL-PARTNER-PREVIEW')];
+    }
+  } else {
+    // Subscribed users: strictly ensure NO dummy account is present
+    formattedLenders = formattedLenders.filter((l: any) => !l.isDummy && l.id !== 'JP-COMMERCIAL-PARTNER-PREVIEW');
+  }
 
   res.json({
     success: true,

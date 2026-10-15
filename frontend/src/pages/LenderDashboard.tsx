@@ -72,6 +72,7 @@ import {
   CalendarCheck,
   Gift,
   ChevronDown,
+  ArrowRight,
 } from 'lucide-react';
 import { ReferAndEarnModal } from '../components/ReferAndEarnModal';
 import { LenderLocationPromptModal } from '../components/LenderLocationPromptModal';
@@ -1897,6 +1898,32 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
               </div>
             </div>
 
+            {/* Radius Optimization Alert Card */}
+            <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white shadow-lg border border-blue-700/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex items-start gap-3.5">
+                <div className="w-10 h-10 rounded-2xl bg-blue-500/20 border border-blue-400/30 flex items-center justify-center shrink-0 text-blue-300">
+                  <TrendingUp className="w-5 h-5" />
+                </div>
+                <div className="space-y-0.5">
+                  <h4 className="font-extrabold text-sm sm:text-base text-white flex items-center gap-2">
+                    <span>Expand Your Lending Service Radius</span>
+                    <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 text-[10px] font-black px-2 py-0.5 rounded-full">Pro Tip</span>
+                  </h4>
+                  <p className="text-xs text-slate-300 max-w-xl leading-relaxed">
+                    Increase your service radius in your profile settings so you can receive more loan, financing, and working capital requests from small shop businesses and local startups in surrounding commercial zones.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsLocationModalOpen(true)}
+                className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-extrabold text-xs shadow-md transition-all active:scale-95 shrink-0 flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <span>Increase Radius</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+
             {/* Search Input for Nearby Businesses */}
             <div className="relative">
               <Search className="w-5 h-5 text-slate-400 absolute left-4 top-3.5" />
@@ -1922,8 +1949,18 @@ export const LenderDashboard: React.FC<LenderDashboardProps> = ({
                   <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1.5 leading-relaxed">
                     {nearbySearchQuery.trim()
                       ? `No shop businesses matched "${nearbySearchQuery}". Try clearing your search.`
-                      : `There are currently no registered shop businesses within your ${lenderLocation.lendingRadiusKm} KM service area in ${lenderLocation.city}. Registered vendors will appear here.`}
+                      : `There are currently no registered shop businesses within your ${lenderLocation.lendingRadiusKm} KM service area in ${lenderLocation.city}. Expand your service radius to cover more shops and local startups.`}
                   </p>
+                  {!nearbySearchQuery.trim() && (
+                    <button
+                      type="button"
+                      onClick={() => setIsLocationModalOpen(true)}
+                      className="mt-3 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-xs transition-all cursor-pointer inline-flex items-center gap-1.5"
+                    >
+                      <span>Increase Service Radius</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                 </div>
               </div>
             ) : (

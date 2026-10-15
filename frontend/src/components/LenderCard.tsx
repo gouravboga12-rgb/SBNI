@@ -156,7 +156,7 @@ export const LenderCard: React.FC<LenderCardProps> = ({ lender, onOpenSubscripti
 
     const isSubscribed = checkSubscription();
     
-    if (!isSubscribed && !isSubscribedState) {
+    if (lender.isDummy || (!isSubscribed && !isSubscribedState)) {
       if (onOpenSubscription) {
         onOpenSubscription();
       }
@@ -332,7 +332,7 @@ export const LenderCard: React.FC<LenderCardProps> = ({ lender, onOpenSubscripti
     }
 
     const isSubscribed = checkSubscription();
-    if (!isSubscribed && !isSubscribedState) {
+    if (lender.isDummy || (!isSubscribed && !isSubscribedState)) {
       if (onOpenSubscription) onOpenSubscription();
       return;
     }
@@ -358,7 +358,7 @@ export const LenderCard: React.FC<LenderCardProps> = ({ lender, onOpenSubscripti
     }
 
     const isSubscribed = checkSubscription();
-    if (!isSubscribed && !isSubscribedState) {
+    if (lender.isDummy || (!isSubscribed && !isSubscribedState)) {
       if (onOpenSubscription) onOpenSubscription();
       return;
     }
