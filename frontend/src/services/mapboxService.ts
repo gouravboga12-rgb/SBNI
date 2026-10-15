@@ -122,7 +122,13 @@ export async function searchPlacesMapbox(
       if (res.ok) {
         const data = await res.json();
         if (data.features && Array.isArray(data.features) && data.features.length > 0) {
-          return data.features.map((feature: any) => parseMapboxFeature(feature));
+          const parsed = data.features.map((feature: any) => parseMapboxFeature(feature));
+          const strictlyIndia = parsed.filter((p: LocationResult) => {
+            const isLon = p.longitude >= 68.0 && p.longitude <= 97.5;
+            const isLat = p.latitude >= 6.5 && p.latitude <= 37.5;
+            return isLon && isLat;
+          });
+          if (strictlyIndia.length > 0) return strictlyIndia;
         }
       } else {
         console.warn(`Mapbox Geocoding returned ${res.status}. Falling back to OpenStreetMap / Photon geocoding.`);
@@ -133,40 +139,45 @@ export async function searchPlacesMapbox(
   }
 
   // Tier 2: Photon Geocoding API (OpenStreetMap, CORS-enabled, ultra-fast)
+  // Strictly bounded to India geographic box: bbox=minLon,minLat,maxLon,maxLat
   try {
-    const photonUrl = `https://photon.komoot.io/api/?q=${encodeURIComponent(cleanQ)}&limit=8`;
+    const photonUrl = `https://photon.komoot.io/api/?q=${encodeURIComponent(cleanQ)}&bbox=68.1,6.5,97.4,37.5&limit=10`;
     const res = await fetch(photonUrl);
     if (res.ok) {
       const data = await res.json();
       if (data.features && Array.isArray(data.features) && data.features.length > 0) {
         const indianFeatures = data.features.filter((f: any) => {
-          const cCode = f.properties?.countrycode?.toUpperCase();
-          const countryName = f.properties?.country?.toLowerCase();
-          return cCode === 'IN' || countryName === 'india' || !cCode;
+          const cCode = (f.properties?.countrycode || '').toUpperCase();
+          const countryName = (f.properties?.country || '').toLowerCase();
+          const [lon, lat] = f.geometry?.coordinates || [0, 0];
+          const isWithinIndiaBox = lon >= 68.0 && lon <= 97.5 && lat >= 6.5 && lat <= 37.5;
+          const isIndiaNameOrCode = cCode === 'IN' || countryName === 'india';
+          return (isIndiaNameOrCode || !cCode) && isWithinIndiaBox;
         });
 
-        const targetList = indianFeatures.length > 0 ? indianFeatures : data.features;
-        const parsed = targetList.slice(0, 6).map((f: any) => {
-          const props = f.properties || {};
-          const coords = f.geometry?.coordinates || [78.4867, 17.3850];
-          const name = props.name || props.street || props.city || cleanQ;
-          const city = props.city || props.district || props.county || name;
-          const state = props.state || 'Andhra Pradesh';
-          const fullAddress = [name, city !== name ? city : '', state, 'India'].filter(Boolean).join(', ');
+        if (indianFeatures.length > 0) {
+          const parsed = indianFeatures.slice(0, 6).map((f: any) => {
+            const props = f.properties || {};
+            const coords = f.geometry?.coordinates || [78.4867, 17.3850];
+            const name = props.name || props.street || props.city || cleanQ;
+            const city = props.city || props.district || props.county || name;
+            const state = props.state || 'Telangana';
+            const fullAddress = [name, city !== name ? city : '', state, 'India'].filter(Boolean).join(', ');
 
-          return {
-            place: name,
-            city,
-            state,
-            country: 'India',
-            pincode: props.postcode || '',
-            fullAddress,
-            latitude: Number(coords[1]),
-            longitude: Number(coords[0]),
-          };
-        });
+            return {
+              place: name,
+              city,
+              state,
+              country: 'India',
+              pincode: props.postcode || '',
+              fullAddress,
+              latitude: Number(coords[1]),
+              longitude: Number(coords[0]),
+            };
+          });
 
-        if (parsed.length > 0) return parsed;
+          if (parsed.length > 0) return parsed;
+        }
       }
     }
   } catch (photonErr) {
@@ -177,29 +188,40 @@ export async function searchPlacesMapbox(
   try {
     const nominatimUrl = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
       cleanQ
-    )}&countrycodes=in&format=json&addressdetails=1&limit=6`;
+    )}&countrycodes=in&format=json&addressdetails=1&limit=8`;
     const res = await fetch(nominatimUrl, {
       headers: { 'Accept-Language': 'en' },
     });
     if (res.ok) {
       const items = await res.json();
       if (Array.isArray(items) && items.length > 0) {
-        return items.map((item: any) => {
-          const addr = item.address || {};
-          const placeName = item.name || addr.suburb || addr.neighbourhood || addr.city || cleanQ;
-          const city = addr.city || addr.town || addr.village || addr.county || placeName;
-          const state = addr.state || 'Telangana';
-          return {
-            place: placeName,
-            city,
-            state,
-            country: 'India',
-            pincode: addr.postcode || '',
-            fullAddress: item.display_name || `${placeName}, ${city}, ${state}, India`,
-            latitude: parseFloat(item.lat),
-            longitude: parseFloat(item.lon),
-          };
+        const filtered = items.filter((item: any) => {
+          const code = (item.address?.country_code || '').toLowerCase();
+          const cName = (item.address?.country || '').toLowerCase();
+          const lat = parseFloat(item.lat);
+          const lon = parseFloat(item.lon);
+          const isWithinIndiaBox = lon >= 68.0 && lon <= 97.5 && lat >= 6.5 && lat <= 37.5;
+          return code === 'in' || cName === 'india' || isWithinIndiaBox;
         });
+
+        if (filtered.length > 0) {
+          return filtered.slice(0, 6).map((item: any) => {
+            const addr = item.address || {};
+            const placeName = item.name || addr.suburb || addr.neighbourhood || addr.city || cleanQ;
+            const city = addr.city || addr.town || addr.village || addr.county || placeName;
+            const state = addr.state || 'Telangana';
+            return {
+              place: placeName,
+              city,
+              state,
+              country: 'India',
+              pincode: addr.postcode || '',
+              fullAddress: item.display_name || `${placeName}, ${city}, ${state}, India`,
+              latitude: parseFloat(item.lat),
+              longitude: parseFloat(item.lon),
+            };
+          });
+        }
       }
     }
   } catch (nominatimErr) {

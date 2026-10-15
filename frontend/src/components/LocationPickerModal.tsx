@@ -73,19 +73,28 @@ export const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
   const [longitude, setLongitude] = useState<number>(initialLocation?.longitude || 78.5247);
   const [radiusKm, setRadiusKm] = useState<number>(initialLocation?.lendingRadiusKm || 50);
 
+  const wasOpenRef = useRef(false);
   const debounceTimer = useRef<any>(null);
 
   useEffect(() => {
-    if (initialLocation) {
-      if (initialLocation.place) setPlace(initialLocation.place);
-      if (initialLocation.city) setCity(initialLocation.city);
-      if (initialLocation.state) setStateName(initialLocation.state);
-      if (initialLocation.country) setCountry(initialLocation.country);
-      if (initialLocation.latitude) setLatitude(initialLocation.latitude);
-      if (initialLocation.longitude) setLongitude(initialLocation.longitude);
-      if (initialLocation.lendingRadiusKm) setRadiusKm(initialLocation.lendingRadiusKm);
+    // Only populate form fields when the modal opens to prevent background polling from resetting user input
+    if (isOpen && !wasOpenRef.current) {
+      if (initialLocation) {
+        if (initialLocation.place) setPlace(initialLocation.place);
+        if (initialLocation.city) setCity(initialLocation.city);
+        if (initialLocation.state) setStateName(initialLocation.state);
+        if (initialLocation.country) setCountry(initialLocation.country);
+        if (initialLocation.latitude) setLatitude(initialLocation.latitude);
+        if (initialLocation.longitude) setLongitude(initialLocation.longitude);
+        if (initialLocation.lendingRadiusKm) setRadiusKm(initialLocation.lendingRadiusKm);
+      }
+      setSearchQuery('');
+      setSuggestions([]);
+      setStatusMessage(null);
+      setErrorMessage(null);
     }
-  }, [initialLocation, isOpen]);
+    wasOpenRef.current = isOpen;
+  }, [isOpen]);
 
   if (!isOpen) return null;
 

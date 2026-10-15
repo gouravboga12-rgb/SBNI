@@ -50,8 +50,10 @@ export const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
 
   const debounceTimer = useRef<any>(null);
 
+  const wasVisibleRef = useRef(false);
+
   useEffect(() => {
-    if (visible) {
+    if (visible && !wasVisibleRef.current) {
       setSelectedRadius(currentRadius || 50);
       if (currentCity) setCity(currentCity);
       if (currentPlace) setPlace(currentPlace);
@@ -59,7 +61,8 @@ export const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
       setSuggestions([]);
       setStatusMsg(null);
     }
-  }, [visible, currentRadius, currentCity, currentPlace]);
+    wasVisibleRef.current = visible;
+  }, [visible]);
 
   const handleSearchChange = (text: string) => {
     setSearchQuery(text);
