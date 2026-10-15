@@ -644,8 +644,21 @@ export async function fetchLenders(params?: {
       localStorage.getItem('sbni_subscribed') === 'true' ||
       localStorage.getItem('sbni_lender_subscribed') === 'true';
 
+    // Helper to identify demo / dummy partner accounts
+    const isDummyLenderRecord = (l: any) => {
+      if (!l) return false;
+      if (l.isDummy || l.id === 'JP-COMMERCIAL-PARTNER-PREVIEW') return true;
+      const name = (l.institutionName || '').toLowerCase();
+      if (name.includes('apex commercial') || name.includes('apex growth')) return true;
+      const email = (l.email || '').toLowerCase();
+      if (email.includes('demo.partner') || email.includes('commercialpartner.com')) return true;
+      const contact = (l.contactPersonName || '').toLowerCase();
+      if (contact.includes('google reviewer')) return true;
+      return false;
+    };
+
     if (!isSubscribedLocally) {
-      const hasDummy = lenders.some((l) => l.isDummy || l.id === 'JP-COMMERCIAL-PARTNER-PREVIEW');
+      const hasDummy = lenders.some((l) => isDummyLenderRecord(l));
       if (!hasDummy) {
         const fallbackCity = params?.city || params?.place || 'Commercial Hub';
         const dummyPartner: Lender = {
@@ -681,7 +694,7 @@ export async function fetchLenders(params?: {
         lenders = [dummyPartner, ...lenders];
       }
     } else {
-      lenders = lenders.filter((l) => !l.isDummy && l.id !== 'JP-COMMERCIAL-PARTNER-PREVIEW');
+      lenders = lenders.filter((l) => !isDummyLenderRecord(l));
     }
 
     return { lenders, total: lenders.length };

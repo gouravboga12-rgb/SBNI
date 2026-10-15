@@ -290,9 +290,21 @@ export async function fetchLenders(params?: {
       };
     });
 
-    const lenders = parsedLenders.filter(
-      (item, idx, arr) => idx === arr.findIndex((t) => t.id === item.id)
-    );
+    const isDummyLenderRecord = (l: any) => {
+      if (!l) return false;
+      if (l.isDummy || l.id === 'JP-COMMERCIAL-PARTNER-PREVIEW') return true;
+      const name = (l.institutionName || '').toLowerCase();
+      if (name.includes('apex commercial') || name.includes('apex growth')) return true;
+      const email = (l.email || '').toLowerCase();
+      if (email.includes('demo.partner') || email.includes('commercialpartner.com')) return true;
+      const contact = (l.contactPersonName || '').toLowerCase();
+      if (contact.includes('google reviewer')) return true;
+      return false;
+    };
+
+    const lenders = parsedLenders
+      .filter((item, idx, arr) => idx === arr.findIndex((t) => t.id === item.id))
+      .filter((l) => !isDummyLenderRecord(l));
 
     return { lenders, total: lenders.length };
   } catch (err: any) {

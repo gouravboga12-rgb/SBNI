@@ -1123,6 +1123,20 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  // Helper to identify dummy, preview, or demo partner accounts
+  const isDummyPartner = (l: Lender) => {
+    if (!l) return false;
+    if (l.isDummy) return true;
+    if (l.id === 'JP-COMMERCIAL-PARTNER-PREVIEW') return true;
+    const name = (l.institutionName || '').toLowerCase();
+    if (name.includes('apex commercial') || name.includes('apex growth')) return true;
+    const email = (l.email || '').toLowerCase();
+    if (email.includes('demo.partner') || email.includes('commercialpartner.com')) return true;
+    const contact = (l.contactPersonName || '').toLowerCase();
+    if (contact.includes('google reviewer')) return true;
+    return false;
+  };
+
   // Website Visitor & Pre-Subscription Dummy Commercial Partner:
   // For unsubscribed visitors/users on the website, ensure 1 verified Commercial Partner is visible in any location
   // so new visitors can see how partners appear, trust the platform, and proceed to register & subscribe.
@@ -1161,8 +1175,8 @@ export const VendorDashboard: React.FC<VendorDashboardProps> = ({
 
   const rawLendersList = liveLenders.length > 0 ? liveLenders : lenders;
   const currentLendersList = hasActiveSubscription
-    ? rawLendersList.filter((l) => !l.isDummy && l.id !== 'JP-COMMERCIAL-PARTNER-PREVIEW')
-    : (rawLendersList.some((l) => l.isDummy || l.id === 'JP-COMMERCIAL-PARTNER-PREVIEW')
+    ? rawLendersList.filter((l) => !isDummyPartner(l))
+    : (rawLendersList.some((l) => isDummyPartner(l))
         ? rawLendersList
         : [previewDummyPartner, ...rawLendersList]);
   const filteredLenders = currentLendersList.filter((l) =>

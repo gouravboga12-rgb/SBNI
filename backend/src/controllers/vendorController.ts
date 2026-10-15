@@ -219,11 +219,37 @@ export const searchLenders = async (req: AuthenticatedRequest, res: Response) =>
     }
   }
 
+  // Helper to identify demo / dummy partner accounts
+  const isDemoOrDummyLender = (l: any) => {
+    if (!l) return false;
+    if (l.isDummy || l.id === 'JP-COMMERCIAL-PARTNER-PREVIEW') return true;
+    const name = (l.institutionName || '').toLowerCase();
+    if (name.includes('apex commercial') || name.includes('apex growth')) return true;
+    const email = (l.email || l.user?.email || '').toLowerCase();
+    if (email.includes('demo.partner') || email.includes('commercialpartner.com')) return true;
+    const contact = (l.contactPersonName || '').toLowerCase();
+    if (contact.includes('google reviewer')) return true;
+    return false;
+  };
+
+  // Exclude demo reviewer dummy accounts from regular queries unless the user is specifically the demo reviewer
+  const requestingUser = userId
+    ? await prisma.user.findUnique({ where: { id: userId }, select: { email: true } })
+    : null;
+  const isDemoReviewer = requestingUser?.email?.toLowerCase().includes('demo.vendor');
+
   // 2. Fetch All Valid Lenders (All verified/active financer accounts)
   const lenders = await prisma.lenderProfile.findMany({
     where: {
       verificationStatus: { not: 'REJECTED' },
       institutionType: institutionType ? (String(institutionType) as any) : undefined,
+      ...(isDemoReviewer
+        ? {}
+        : {
+            user: {
+              email: { not: 'demo.partner@justpaisa.in' },
+            },
+          }),
     },
     include: {
       user: {
@@ -384,8 +410,8 @@ export const searchLenders = async (req: AuthenticatedRequest, res: Response) =>
       formattedLenders = [dummyPreviewPartner as any, ...formattedLenders.filter(l => l.id !== 'JP-COMMERCIAL-PARTNER-PREVIEW')];
     }
   } else {
-    // Subscribed users: strictly ensure NO dummy account is present
-    formattedLenders = formattedLenders.filter((l: any) => !l.isDummy && l.id !== 'JP-COMMERCIAL-PARTNER-PREVIEW');
+    // Subscribed users: strictly ensure NO dummy or demo account is present
+    formattedLenders = formattedLenders.filter((l: any) => !isDemoOrDummyLender(l));
   }
 
   res.json({
