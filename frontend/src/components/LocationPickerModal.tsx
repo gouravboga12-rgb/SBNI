@@ -248,7 +248,20 @@ export const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
                 type="text"
                 value={searchQuery}
                 onChange={(e) => handleSearchChange(e.target.value)}
-                placeholder="Type place or city (e.g. Dilsukhnagar, Hyderabad, Vijayawada...)"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (suggestions.length > 0) {
+                      handleSelectSuggestion(suggestions[0]);
+                    } else if (searchQuery.trim().length >= 2) {
+                      setCity(searchQuery.trim());
+                      setPlace(searchQuery.trim());
+                      setSearchQuery('');
+                      setSuggestions([]);
+                    }
+                  }
+                }}
+                placeholder="Type place or city (e.g. Kurnool, Dilsukhnagar, Hyderabad, Vijayawada...)"
                 className="w-full bg-slate-50 border border-slate-300 rounded-2xl pl-10 pr-10 py-3 text-xs font-semibold text-slate-900 focus:outline-none focus:border-[#003893] focus:bg-white transition-colors"
               />
               {isSearching && (
@@ -258,13 +271,13 @@ export const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
 
             {/* Suggestions Dropdown */}
             {suggestions.length > 0 && (
-              <div className="absolute top-full left-0 right-0 z-30 mt-1.5 bg-white border border-slate-200 rounded-2xl shadow-xl max-h-56 overflow-y-auto divide-y divide-slate-100">
+              <div className="absolute top-full left-0 right-0 z-50 mt-1.5 bg-white border border-slate-200 rounded-2xl shadow-2xl max-h-56 overflow-y-auto divide-y divide-slate-100 ring-1 ring-black/5">
                 {suggestions.map((item, idx) => (
                   <button
                     key={idx}
                     type="button"
                     onClick={() => handleSelectSuggestion(item)}
-                    className="w-full p-3 text-left hover:bg-blue-50 transition-colors flex items-start gap-2.5 text-xs group"
+                    className="w-full p-3 text-left hover:bg-blue-50 transition-colors flex items-start gap-2.5 text-xs group cursor-pointer"
                   >
                     <MapPin className="w-4 h-4 text-[#003893] shrink-0 mt-0.5" />
                     <div>
